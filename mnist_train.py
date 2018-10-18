@@ -220,7 +220,7 @@ def main():
 	init_scale = 0.01
 	p = None
 	batchsize = 16
-	use_cuda = False
+	use_cuda = True
 
 	rbm = RBM(n_visible, n_hidden,
 			  v_kind="bernoulli",
