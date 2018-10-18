@@ -1,2 +1,2 @@
 # dynalearn
-Boltzmann machine framework for dynamics on network learning
+Boltzmann machine framework for dynamics on network learning.
