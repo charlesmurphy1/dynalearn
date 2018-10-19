@@ -10,13 +10,14 @@ Defines the class CRBM which generate Conditional Restrited
 Boltzmann machine.
 """
 
-import bm
-import utilities as util
-from unit import *
-from param import *
+import utilities.utilities as util
+from .unit import *
+from .param import *
+from .bm import *
 
+__all__  = ['CRBM']
 
-class CRBM(bm.General_Boltzmann_Machine):
+class CRBM(General_Boltzmann_Machine):
     """docstring for CRBM"""
     def __init__(self, n_visible, n_conditional, n_hidden, 
                  batchsize,

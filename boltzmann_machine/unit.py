@@ -11,7 +11,10 @@ Defines the Unit.
 
 import torch
 import numpy as np
-import utilities as util
+import utilities.utilities as util
+
+
+__all__ = ['Unit_info', 'Unit']
 
 
 class Unit_info(object):

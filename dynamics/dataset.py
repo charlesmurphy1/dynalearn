@@ -7,7 +7,7 @@ Created by Charles Murphy on 07-09-18.
 Copyright © 2018 Charles Murphy. All rights reserved.
 Quebec, Canada
 
-Defines DynamicalNetworkDataset classes for dynamics on networks.
+Defines Dynamical_Network_Dataset classes for dynamics on networks.
 
 """
 
@@ -18,10 +18,14 @@ import networkx as nx
 from random import shuffle
 import numpy as np
 
-class NodeStateDataset(Dataset):
-    """docstring for NodeStateDataset"""
+__all__ = ['Node_State_Dataset', 'Dynamical_Network_Dataset',
+           'Normal_Dataset', 'Bernoulli_Dataset',
+           'Random_Sampler_with_length']
+
+class Node_State_Dataset(Dataset):
+    """docstring for Node_State_Dataset"""
     def __init__(self, states, memory=1, conversion_function=lambda x: x):
-        super(NodeStateDataset, self).__init__()
+        super(Node_State_Dataset, self).__init__()
         self.states = conversion_function(states)
         self.T = len(states)
         self.memory = memory
@@ -43,7 +47,7 @@ class NodeStateDataset(Dataset):
 
 
 
-class DynamicalNetworkDataset(Dataset):
+class Dynamical_Network_Dataset(Dataset):
 
     
     def __init__(self,
@@ -141,7 +145,7 @@ class DynamicalNetworkDataset(Dataset):
             for t in range(self.num_time):
                 states[t] = complete_data[t][1][i]
 
-            self.state_data[node] = NodeStateDataset(states, self.memory,
+            self.state_data[node] = Node_State_Dataset(states, self.memory,
                                                         self.conversion_function)
 
 
@@ -169,8 +173,8 @@ class DynamicalNetworkDataset(Dataset):
         return None
 
 
-class NormalDataset(Dataset):
-    """docstring for NormalDataset"""
+class Normal_Dataset(Dataset):
+    """docstring for Normal_Dataset"""
     def __init__(self, numsample=1000, dim=1, means=None, stds=None):
         self.dim = dim
         if means is None:
@@ -199,8 +203,8 @@ class NormalDataset(Dataset):
         return None
 
 
-    """docstring for NormalDataset"""
-class BernoulliDataset(Dataset):
+class Bernoulli_Dataset(Dataset):
+    """docstring for Bernoulli_Dataset"""
     def __init__(self, numsample=1000, dim=1, p=None):
         self.dim = dim
         if p is None:
@@ -228,7 +232,7 @@ class BernoulliDataset(Dataset):
         return None
 
 
-class RandomSampler_with_length(Sampler):
+class Random_Sampler_with_length(Sampler):
     r"""Samples elements sequentially, always in the same order.
 
     Arguments:
@@ -275,7 +279,7 @@ def random_split(dataset, val_prop):
             
 #         return x
 
-#     dataset = DynamicalNetworkDataset(path_to_states, path_to_edgelist,
+#     dataset = Dynamical_Network_Dataset(path_to_states, path_to_edgelist,
 #                                       memory, shuffle_neighbors,
 #                                       conv_func_SIS)
 
@@ -304,7 +308,7 @@ if __name__ == '__main__':
 
     from random import choice
 
-    dataset = BernoulliDataset(10000, 10)
+    dataset = Bernoulli_Dataset(10000, 10)
 
     train, val = random_split(dataset, 0.1)
 

@@ -11,13 +11,15 @@ machine. Within this class, the sampling and training
 algorithms are defined.
 """
 
-import bm
-import utilities as util
-from unit import *
-from param import *
+import utilities.utilities as util
+from .unit import *
+from .param import *
+from .bm import *
+
+__all__  = ['RBM', 'RBM_no_Weight', "RBM_no_Bias"]
 
 
-class RBM(bm.General_Boltzmann_Machine):
+class RBM(General_Boltzmann_Machine):
     """docstring for RBM"""
     def __init__(self, n_visible, n_hidden,
                  v_kind="bernoulli",
@@ -113,7 +115,7 @@ class RBM(bm.General_Boltzmann_Machine):
 
         return units
 
-class RBM_no_Weight(bm.General_Boltzmann_Machine):
+class RBM_no_Weight(General_Boltzmann_Machine):
     """docstring for RBM"""
     def __init__(self, n_visible, n_hidden,
                  v_kind="bernoulli",
@@ -134,13 +136,13 @@ class RBM_no_Weight(bm.General_Boltzmann_Machine):
     def __copy__(self):
         scale = 0.01
         p = None
-        bm = RBM_no_Weights(self.n_visible, self.n_hidden, self.v_kind,
+        rbm_nw = RBM_no_Weight(self.n_visible, self.n_hidden, self.v_kind,
                  self.p, self.use_cuda)
 
-        for k in bm.params:
-            bm.params[k].value = self.params[k].value.clone()
+        for k in rbm_nw.params:
+            rbm_nw.params[k].value = self.params[k].value.clone()
 
-        return bm
+        return rbm_nw
 
 
     # Sampling methods
@@ -209,7 +211,7 @@ class RBM_no_Weight(bm.General_Boltzmann_Machine):
         return val
 
 
-class RBM_no_Bias(bm.General_Boltzmann_Machine):
+class RBM_no_Bias(General_Boltzmann_Machine):
     """docstring for RBM"""
     def __init__(self, n_visible, n_hidden,
                  v_kind="bernoulli",
@@ -232,13 +234,13 @@ class RBM_no_Bias(bm.General_Boltzmann_Machine):
     def __copy__(self):
         scale = 0.01
         p = None
-        bm = RBM_no_Bias(self.n_visible, self.n_hidden, self.v_kind,
+        rbm_nb = RBM_no_Bias(self.n_visible, self.n_hidden, self.v_kind,
                  self.scale, self.use_cuda)
 
-        for k in bm.params:
-            bm.params[k].value = self.params[k].value.clone()
+        for k in rbm_nb.params:
+            rbm_nb.params[k].value = self.params[k].value.clone()
 
-        return bm
+        return rbm_nb
 
 
     # Sampling methods

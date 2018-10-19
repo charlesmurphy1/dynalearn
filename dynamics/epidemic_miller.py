@@ -15,7 +15,11 @@ import EoN
 from random import sample
 from math import ceil
 import numpy as np
-from DynamicalNetwork import *  
+
+from .dynamical_network import *
+
+__all__ = ['SISNetwork_miller', 'SISNetwork_miller_discrete',
+           'SIRNetwork_miller', 'SISNetwork_miller_discrete']
 
 class SISNetwork_miller(DynamicalNetwork):
     """docstring for SISNetwork_miller_discrete"""

@@ -17,6 +17,8 @@ import numpy as np
 MIN_VALUE = -80
 MAX_VALUE = 80
 
+__all__ = ['Param', 'Weight', 'Bias', 'Empty_Bias']
+
 class Param(object):
     """docstring for Param"""
     def __init__(self, key, p_kind, use_cuda=False):

@@ -13,11 +13,32 @@ Defines DynamicalNetwork sub-classes for epidemic spreading dynamics.
 import numpy as np
 from math import ceil
 from random import sample, random
-from DynamicalNetwork import *
 
+from .dynamical_network import *
+
+__all__ = ['SISNetwork', 'SIRNetwork']
 
 class SISNetwork(DynamicalNetwork):
-    """docstring for SISNetwork"""
+    """
+        Class for SIS dynamical network.
+
+        **Parameters**
+        graph : nx.Graph
+            A graph on which the dynamical process occurs.
+
+        rate : Float
+            Normalized infection rate.
+
+        init_active : Float
+            Initial fraction of infected nodes.
+
+        dt : Float : (default = ``0.01``)
+            Time step.
+
+        filename : String : (default = ``None``)
+            Name of file for saving activity states. If ``None``, it does not save the states.
+
+    """
     def __init__(self, graph, rate, init_active=0.01, dt=0.01,
                  filename=None, full_data_mode=False):
 

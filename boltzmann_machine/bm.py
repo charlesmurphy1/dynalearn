@@ -12,12 +12,14 @@ the sampling algorithms are defined.
 
 
 import torch
-from unit import *
-from param import *
+from .unit import *
+from .param import *
 from copy import copy
-from utilities import log_mean_exp, log_std_exp
+from utilities.utilities import log_mean_exp, log_std_exp
 from math import log
 import numpy as np
+
+__all__ = ['General_Boltzmann_Machine']
 
 class General_Boltzmann_Machine(object):
 	"""docstring for General_Boltzmann_Machine"""
