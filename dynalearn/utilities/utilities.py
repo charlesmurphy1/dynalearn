@@ -9,6 +9,7 @@ Quebec, Canada
 Defines a variety of useful functions for bm use and training.
 """
 
+import os
 import torch
 import numpy as np
 from scipy.interpolate import interp1d
@@ -148,3 +149,29 @@ def count_units(dataset):
 def running_mean(x, N):
     cumsum = np.cumsum(np.insert(x, 0, 0)) 
     return (cumsum[N:] - cumsum[:-N]) / float(N)
+
+
+def increment_filename(path, name, ext):
+    for filename in os.listdir(path):
+            if filename.startswith(name):
+                is_not_finished = True
+                i = 0
+                while(is_not_finished):
+                    f = os.path.join(path, f"{name}_{i}.{ext}")
+                    if os.path.exists(f):
+                        i+= 1
+                    else:
+                        name += f"_{i}"
+                        is_not_finished = False
+
+    return name
+
+
+if __name__ == '__main__':
+    path = "."
+    name = "test"
+    ext = "mcf"
+
+    new_name = increment_filename(path, name, ext)
+
+    print(new_name)

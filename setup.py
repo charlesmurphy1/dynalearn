@@ -9,3 +9,5 @@ setup(name='dynalearn',
       license='MIT',
       packages=['boltzmann_machine', 'dynamics', 'history', 'trainer', 'utilities'],
       zip_safe=False)
+
+#requirement

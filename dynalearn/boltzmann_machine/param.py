@@ -62,7 +62,7 @@ class Param(object):
 
 class Weight(Param):
     """docstring for Weights"""
-    def __init__(self, units, init_scale=0.01):
+    def __init__(self, units, init_param, use_cuda):
 
         key = [units[0].key, units[1].key]
         p_kind = "weight"
@@ -72,7 +72,7 @@ class Weight(Param):
 
         self.value = torch.zeros(self.unit_size[0],
                                  self.unit_size[1])
-        self.init_value(init_scale)
+        self.init_value(init_param)
         
         if use_cuda:
             self.value = self.value.cuda()
@@ -138,7 +138,7 @@ class Weight(Param):
 
 class Bias(Param):
     """docstring for Bias"""
-    def __init__(self, unit, p=None):
+    def __init__(self, unit, init_param, use_cuda):
         p_kind = "bias"
         self.size = unit.size
         self.u_kind = unit.u_kind
@@ -151,7 +151,7 @@ class Bias(Param):
             self.energy_term = self.energy_gaussian
 
         self.value = torch.zeros(self.size)
-        self.init_value(p)
+        self.init_value(init_param)
 
         if use_cuda:
             self.value = self.value.cuda()
@@ -214,54 +214,6 @@ class Bias(Param):
 
     def size(self):
         return self.value.size()
-
-
-class Empty_Bias(Param):
-    """docstring for Empty_Bias"""
-    def __init__(self, unit):
-        p_kind = "empty_bias"
-        self.size = unit.size
-        self.u_kind = unit.u_kind
-        use_cuda = unit.use_cuda
-        self.unit = unit
-
-        self.value = torch.zeros(self.size)
-
-        if use_cuda:
-            self.value = self.value.cuda()
-
-        super(Empty_Bias, self).__init__(unit.key, p_kind, use_cuda=use_cuda)
-
-
-    def __repr__(self):
-        return "<bm.Param.Empty_Bias>"
-
-    def __copy__(self):
-        param_copy = Empty_Bias(self.unit)
-
-        return param_copy
-
-    def init_value(self):
-
-        return 0
-
-
-    def phase(self, units):
-        return torch.zeros(self.size)
-
-
-    def mean_term(self, units, key):
-        batchsize = units[self.key].batchsize
-        return torch.zeros(batchsize, self.size)
-
-
-    def energy_term(self, units):
-        batchsize = units[self.key].batchsize
-        return torch.zeros(batchsize)
-
-
-    def size(self):
-        return self.size
 
 
 if __name__ == '__main__':

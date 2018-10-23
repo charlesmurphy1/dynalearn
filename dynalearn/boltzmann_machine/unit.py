@@ -18,13 +18,34 @@ __all__ = ['Unit_info', 'Unit']
 
 
 class Unit_info(object):
-    """docstring for Unit_info"""
+    """
+    Class containing unit information.
+
+    **Parameters**
+    key
+        Key to access unit.
+
+    size : Integer
+        Size of the unit.
+
+    u_kind : String
+        Kind of unit: (usually "visible" or "hidden")
+
+    s_kind : String (either = ["bernoulli", "gaussian"])
+        Kind of sampling to perform on the unit.
+
+    """
     def __init__(self, key, size, u_kind, s_kind="bernoulli"):
         super().__init__()
         self.key = key
         self.size = size
         self.u_kind = u_kind
-        self.s_kind = s_kind
+
+        if (s_kind is not "bernoulli") or (s_kind is not "gaussian"):
+            raise ValueError("s_kind in Unit_info.__init__() must be:\
+                            ['bernoulli', 'gaussian'].")
+        else:
+            self.s_kind = s_kind
 
 
     def __repr__(self):
@@ -32,16 +53,35 @@ class Unit_info(object):
 
 
     def __str__(self):
-        return "{0} {1} {2} {3}".format(self.key, self.size,
-                                        self.u_kind, self.s_kind)
-
-        
+        dict_info = {"key": self.key,
+                     "size": self.size,
+                     "u_kind": self.u_kind,
+                     "s_kind": self.s_kind}
+        return dict_info.__str__()      
 
 
 class Unit(object):
-    """docstring for Unit"""
-    def __init__(self, key, unit_info, batchsize,
-                 use_cuda=False):
+    """
+    Class defining a unit (unit group).
+
+    **Parameters**
+    key
+        Key to access unit.
+
+    unit_info : unit.Unit_info
+        Information of the unit.
+
+    batchsize : Integer
+        Size of the minibatch.
+
+    use_cuda : Bool (default = ``False``)
+        Using cuda for parallel GPU processing.
+
+    ..warning::
+        If ``True``, Nvidia GPU must be available.
+
+    """
+    def __init__(self, key, unit_info, batchsize, use_cuda=False):
         super().__init__()
 
         self.key = key
@@ -72,8 +112,6 @@ class Unit(object):
             self.sample = self.sample_gaussian
         else:
             raise ValueError("Wrong value of Unit s_kind.")
-        # elif self.s_kind == "multinomial":
-        #     self.sample = self.sample_multinomial
         
         self.value = torch.zeros([batchsize, self.size])
         self.init_value()
@@ -94,22 +132,54 @@ class Unit(object):
         return self.value.__str__()
 
     def init_value(self):
+        """
+        Initializes value of unit for random values.
+
+        """
         self.sample()
         return self.value
 
-    def log_p(self, mean=None):
+    def log_p(self, activation=None):
+        """
+        Computes the log-probability.
+        
+        **Parameters**
+        activation : torch.Tensor : (default = ``None``)
+            Activation of given unit values.
+        """
         raise NotImplementedError('self.probability() has not been implemented.')
         return 0
 
-    def sample(self, mean=None):
+    def sample(self, activation=None):
+        """
+        Samples the value of the unit.
+        
+        **Parameters**
+        activation : torch.Tensor : (default = ``None``)
+            Activation of given unit values.
+        """
         raise NotImplementedError('self.sample() has not been implemented.')
         return 0
 
-    def mean(self, mean=None):
+    def activation(self, mean=None):
+        """
+        Computes the mean (or activation) of given units.
+        
+        **Parameters**
+        mean : torch.Tensor : (default = ``None``)
+            Mean of given unit values.
+        """
         raise NotImplementedError('self.mean() has not been implemented.')
         return 0
 
     def log_p_bernoulli(self, mean=None):
+        """
+        Computes the log-probability for bernoulli units.
+        
+        **Parameters**
+        mean : torch.Tensor : (default = ``None``)
+            Mean of given unit values.
+        """
         if mean is None:
             mean = torch.zeros(self.value.size())
         if torch.any(self.value > 1):
@@ -117,19 +187,26 @@ class Unit(object):
         return mean * self.value - torch.log(1 + torch.exp(mean))
 
     def log_p_gaussian(self, mean=None):
+        """
+        Computes the log-probability for gaussian units.
+        
+        **Parameters**
+        mean : torch.Tensor : (default = ``None``)
+            Mean of given unit values.
+        """
         if mean is None:
             mean = torch.zeros(self.value.size())
         return -(self.value - mean)**2 - 0.5 * np.log(2 * np.pi)
 
 
-    def mean_bernoulli(self, mean=None):
+    def activation_bernoulli(self, mean=None):
         if mean is None:
             mean = torch.zeros(self.value.size())
 
         return util.sigmoid(mean)
 
 
-    def mean_gaussian(self, mean=None):
+    def activation_gaussian(self, mean=None):
         if mean is None:
             mean = torch.zeros(self.value.size())
 
@@ -146,15 +223,6 @@ class Unit(object):
         mean = self.mean(mean)
         self.value = torch.normal(mean)
 
-        return self.value
-    
-
-    def sample_multinomial(self, mean=None):
-        if mean is None:
-            mean = torch.zeros(self.value.size())
-        # p = torch.exp(mean)
-        # torch.multinomial(p, 1, True)
-        raise NotImplementedError('self.sample_multinomial() has not been implemented.')
         return self.value
 
 
