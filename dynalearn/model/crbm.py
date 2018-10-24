@@ -10,7 +10,7 @@ Defines the class CRBM which generate Conditional Restrited
 Boltzmann machine.
 """
 
-import utilities.utilities as util
+from ..utilities.utilities import sigmoid
 from .unit import *
 from .param import *
 from .bm import *
@@ -69,7 +69,7 @@ class CRBM(General_Boltzmann_Machine):
                      + self.params[("h", "c")].mean_term(units, "c") \
                      + self.params["h"].mean_term(units, "v")
 
-        return {"v":v_data[0], "c":v_data[1], "h":util.sigmoid(activation_h)}
+        return {"v":v_data[0], "c":v_data[1], "h":sigmoid(activation_h)}
 
 
     def sampler(self, num_steps, units=None, given="v"):
@@ -112,11 +112,7 @@ if __name__ == '__main__':
     batchsize = 1
     use_cuda = False
 
-    crbm = CRBM(n_visible, n_conditonal, n_hidden,
-                batchsize,
-                init_scale=init_scale,
-                p=p,
-                use_cuda=use_cuda)
+    crbm = CRBM(n_visible, n_conditonal, n_hidden)
 
     units = crbm.init_units()
     units = crbm.sampler(units, 10)

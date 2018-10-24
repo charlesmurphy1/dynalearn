@@ -11,8 +11,8 @@ Boltzmann machine for dynamical networks.
 """
 
 import bm
-import utilities as util
-from units import *
+from ..utilities import sigmoid
+from .units import *
 
 class DynNet_CRBM(bm.General_Boltzmann_Machine):
     """docstring for DynNet_CRBM"""
@@ -72,7 +72,7 @@ class DynNet_CRBM(bm.General_Boltzmann_Machine):
         act_h += self.params[("h", "np")].activation_term(units, "np")
         act_h += self.params["h"].activation_term(units, "x")
 
-        return util.sigmoid(act_h)
+        return sigmoid(act_h)
 
 
     def sample_inference(self, x, p, np):
@@ -101,7 +101,7 @@ class DynNet_CRBM(bm.General_Boltzmann_Machine):
             # print(act_h.size(), self.params["h"].activation_term(units, "x").size())
             act_h += self.params["h"].activation_term(units, "x")
 
-            prob_h = util.sigmoid(act_h)
+            prob_h = sigmoid(act_h)
             units["h"].value.bernoulli_(prob_h)
 
             # sampling visible units
@@ -110,7 +110,7 @@ class DynNet_CRBM(bm.General_Boltzmann_Machine):
             act_x += self.params[("x", "np")].activation_term(units, "np")
             act_x += self.params["x"].activation_term(units, None)
 
-            prob_x = util.sigmoid(act_x)
+            prob_x = sigmoid(act_x)
             units["x"].value.bernoulli_(prob_x)
 
         return units

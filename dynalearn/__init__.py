@@ -1,14 +1,16 @@
-from boltzmann_machine import *
-import dynalearn.boltzmann_machine
-
-from dynamics import *
+from .dynamics import *
 import dynalearn.dynamics
 
-from history import *
-import dynalearn.history
+from .model import *
+import dynalearn.model
 
-from trainer import *
+from .trainer import *
 import dynalearn.trainer
 
-__all__ = [ 'boltzmann_machine', 'dynamics',
-            'history', 'trainer']
+from .utilities import *
+import dynalearn.utilities
+
+# __all__ = [ 'model', 'dynamics',
+#             'history', 'trainer']
+
+__all__ = [ 'dynamics', 'model', 'trainer', 'utilities']

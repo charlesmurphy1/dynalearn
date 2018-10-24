@@ -8,8 +8,8 @@ Defines the class BM_trainer. This class generate training procedures for BMs.
 
 from copy import copy
 import torch
-from history import *
-from dataset import random_split, RandomSampler_with_length
+from .history import History
+from ..dynamics.dataset import random_split
 from random import choice
 import progressbar
 
@@ -23,7 +23,7 @@ class BM_trainer(object):
         self.model_name = model_name
 
         if history is None:
-            self.history = BM_History(None, None)
+            self.history = History(None, None)
         else:
             self.history = history
 
@@ -180,10 +180,10 @@ def layerwise_trainer(bm, train_dataset, n_epoch, num_steps=1, lr=None, verbose=
 
 
 if __name__ == '__main__':
-    from rbm import RBM, RBM_no_Weight, RBM_no_Bias
-    from dataset import BernoulliDataset, random_split
-    import utilities as util
-    from statistics import *
+    from model.rbm import RBM_BernoulliBernoulli
+    from ..dynamics.dataset import BernoulliDataset, random_split
+    from ..utilities.utilities import count_units
+    from .statistics import *
 
 
     n_visible = 100
@@ -196,7 +196,7 @@ if __name__ == '__main__':
     use_cuda = False
 
     complete_dataset = torch.cat(dataset.data)
-    p = util.count_units(dataset)
+    p = count_units(dataset)
     # p = None
 
     with_param = True
@@ -231,7 +231,7 @@ if __name__ == '__main__':
         if with_recon:
             statstics["recon"] = Reconstruction_MSE_Statistics(graining=50)
             eval_step["recon"] = "update"
-        h = BM_History(statstics, path)
+        h = History(statstics, path)
         bm_trainer = BM_trainer(bm, 1e-3,
                                 history=h,
                                 weight_decay=1e-4,
@@ -241,17 +241,9 @@ if __name__ == '__main__':
 
         bm_trainer.train(dataset, n_epoch, lr=lr, batchsize=32, save=True, show=False, num_steps=1, eval_step=eval_step)
 
-    # print("RBM Training\n============")
+
+    # print("RBM\n======================")
     # path = "testdata/rbm_training/"
-    # rbm = RBM(n_visible, n_hidden, batchsize, init_scale, p, use_cuda)
+    # rbm = RBM_BernoulliBernoulli(n_visible, n_hidden)
     # train(rbm, path)
 
-    print("RBM no weight Training\n======================")
-    path = "testdata/rbm_no_w_training/"
-    rbm_no_w = RBM_no_Weight(n_visible, n_hidden, batchsize, p, use_cuda)
-    train(rbm_no_w, path)
-
-    # print("RBM no bias Training\n======================")
-    # path = "testdata/rbm_no_b_training/"
-    # rbm_no_w = RBM_no_Bias(n_visible, n_hidden, batchsize, init_scale, use_cuda)
-    # train(rbm_no_w, path)

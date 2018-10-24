@@ -11,7 +11,7 @@ Defines the Unit.
 
 import torch
 import numpy as np
-import utilities.utilities as util
+from ..utilities.utilities import is_iterable, sigmoid
 
 
 __all__ = ['Unit_info', 'Unit']
@@ -85,7 +85,7 @@ class Unit(object):
         super().__init__()
 
         self.key = key
-        self.is_super = util.is_iterable(unit_info)
+        self.is_super = is_iterable(unit_info)
         self.unit_info = unit_info
         self.batchsize = batchsize
         self.use_cuda = use_cuda
@@ -203,7 +203,7 @@ class Unit(object):
         if mean is None:
             mean = torch.zeros(self.value.size())
 
-        return util.sigmoid(mean)
+        return sigmoid(mean)
 
 
     def activation_gaussian(self, mean=None):

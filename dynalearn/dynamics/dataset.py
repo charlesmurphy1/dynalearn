@@ -20,7 +20,7 @@ import numpy as np
 
 __all__ = ['Node_State_Dataset', 'Dynamical_Network_Dataset',
            'Normal_Dataset', 'Bernoulli_Dataset',
-           'Random_Sampler_with_length']
+           'Random_Sampler_with_length', 'random_split']
 
 class Node_State_Dataset(Dataset):
     """docstring for Node_State_Dataset"""

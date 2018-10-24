@@ -12,7 +12,11 @@ Defines a variety of useful functions for bm use and training.
 import os
 import torch
 import numpy as np
-from scipy.interpolate import interp1d
+
+__all__ = ['sigmoid', 'random_binary', 'is_iterable', 'get_bits',
+           'add_one_to_bits', 'add_one_to_bits_torch', 'log_sum_exp',
+           'log_mean_exp', 'log_diff_exp', 'log_std_exp', 'count_units',
+           'running_mean', 'increment_filename']
 
 def sigmoid(x):
 	return 1 / (1 + torch.exp(-x))

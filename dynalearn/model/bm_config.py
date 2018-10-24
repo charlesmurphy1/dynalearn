@@ -1,4 +1,4 @@
-import utilities as util
+from ..utilities.utilities import increment_filename
 
 class Model_Config(object):
     

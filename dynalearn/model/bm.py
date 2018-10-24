@@ -15,7 +15,7 @@ import torch
 from .unit import *
 from .param import *
 from copy import copy
-from utilities.utilities import log_mean_exp, log_std_exp
+from ..utilities.utilities import log_mean_exp, log_std_exp
 from math import log
 import numpy as np
 
@@ -30,7 +30,7 @@ class General_Boltzmann_Machine(object):
 		Dict of ``unit.Unit_info`` objects to create unit groups
 
 	params_info : Dict
-		Dict of param keys to create paramters. 
+		Dict of param keys to create parameters. 
 	..note::
 		Pairs of keys ``tuple(key1, key2)`` create ``param.Weight`` and sigle 
 		keys creates ``param.Bias``.
@@ -146,7 +146,8 @@ class General_Boltzmann_Machine(object):
 				if self.v_key is None:
 					self.v_key = k
 				else:
-					raise ValueError("There must be only one set of visible units")
+					raise ValueError("There must be only one set of visible \
+									  units")
 			if u.u_kind == "hidden":
 				self.h_keys.add(k)
 
@@ -285,8 +286,20 @@ class General_Boltzmann_Machine(object):
 
 
 	# Learning methods
-	def positive_phase(self, units):
+	def positive_phase(self, v):
+		"""
+		Computes the positive phase.
 
+		**Parameters**
+		v_data : torch.Tensor or Dict
+			Data of a minibatch. 
+
+		**Returns**
+		pos_phase : Dict
+			Dict of ``torch.Tensor`` objects resulting from the phase 
+			calculation whose keys are those of the parameters.
+
+		"""
 		units = self.inference(v)
 
 		pos_phase = {}
@@ -298,6 +311,20 @@ class General_Boltzmann_Machine(object):
 
 
 	def negative_phase(self, units, num_step):
+		"""
+		Computes the negative phase.
+
+		**Parameters**
+		units : Dict
+			Dict of ``unit.Unit`` objects from which the Markov chain starts. If
+			``None``, it uses persistent contrastive divergence.
+
+		**Returns**
+		neg_phase : Dict
+			Dict of ``torch.Tensor`` objects resulting from the phase 
+			calculation whose keys are those of the parameters.
+
+		"""
 		if units is None:
 			units = self.mc_units
 		units = self.sampler(units, num_step)
@@ -312,7 +339,10 @@ class General_Boltzmann_Machine(object):
 
 
 	def compute_log_Z(self):
+		"""
+		Computes the log parititon function with annealed importance sampling.
 
+		"""
 		beta = self.model_config.BETA
 		num_sample = self.model_config.NUM_SAMPLE
 
@@ -339,8 +369,18 @@ class General_Boltzmann_Machine(object):
 
 
 	def log_likelihood(self, v_data):
+		"""
+		Computes the log likelihood.
 
-		# Likelihood calculation
+		**Parameters**
+		v_data : torch.Tensor or Dict
+			Data of a minibatch. 
+
+		**Returns**
+		log_p : torch.Tensor
+
+		"""
+
 		log_Z = util.log_mean_exp(self.log_Z_values)
 		free_energy = self.free_energy(v_data)
 		log_p = - free_energy - log_Z
@@ -349,8 +389,18 @@ class General_Boltzmann_Machine(object):
 
 
 	def reconstruction_MSE(self, v_data):
+		"""
+		Computes the mean square error of the reconstruction.
 
-		# Mean square error on reconstruction
+		**Parameters**
+		v_data : torch.Tensor or Dict
+			Data of a minibatch. 
+
+		**Returns**
+		recon_mse : torch.Tensor
+
+		"""
+
 		mean_recon = self.reconstruction(v_data)
 		if util.is_iterable(v_data):
 			v = v_data[self.v_key]
@@ -362,17 +412,35 @@ class General_Boltzmann_Machine(object):
 		return torch.mean(recon_mse, 1)
 
 
-	def update_params(self, grad, lr, w=0):
+	def update_params(self, grad, lr, wd=0):
+		"""
+		Updates the parameters with given learning rate and weight decay.
+
+		**Parameters**
+		grad : Dict
+			Dict of ``torch.Tensor`` of the gradient of each parameters.
+
+		lr : Float
+			Learning rate.
+
+		wd : Float : (default = 0)
+			Weight decay.
+
+		"""
 
 		for k in self.params:
 			self.params[k].value += lr * grad[k]
 			if type(k) is tuple and w > 0:
-				self.params[k].value -= lr * w * self.params[k].value
+				self.params[k].value -= lr * wd * self.params[k].value
 
 		return 0
 
 
 	def save_params(self):
+		"""
+		Saves the parameters to the model config file.
+
+		"""
 		from os.path import join
 		
 		# always saved in cpu mode
@@ -388,6 +456,10 @@ class General_Boltzmann_Machine(object):
 
 
 	def load_params(self, fileloc):
+		"""
+		Loads the parameters from the model config file.
+
+		"""
 
 		params = torch.load(fileloc, map_location="cpu")
 

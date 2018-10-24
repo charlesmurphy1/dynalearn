@@ -6,7 +6,7 @@ Created by Charles Murphy on 26-06-18.
 Copyright © 2018 Charles Murphy. All rights reserved.
 Quebec, Canada
 
-Defines DynamicalNetwork sub-classes for epidemic spreading dynamics.
+Defines Dynamical_Network sub-classes for epidemic spreading dynamics.
 
 """
 
@@ -18,7 +18,7 @@ from .dynamical_network import *
 
 __all__ = ['SISNetwork', 'SIRNetwork']
 
-class SISNetwork(DynamicalNetwork):
+class SISNetwork(Dynamical_Network):
     """
         Class for SIS dynamical network.
 
@@ -110,7 +110,7 @@ class SISNetwork(DynamicalNetwork):
 
         
 
-class SIRNetwork(DynamicalNetwork):
+class SIRNetwork(Dynamical_Network):
     """docstring for SIRNetwork"""
     def __init__(self, g, rate, init_active=0.01, dt=0.01,
                  filename=None, full_data_mode=False):

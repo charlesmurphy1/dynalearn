@@ -17,7 +17,7 @@ import numpy as np
 MIN_VALUE = -80
 MAX_VALUE = 80
 
-__all__ = ['Param', 'Weight', 'Bias', 'Empty_Bias']
+__all__ = ['Param', 'Weight', 'Bias']
 
 class Param(object):
     """docstring for Param"""
@@ -261,4 +261,3 @@ if __name__ == '__main__':
     show_params("Weight", weight)
     show_params("Bias", bias_v)
     # show_params("Empty bias", empty_bias)
-

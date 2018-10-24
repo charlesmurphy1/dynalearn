@@ -11,23 +11,25 @@ machine. Within this class, the sampling and training
 algorithms are defined.
 """
 
-import utilities.utilities as util
+from ..utilities.utilities import sigmoid
 from .unit import *
 from .param import *
 from .bm import *
 
-__all__  = ['RBM_Bernoulli', 'RBM_Gauss']
+__all__  = ['RBM', 'RBM_BernoulliBernoulli', 'RBM_GaussBernoulli',
+            'RBM_GaussGauss']
 
 
 class RBM(General_Boltzmann_Machine):
     """docstring for RBM"""
-    def __init__(self, n_visible, n_hidden, model_config):
+    def __init__(self, n_visible, n_hidden, v_s_kind, h_s_kind,
+                 model_config=None):
         self.n_visible = n_visible
         self.n_hidden = n_hidden
         self.v_kind = v_kind
 
-        units_info = {"v": Unit_info("v", n_visible, "visible", "bernoulli"),
-                      "h": Unit_info("h", n_hidden, "hidden", "bernoulli")}
+        units_info = {"v": Unit_info("v", n_visible, "visible", v_s_kind),
+                      "h": Unit_info("h", n_hidden, "hidden", h_s_kind)}
         params_info = [("v", "h"), "v", "h"]
 
         super(RBM, self).__init__(units_info, params_info, model_config)
@@ -62,8 +64,8 @@ class RBM(General_Boltzmann_Machine):
         # print(units["v"])
         activation_h = self.params[("v","h")].mean_term(units, "v")
         activation_h += self.params["h"].mean_term(units, "v")
-
-        return self.init_units({"v": v, "h":util.sigmoid(activation_h)})
+        prob = torch.exp(units["h"].log_p(activation_h))
+        return self.init_units({"v": v, "h": prob})
 
     def conditional_log_p(self, v):
         
@@ -99,7 +101,7 @@ class RBM(General_Boltzmann_Machine):
             # sampling hidden unit
             activation_0 = self.params[("v","h")].mean_term(units, s_1)\
                          + self.params[s_0].mean_term(units, s_1)
-            # prob_0 = util.sigmoid(activation_0)
+            # prob_0 = sigmoid(activation_0)
             units[s_0].sample(activation_0)
 
             # sampling visible units
@@ -110,11 +112,31 @@ class RBM(General_Boltzmann_Machine):
         self.mc_units = units
 
         return units
-        
 
 
+class RBM_BernoulliBernoulli(RBM):
+    """docstring for RBM"""
+    def __init__(self, n_visible, n_hidden, model_config=None):
 
+        super(RBM_BernoulliBernoulli, self).__init__(units_info, params_info, 
+                                                     "bernoulli", "bernoulli",
+                                                     model_config)
 
+class RBM_GaussBernoulli(RBM):
+    """docstring for RBM"""
+    def __init__(self, n_visible, n_hidden, model_config=None):
+
+        super(RBM_GaussBernoulli, self).__init__(units_info, params_info, 
+                                                 "gaussian", "bernoulli",
+                                                 model_config)
+
+class RBM_GaussGauss(RBM):
+    """docstring for RBM"""
+    def __init__(self, n_visible, n_hidden, model_config=None):
+
+        super(RBM_GaussGauss, self).__init__(units_info, params_info, 
+                                             "gaussian", "bernoulli",
+                                             model_config)
 
 
 if __name__ == '__main__':
@@ -128,11 +150,7 @@ if __name__ == '__main__':
     batchsize = 1
     use_cuda = False
 
-    rbm = RBM(n_visible, n_hidden,
-              v_kind=v_kind,
-              init_scale=init_scale,
-              p=p,
-              use_cuda=use_cuda)
+    rbm = RBM_BernoulliBernoulli(n_visible, n_hidden)
 
     
     units = rbm.init_units(value_dict=None, batchsize=5)

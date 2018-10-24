@@ -19,7 +19,8 @@ class LogLikelihood_Statistics(Training_Statistics):
         Number of sample for the partition function estimation.
 
     betas : Integer : (default = ``None``)
-        Transition factors (inverse temperature) for annealed importance sampling during the partition function estimation.
+        Transition factors (inverse temperature) for annealed importance 
+        sampling during the partition function estimation.
 
     recompute : Integer : (default = ``False``)
         For recomputing the partition within the Training_Statistics object.
@@ -27,20 +28,22 @@ class LogLikelihood_Statistics(Training_Statistics):
     """
     def __init__(self, num_sample=10, betas=None, recompute=False,
                  strname="Log-likelihood", filename="log_likelihood",
-                 colors=None, ext=".png", graining=2, makeplot=False, precision=2):
+                 colors=None, ext=".png", graining=2, makeplot=False,
+                 precision=2):
         self.num_sample = num_sample
         self.betas = betas
         self.recompute = recompute
         super(LogLikelihood_Statistics, self).__init__(strname,
-                                                 filename,
-                                                 colors,
-                                                 ext,
-                                                 graining,
-                                                 makeplot,
-                                                 precision)
+                                                       filename,
+                                                       colors,
+                                                       ext,
+                                                       graining,
+                                                       makeplot,
+                                                       precision)
 
     def eval_statpoint(self, data, bm):
-        return bm.log_likelihood(data, self.num_sample, self.betas, self.recompute)
+        return bm.log_likelihood(data, self.num_sample, self.betas, 
+                              self.recompute)
 
     def is_better(self, update1, update2):
         return self.data["val"][update1] > self.data["val"][update2]
@@ -56,12 +59,14 @@ class Partition_Function_Statistics(Model_Statistics):
         Number of sample for the partition function estimation.
 
     betas : Integer : (default = ``None``)
-        Transition factors (inverse temperature) for annealed importance sampling during the partition function estimation.
+        Transition factors (inverse temperature) for annealed importance 
+        sampling during the partition function estimation.
 
     """
     def __init__(self, num_sample=10, betas=None,
                  strname="Partition function", filename="part_func",
-                 colors=None, ext=".png", graining=2, makeplot=False, precision=2):
+                 colors=None, ext=".png", graining=2, makeplot=False,
+                 precision=2):
         self.num_sample = num_sample
         self.betas = betas
         super(Partition_Function_Statistics, self).__init__(strname,
@@ -86,7 +91,8 @@ class Pseudolikelihood_Statistics(Training_Statistics):
 
     """
     def __init__(self, strname="Pseudolikelihood", filename="pseudo_likelihood",
-                 colors=None, ext=".png", graining=2, makeplot=False, precision=2):
+                 colors=None, ext=".png", graining=2, makeplot=False,
+                 precision=2):
         super(Pseudolikelihood_Statistics, self).__init__(strname,
                                                  filename,
                                                  colors,
@@ -114,7 +120,8 @@ class Free_Energies_Statistics(Training_Statistics):
 
     """
     def __init__(self, strname="Free energies", filename="free_energies",
-                 colors=None, ext=".png", graining=2, makeplot=False, precision=2):
+                 colors=None, ext=".png", graining=2, makeplot=False,
+                 precision=2):
         super(Free_Energies_Statistics, self).__init__(strname, 
                                                      filename,
                                                      colors, ext, 
@@ -144,16 +151,19 @@ class Free_Energies_Statistics(Training_Statistics):
 
         ## Free energy
         ### Complete plots
-        self.ax.plot(update_estimate, train_estimate, marker='None', linestyle='-',
-                     color=self.colors[0], lw=1, alpha=0.4)
-        self.ax.plot(update_estimate, val_estimate, marker='None', linestyle='-',
-                     color=self.colors[1], lw=1, alpha=0.4)
+        self.ax.plot(update_estimate, train_estimate, marker='None',
+                      linestyle='-', color=self.colors[0], lw=1, alpha=0.4)
+        self.ax.plot(update_estimate, val_estimate, marker='None',
+                      linestyle='-', color=self.colors[1], lw=1, alpha=0.4)
 
         ### Coarse-grained plots
-        self.ax.plot(update_estimate[:1-self.graining], util.running_mean(train_estimate, self.graining), marker='None', linestyle='-',
-                     color=self.colors[0], lw=2, alpha=0.8)
-        self.ax.plot(update_estimate[:1-self.graining], util.running_mean(val_estimate, self.graining), marker='None', linestyle='-',
-                     color=self.colors[1], lw=2, alpha=0.8)
+        run_mean_train = util.running_mean(train_estimate, self.graining)
+        run_mean_val = util.running_mean(val_estimate, self.graining)
+        run_mean_update = update_estimate[:1 - self.graining]
+        self.ax.plot(run_mean_update, run_mean_train, marker='None',
+                     linestyle='-', color=self.colors[0], lw=2, alpha=0.8)
+        self.ax.plot(run_mean_update, run_mean_train, marker='None',
+                     linestyle='-', color=self.colors[1], lw=2, alpha=0.8)
         self.ax.set_xlim([0, max(update_estimate)])
         self.ax.set_ylim([min_val, max_val])
 
@@ -168,8 +178,9 @@ class Free_Energies_Statistics(Training_Statistics):
         axx.plot(update_estimate, gap_estimate, marker='None', linestyle='-',
                      color=self.cm(0.5), lw=1, alpha=0.4)
         ### Coarse-grained plots
-        axx.plot(update_estimate[:1-self.graining], util.running_mean(train_estimate - val_estimate, self.graining), marker='None', linestyle='-',
-                     color=self.cm(0.5), lw=2, alpha=0.8)
+        axx.plot(update_estimate[:1-self.graining], run_mean_train-run_mean_val,
+                     marker='None', linestyle='-', color=self.cm(0.5), lw=2,
+                     alpha=0.8)
 
         axx.set_xlim([0, max(update_estimate)])
         axx.set_ylim([min(gap_estimate), max(gap_estimate)])
@@ -185,20 +196,24 @@ class Free_Energies_Statistics(Training_Statistics):
         for t, l in self.data["val"].items():
             val_data.append(l)
 
-        self.ax.plot(update_data, train_data, marker='o', markeredgewidth=1., markeredgecolor="k", linestyle='-',
-                     color=self.colors[0], lw=1., alpha=1)
-        self.ax.plot(update_data, val_data, marker='o', markeredgewidth=1., markeredgecolor="k", linestyle='-',
-                     color=self.colors[1], lw=1., alpha=1)
+        self.ax.plot(update_data, train_data, marker='o', markeredgewidth=1.,
+                     markeredgecolor="k", linestyle='-', color=self.colors[0],
+                     lw=1., alpha=1)
+        self.ax.plot(update_data, val_data, marker='o', markeredgewidth=1.,
+                     markeredgecolor="k", linestyle='-', color=self.colors[1],
+                     lw=1., alpha=1)
         train_data = np.array(train_data)
         val_data = np.array(val_data)
-        axx.plot(update_data, train_data - val_data, marker='o', markeredgewidth=1., markeredgecolor="k", linestyle='-',
-                     color=self.cm(0.5), lw=1., alpha=1)
+        axx.plot(update_data, train_data - val_data, marker='o',
+                 markeredgewidth=1., markeredgecolor="k", linestyle='-',
+                 color=self.cm(0.5), lw=1., alpha=1)
+                     
 
 
         if best is not None:
             np.arr = np.linspace(min_val, max_val, 100)
-            self.ax.plot(best*np.ones(100), np.arr, marker='None', linestyle='--',
-                     color="grey", lw=2, alpha=0.5)
+            self.ax.plot(best*np.ones(100), np.arr, marker='None',
+                         linestyle='--', color="grey", lw=2, alpha=0.5)
 
         axx.set_ylabel("Gap")
         # axx.set_ylabel("Gap", color=self.cm(0.5))
@@ -210,7 +225,9 @@ class Free_Energies_Statistics(Training_Statistics):
                                   color=self.colors[1], lw=2),
                            Line2D([0], [0], marker='None', linestyle='--',
                                   color="grey", lw=2)]
-        self.ax.legend(legend_linetype, [r"Training", r"Validation", r"Best epoch"])
+        self.ax.legend(legend_linetype,
+                       [r"Training", r"Validation", r"Best epoch"]
+                       )
 
         if path is not None:
             self.fig.savefig(path + self.filename + self.ext)
@@ -218,11 +235,13 @@ class Free_Energies_Statistics(Training_Statistics):
 
 class Reconstruction_MSE_Statistics(Training_Statistics):
     """
-    Statistics for the reconstruction mean square error of a Boltzmann machine samples.
+    Statistics for the reconstruction mean square error of a Boltzmann machine 
+    samples.
 
     """
     def __init__(self, strname="Recon. MSE", filename="recon_mse",
-                 colors=None, ext=".png", graining=2, makeplot=False, precision=4):
+                 colors=None, ext=".png", graining=2, makeplot=False,
+                 precision=4):
         super(Reconstruction_MSE_Statistics, self).__init__(strname,
                                                             filename,
                                                             colors,
@@ -242,8 +261,10 @@ class Reconstruction_MSE_Statistics(Training_Statistics):
 class Gradient_Statistics(Distribution_Statistics):
     """
     Statistics for the gradient distribution of a Boltzmann machine parameters.
+
     """
-    def __init__(self, param_key, nbins=100, colors=None, ext=".png", makeplot=False, precision=3):
+    def __init__(self, param_key, nbins=100, colors=None, ext=".png",
+                 makeplot=False, precision=3):
         self.key = param_key
         if type(self.key) is tuple:
             strname = r"Gradient $\Delta W_{"+self.key[0]+self.key[1]+r"}$"
@@ -280,8 +301,10 @@ class Gradient_Statistics(Distribution_Statistics):
 class Parameter_Statistics(Distribution_Statistics):
     """
     Statistics for the parameters distribution of a Boltzmann machine.
+
     """
-    def __init__(self, param_key, nbins=100, colors=None, ext=".png", makeplot=False, precision=3):
+    def __init__(self, param_key, nbins=100, colors=None, ext=".png",
+                 makeplot=False, precision=3):
 
         self.key = param_key
         if type(self.key) is tuple:
