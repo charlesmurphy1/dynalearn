@@ -1,2 +1,2 @@
 # dynalearn
-Boltzmann machine framework for dynamics on network learning.
+A Python framework for dynamics on network learning based using Boltzmann machine in PyTorch.
