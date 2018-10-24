@@ -1,0 +1,13 @@
+
+# Data extension
+*.pt
+*.txt
+
+# Figure format
+*.pdf
+*.png
+*.jpg
+
+# Sublime-text extension
+*.sublime-project
+*.sublime-workspace
