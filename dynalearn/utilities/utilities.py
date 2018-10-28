@@ -16,7 +16,7 @@ import numpy as np
 __all__ = ['sigmoid', 'random_binary', 'is_iterable', 'get_bits',
            'add_one_to_bits', 'add_one_to_bits_torch', 'log_sum_exp',
            'log_mean_exp', 'log_diff_exp', 'log_std_exp', 'count_units',
-           'running_mean', 'increment_filename']
+           'exp_mov_avg', 'increment_filename']
 
 def sigmoid(x):
 	return 1 / (1 + torch.exp(-x))
@@ -132,11 +132,12 @@ def log_std_exp(x, log_mean_exp_x=None):
     5.875416...
     """
     x = np.asarray(x)
-    m = log_mean_exp_x
-    if m is None:
-        m = log_mean_exp(x)
-    M = log_mean_exp(2. * x)
-    return 0.5 * log_diff_exp([2. * m, M])[0]
+    m1 = log_mean_exp_x
+    if m1 is None:
+        m1 = log_mean_exp(x)
+    m2 = log_mean_exp(2. * x)
+
+    return 0.5 * log_diff_exp([2. * m1, m2])[0] 
 
 
 def count_units(dataset):
@@ -150,9 +151,13 @@ def count_units(dataset):
     return p
 
 
-def running_mean(x, N):
-    cumsum = np.cumsum(np.insert(x, 0, 0)) 
-    return (cumsum[N:] - cumsum[:-N]) / float(N)
+def exp_mov_avg(x, graining):
+    # cumsum = np.cumsum(np.insert(x, 0, 0)) 
+    # return (cumsum[N:] - cumsum[:-N]) / float(N)
+    s = np.array([x[0]]*len(x))
+    for i, xx in enumerate(x[1:]):
+        s[i+1] = graining*xx + (1 - graining)*s[i]
+    return s
 
 
 def increment_filename(path, name, ext):

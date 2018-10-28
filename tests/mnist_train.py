@@ -1,11 +1,15 @@
 from torchvision.datasets import MNIST
+import torch
 import progressbar
+import os
 import numpy as np
-from crbm import *
-from rbm import *
-from statistics import *
-from history import *
-from bm_trainer import *
+import matplotlib.pyplot as plt
+
+from dynalearn.model.rbm import *
+from dynalearn.model.config import *
+from dynalearn.trainer.bm_trainer import *
+from dynalearn.trainer.history import *
+from dynalearn.trainer.bm_statistics import *
 
 def load_data(num_data=-1, verbose=False, normalize=False, mean=0., scale=1., numbers=-1):
 	dataset = MNIST("testdata/mnist", download=True)
@@ -76,73 +80,46 @@ def load_data(num_data=-1, verbose=False, normalize=False, mean=0., scale=1., nu
 
 	return formated_dataset, labels, mean, scale 
 
-def train(bm, path, dataset, n_epoch=10, patience=2, batchsize=32,
-		  lr_min=1e-6, lr_max=1e-3, weight_decay=1e-4, momentum=0.,
-		  save=False,
-		  show=False,
-		  num_steps=1,
-		  val_prop = 0.08,
-		  eval_step=1,
-		  with_param=True,
-		  with_grad=True,
-		  with_logp=True,
-		  with_partfunc=True,
-		  with_pseudo=True,
-		  with_free_energy=True,
-		  with_recon=True):
 
+def setup_history(config, bm,
+				  with_param=True,
+				  with_grad=False,
+				  with_logp=False,
+				  with_partfunc=False,
+				  with_pseudo=True,
+				  with_free_energy=True,
+				  with_recon=True):
+	graining = config.GRAINING
+	makeplot = config.MAKEPLOT
 	statstics = {}
-	eval_step = {}
 	if with_param:
 		for k in bm.params:
-			statstics[("param", k)] = Parameter_Statistics(k, makeplot=True)
-			eval_step[("param", k)] = 1
+			statstics[("param", k)] = Parameter_Statistics(k, makeplot=makeplot)
 
 	if with_grad:
 		for k in bm.params:
-			statstics[("grad", k)] = Gradient_Statistics(k, makeplot=True)
-			eval_step[("grad", k)] = 1
+			statstics[("grad", k)] = Gradient_Statistics(k, makeplot=makeplot)
 
 	if with_logp:
-		statstics["log-p"] = LogLikelihood_Statistics(recompute=False,
-													  graining=50,
-													  makeplot=True)
-		eval_step["log-p"] = "update"
+		statstics["log-p"] = LogLikelihood_Statistics(graining=graining,
+													  makeplot=makeplot)
 
 	if with_partfunc:
-		statstics["partfunc"] = Parition_Function_Statistics(makeplot=True)
-		eval_step["partfunc"] = 1
+		statstics["partfunc"] = Partition_Function_Statistics(makeplot=makeplot)
 
-	if with_pseudo:
-		statstics["pseudo"] = Pseudolikelihood_Statistics(graining=50,
-														  makeplot=True)
-		eval_step["pseudo"] = "update"
 
 	if with_free_energy:
-		statstics["free_energy"] = Free_Energies_Statistics(graining=50,
-															makeplot=True)
-		eval_step["free_energy"] = "update"
+		statstics["free_energy"] = Free_Energies_Statistics(graining=graining,
+															makeplot=makeplot)
 
 	if with_recon:
-		statstics["recon"] = Reconstruction_MSE_Statistics(graining=50,
-														   makeplot=True)
-		eval_step["recon"] = "update"
+		statstics["recon"] = Reconstruction_MSE_Statistics(graining=graining,
+														   makeplot=makeplot)
 
-	criterion = Reconstruction_MSE_Statistics(graining=50,
+
+	criterion = Reconstruction_MSE_Statistics(graining=graining,
                                               makeplot=False)
-	history = BM_History(statstics, criterion, path)
-	bm_trainer = BM_trainer(bm, "minst_rbm", history=history,
-							weight_decay=weight_decay,
-							momentum=momentum)
-
-	lr = [lr_max / (i + 1) + (i + 1) / n_epoch * lr_min for i in range(n_epoch)]
-
-	bm_trainer.train(dataset, val_dataset=None, n_epoch=n_epoch, patience=patience,
-					 batchsize=batchsize, keep_best=True, lr=lr, num_steps=num_steps,
-					 val_prop=val_prop, eval_step=eval_step, save=save, show=show,
-					 path=path, verbose=True)
-
-	return 0
+	return History(statstics, criterion, config.PATH_TO_STAT)
 
 
 def plot_number(imag, ax):
@@ -159,7 +136,6 @@ def plot_number(imag, ax):
 
 def test_rbm(rbm, examples, steps=10, intermediate=10):
 
-	print(steps, len(examples))
 	fig, ax = plt.subplots(steps + 1, len(examples) + 1)
 
 	for i, l in enumerate(examples):
@@ -178,13 +154,14 @@ def test_rbm(rbm, examples, steps=10, intermediate=10):
 			num_steps = intermediate**j - num_steps
 			units = rbm.sampler(units, num_steps, given="v")
 
-			imag = np.resize(units["v"].value.numpy(), [28, 28])
+			imag = np.resize(units["v"].data.numpy(), [28, 28])
 			plot_number(imag, ax[j, i])
 			if i == 0:
 				ax[j, i].set_ylabel(str(intermediate**(j-1)))
 
+
 	units = rbm.init_units()
-	imag = np.resize(units["v"].value.numpy(), [28, 28]) 
+	imag = np.resize(units["v"].data.numpy(), [28, 28]) 
 	plot_number(imag, ax[0, -1])
 	num_steps = 0
 	for j in range(1, steps + 1):
@@ -192,12 +169,12 @@ def test_rbm(rbm, examples, steps=10, intermediate=10):
 		num_steps = intermediate**j - num_steps
 		units = rbm.sampler(units, num_steps, given="v")
 
-		imag = np.resize(units["v"].value.numpy(), [28, 28]) 
+		imag = np.resize(units["v"].data.numpy(), [28, 28]) 
 		plot_number(imag, ax[j, -1])
 		
 
 	fig.savefig("./mnist_test/test_from_model.png")
-	plt.show()
+	# plt.show()
 
 
 
@@ -208,45 +185,46 @@ def main():
 	# Loading data
 	normalize = False
 	verbose = True
-	n_data = 60000
-	n_epoch = 50
-	patience = 3
+	n_data = 600
 	numbers = -1
-	dataset, labels, mean, scale = load_data(n_data, False, normalize, numbers=numbers)
+	dataset, labels, mean, scale = load_data(n_data, False, normalize, 
+											 numbers=numbers)
 
 	# Making RBM
 	n_visible = 28 * 28 # number of pixels in MNIST examples
-	n_hidden = 150
-	init_scale = 0.01
-	p = None
-	batchsize = 16
-	use_cuda = True
+	n_hidden = 100
+	batchsize = 8
+	lr = 1e-3
+	wd = 0.
+	val_size = 0.1
+	numsteps = 10
+	numepochs = 20
 
-	rbm = RBM(n_visible, n_hidden,
-			  v_kind="bernoulli",
-			  init_scale=init_scale,
-			  p=p,
-			  use_cuda=use_cuda)
+	config = Config(# Model config
+					path_to_model='./mnist_test', model_name='mnist_model',
+					batchsize=batchsize,
+                	# Training config
+					lr=lr, wd=wd, val_size=val_size, numsteps=numsteps,
+					numepochs=numepochs, with_pcd=True, makeplot=True,
+					path_to_stat='./mnist_test', graining=0.05,
+                 	)
+
+
+	rbm = RBM_BernoulliBernoulli(n_visible, n_hidden, config)
+	history = setup_history(config, rbm,
+							with_param=True,
+							with_grad=False,
+							with_logp=False,
+							with_partfunc=False,
+							with_free_energy=True,
+							with_recon=True)
 	print("Training phase: {} examples\n---------------".format(len(dataset)))
-	train(rbm, "./mnist_test/", dataset, n_epoch=n_epoch, patience=patience, 
-		  batchsize=batchsize, lr_min=1e-3, lr_max=1e-2, weight_decay=1e-3, 
-		  momentum=0.9,
-		  save=True, show=False,
-		  num_steps=10,
-		  val_prop=0.01,
-		  eval_step=1,
-		  with_param=True,
-		  with_grad=False,
-		  with_logp=True,
-		  with_partfunc=True,
-		  with_pseudo=True,
-		  with_free_energy=True,
-		  with_recon=True)
+	trainer = BM_trainer(rbm, history, config)
+	trainer.train(dataset)
 
 	print("Testing phase\n-------------")
-
-	rbm.load_params("./mnist_test/best_minst_rbm.pt")
-
+	rbm.load_params(os.path.join(config.PATH_TO_MODEL, config.MODEL_NAME+".pt"))
+	
 	if numbers == -1:
 		numbers = list(range(10))
 	examples = {}

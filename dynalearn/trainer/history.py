@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import os
 
+
 __all__ = ['History']
 
 class History(object):
@@ -19,7 +20,7 @@ class History(object):
     path : String : (default = ``None``)
         Path where to save all statstics. If ``None``, it does not save files.
     """
-    def __init__(self, statistics=None, criterion=None, path=None):
+    def __init__(self, statistics=None, criterion=None, path_to_stat=None):
         """
         Initialize History object.
         """
@@ -34,9 +35,10 @@ class History(object):
                 break
 
         self.best_update = 0
-        self.path = path
+        self.best_params = {}
+        self.path = path_to_stat
 
-        if (path is not None) and (not os.path.exists(self.path)):
+        if (self.path is not None) and (not os.path.exists(self.path)):
             os.makedirs(self.path)
 
 
@@ -107,6 +109,7 @@ class History(object):
         """
         for k in self.statistics:
             self.statistics[k].evaluate(update, data, bm)
+
 
 
     def estimate_stats(self, update, data, bm):

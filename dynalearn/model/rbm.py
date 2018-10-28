@@ -11,6 +11,8 @@ machine. Within this class, the sampling and training
 algorithms are defined.
 """
 
+import torch
+
 from ..utilities.utilities import sigmoid
 from .unit import *
 from .param import *
@@ -23,147 +25,91 @@ __all__  = ['RBM', 'RBM_BernoulliBernoulli', 'RBM_GaussBernoulli',
 class RBM(General_Boltzmann_Machine):
     """docstring for RBM"""
     def __init__(self, n_visible, n_hidden, v_s_kind, h_s_kind,
-                 model_config=None):
+                 config=None):
         self.n_visible = n_visible
         self.n_hidden = n_hidden
-        self.v_kind = v_kind
 
-        units_info = {"v": Unit_info("v", n_visible, "visible", v_s_kind),
-                      "h": Unit_info("h", n_hidden, "hidden", h_s_kind)}
-        params_info = [("v", "h"), "v", "h"]
+        units_info = {'v': Unit_info('v', n_visible, "visible", v_s_kind),
+                      'h': Unit_info('h', n_hidden, "hidden", h_s_kind)}
+        params_info = ['vh', 'v', 'h']
 
-        super(RBM, self).__init__(units_info, params_info, model_config)
-
-
-    def __copy__(self):
-        scale = 0.01
-        p = None
-        rbm = RBM(self.n_visible, self.n_hidden, self.v_kind,
-                 scale, p, self.use_cuda)
-
-        for k in rbm.params:
-            rbm.params[k].value = self.params[k].value.clone()
-
-        return rbm
+        super(RBM, self).__init__(units_info, params_info, config)
 
 
     # Sampling methods
     def free_energy(self, v):
-        units = self.init_units({"v": v})
-        activation_h = self.params[("v", "h")].mean_term(units, "v") + \
-                       self.params["h"].mean_term(units, "v")
+        
+        units = self.init_units({'v': v})
+        activation_h = self.params['vh'].mean_term(units, 'v') + \
+                       self.params['h'].mean_term(units, 'v')
 
-        freeenergy = self.params["v"].energy_term(units) - \
+        freeenergy = self.params['v'].energy_term(units) - \
                    torch.sum(torch.log(1 + torch.exp(activation_h)), 1)
-        return freeenergy
+        return freeenergy.mean()
 
         
     def inference(self, v):
-        units = self.init_units({"v": v})
-
-        # print(units["v"])
-        activation_h = self.params[("v","h")].mean_term(units, "v")
-        activation_h += self.params["h"].mean_term(units, "v")
-        prob = torch.exp(units["h"].log_p(activation_h))
-        return self.init_units({"v": v, "h": prob})
-
-    def conditional_log_p(self, v):
         
-        units = self.init_units({"v": v})
-        result = {}
+        units = self.init_units({'v': v})
 
-        # hidden unit
-        activation_h = self.params["h"].mean_term(units, "v")
-        result["h"] = units["h"].log_p(activation_h)
-        units["h"].sample(activation_h)
+        activation_h = self.params['vh'].mean_term(units, 'v') + \
+                       self.params['h'].mean_term(units, 'v')
+        prob = torch.exp(units['h'].log_p(activation_h)).detach()
 
-        # visible units
-        activation_v = self.params["v"].mean_term(units, "h")
-        result["v"] = units["v"].log_p(activation_v)
+        val = {'v': v, 'h': prob}
+        return val
 
-        return result
+    def sampler(self, units, numsteps, given='v', with_pcd=False):
 
-
-    def sampler(self, num_steps, units=None, given="v"):
-
-        if units is None:
+        if with_pcd:
             units = self.mc_units
 
-        if given != "v":
-            s_0 = "v"
-            s_1 = "h"
+        v = units["v"].data.clone()
+        if given != 'v':
+            s_0 = 'v'
+            s_1 = 'h'
         else:
-            s_0 = "h"
-            s_1 = "v"
+            s_0 = 'h'
+            s_1 = 'v'
 
-
-        for i in range(num_steps):
+        for i in range(numsteps):
             # sampling hidden unit
-            activation_0 = self.params[("v","h")].mean_term(units, s_1)\
+            activation_0 = self.params['vh'].mean_term(units, s_1)\
                          + self.params[s_0].mean_term(units, s_1)
-            # prob_0 = sigmoid(activation_0)
             units[s_0].sample(activation_0)
 
             # sampling visible units
-            activation_1 = self.params[("v","h")].mean_term(units, s_0)\
+            activation_1 = self.params['vh'].mean_term(units, s_0)\
                          + self.params[s_1].mean_term(units, s_0)
             units[s_1].sample(activation_1)
 
         self.mc_units = units
+
 
         return units
 
 
 class RBM_BernoulliBernoulli(RBM):
     """docstring for RBM"""
-    def __init__(self, n_visible, n_hidden, model_config=None):
+    def __init__(self, n_visible, n_hidden, config=None):
 
-        super(RBM_BernoulliBernoulli, self).__init__(units_info, params_info, 
+        super(RBM_BernoulliBernoulli, self).__init__(n_visible, n_hidden, 
                                                      "bernoulli", "bernoulli",
-                                                     model_config)
+                                                     config)
 
 class RBM_GaussBernoulli(RBM):
     """docstring for RBM"""
-    def __init__(self, n_visible, n_hidden, model_config=None):
+    def __init__(self, n_visible, n_hidden, config=None):
 
-        super(RBM_GaussBernoulli, self).__init__(units_info, params_info, 
+        super(RBM_GaussBernoulli, self).__init__(n_visible, n_hidden, 
                                                  "gaussian", "bernoulli",
-                                                 model_config)
+                                                 config)
 
 class RBM_GaussGauss(RBM):
     """docstring for RBM"""
-    def __init__(self, n_visible, n_hidden, model_config=None):
+    def __init__(self, n_visible, n_hidden, config=None):
 
-        super(RBM_GaussGauss, self).__init__(units_info, params_info, 
+        super(RBM_GaussGauss, self).__init__(n_visible, n_hidden, 
                                              "gaussian", "bernoulli",
-                                             model_config)
+                                             config)
 
-
-if __name__ == '__main__':
-    
-    n_visible = 5
-    n_hidden = 1
-    init_scale = 0.01
-    # v_kind = "bernoulli"
-    v_kind = "gaussian"
-    p = None
-    batchsize = 1
-    use_cuda = False
-
-    rbm = RBM_BernoulliBernoulli(n_visible, n_hidden)
-
-    
-    units = rbm.init_units(value_dict=None, batchsize=5)
-    print(units["v"], units["h"], torch.mean(units["v"].value))
-    print(rbm.conditional_log_p(units["v"].value))
-
-    # rbm_no_w = RBM_no_Weight(n_visible, n_hidden,
-    #                       v_kind=v_kind,
-    #                       p=p,
-    #                       use_cuda=use_cuda)
-
-    # units = rbm_no_w.sampler(None, 10, "v")
-    # print(units["v"], units["h"], torch.mean(units["v"].value))
-
-
-    # inference = rbm.inference(units["v"].value)

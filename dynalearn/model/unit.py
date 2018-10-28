@@ -10,6 +10,8 @@ Defines the Unit.
 """
 
 import torch
+import torch.nn as nn
+from torch.autograd import Variable
 import numpy as np
 from ..utilities.utilities import is_iterable, sigmoid
 
@@ -41,15 +43,11 @@ class Unit_info(object):
         self.size = size
         self.u_kind = u_kind
 
-        if (s_kind is not "bernoulli") or (s_kind is not "gaussian"):
+        if (s_kind != "bernoulli") and (s_kind != "gaussian"):
             raise ValueError("s_kind in Unit_info.__init__() must be:\
                             ['bernoulli', 'gaussian'].")
         else:
             self.s_kind = s_kind
-
-
-    def __repr__(self):
-        return "<unit.Unit_info>"
 
 
     def __str__(self):
@@ -62,7 +60,7 @@ class Unit_info(object):
 
 class Unit(object):
     """
-    Class defining a unit (unit group).
+    Class for defining a unit (unit group).
 
     **Parameters**
     key
@@ -103,41 +101,34 @@ class Unit(object):
 
 
         if self.s_kind == "bernoulli":
-            self.log_p = self.log_p_bernoulli
-            self.mean = self.mean_bernoulli
-            self.sample = self.sample_bernoulli
+            self.log_p = self.__log_p_bernoulli
+            self.activation = self.__activation_bernoulli
+            self.sample = self.__sample_bernoulli
         elif self.s_kind == "gaussian":
-            self.log_p = self.log_p_gaussian
-            self.mean = self.mean_gaussian
-            self.sample = self.sample_gaussian
+            self.log_p = self.__log_p_gaussian
+            self.activation = self.__activation_gaussian
+            self.sample = self.__sample_gaussian
         else:
             raise ValueError("Wrong value of Unit s_kind.")
         
-        self.value = torch.zeros([batchsize, self.size])
+        self.data = torch.zeros(batchsize, self.size)
         self.init_value()
 
         if self.use_cuda:
-            self.value = self.value.cuda()
-
-
-    def __repr__(self):
-        val = "<unit.Unit.single>"
-        if self.is_super:
-            val = "<unit.Unit.super>"
-
-        return val
+            self.data = self.data.cuda()
 
 
     def __str__(self):
-        return self.value.__str__()
+        return self.data.__str__()
+
+
 
     def init_value(self):
         """
         Initializes value of unit for random values.
 
         """
-        self.sample()
-        return self.value
+        return self.sample()
 
     def log_p(self, activation=None):
         """
@@ -169,89 +160,61 @@ class Unit(object):
         mean : torch.Tensor : (default = ``None``)
             Mean of given unit values.
         """
-        raise NotImplementedError('self.mean() has not been implemented.')
+        raise NotImplementedError('self.activation() has not been implemented.')
         return 0
 
-    def log_p_bernoulli(self, mean=None):
+    def __log_p_bernoulli(self, mean=None):
         """
-        Computes the log-probability for bernoulli units.
+        Computes the log-probability for Bernoulli units.
         
         **Parameters**
         mean : torch.Tensor : (default = ``None``)
             Mean of given unit values.
         """
         if mean is None:
-            mean = torch.zeros(self.value.size())
-        if torch.any(self.value > 1):
-            raise ValueError("allo gros cave")
-        return mean * self.value - torch.log(1 + torch.exp(mean))
+            mean = torch.zeros(self.data.size())
 
-    def log_p_gaussian(self, mean=None):
+
+        return torch.log(sigmoid(mean))
+
+    def __log_p_gaussian(self, mean=None):
         """
-        Computes the log-probability for gaussian units.
+        Computes the log-probability for Gauss units.
         
         **Parameters**
         mean : torch.Tensor : (default = ``None``)
             Mean of given unit values.
         """
         if mean is None:
-            mean = torch.zeros(self.value.size())
-        return -(self.value - mean)**2 - 0.5 * np.log(2 * np.pi)
+            mean = torch.zeros(self.data.size())
+        return -(self.data - mean)**2 - 0.5 * np.log(2 * np.pi)
 
 
-    def activation_bernoulli(self, mean=None):
+    def __activation_bernoulli(self, mean=None):
         if mean is None:
-            mean = torch.zeros(self.value.size())
+            mean = torch.zeros(self.data.size())
 
         return sigmoid(mean)
 
 
-    def activation_gaussian(self, mean=None):
+    def __activation_gaussian(self, mean=None):
         if mean is None:
-            mean = torch.zeros(self.value.size())
+            mean = torch.zeros(self.data.size())
 
         return mean
 
-    def sample_bernoulli(self, mean=None):
-        p = self.mean(mean)
-        self.value = torch.bernoulli(p)
+    def __sample_bernoulli(self, mean=None):
+        p = self.activation(mean).detach()
+        self.data.bernoulli_(p)
 
-        return self.value
-
-
-    def sample_gaussian(self, mean=None):
-        mean = self.mean(mean)
-        self.value = torch.normal(mean)
-
-        return self.value
+        return self.data
 
 
+    def __sample_gaussian(self, mean=None):
+        mean = self.activation(mean).detach()
+        self.data.normal_(mean)
 
-if __name__ == '__main__':
-    u_i1 = Unit_info("v1", 2, "visible", "bernoulli")
-    u_i2 = Unit_info("v2", 2, "visible", "gaussian")
-    batchsize = 5
-
-
-    u1 = Unit("v1", u_i1, batchsize)
-    # u1.value = torch.ones(u1.batchsize, u1.size)
-    u2 = Unit("v2", u_i2, batchsize)
-    u3 = Unit("v3", [u_i1, u_i2], batchsize)
-    u3.value = torch.cat([u1.value, u2.value], 1)
-
-    def show_unit(u):
-        if not u.is_super:
-            print(u.key)
-            print("\n info:", u.unit_info)
-            print("\n value:", u.value)
-        else:
-            print(u.key)
-            print("\n info:", [str(i) for i in u.unit_info])
-            print("\n value:", u.value)
-
-    show_unit(u1)
-    show_unit(u2)
-    show_unit(u3)
+        return self.data
 
 
 

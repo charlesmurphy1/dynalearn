@@ -10,72 +10,83 @@ Defines the class CRBM which generate Conditional Restrited
 Boltzmann machine.
 """
 
+import torch
+
 from ..utilities.utilities import sigmoid
 from .unit import *
 from .param import *
 from .bm import *
 
-__all__  = ['CRBM']
+__all__  = ['CRBM', 'CRBM_BernoulliBernoulli', 'CRBM_GaussBernoulli',
+            'CRBM_GaussGauss']
 
 class CRBM(General_Boltzmann_Machine):
     """docstring for CRBM"""
-    def __init__(self, n_visible, n_conditional, n_hidden, model_config):
+    def __init__(self, n_visible, n_conditional, n_hidden, v_s_kind, 
+                 c_s_kind, h_s_kind, model_config=None):
         self.n_visible = n_visible
         self.n_conditional = n_conditional
         self.n_hidden = n_hidden
 
-        units_info = {"v": Unit_info("v", n_visible, "visible", 
-                                     "bernoulli"),
-                      "c": Unit_info("c", n_conditional, "conditional",
-                                     "bernoulli"),
-                      "h": Unit_info("h", n_hidden, "hidden",
-                                     "bernoulli")}
+        units_info = {
+                        "v": Unit_info("v", n_visible, "visible",
+                                        v_s_kind),
+                        "c": Unit_info("c", n_conditional, "conditional",
+                                        c_s_kind),
+                        "h": Unit_info("h", n_hidden, "hidden",
+                                        h_s_kind)
+                      }
         params_info = [("v", "h"), ("v", "c"), ("h", "c"), "v", "h"]
 
         super(CRBM, self).__init__(units_info, params_info, model_config)
+    
 
+    def free_energy(self, v):
+        
+        units = self.init_units({"v": v})
+        activation_h = self.params[("v", "h")].mean_term(units, "v") + \
+                       self.params[("h", "c")].mean_term(units, "c") + \
+                       self.params["h"].mean_term(units, "v")
 
-    def __copy__(self):
-        crbm = CRBM(self.n_visible, self.n_conditional, self.n_hidden, 
-                    self.model_config)
-
-        for k in crbm.params:
-            crbm.params[k].value = self.params[k].value.clone()
-
-        return crbm
-
-
-    # Sampling methods
-    def free_energy(self, v_data):
-        units = self.init_units({"v": v_data[0], "c": v_data[1]})
-
-        activation_h = self.params[("v", "h")].mean_term(units, "v") \
-                     + self.params[("h", "c")].mean_term(units, "c") \
-                     + self.params["h"].mean_term(units, "v")
-
-        energy_terms = self.params["v"].energy_term(units) \
-                     + self.params[("v", "c")].energy_term(units)
-
-        val = energy_terms - torch.sum(torch.log(1 + torch.exp(activation_h)), 1)
-
-        return val
+        freeenergy = self.params["v"].energy_term(units) - \
+                     torch.sum(torch.log(1 + torch.exp(activation_h)), 1)
+        return freeenergy
 
         
-    def inference(self, v_data):
-        units = self.init_units({"v": v_data[0], "c": v_data[1]})
+    def inference(self, v):
+        
+        units = self.init_units({"v": v})
 
-        # print(units["v"])
-        activation_h = self.params[("v","h")].mean_term(units, "v") \
-                     + self.params[("h", "c")].mean_term(units, "c") \
-                     + self.params["h"].mean_term(units, "v")
+        activation_h = self.params[("v","h")].mean_term(units, "v")
+        activation_h += self.params[("h", "c")].mean_term(units, "c")
+        activation_h += self.params["h"].mean_term(units, "v")
+        prob = torch.exp(units["h"].log_p(activation_h))
+        return {"v": v, "h": prob}
 
-        return {"v":v_data[0], "c":v_data[1], "h":sigmoid(activation_h)}
+    def conditional_log_p(self, v):
+        units = self.init_units({"v": v})
+        result = {}
+
+        # hidden unit
+        activation_h = self.params[("v", "h")].mean_term(units, "v")
+        activation_h = self.params[("h", "c")].mean_term(units, "c")
+        activation_h += self.params["h"].mean_term(units, "v")
+        result["h"] = units["h"].log_p(activation_h)
+        units["h"].sample(activation_h)
+
+        # visible units
+        activation_v = self.params[("v", "h")].mean_term(units, "h")
+        activation_h = self.params[("v", "c")].mean_term(units, "c")
+        activation_v += self.params["v"].mean_term(units, "h")
+        result["v"] = units["v"].log_p(activation_v)
+
+        return result
 
 
-    def sampler(self, num_steps, units=None, given="v"):
+    def sampler(self, units, num_steps, given="v"):
 
         if units is None:
-            raise ValueError("units in self.sampler must be defined pour CRBM.")
+            units = self.mc_units
 
         if given != "v":
             s_0 = "v"
@@ -86,15 +97,15 @@ class CRBM(General_Boltzmann_Machine):
 
         for i in range(num_steps):
             # sampling hidden unit
-            activation_0 = self.params[("v","h")].mean_term(units, s_1) \
-                         + self.params[(s_0,"c")].mean_term(units, "c") \
-                         + self.params[s_0].mean_term(units, s_1)
+            activation_0 = self.params[("v","h")].mean_term(units, s_1) + \
+                           self.params[(s_0,"c")].mean_term(units, "c") + \
+                           self.params[s_0].mean_term(units, s_1)
             units[s_0].sample(activation_0)
 
             # sampling visible units
-            activation_1 = self.params[("v","h")].mean_term(units, s_0) \
-                         + self.params[(s_1,"c")].mean_term(units, "c") \
-                         + self.params[s_1].mean_term(units, s_0)
+            activation_1 = self.params[("v","h")].mean_term(units, s_0) + \
+                           self.params[(s_1,"c")].mean_term(units, "c") + \
+                           self.params[s_1].mean_term(units, s_0)
             units[s_1].sample(activation_1)
 
         self.mc_units = units
@@ -102,22 +113,29 @@ class CRBM(General_Boltzmann_Machine):
         return units
 
 
+class CRBM_BernoulliBernoulli(CRBM):
+    """docstring for RBM"""
+    def __init__(self, n_visible, n_conditional, n_hidden, model_config=None):
 
-if __name__ == '__main__':
-    n_visible = 50
-    n_conditonal = 2
-    n_hidden = 1
-    init_scale = 0.01
-    p = None
-    batchsize = 1
-    use_cuda = False
+        super(CRBM_BernoulliBernoulli, self).__init__(n_visible, n_conditional,
+                                                      n_hidden, "bernoulli",
+                                                      "bernoulli", "bernoulli",
+                                                      model_config)
 
-    crbm = CRBM(n_visible, n_conditonal, n_hidden)
+class CRBM_GaussBernoulli(CRBM):
+    """docstring for RBM"""
+    def __init__(self, n_visible, n_conditional, n_hidden, model_config=None):
 
-    units = crbm.init_units()
-    units = crbm.sampler(units, 10)
-    print(crbm.params)
+        super(CRBM_GaussBernoulli, self).__init__(n_visible, n_conditional,
+                                                      n_hidden, "gaussian",
+                                                      "gaussian", "bernoulli",
+                                                      model_config)
 
-    inference = crbm.inference([units["v"].value, units["c"].value])
+class CRBM_GaussGauss(CRBM):
+    """docstring for RBM"""
+    def __init__(self, n_visible, n_conditional, n_hidden, model_config=None):
 
-    print(inference)
+        super(CRBM_GaussGauss, self).__init__(n_visible, n_conditional,
+                                                      n_hidden, "gaussian",
+                                                      "gaussian", "gaussian",
+                                                      model_config)

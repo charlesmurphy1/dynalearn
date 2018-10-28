@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import os
 
-from ..utilities.utilities import running_mean
+from ..utilities.utilities import exp_mov_avg
 
 
 __all__ = ['Statistics', 'Training_Statistics',
@@ -216,7 +216,7 @@ class Training_Statistics(Statistics):
     precision : Integer : (default = ``4``)
         Precision on display.
     """
-    def __init__(self, strname, filename, colors=None, ext=".png", graining=2, makeplot=False, precision=4):
+    def __init__(self, strname, filename, colors=None, ext=".png", graining=0, makeplot=False, precision=4):
         """
         Initializes an object Training_Statistics.
 
@@ -242,8 +242,8 @@ class Training_Statistics(Statistics):
         """
         if update is None:
             update = self.latest_update
-        t = float(self.stat["train"][update].numpy())
-        v = float(self.stat["val"][update].numpy())
+        t = float(self.stat["train"][update])
+        v = float(self.stat["val"][update])
 
         train_string = self.strname + " : {0:.{p}f}".format(t, p=self.precision)
         val_string = self.strname + " : {0:.{p}f}".format(v, p=self.precision)
@@ -310,11 +310,11 @@ class Training_Statistics(Statistics):
 
         for i, t in enumerate(data["train"]):
             batch = self.eval_statpoint(t, model)
-            stat["train"] += torch.mean(batch) / N_t
+            stat["train"] += batch / N_t
 
         for i, v in enumerate(data["val"]):
             batch = self.eval_statpoint(v, model)
-            stat["val"] += torch.mean(batch) / N_v
+            stat["val"] += batch / N_v
 
         return stat
 
@@ -392,28 +392,29 @@ class Training_Statistics(Statistics):
         for t, d in self.estimated_stat["val"].items():
             val_estimate.append(d)
 
-        min_val = min(min(train_estimate), min(val_estimate))
-        max_val = max(max(train_estimate), max(val_estimate))
+        min_val = float(min(min(train_estimate), min(val_estimate)))
+        max_val = float(max(max(train_estimate), max(val_estimate)))
 
         self.ax.plot(update_estimate, train_estimate, marker='None',
                      linestyle='-', color=self.colors[0], lw=1, alpha=0.4)
         self.ax.plot(update_estimate, val_estimate, marker='None',
                      linestyle='-', color=self.colors[1], lw=1, alpha=0.4)
 
-        run_mean_train = running_mean(train_estimate, self.graining)
-        run_mean_val = running_mean(val_estimate, self.graining)
-        run_mean_update = update_estimate[:1 - self.graining]
-        self.ax.plot(run_mean_update, run_mean_train, marker='None',
+        run_mean_train = exp_mov_avg(train_estimate, self.graining)
+        run_mean_val = exp_mov_avg(val_estimate, self.graining)
+
+        self.ax.plot(update_estimate, run_mean_train, marker='None',
                      linestyle='-', color=self.colors[0], lw=2, alpha=0.8)
-        self.ax.plot(run_mean_update, run_mean_train, marker='None',
+        self.ax.plot(update_estimate, run_mean_val, marker='None',
                      linestyle='-', color=self.colors[1], lw=2, alpha=0.8)
         self.ax.set_xlim([0, max(update_estimate)])
+
         self.ax.set_ylim([min_val, max_val])
 
         # Plot data
-        update_data = []
-        train_data = []
-        val_data = []
+        update_stat = []
+        train_stat = []
+        val_stat = []
         for t, l in self.stat["train"].items():
             update_stat.append(t)
             train_stat.append(l)
@@ -446,7 +447,7 @@ class Training_Statistics(Statistics):
                        )
 
         if path is not None:
-            self.fig.savefig(path + self.filename + self.ext)
+            self.fig.savefig(os.path.join(path, self.filename + self.ext))
 
     def save_stat(self, path):
         """
@@ -465,7 +466,7 @@ class Training_Statistics(Statistics):
             stat[i, 1] = self.stat["train"][k]
             stat[i, 2] = self.stat["val"][k]
 
-        np.savetxt(path + self.filename + ".txt", stat)
+        np.savetxt(os.path.join(path, self.filename + ".txt"), stat)
 
 
 class Model_Statistics(Statistics):
@@ -500,13 +501,15 @@ class Model_Statistics(Statistics):
         Precision on display.
     """
     def __init__(self, strname, filename, 
-                 colors=None, ext=".png", graining=2,
+                 colors=None, ext=".png", graining=0,
                  makeplot=False, precision=4):
         """
         Initializes an object Model_Statistics.
 
         """
         self.graining = graining
+        self.stat = {}
+        self.estimated_stat = {}
         super(Model_Statistics, self).__init__(strname, filename, colors, ext, 
                                                makeplot, precision)
 
@@ -545,7 +548,7 @@ class Model_Statistics(Statistics):
 
     def evaluate(self, update, data, model):
         stat = self.func_evaluate(update, data, model)
-        self.estimated_stat[update] = stat
+        self.stat[update] = stat
         self.latest_update = update
 
     def estimate(self, update, data, model):
@@ -573,7 +576,7 @@ class Model_Statistics(Statistics):
 
         min_val = min(stat)
         max_val = max(stat)
-        self.ax.plot(updates, stat, marker='.', linestyle='-',
+        self.ax.plot(updates, stat, marker='o', linestyle='-',
                      color=self.colors[0], lw=1, alpha=1.)
         self.ax.set_xlim([0, max(updates)])
         self.ax.set_ylim([min_val, max_val])
@@ -584,7 +587,7 @@ class Model_Statistics(Statistics):
                           linestyle='--',color="grey", lw=2, alpha=0.5)        
 
         if path is not None:
-            self.fig.savefig(path + self.filename + self.ext)
+            self.fig.savefig(os.path.join(path, self.filename + self.ext))
 
     def save_stat(self, path):
         """
@@ -602,7 +605,7 @@ class Model_Statistics(Statistics):
             stat[i, 0] = k
             stat[i, 1] = self.stat[k]
 
-        np.savetxt(path + self.filename + ".txt", stat)
+        np.savetxt(os.path.join(path, self.filename + ".txt"), stat)
 
 
 class Distribution_Statistics(Statistics):
@@ -792,7 +795,7 @@ class Distribution_Statistics(Statistics):
         self.ax.locator_params(nbins=6)
 
         if path is not None:
-            self.fig.savefig(path + self.filename + self.ext)
+            self.fig.savefig(os.path.join(path, self.filename + self.ext))
 
     def save_stat(self, path):
         """

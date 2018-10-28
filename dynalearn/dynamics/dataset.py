@@ -250,9 +250,9 @@ class Random_Sampler_with_length(Sampler):
         return self.length
 
 
-def random_split(dataset, val_prop):
+def random_split(dataset, val_size):
     index = set(range(len(dataset)))
-    val_index = list(np.random.choice(list(index), int(val_prop * len(dataset))))
+    val_index = list(np.random.choice(list(index), int(val_size * len(dataset))))
     train_index = list(index.difference(set(val_index)))
 
     return Subset(dataset, train_index), Subset(dataset, val_index)
