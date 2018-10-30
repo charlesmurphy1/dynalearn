@@ -119,7 +119,10 @@ def setup_history(config, bm,
 
 	criterion = Reconstruction_MSE_Statistics(graining=graining,
                                               makeplot=False)
-	return History(statstics, criterion, config.PATH_TO_STAT)
+	# criterion = LogLikelihood_Statistics(graining=graining,
+	# 									 makeplot=False)
+	return History("minst_history", statstics, criterion,
+				   config.PATH_TO_HISTORY)
 
 
 def plot_number(imag, ax):
@@ -173,7 +176,8 @@ def test_rbm(rbm, examples, steps=10, intermediate=10):
 		plot_number(imag, ax[j, -1])
 		
 
-	fig.savefig("./mnist_test/test_from_model.png")
+	figname = os.path.join("./testdata/", "test_from_model.png")
+	fig.savefig(figname)
 	# plt.show()
 
 
@@ -185,28 +189,29 @@ def main():
 	# Loading data
 	normalize = False
 	verbose = True
-	n_data = 600
-	numbers = -1
+	n_data = 60000
+	numbers = [6]
 	dataset, labels, mean, scale = load_data(n_data, False, normalize, 
 											 numbers=numbers)
 
 	# Making RBM
 	n_visible = 28 * 28 # number of pixels in MNIST examples
-	n_hidden = 100
-	batchsize = 8
+	n_hidden = 300
+	batchsize = 16
 	lr = 1e-3
-	wd = 0.
+	wd = 0
 	val_size = 0.1
 	numsteps = 10
 	numepochs = 20
 
 	config = Config(# Model config
-					path_to_model='./mnist_test', model_name='mnist_model',
+					run_name="testdata/run",
+					model_name='mnist_model',
 					batchsize=batchsize,
                 	# Training config
 					lr=lr, wd=wd, val_size=val_size, numsteps=numsteps,
 					numepochs=numepochs, with_pcd=True, makeplot=True,
-					path_to_stat='./mnist_test', graining=0.05,
+					path_to_history='mnist_history', graining=0.05,
                  	)
 
 
@@ -214,13 +219,17 @@ def main():
 	history = setup_history(config, rbm,
 							with_param=True,
 							with_grad=False,
-							with_logp=False,
-							with_partfunc=False,
+							with_logp=True,
+							with_partfunc=True,
 							with_free_energy=True,
 							with_recon=True)
 	print("Training phase: {} examples\n---------------".format(len(dataset)))
 	trainer = BM_trainer(rbm, history, config)
 	trainer.train(dataset)
+	history.make_plots(save=True, show=False, showbest=True)
+	history.save()
+	config.save()
+	rbm.save_params()
 
 	print("Testing phase\n-------------")
 	rbm.load_params(os.path.join(config.PATH_TO_MODEL, config.MODEL_NAME+".pt"))

@@ -764,6 +764,7 @@ class Distribution_Statistics(Statistics):
             update location on plot.
 
         """
+        threshold = 0
         num_update = len(self.stat["dist"])
         max_x, min_x = 0, 1e300
         max_z = 0
@@ -772,6 +773,7 @@ class Distribution_Statistics(Statistics):
             dist = self.stat["dist"][t].numpy()
             bins = self.stat["bins"][t].numpy()
             width = np.mean(abs(bins[1:] - bins[:-1]))
+
 
             ec = "w"
             if i == best:
@@ -785,11 +787,14 @@ class Distribution_Statistics(Statistics):
                 self.ax.bar(bins, dist, zs=t, zdir='y',
                             color=self.cm(i/num_update), alpha=1, linewidth=0.4,
                              width=width, ec="k")
-            max_x = max(max(bins), max_x)
-            min_x = min(min(bins), min_x)
-            max_z = max(max(dist), max_z)
+            max_x = max(max(bins[dist>threshold]), max_x)
+            min_x = min(min(bins[dist>threshold]), min_x)
+            max_z = max(max(dist[dist>threshold]), max_z)
+            # max_x = max(bins)
+            # min_x = min(bins)
+            # max_z = max(dist)
 
-        # self.ax.set_xlim([max_x, min_x])
+        self.ax.set_xlim([max_x, min_x])
         self.ax.set_ylim([0, self.latest_update])
         self.ax.set_zlim([0, max_z])
         self.ax.locator_params(nbins=6)

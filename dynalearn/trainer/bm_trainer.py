@@ -104,9 +104,6 @@ class BM_trainer(object):
         self.history.evaluate_stats(update, complete_data, self.bm)
         if self.verbose: print(f"Begin training\n{self.history}")
 
-        params = {}
-        for k in self.bm.params:
-            params[k] = self.bm.params[k].param
         # Learning phase
         for i in range(self.numepochs):
             if self.verbose: bar = self.setup_progbar(i, len(train_loader))
@@ -150,7 +147,8 @@ class BM_trainer(object):
 
         # Get best configuration
         if self.keep_best:
-            if self.verbose: print("Best {} \n".format(self.history.best_update) + \
+            best_epoch = int(self.history.best_update / len(train_loader)) -1
+            if self.verbose: print("Best epoch {} \n".format(best_epoch) + \
                               self.history.str_update(self.history.best_update))
 
             for k in self.bm.params:
@@ -158,9 +156,9 @@ class BM_trainer(object):
                 self.bm.params[k].param.data = best_p
 
         # Saving best configuration 
-        self.history.make_plots(save=True, show=False, showbest=self.keep_best)
-        self.history.save_stats()
-        self.bm.save_params()
+        # self.history.make_plots(save=True, show=False, showbest=self.keep_best)
+        # self.history.save()
+        # self.bm.save_params()
 
 
 

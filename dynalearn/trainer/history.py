@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import os
-
+import pickle
 
 __all__ = ['History']
 
@@ -20,10 +20,12 @@ class History(object):
     path : String : (default = ``None``)
         Path where to save all statstics. If ``None``, it does not save files.
     """
-    def __init__(self, statistics=None, criterion=None, path_to_stat=None):
+    def __init__(self, name="", statistics=None, criterion=None, path=None):
         """
         Initialize History object.
         """
+
+        self.name = name
         if statistics is None:
             self.statistics = {}
         else:
@@ -36,7 +38,7 @@ class History(object):
 
         self.best_update = 0
         self.best_params = {}
-        self.path = path_to_stat
+        self.path = path
 
         if (self.path is not None) and (not os.path.exists(self.path)):
             os.makedirs(self.path)
@@ -165,14 +167,20 @@ class History(object):
             plt.show()
 
 
-    def save_stats(self):
+    def save(self):
         """
         Saves all statistics.
         """
-        if self.path is not None: 
-            for k in self.statistics:
-                self.statistics[k].save_stat(self.path)
+        with open(os.path.join(self.path, self.name + ".json"), "wb") as f:
+            pickle.dump(self.statistics, f)
 
+
+    def load(path, self):
+        """
+        Saves all statistics.
+        """
+        with open(path + ".json", "rb") as f:
+            self.statistics = pickle.load(f)     
 
     def is_current_best(self):
         """

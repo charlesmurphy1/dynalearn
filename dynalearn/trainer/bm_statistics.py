@@ -275,8 +275,8 @@ class Gradient_Statistics(Distribution_Statistics):
         avg_data = 0
         for i, g in enumerate(grad):
             avg_data += g[self.key] / N
-        dist, bins = np.histogram(avg_data.numpy(),
-                                  bins=int(self.nbins), density=True)
+        dist, bins = np.histogram(avg_data.numpy(),bins=int(self.nbins),
+                                  density=True)
 
         self.stat["dist"][update] = torch.Tensor(dist)
         self.stat["bins"][update] = torch.Tensor((bins[:-1] + bins[1:])/2)
@@ -313,8 +313,7 @@ class Parameter_Statistics(Distribution_Statistics):
 
         param_val = bm.params[self.key].param.data.detach().numpy()
 
-        dist, bins = np.histogram(param_val,
-                                  bins=int(self.nbins), density=True)
+        dist, bins = np.histogram(param_val, bins=int(self.nbins), density=True)
 
         self.stat["dist"][update] = torch.Tensor(dist)
         self.stat["bins"][update] = torch.Tensor((bins[:-1] + bins[1:])/2)

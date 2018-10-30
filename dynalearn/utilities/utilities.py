@@ -159,14 +159,13 @@ def exp_mov_avg(x, graining):
         s[i+1] = graining*xx + (1 - graining)*s[i]
     return s
 
-
-def increment_filename(path, name, ext):
+def increment_filename(path, name):
     for filename in os.listdir(path):
             if filename.startswith(name):
                 is_not_finished = True
                 i = 0
                 while(is_not_finished):
-                    f = os.path.join(path, f"{name}_{i}.{ext}")
+                    f = os.path.join(path, f"{name}_{i}")
                     if os.path.exists(f):
                         i+= 1
                     else:
@@ -174,6 +173,19 @@ def increment_filename(path, name, ext):
                         is_not_finished = False
 
     return name
+
+def increment_path(path):
+    is_not_finished = os.path.exists(path)
+    i = 0
+    while(is_not_finished):
+        new_path = f"{path}_{i}"
+        if os.path.exists(new_path):
+            i+= 1
+        else:
+            path = new_path
+            is_not_finished = False
+
+    return path
 
 
 if __name__ == '__main__':
