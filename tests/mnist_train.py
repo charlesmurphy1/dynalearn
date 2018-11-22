@@ -162,7 +162,6 @@ def test_rbm(rbm, examples, steps=10, intermediate=10):
 			if i == 0:
 				ax[j, i].set_ylabel(str(intermediate**(j-1)))
 
-
 	units = rbm.init_units()
 	imag = np.resize(units["v"].data.numpy(), [28, 28]) 
 	plot_number(imag, ax[0, -1])
@@ -190,28 +189,32 @@ def main():
 	normalize = False
 	verbose = True
 	n_data = 60000
-	numbers = [6]
+	# numbers = [6]
+	numbers = list(range(10))
+	numbers = [8]
 	dataset, labels, mean, scale = load_data(n_data, False, normalize, 
 											 numbers=numbers)
 
 	# Making RBM
 	n_visible = 28 * 28 # number of pixels in MNIST examples
-	n_hidden = 300
-	batchsize = 16
-	lr = 1e-3
+	n_hidden = 500
+	batchsize = 64
+	lr = 1e-4
 	wd = 0
+	momentum = 0
 	val_size = 0.1
 	numsteps = 10
-	numepochs = 20
+	numepochs = 50
 
 	config = Config(# Model config
 					run_name="testdata/run",
 					model_name='mnist_model',
 					batchsize=batchsize,
                 	# Training config
-					lr=lr, wd=wd, val_size=val_size, numsteps=numsteps,
-					numepochs=numepochs, with_pcd=True, makeplot=True,
-					path_to_history='mnist_history', graining=0.05,
+					lr=lr, wd=wd, momentum=momentum, val_size=val_size,
+					numsteps=numsteps, numepochs=numepochs, with_pcd=True,
+					makeplot=True, path_to_history='mnist_history',
+					graining=0.05,
                  	)
 
 
@@ -234,8 +237,9 @@ def main():
 	print("Testing phase\n-------------")
 	rbm.load_params(os.path.join(config.PATH_TO_MODEL, config.MODEL_NAME+".pt"))
 	
-	if numbers == -1:
-		numbers = list(range(10))
+	numbers = list(range(10))
+	dataset, labels, mean, scale = load_data(n_data, False, normalize, 
+											 numbers=numbers)
 	examples = {}
 	i = 0
 	for d, l in zip(dataset, labels):

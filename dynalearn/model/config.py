@@ -17,7 +17,7 @@ class Config(object):
                  w_init=0.01, bv_init=0.5, bh_init=None, use_cuda=False,
                  batchsize=16, beta=None, num_sample=10, overwrite=True,
                  # Training config
-                 lr=0.001, wd=1e-4, optimizer=None,
+                 lr=0.001, wd=1e-4, momentum=0, optimizer=None,
                  lr_scheduler=None, val_size=0.1,
                  numsteps=10, numepochs=10, with_pcd=True, 
                  keepbest=True, verbose=True,
@@ -40,16 +40,18 @@ class Config(object):
         self.LEARNING_RATE = lr
         self.WEIGHT_DECAY = wd
         if optimizer is None:
-            self.OPTIMIZER = lambda p: op.Adam(p, lr=lr, 
-                                               betas=(0.9, 0.999),
-                                               eps=1e-08,
-                                               weight_decay=wd)
+            # self.OPTIMIZER = lambda p: op.Adam(p, lr=lr, 
+            #                                    betas=(0.9, 0.999),
+            #                                    eps=1e-08,
+            #                                    weight_decay=wd)
+            self.OPTIMIZER = lambda p: op.SGD(p, lr=lr, weight_decay=wd,
+                                              momentum=momentum, nesterov=False)
 
         if lr_scheduler is None:
             self.LR_SCHEDULER = lambda o: lrs.ReduceLROnPlateau(o, mode='max',
                                                                 factor=0.5,
                                                                 verbose=verbose,
-                                                                patience=10)
+                                                                patience=25)
         self.USE_CUDA = use_cuda
         self.BATCHSIZE = batchsize
 
@@ -57,9 +59,9 @@ class Config(object):
         self.NUM_SAMPLE = num_sample
         if beta is None:
             self.BETA = np.append(np.append(
-                                  np.linspace(0., 0.5, 500),
-                                  np.linspace(0.5, 0.9, 4000)), 
-                                  np.linspace(0.9, 1, 10000))
+                                  np.linspace(0., 0.5, 250),
+                                  np.linspace(0.5, 0.9, 2000)), 
+                                  np.linspace(0.9, 1, 4000))
         else:
             self.BETA = beta
 
