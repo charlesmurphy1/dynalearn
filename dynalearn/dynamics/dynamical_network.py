@@ -78,24 +78,24 @@ class Dynamical_Network(nx.Graph):
 		raise NotImplementedError("self._state_transition_() has not been impletemented")	
 
 
-	def update(self, num_step=None, save=False):
+	def update(self, step=None, save=False):
 		"""
 		Update the next activity states.
 
 		**Parameters**
-		num_step : Integer : (default = ``None``)
+		step : Integer : (default = ``None``)
 			Number of steps to perform for the update.
 
 		save : Bool : (default = ``False``)
 			If ``True``, it saves the update.
 
 		"""
-		if num_step is None:
-			num_step = self.dt
+		if step is None:
+			step = self.dt
 		t_init = self.t[-1]
 		t = t_init
 
-		while(t < t_init + num_step) and self.continu_simu:
+		while(t < t_init + step) and self.continu_simu:
 
 			forward_activity = self._state_transition()
 			self.activity = forward_activity.copy()

@@ -4,6 +4,7 @@ import progressbar
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from random import shuffle
 
 from dynalearn.model.rbm import *
 from dynalearn.model.config import *
@@ -11,7 +12,7 @@ from dynalearn.trainer.bm_trainer import *
 from dynalearn.trainer.history import *
 from dynalearn.trainer.bm_statistics import *
 
-def load_data(num_data=-1, verbose=False, normalize=False, mean=0., scale=1., numbers=-1):
+def load_data(num_train=-1, num_val=1, numbers=-1):
 	dataset = MNIST("testdata/mnist", download=True)
 
 	if numbers == -1:
@@ -19,18 +20,15 @@ def load_data(num_data=-1, verbose=False, normalize=False, mean=0., scale=1., nu
 	elif type(numbers) is int:
 		numbers = [numbers]
 
+	dataset = list(dataset)
+	shuffle(dataset)
+	if num_train > (len(dataset) - num_val) or num_train == -1:
+		num_train = len(dataset) - num_val
+	train_dataset = []
+	train_label = []
+	val_dataset = []
+	val_label = []
 
-	if num_data > len(dataset) or num_data == -1:
-		num_data = len(dataset)
-	formated_dataset = []
-	labels = []
-
-	if verbose:
-		widgets = [ "Loading data: ",
-					progressbar.Bar('-'), ' ',
-					progressbar.Percentage(), ' ',
-					progressbar.ETA()]
-		bar = progressbar.ProgressBar(widgets=widgets, maxval=num_data).start()
 
 	for i, d in enumerate(dataset):
 		if d[1] in numbers:
@@ -39,46 +37,27 @@ def load_data(num_data=-1, verbose=False, normalize=False, mean=0., scale=1., nu
 			data[data>0] = 1
 			data[data<=0] = 0
 			data = torch.Tensor(data)
-			labels.append(int(d[1]))
 
-			# formated_dataset.append([data, label])
-			formated_dataset.append(data)
-
-			if verbose:
-				bar.update(i)
-
-			if len(formated_dataset) == num_data:
-				break
-
-	if verbose:
-		bar.finish()
-
-	if normalize:
-		if mean == 0. and scale == 1.:
-			if verbose:
-				widgets = [ "Normalizing: ",
-							progressbar.Bar('-'), ' ',
-							progressbar.Percentage(), ' ',
-							progressbar.ETA()]
-				bar = progressbar.ProgressBar(widgets=widgets, maxval=num_data).start()
-			mean = 0
-			sqmean = 0
-			for i, d in enumerate(formated_dataset):
-				mean += torch.mean(d) / len(formated_dataset)
-				sqmean += torch.mean(d**2) / len(formated_dataset)
-				if verbose:
-					bar.update(i)
+			if len(train_dataset) < num_train:
+				train_dataset.append(data)
+				train_label.append(int(d[1]))
+			else:
+				if len(val_dataset) < num_val:
+					val_dataset.append(data)
+					val_label.append(int(d[1]))
+				else: break
 
 
-			scale = torch.sqrt(sqmean - mean**2)
-			if verbose:
-				bar.finish()
+	p_train = None
+	for data in train_dataset:
+		if p_train is None:
+			p_train = torch.zeros(len(data))
+		p_train += data / len(train_dataset)
 
-		for i, d in enumerate(formated_dataset):
-			formated_dataset[i] = (d - mean) / scale
+
+	return train_dataset, train_label, val_dataset, val_label, p_train
 
 
-	return formated_dataset, labels, mean, scale 
 
 
 def setup_history(config, bm,
@@ -137,7 +116,7 @@ def plot_number(imag, ax):
 	ax.spines['left'].set_visible(False)
 
 
-def test_rbm(rbm, examples, steps=10, intermediate=10):
+def test_rbm(rbm, config, examples, steps=10, intermediate=10):
 
 	fig, ax = plt.subplots(steps + 1, len(examples) + 1)
 
@@ -175,7 +154,7 @@ def test_rbm(rbm, examples, steps=10, intermediate=10):
 		plot_number(imag, ax[j, -1])
 		
 
-	figname = os.path.join("./testdata/", "test_from_model.png")
+	figname = os.path.join(config.RUN, "test_from_model.png")
 	fig.savefig(figname)
 	# plt.show()
 
@@ -188,63 +167,66 @@ def main():
 	# Loading data
 	normalize = False
 	verbose = True
-	n_data = 60000
+	num_train = 10
+	num_val = 1000
 	# numbers = [6]
 	numbers = list(range(10))
-	numbers = [8]
-	dataset, labels, mean, scale = load_data(n_data, False, normalize, 
-											 numbers=numbers)
+	# numbers = [8]
+	train_d, train_l, val_d, val_l, p_train = load_data(num_train, num_val,
+														numbers=numbers)
 
-	# Making RBM
+	# # Making RBM
 	n_visible = 28 * 28 # number of pixels in MNIST examples
-	n_hidden = 500
-	batchsize = 64
-	lr = 1e-4
+	n_hidden = 512
+	batchsize = 16
+	lr = 1e-2
 	wd = 0
-	momentum = 0
-	val_size = 0.1
+	momentum = 0.
 	numsteps = 10
 	numepochs = 50
 
+	# p = np.resize(p, [28, 28])
+	# plt.imshow(p)
+	# plt.show()
+
 	config = Config(# Model config
-					run_name="testdata/run",
+					run_name="testdata/overfit_run",
 					model_name='mnist_model',
 					batchsize=batchsize,
                 	# Training config
-					lr=lr, wd=wd, momentum=momentum, val_size=val_size,
-					numsteps=numsteps, numepochs=numepochs, with_pcd=True,
-					makeplot=True, path_to_history='mnist_history',
-					graining=0.05,
+					lr=lr, wd=wd, momentum=momentum, numsteps=numsteps, 
+					numepochs=numepochs, with_pcd=True, bv_init=0.5,
+					makeplot=True, path_to_history='history',
+					graining=1.0, keepbest=False, overwrite=False,
                  	)
+	# config.save()
 
 
 	rbm = RBM_BernoulliBernoulli(n_visible, n_hidden, config)
 	history = setup_history(config, rbm,
 							with_param=True,
-							with_grad=False,
-							with_logp=True,
-							with_partfunc=True,
+							with_grad=True,
+							with_logp=False,
+							with_partfunc=False,
 							with_free_energy=True,
 							with_recon=True)
-	print("Training phase: {} examples\n---------------".format(len(dataset)))
+	print("Training phase: {} examples\n---------------".format(len(train_d)))
 	trainer = BM_trainer(rbm, history, config)
-	trainer.train(dataset)
+	trainer.train(train_d, val_d)
 	history.make_plots(save=True, show=False, showbest=True)
-	history.save()
-	config.save()
-	rbm.save_params()
+	
 
 	print("Testing phase\n-------------")
 	rbm.load_params(os.path.join(config.PATH_TO_MODEL, config.MODEL_NAME+".pt"))
 	
 	numbers = list(range(10))
-	dataset, labels, mean, scale = load_data(n_data, False, normalize, 
-											 numbers=numbers)
+	# dataset, labels, mean, scale = load_data(, False, normalize, 
+											 # numbers=numbers)
 	examples = {}
 	i = 0
-	for d, l in zip(dataset, labels):
+	for d, l in zip(val_d, val_l):
 		if l == numbers[i]:
-			examples[l] = torch.Tensor(d) * scale + mean
+			examples[l] = torch.Tensor(d)
 			examples[l] = torch.reshape(examples[l], [1, examples[l].size(0)])
 			# numbers.remove(l)
 			i += 1
@@ -253,7 +235,16 @@ def main():
 		if i == len(numbers):
 			break
 
-	test_rbm(rbm, examples, 10, 2)
+	test_rbm(rbm, config, examples, 4, 2)
+	plt.show()
+
+
+	bv = rbm.params["v"].param.data.detach().clone()
+	bv = bv.numpy()
+	bv = np.reshape(bv, [28,28])
+
+	plt.imshow(bv)
+	plt.show()
 
 if __name__ == '__main__':
 	main()

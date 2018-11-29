@@ -15,6 +15,8 @@ import torch.nn as nn
 import numpy as np
 
 __all__ = ['Param', 'Weight', 'Bias']
+PARAM_MIN = -80
+PARAM_MAX = 80
 
 class Param(nn.Module):
     """docstring for Param"""
@@ -157,9 +159,9 @@ class Bias(Param):
             n = len(p)
             raise ValueError(f"Expected p size to be {self.size},\
                                got instead {n}.")
-
         self.param.data = torch.log(p / (1. - p))
-
+        self.param.data[self.param.data < PARAM_MIN] = PARAM_MIN
+        self.param.data[self.param.data > PARAM_MAX] = PARAM_MAX
 
     def mean_term(self, units, key):
         batchsize = units[self.key].batchsize

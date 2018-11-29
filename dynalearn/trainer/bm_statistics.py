@@ -258,7 +258,7 @@ class Gradient_Statistics(Distribution_Statistics):
             filename = "grad_w_"+self.key[0]+self.key[1]
         else:
             strname = r"Gradient $\Delta b_{"+self.key+r"}$"
-            filename = "grad_w_"+self.key
+            filename = "grad_b_"+self.key
 
         super(Gradient_Statistics, self).__init__(strname, 
                                                 filename,
@@ -271,8 +271,9 @@ class Gradient_Statistics(Distribution_Statistics):
     def evaluate(self, update, data, bm):
 
         grad = data["grad"]
+
         N = len(grad)
-        avg_data = 0
+        avg_data = torch.zeros(bm.params[self.key].param.size())
         for i, g in enumerate(grad):
             avg_data += g[self.key] / N
         dist, bins = np.histogram(avg_data.numpy(),bins=int(self.nbins),

@@ -18,7 +18,7 @@ class Config(object):
                  batchsize=16, beta=None, num_sample=10, overwrite=True,
                  # Training config
                  lr=0.001, wd=1e-4, momentum=0, optimizer=None,
-                 lr_scheduler=None, val_size=0.1,
+                 lr_scheduler=None,
                  numsteps=10, numepochs=10, with_pcd=True, 
                  keepbest=True, verbose=True,
                  # Statistics config
@@ -30,9 +30,7 @@ class Config(object):
         if not os.path.exists(self.RUN): os.makedirs(self.RUN)
         self.PATH_TO_CONFIG = os.path.join(self.RUN, "config") 
         self.PATH_TO_MODEL = os.path.join(self.RUN, path_to_model)
-        if not overwrite: self.MODEL_NAME = increment_filename(self.PATH_TO_MODEL, 
-                                                           self.MODEL_NAME)
-        else: self.MODEL_NAME = model_name
+        self.MODEL_NAME = model_name
         self.PATH_TO_HISTORY = os.path.join(self.RUN, path_to_history)
         
         # Learning hyper parameters
@@ -48,7 +46,7 @@ class Config(object):
                                               momentum=momentum, nesterov=False)
 
         if lr_scheduler is None:
-            self.LR_SCHEDULER = lambda o: lrs.ReduceLROnPlateau(o, mode='max',
+            self.LR_SCHEDULER = lambda o: lrs.ReduceLROnPlateau(o, mode='min',
                                                                 factor=0.5,
                                                                 verbose=verbose,
                                                                 patience=25)
@@ -67,7 +65,6 @@ class Config(object):
 
 
         # Boltzmann machine Training
-        self.VAL_SIZE = val_size
         self.NUMSTEPS = numsteps
         self.NUMEPOCHS = numepochs
         self.KEEPBEST = keepbest

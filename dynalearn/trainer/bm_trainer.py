@@ -13,6 +13,7 @@ import progressbar
 
 from .history import History
 from ..dynamics.dataset import random_split
+from ..utilities.utilities import random_binary
 
 
 class BM_trainer(object):
@@ -35,7 +36,6 @@ class BM_trainer(object):
         self.lrs = config.LR_SCHEDULER(self.optimizer)
         self.batchsize = config.BATCHSIZE
 
-        self.val_size = config.VAL_SIZE
         self.numsteps = config.NUMSTEPS
         self.numepochs = config.NUMEPOCHS
         self.keep_best = config.KEEPBEST
@@ -44,8 +44,7 @@ class BM_trainer(object):
         self.verbose = config.VERBOSE
 
             
-    def setup_dataset(self, dataset):
-        train_dataset, val_dataset = random_split(dataset, self.val_size)
+    def setup_dataset(self, train_dataset, val_dataset):
         train_loader = torch.utils.data.DataLoader(train_dataset, 
                                              batch_size=self.batchsize,
                                              shuffle=True)
@@ -76,6 +75,10 @@ class BM_trainer(object):
 
         pos_units = self.bm.init_units(self.bm.inference(v_data))
         # print(self.bm.params["h"].energy_term(pos_units))
+        for k in pos_units:
+            if pos_units[k].u_kind == "hidden":
+                new_data = random_binary(pos_units[k].data)
+                pos_units[k].data = new_data
         pos_phase = self.bm.energy(pos_units)
 
 
@@ -88,13 +91,14 @@ class BM_trainer(object):
     def save_stats(self):
         return 0
 
-    def train(self, dataset):
+    def train(self, train_dataset, val_dataset):
 
         # Setting up dataset
-        train_loader, val_loader = self.setup_dataset(dataset)
+        train_loader, val_loader = self.setup_dataset(train_dataset,
+                                                      val_dataset)
         train_list = list(train_loader)
         val_list = list(val_loader)
-        complete_data = {"train": train_list, "val": val_list, "grad": 0}
+        complete_data = {"train": train_list, "val": val_list, "grad": []}
 
         # Setting counters
         best = 0
@@ -107,24 +111,31 @@ class BM_trainer(object):
         # Learning phase
         for i in range(self.numepochs):
             if self.verbose: bar = self.setup_progbar(i, len(train_loader))
+            grad = []
 
             ## Parameter updates
             for j, v_data in enumerate(train_loader):
+                # print(len(v_data))
                 ### Gradient ascent
                 loss = self.loss(v_data)
                 loss.backward()
                 self.optimizer.step()
-                self.optimizer.zero_grad()
-
-                ### Estimating model performance after update
+                local_grad = {}
+                for k in self.bm.params:
+                    local_grad[k] = self.bm.params[k].param.grad.detach().clone()
+                grad.append(local_grad)
+                ## Estimating model performance after update
                 data = {
                         "train": [v_data],
-                        "val": [choice(val_list) for i in range(self.batchsize)]
+                        "val": [choice(val_list) for i in range(self.batchsize)],
+                        "grad": local_grad
                        }
                 self.history.estimate_stats(update, data, self.bm)
+                self.optimizer.zero_grad()
 
                 if self.verbose: bar.update(j)
                 update += 1
+            complete_data["grad"] = grad
             self.bm.log_Z_to_be_eval = True
 
             if self.verbose: bar.finish()
@@ -136,11 +147,19 @@ class BM_trainer(object):
             self.lrs.step(criterion_val)
 
             ## Check for best configuration candidate
+            ## Saving best configuration 
             if self.keep_best:
                 if self.history.is_current_best():
                     for k in self.bm.params:
                         new_p = self.bm.params[k].param.data.clone()
                         self.history.best_params[k] = new_p
+                self.bm.save_params()
+            else:
+                self.bm.save_params()
+
+            ## Saving history 
+            self.history.save()
+
 
 
             if self.verbose: print(str(self.history))
@@ -155,14 +174,6 @@ class BM_trainer(object):
                 best_p = self.history.best_params[k].clone()
                 self.bm.params[k].param.data = best_p
 
-        # Saving best configuration 
-        # self.history.make_plots(save=True, show=False, showbest=self.keep_best)
-        # self.history.save()
-        # self.bm.save_params()
-
-
-
-        return self.history, val_list
 
 
 def layerwise_trainer(bm, train_dataset, n_epoch, num_steps=1, lr=None, verbose=False):
