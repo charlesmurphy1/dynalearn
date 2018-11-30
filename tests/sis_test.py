@@ -5,16 +5,17 @@ from dynalearn.dynamics import SISNetwork
 
 
 N = 1000
-avgk = 5
+avgk = 10
 M = N * avgk / 2
 g = nx.gnm_random_graph(N, M)
 print(g.number_of_nodes())
 init_active = 0.1
+init_num = 1
 dt = 0.01
-step = 1
-T = 500
-gamma = 2.
-rate = 0.5
+step = 0.1
+T = 10
+inf_rate = .5
+
 save = True
 
 def plot_activity(model_class, file_states, file_net):
@@ -27,7 +28,7 @@ def plot_activity(model_class, file_states, file_net):
     else:
         file_states = None
 
-    m_net = model_class(g, rate, init_active=init_active, dt=dt,
+    m_net = model_class(g, inf_rate, init_active=init_active, dt=dt,
                          filename=file_states)
 
     avg, err = m_net.get_avg_activity()
@@ -37,12 +38,12 @@ def plot_activity(model_class, file_states, file_net):
 
 
     while(t[-1] < T and m_net.continu_simu):
-        print(t[-1])
-        m_net.update(step=step, save=save)
+        m_net.update(step=step, record=True)
 
         avg, err = m_net.get_avg_activity()
 
         t.append(m_net.t[-1])
+        print(t[-1], avg)
         avg_act.append(list(avg.values()))
         err_act.append(list(err.values()))
 
@@ -52,8 +53,9 @@ def plot_activity(model_class, file_states, file_net):
     t = np.array(t)
     avg_act = np.array(avg_act)
     err_act = np.array(err_act)
-
-    plt.plot(t*dt, avg_act)
+    plt.xlim([0, T])
+    plt.ylim([0, 1])
+    plt.plot(t, avg_act)
     plt.show()
 
 plot_activity(SISNetwork, "testdata/CSIS_states.b", "testdata/CSIS_net.txt")

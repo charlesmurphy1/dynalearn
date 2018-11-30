@@ -16,19 +16,22 @@ from random import sample, random
 
 from .dynamical_network import *
 
-__all__ = ['ComplexSISNetwork']
+__all__ = ['SIkSNetwork']
 
 
-class ComplexSISNetwork(Dynamical_Network):
+class SIkSNetwork(Dynamical_Network):
     """
-        Class for SIS dynamical network.
+        Class for SIkS dynamical network.
 
         **Parameters**
         graph : nx.Graph
             A graph on which the dynamical process occurs.
 
-        rate : function
+        rate : float
             Normalized infection rate.
+
+        K : int
+            Number of intermediate states.
 
         init_active : Float
             Initial fraction of infected nodes.
@@ -40,15 +43,16 @@ class ComplexSISNetwork(Dynamical_Network):
             Name of file for saving activity states. If ``None``, it does not save the states.
 
     """
-    def __init__(self, graph, rate, init_active=0.01, dt=0.01,
+    def __init__(self, graph, rate, K, init_active=0.01, dt=0.01,
                  filename=None, full_data_mode=False):
 
         self.rate = rate
+        self.K = K
         self.init_active = init_active
         self.infected = set()
-        
-        self.rates = {}
-        super(ComplexSISNetwork, self).__init__(graph, dt=dt, filename=filename,
+
+        self.infected_time = {}
+        super(SIkSNetwork, self).__init__(graph, dt=dt, filename=filename,
                                          full_data_mode=full_data_mode)
 
 
@@ -60,9 +64,11 @@ class ComplexSISNetwork(Dynamical_Network):
         ind = sample(self.nodeset, n_init_active)
 
         self.infected = self.infected.union(ind)
+        self.infected_time = {v:0 for v in self.nodes()}
 
         for i in ind:
             init_activity[i] = 'I'
+            self.infected_time[i] += 1
 
         self.t.append(0)
 
@@ -79,33 +85,28 @@ class ComplexSISNetwork(Dynamical_Network):
 
         return infected_neighbors
 
-    def compute_rates(self):
-
-        for node in self.nodes():
-            l = len(self.get_infected_neighbors(node))
-            self.rates[node] = self.rate(l)
-
-
 
     def _state_transition(self):
 
         activity = self.activity.copy()
 
         new_infected = self.infected.copy()
-        self.compute_rates()
 
         for inf in self.infected:
 
             neighbors = self.neighbors(inf)
             for n in neighbors:
                 
-                if random() < self.rates[n] * self.dt:
+                if random() < self.rate * self.dt:
                     activity[n] = 'I'
+                    self.infected_time[n] += 1
                     new_infected.add(n)
 
             if random() < self.dt:
-                activity[inf] = 'S'
-                new_infected.remove(inf)
+                self.infected_time[n] += 1
+                if self.infected_time[n] > self.K:
+                    activity[inf] = 'S'
+                    new_infected.remove(inf)
 
         self.infected = new_infected
 

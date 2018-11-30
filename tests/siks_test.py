@@ -1,7 +1,7 @@
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
-from dynalearn.dynamics.complex_epidemic import ComplexSISNetwork
+from dynalearn.dynamics.nonmark_epidemic import SIkSNetwork
 import os
 
 N = 500
@@ -13,8 +13,9 @@ init_active = 0.1
 dt = 0.01
 step = 0.01
 T = 10
+K = 3
 gamma = 0.
-rate = lambda l : 1. * (l)**gamma
+rate = 1.
 save = True
 
 def plot_activity(model_class, file_states, file_net, overwrite=True):
@@ -28,7 +29,7 @@ def plot_activity(model_class, file_states, file_net, overwrite=True):
         else:
             file_states = None
 
-        m_net = model_class(g, rate, init_active=init_active, dt=dt,
+        m_net = model_class(g, rate, K, init_active=init_active, dt=dt,
                              filename=file_states)
 
         avg, err = m_net.get_avg_activity()
@@ -38,7 +39,6 @@ def plot_activity(model_class, file_states, file_net, overwrite=True):
 
 
         while(t[-1] < T and m_net.continu_simu):
-            print(t[-1])
             m_net.update(step=step, record=True)
 
             avg, err = m_net.get_avg_activity()
@@ -57,4 +57,4 @@ def plot_activity(model_class, file_states, file_net, overwrite=True):
         plt.plot(t, avg_act)
         plt.show()
 
-plot_activity(ComplexSISNetwork, "testdata/CSIS_states.b", "testdata/CSIS_net.txt")
+plot_activity(SIkSNetwork, "testdata/SIkS_states.b", "testdata/SIkS_net.txt")

@@ -54,7 +54,6 @@ class Dynamical_Network(nx.Graph):
 		self.activity = self._init_nodes_activity()
 
 		self.full_data_mode = full_data_mode
-		self.history = {}
 
 		if filename is None:
 			self.saving_file = None
@@ -78,7 +77,7 @@ class Dynamical_Network(nx.Graph):
 		raise NotImplementedError("self._state_transition_() has not been impletemented")	
 
 
-	def update(self, step=None, save=False):
+	def update(self, step=None, record=False):
 		"""
 		Update the next activity states.
 
@@ -105,11 +104,10 @@ class Dynamical_Network(nx.Graph):
 		
 		self.t.append(t)
 
-		if self.full_data_mode:
-			self.history[t] = forward_activity.copy()
-
-		if save:
+		if record:
+			# self.history[t] = forward_activity.copy()
 			self.save()
+
 
 		return 0
 
@@ -150,6 +148,24 @@ class Dynamical_Network(nx.Graph):
 		Save the activity states.
 
 		"""
+
+		if self.saving_file is None:
+			raise NameError('In Dynamical_Network object -> \
+							missing _saving_file member to save.')
+
+		if self.full_data_mode:
+			pickle.dump([self.t[-1], self.activity], self.saving_file)
+		else:
+			avg_activity = self.get_avg_activity()
+			pickle.dump([self.t[-1], avg_activity], self.saving_file)
+
+
+	def load(self, f):
+		"""
+		Save the activity states.
+
+		"""
+
 
 		if self.saving_file is None:
 			raise NameError('In Dynamical_Network object -> \
