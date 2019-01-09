@@ -13,7 +13,12 @@ init_active = 0.1
 init_num = 1
 dt = 0.01
 step = 0.01
+<<<<<<< HEAD
 T = 10
+=======
+T = 1
+inf_rate = 0.2
+>>>>>>> 132a5665e64d9a4bb4b383a8084efd2a2cec9151
 
 D = 3
 in_coupling = 0.5
