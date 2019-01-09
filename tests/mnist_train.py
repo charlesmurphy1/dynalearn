@@ -167,7 +167,7 @@ def main():
 	# Loading data
 	normalize = False
 	verbose = True
-	num_train = 10
+	num_train = 1024
 	num_val = 1000
 	# numbers = [6]
 	numbers = list(range(10))
@@ -177,8 +177,8 @@ def main():
 
 	# # Making RBM
 	n_visible = 28 * 28 # number of pixels in MNIST examples
-	n_hidden = 512
-	batchsize = 16
+	batchsize = 64
+	n_hidden = 2048
 	lr = 1e-2
 	wd = 0
 	momentum = 0.
@@ -198,18 +198,20 @@ def main():
 					numepochs=numepochs, with_pcd=True, bv_init=0.5,
 					makeplot=True, path_to_history='history',
 					graining=1.0, keepbest=False, overwrite=False,
+					use_cuda=True,
                  	)
 	# config.save()
 
 
 	rbm = RBM_BernoulliBernoulli(n_visible, n_hidden, config)
 	history = setup_history(config, rbm,
-							with_param=True,
-							with_grad=True,
+							with_param=False,
+							with_grad=False,
 							with_logp=False,
 							with_partfunc=False,
-							with_free_energy=True,
+							with_free_energy=False,
 							with_recon=True)
+	
 	print("Training phase: {} examples\n---------------".format(len(train_d)))
 	trainer = BM_trainer(rbm, history, config)
 	trainer.train(train_d, val_d)

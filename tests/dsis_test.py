@@ -13,11 +13,11 @@ init_active = 0.1
 init_num = 1
 dt = 0.01
 step = 0.01
-T = 10
+T = 1
 inf_rate = 0.2
 
-D = 10
-in_coupling = 1.
+D = 3
+in_coupling = 0.5
 out_coupling = 1.
 
 save = True
