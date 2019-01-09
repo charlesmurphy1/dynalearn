@@ -156,7 +156,7 @@ def test_rbm(rbm, config, examples, steps=10, intermediate=10):
 
 	figname = os.path.join(config.RUN, "test_from_model.png")
 	fig.savefig(figname)
-	# plt.show()
+	plt.show()
 
 
 
@@ -167,8 +167,8 @@ def main():
 	# Loading data
 	normalize = False
 	verbose = True
-	num_train = 10
-	num_val = 1000
+	num_train = 2
+	num_val = 100
 	# numbers = [6]
 	numbers = list(range(10))
 	# numbers = [8]
@@ -177,13 +177,22 @@ def main():
 
 	# # Making RBM
 	n_visible = 28 * 28 # number of pixels in MNIST examples
-	n_hidden = 512
+	n_hidden = 128
 	batchsize = 16
 	lr = 1e-2
-	wd = 0
-	momentum = 0.
-	numsteps = 10
-	numepochs = 50
+	wd = 1e-3
+	momentum = 0.8
+	numsteps = 5
+	numepochs = 200
+
+	show_example = True
+
+	if show_example:
+		for d in train_d:
+			fig, ax = plt.subplots(1, 1)
+			d = np.resize(d, [28, 28])
+			plot_number(d, ax)
+			plt.show()
 
 	# p = np.resize(p, [28, 28])
 	# plt.imshow(p)
@@ -204,7 +213,7 @@ def main():
 
 	rbm = RBM_BernoulliBernoulli(n_visible, n_hidden, config)
 	history = setup_history(config, rbm,
-							with_param=True,
+							with_param=False,
 							with_grad=True,
 							with_logp=False,
 							with_partfunc=False,
@@ -220,8 +229,7 @@ def main():
 	rbm.load_params(os.path.join(config.PATH_TO_MODEL, config.MODEL_NAME+".pt"))
 	
 	numbers = list(range(10))
-	# dataset, labels, mean, scale = load_data(, False, normalize, 
-											 # numbers=numbers)
+
 	examples = {}
 	i = 0
 	for d, l in zip(val_d, val_l):
@@ -235,8 +243,7 @@ def main():
 		if i == len(numbers):
 			break
 
-	test_rbm(rbm, config, examples, 4, 2)
-	plt.show()
+	test_rbm(rbm, config, examples, 10, 2)
 
 
 	bv = rbm.params["v"].param.data.detach().clone()
@@ -244,6 +251,7 @@ def main():
 	bv = np.reshape(bv, [28,28])
 
 	plt.imshow(bv)
+	plt.colorbar()
 	plt.show()
 
 if __name__ == '__main__':
