@@ -13,14 +13,37 @@ init_active = 0.1
 init_num = 1
 dt = 0.01
 step = 0.01
+<<<<<<< HEAD
+T = 10
+=======
 T = 1
 inf_rate = 0.2
+>>>>>>> 132a5665e64d9a4bb4b383a8084efd2a2cec9151
 
 D = 3
 in_coupling = 0.5
 out_coupling = 1.
+inf_rate = 0.2
 
 save = True
+
+# Global parameters for the figures.
+plt.rcParams['text.usetex'] = True
+plt.rcParams['font.size'] = 24
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['font.sans-serif'] = 'Computer Modern Sans serif'
+plt.rcParams['xtick.major.width'] = 2
+plt.rcParams['xtick.major.size'] = 8
+plt.rcParams['xtick.labelsize'] = 24
+plt.rcParams['ytick.major.width'] = 2
+plt.rcParams['ytick.major.size'] = 8
+plt.rcParams['ytick.labelsize'] = 24
+
+mycolors = {"b": "#08659F",
+            "o": "#F19143",
+            "r": "#D64933",
+            "g": "#269E4A",
+            "p": "#A377F1"}
 
 def plot_activity(model_class, file_states, file_net, overwrite=True):
     ## Testing SIRNetwork sub-class
@@ -62,6 +85,7 @@ def plot_activity(model_class, file_states, file_net, overwrite=True):
         avg_act = np.array(avg_act)
         err_act = np.array(err_act)
 
+        # fig = plt.figure()
         for i, k in enumerate(list(avg.keys())):
             plt.plot(t, avg_act[:, i], label=rf"${k}$")
 
@@ -72,7 +96,11 @@ def plot_activity(model_class, file_states, file_net, overwrite=True):
         #                ]
         plt.xlim([0, T])
         plt.ylim([0, 1])
-        plt.legend(frameon=False, ncol=1, fontsize=10)
-        plt.show()
+        plt.xlabel(r"Temps")
+        plt.ylabel(r"Fraction des noeuds")
+        plt.legend(frameon=False, ncol=1, fontsize=18)
+        plt.tight_layout(0.1)
+        # plt.show()
+        plt.savefig(f"plots/{D}sis_intC{in_coupling}_outC{out_coupling}_infR{inf_rate}_N{N}_k{avgk}.png")
 
 plot_activity(DSISNetwork, "testdata/DSIS_states.b", "testdata/DSIS_net.txt")

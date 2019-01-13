@@ -100,8 +100,9 @@ class DSISNetwork(Dynamical_Network):
 
             neighbors = self.neighbors(inf)
             for n in neighbors:
-                num = np.dot(self.activity[n], 1 - self.activity[inf])
-                p = self.inf_rate * self.dt
+                num = 1 - (np.dot(self.activity[n], self.activity[inf]) +\
+                           np.dot(1 - self.activity[n], 1 - self.activity[inf]))
+                p = self.inf_rate * self.out_coupling**num * self.dt
                 for d in range(self.D):
                     if random() < p and self.activity[inf][d] == 1:
                         activity[n][d] = 1
@@ -109,6 +110,7 @@ class DSISNetwork(Dynamical_Network):
             
             num = np.dot(self.activity[inf], self.activity[inf])
             p = self.rec_rate * self.in_coupling**num * self.dt
+
             for d in range(self.D):
                 if random() < p: activity[inf][d] = 0
             if np.sum(activity[inf]) == 0: new_infected.remove(inf)
