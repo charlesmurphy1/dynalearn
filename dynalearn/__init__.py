@@ -7,7 +7,7 @@ import dynalearn.models
 from .utilities import *
 import dynalearn.utilities
 
-from .dataset import *
-import dynalearn.dataset
+from .datasets import *
+import dynalearn.datasets
 
-__all__ = [ 'dynamics', 'models', 'utilities', 'dataset']
+__all__ = [ 'dynamics', 'models', 'utilities', 'datasets']

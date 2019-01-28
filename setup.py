@@ -11,6 +11,7 @@ from setuptools import setup
 packages = ["dynalearn",
             "dynalearn.dynamics",
             "dynalearn.models",
+            "dynalearn.datasets",
             "dynalearn.utilities"]
 
 
