@@ -3,6 +3,6 @@ from .epidemic import *
 from .complex_epidemic import *
 
 __all__ = ["dynamical_network",
-		   "epidemic",
-		   "complex_epidemic",
-		   "nonmark_epidemic"]
+           "epidemic",
+           "complex_epidemic",
+           "nonmark_epidemic"]

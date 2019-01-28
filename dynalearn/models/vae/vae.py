@@ -1,132 +1,120 @@
 import numpy as np
+import progressbar
 import torch
 import torch.nn as nn
+from torch.nn import functional as F
+from torch.utils.data import DataLoader, TensorDataset
 
 import time
 
 
 class VAE(nn.Module):
-    def __init__(self, n_inputs, n_hidden, n_embedding,
-                 optimizer=None, use_cuda=False):
+    def __init__(self, encoder, decoder, n_embedding,
+                 optimizer=None, loss=None, use_cuda=False):
         super(VAE, self).__init__()
         
         # Model hyper_parameters        
-        self.use_cuda = use_cuda
-        self.n_inputs = n_inputs
-        self.n_hidden = n_hidden
+        self.encoder = encoder
+        self.decoder = decoder
         self.n_embedding = n_embedding
-        self.optimizer = optimizer
-        
-        # Functions
-        self.relu = nn.ReLU()
-        self.sigmoid = nn.Sigmoid()
-        self.loss = nn.BCELoss(reduce="mean")
-        
-        # Inference network weights
-        layers = []
-        for i in range(1, len(self.n_hidden)):
-            layers.append(nn.Linear(self.n_hidden[i - 1], self.n_hidden[i]))
-            layers.append(self.relu)
-        self.inference_layers = nn.Sequential(nn.Linear(self.n_inputs,
-                                                        self.n_hidden[0]),
-                                              self.relu, *layers)
-        
-        # Embedding networks weights
-        self.mu_layer = nn.Linear(self.n_hidden[-1],
-                                  self.n_embedding)
-        self.logvar_layer = nn.Linear(self.n_hidden[-1],
-                                      self.n_embedding)
-        
-        # Generative network weights
-        layers = []
-        for i in range(len(n_hidden) - 1, 0, -1):
-            layers.append(nn.Linear(self.n_hidden[i],
-                                    self.n_hidden[i - 1]))
-            layers.append(self.relu)
-        self.generative_layers = nn.Sequential(nn.Linear(self.n_embedding,
-                                                         self.n_hidden[-1]),
-                                               self.relu,
-                                               *layers,
-                                               nn.Linear(self.n_hidden[0],
-                                                         self.n_inputs),
-                                               self.sigmoid)
-        
-        if self.optimizer is None:
-            self.optimizer = torch.optim.SGD(self.parameters(), lr = 1e-2)
+        self.use_cuda = use_cuda
 
-        if use_cuda:
+        if loss is None:
+            self.loss = nn.BCELoss(reduction="sum")
+        else:
+            self.loss = loss
+
+        self.epoch = 0
+        self.min_val_loss = np.inf
+
+        if self.use_cuda:
             self.inference_layers = self.inference_layers.cuda()
             self.mu_layer = self.mu_layer.cuda()
-            self.logvar_layer = self.logvar_layer.cuda()
+            self.var_layer = self.var_layer.cuda()
             self.generative_layers = self.generative_layers.cuda()
-    
-    def __inference_network(self, x):
-        h = self.inference_layers(x)
-        return self.mu_layer(h), self.logvar_layer(h)
 
-    def __sample_embedding(self, mu, logvar):
+        self.encoder.apply(init_weights)
+        self.decoder.apply(init_weights)
+        
+        if optimizer is None:
+            self.optimizer = torch.optim.SGD(self.parameters(), lr = 1e-2)
+        else:
+            self.optimizer = optimizer(self.parameters())
+
+
+    def _sample_embedding(self, mu, var):
+        var = 1e-6 + F.softplus(var)
         batch_size = mu.size(0)
         eps = torch.randn(batch_size, self.n_embedding)
+
         if self.use_cuda:
             eps = eps.cuda()
-        return mu + torch.exp(logvar / 2) * eps
 
-    def __generative_network(self, z):
-        return self.generative_layers(z)
+        return mu + var * eps
 
-    def __vae_loss(self, inputs, outputs):
+
+    def _vae_loss(self, inputs, outputs):
         recon_data = outputs[0]
         mu = outputs[1]
-        logvar= outputs[2]
+        var= outputs[2]
+
+        batch_size = inputs.size(0)
         
-        recon_loss = self.loss(recon_data, inputs)
+        recon_loss = self.loss(recon_data, inputs) / batch_size
         
-        KL_loss = torch.mean(0.5 * torch.sum(torch.exp(logvar) + \
-                                            mu**2 - 1. - logvar, 1)
-                           )
+        KL_loss = 0.5 * torch.sum(
+                                torch.pow(mu, 2) +
+                                torch.pow(var, 2) -
+                                torch.log(1e-8 + torch.pow(var, 2)) - 1
+                               ).sum() / batch_size
         return recon_loss + KL_loss
 
+
     def forward(self, x):
-        z_mu, z_logvar = self.inference_network(x)
-        z = self.sample_embedding(z_mu, z_logvar)
-        y = self.generative_network(z)
+        z_mu, z_var = self.encoder(x)
+        z = self._sample_embedding(z_mu, z_var)
+        y = self.decoder(z)
         
-        return y, z_mu, z_logvar
+        return y, z_mu, z_var
     
+
     def predict(self, batch_size=32):
+        self.train(False)
         self.eval()
         z = torch.randn(batch_size, self.n_embedding)
         if self.use_cuda:
             z = z.cuda()
-        sample = self.generative_network(z).detach().cpu().data.numpy()
+        sample = self.decoder(z).detach().cpu().data.numpy()
+        self.train(True)
         
         return sample, z
 
+
     def evaluate(self, dataset, batch_size=64):
         
-        model.train(False)
+        self.train(False)
+        self.eval()
         loss_value = []
-        model.eval()
 
-        data_loader = DataLoader(train_dataset, batch_size)
+        data_loader = DataLoader(dataset, batch_size)
 
         for batch in data_loader:
         
             inputs, labels = batch
             
-            if use_cuda:
+            if self.use_cuda:
                 inputs = inputs.cuda()
 
             outputs = self.forward(inputs)
-            loss = self.vae_loss(inputs, outputs)
+            loss = self._vae_loss(inputs, outputs)
             loss_value.append(loss.data)
+        self.train(True)
 
-        model.train(True)
         return sum(loss_value) / len(loss_value)
 
 
     def fit(self, train_dataset, val_dataset=None, epochs=10, batch_size=64,
-            verbose=True, initial_epoch=0):
+            verbose=True, keep_best=True):
 
         train_loader = DataLoader(train_dataset, batch_size)
         val_loader = DataLoader(val_dataset, batch_size)
@@ -136,23 +124,77 @@ class VAE(nn.Module):
         start = time.time()
         for i in range(epochs):
 
-            for batch in train_loader:
+            for j, batch in enumerate(train_loader):
                 self.optimizer.zero_grad()
                 inputs, labels = batch
                 
-                if use_cuda:
+                if self.use_cuda:
                     inputs = inputs.cuda()
 
-                loss = vae_loss(inputs, outputs)
+                outputs = self(inputs)
+                loss = self._vae_loss(inputs, outputs)
                 loss.backward()
-                optimizer.step()
+                self.optimizer.step()
+
+            train_loss = self.evaluate(train_dataset, batch_size)
+            val_loss = self.evaluate(val_dataset, batch_size)
+
+            if val_loss < self.min_val_loss:
+                self.min_val_loss = val_loss
+                if keep_best:
+                    best_param = self.state_dict()
+                    new_best = True
+            else:
+                new_best = False
+
 
             if verbose:
                 end = time.time()
-                print(f"Epoch {i} - Train loss: {train_loss} -\
-                        Val loss: {val_loss} -\
-                        Training time: {end - start}")
-                start = time.time()
 
+                if not new_best:
+                    print(f"Epoch {self.epoch} - Train loss: {train_loss:0.4f} - Val loss: {val_loss:0.4f} - Training time: {end - start:0.04f}")
+                else:
+                    print(f"Epoch {self.epoch} - Train loss: {train_loss:0.4f} - Val loss: {val_loss:0.4f} - Training time: {end - start:0.04f} - New best config.")
+                start = time.time()
+            self.epoch += 1
+
+        if keep_best: self.load_state_dict(best_param)
         return None
 
+
+    def save_params(self, f):
+        torch.save(self.state_dict(), f)
+
+
+    def load_params(self, f):
+        params = torch.load(f, map_location='cpu')
+        self.load_state_dict(params)
+
+
+    def save_optimizer(self, f):
+        """
+        Saves the state of the current optimizer.
+
+        Args:
+            f: File-like object (has to implement fileno that returns a file
+                descriptor) or string containing a file name.
+        """
+        torch.save(self.optimizer.state_dict(), f)
+
+
+    def load_optimizer(self, f):
+        """
+        Loads the optimizer state saved using the ``torch.save()`` method or the
+        ``save_optimizer_state()`` method of this class.
+
+        Args:
+            f: File-like object (has to implement fileno that returns a file
+                descriptor) or string containing a file name.
+        """
+        self.optimizer.load_state_dict(torch.load(f, map_location='cpu'))
+
+
+def init_weights(m):
+    if type(m) == nn.Linear:
+        torch.nn.init.xavier_uniform_(m.weight)
+        m.bias.data.fill_(0.0)
