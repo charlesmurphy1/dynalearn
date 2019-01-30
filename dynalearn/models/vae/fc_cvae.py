@@ -6,7 +6,7 @@ from .cvae import CVAE
 
 class Fc_CEncoder(nn.Module):
     def __init__(self, n_inputs, n_hidden, n_embedding, n_conditional, 
-                 keepprob=1):
+                 keepprob=1, use_cuda=False):
         super(Fc_CEncoder, self).__init__()
         if type(n_hidden) == int: n_hidden = [n_hidden]
     
@@ -30,6 +30,11 @@ class Fc_CEncoder(nn.Module):
         self.var = nn.Linear(n_hidden[-1],
                                  n_embedding)
 
+        if use_cuda:
+            self.encoder = self.encoder.cuda()
+            self.mu = self.mu.cuda()
+            self.var = self.var.cuda()
+
     def forward(self, x, c):
         x = torch.cat([x, c], 1)
         h = self.encoder(x)
@@ -38,7 +43,7 @@ class Fc_CEncoder(nn.Module):
 
 class Fc_CDecoder(nn.Module):
     def __init__(self, n_inputs, n_hidden, n_embedding, n_conditional,
-                 keepprob=1):
+                 keepprob=1, use_cuda=False):
         super(Fc_CDecoder, self).__init__()
         if type(n_hidden) == int: n_hidden = [n_hidden]
 
@@ -63,6 +68,9 @@ class Fc_CDecoder(nn.Module):
                                       nn.Linear(n_hidden[0],
                                                 n_inputs),
                                       sigmoid)
+
+        if use_cuda:
+            self.decoder = self.decoder.cuda()
 
     def forward(self, z, c):
         z = torch.cat([z, c], 1)

@@ -4,7 +4,8 @@ from .vae import VAE
 
 
 class Fc_Encoder(nn.Module):
-    def __init__(self, n_inputs, n_hidden, n_embedding, keepprob=1):
+    def __init__(self, n_inputs, n_hidden, n_embedding, keepprob=1,
+                 use_cuda=False):
         super(Fc_Encoder, self).__init__()
         if type(n_hidden) == int: n_hidden = [n_hidden]
     
@@ -28,13 +29,19 @@ class Fc_Encoder(nn.Module):
         self.var = nn.Linear(n_hidden[-1],
                                  n_embedding)
 
+        if use_cuda:
+            self.encoder = self.encoder.cuda()
+            self.mu = self.mu.cuda()
+            self.var = self.var.cuda()
+
     def forward(self, x):
         x = self.encoder(x)
         return self.mu(x), self.var(x)
 
 
 class Fc_Decoder(nn.Module):
-    def __init__(self, n_inputs, n_hidden, n_embedding, keepprob=1):
+    def __init__(self, n_inputs, n_hidden, n_embedding, keepprob=1,
+                 use_cuda=False):
         super(Fc_Decoder, self).__init__()
         if type(n_hidden) == int: n_hidden = [n_hidden]
 
@@ -59,6 +66,8 @@ class Fc_Decoder(nn.Module):
                                       nn.Linear(n_hidden[0],
                                                 n_inputs),
                                       sigmoid)
+        if use_cuda:
+            self.decoder = self.decoder.cuda()
 
     def forward(self, z):
         return self.decoder(z)

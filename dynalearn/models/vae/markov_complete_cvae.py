@@ -1,23 +1,37 @@
 import numpy as np
+from random import randint
 import progressbar
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
+from .fc_cvae import Fc_CEncoder, Fc_CDecoder
+from .cvae import CVAE
+
 import time
 
 
-class VAE(nn.Module):
-    def __init__(self, encoder, decoder, n_embedding,
+class Markov_Complete_CVAE(nn.Module):
+    def __init__(self, n_nodes, n_hidden, n_embedding,
                  optimizer=None, loss=None, use_cuda=False):
-        super(VAE, self).__init__()
+        super(Markov_Complete_CVAE, self).__init__()
         
-        # Model hyper_parameters        
-        self.encoder = encoder
-        self.decoder = decoder
+        self.n_nodes = n_nodes
+        self.n_hidden = n_hidden
         self.n_embedding = n_embedding
         self.use_cuda = use_cuda
+
+        self.encoder = Fc_CEncoder(n_nodes, n_hidden, n_embedding,
+                                   n_nodes, keepprob=1, use_cuda=False)
+        self.decoder = Fc_CDecoder(n_nodes, n_hidden, n_embedding,
+                                   n_nodes, keepprob=1, use_cuda=False)
+        if self.use_cuda:
+            self.encoder = self.encoder.cuda()
+            self.decoder = self.decoder.cuda()
+
+        self.encoder.apply(init_weights)
+        self.decoder.apply(init_weights)
 
         if loss is None:
             self.loss = nn.BCELoss(reduction="sum")
@@ -25,19 +39,14 @@ class VAE(nn.Module):
             self.loss = loss
 
         self.epoch = 0
-        self.min_val_loss = np.inf
+        self.criterion = np.inf
 
-        if self.use_cuda:
-            self.encoder = self.encoder.cuda()
-            self.decoder = self.decoder.cuda()
-
-        self.encoder.apply(init_weights)
-        self.decoder.apply(init_weights)
         
         if optimizer is None:
             self.optimizer = torch.optim.SGD(self.parameters(), lr = 1e-2)
         else:
             self.optimizer = optimizer(self.parameters())
+
 
 
     def _sample_embedding(self, mu, var):
@@ -57,7 +66,6 @@ class VAE(nn.Module):
         var= outputs[2]
 
         batch_size = inputs.size(0)
-        
         recon_loss = self.loss(recon_data, inputs) / batch_size
         
         KL_loss = 0.5 * torch.sum(
@@ -68,24 +76,30 @@ class VAE(nn.Module):
         return recon_loss + KL_loss
 
 
-    def forward(self, x):
-        z_mu, z_var = self.encoder(x)
+    def forward(self, x, c):
+        z_mu, z_var = self.encoder(x, c)
         z = self._sample_embedding(z_mu, z_var)
-        y = self.decoder(z)
+        y = self.decoder(z, c)
         
         return y, z_mu, z_var
     
 
-    def predict(self, batch_size=32):
+    def predict(self, past_states, batch_size=32):
+        if past_states.dim() == 1:
+            past_states = past_states.repeat(batch_size, 1)
+
+        if self.use_cuda:
+            past_states = past_states.cuda()
+
         self.train(False)
         self.eval()
         z = torch.randn(batch_size, self.n_embedding)
         if self.use_cuda:
             z = z.cuda()
-        sample = self.decoder(z).detach().cpu().data.numpy()
+        sample = self.decoder(z, past_states).detach().cpu().data.numpy()
         self.train(True)
         
-        return sample, z
+        return sample, z, past_states
 
 
     def evaluate(self, dataset, batch_size=64):
@@ -98,15 +112,13 @@ class VAE(nn.Module):
 
         for batch in data_loader:
         
-            if batch is tuple:
-                inputs, labels = batch
-            else:
-                inputs = batch
+            inputs, past_states = batch
             
             if self.use_cuda:
                 inputs = inputs.cuda()
+                past_states = past_states.cuda()
 
-            outputs = self.forward(inputs)
+            outputs = self.forward(inputs, past_states)
             loss = self._vae_loss(inputs, outputs)
             loss_value.append(loss.data)
         self.train(True)
@@ -118,7 +130,6 @@ class VAE(nn.Module):
             verbose=True, keep_best=True):
 
         train_loader = DataLoader(train_dataset, batch_size)
-        val_loader = DataLoader(val_dataset, batch_size)
 
         self.train(True)
 
@@ -127,24 +138,27 @@ class VAE(nn.Module):
 
             for j, batch in enumerate(train_loader):
                 self.optimizer.zero_grad()
-                if batch is tuple:
-                    inputs, labels = batch
-                else:
-                    inputs = batch
-                
+                inputs, past_states = batch
+            
                 if self.use_cuda:
                     inputs = inputs.cuda()
+                    past_states = past_states.cuda()
 
-                outputs = self(inputs)
+                outputs = self.forward(inputs, past_states)
                 loss = self._vae_loss(inputs, outputs)
                 loss.backward()
                 self.optimizer.step()
 
             train_loss = self.evaluate(train_dataset, batch_size)
-            val_loss = self.evaluate(val_dataset, batch_size)
+            criterion = train_loss
+            if val_dataset is not None:
+                val_loss = self.evaluate(val_dataset, batch_size)
+                criterion = val_loss
+            else:
+                val_loss = 0
 
-            if val_loss < self.min_val_loss:
-                self.min_val_loss = val_loss
+            if criterion < self.criterion:
+                self.criterion = criterion
                 if keep_best:
                     best_param = self.state_dict()
                     new_best = True
@@ -155,10 +169,21 @@ class VAE(nn.Module):
             if verbose:
                 end = time.time()
 
-                if not new_best:
-                    print(f"Epoch {self.epoch} - Train loss: {train_loss:0.4f} - Val loss: {val_loss:0.4f} - Training time: {end - start:0.04f}")
+                if new_best:
+                    print(f"Epoch {self.epoch} - " +\
+                          f"Training Loss: {avg_train_loss:0.4f} ± " +\
+                          f"{std_train_loss:0.4f} - " +\
+                          f"Validation Loss: {avg_val_loss:0.4f} ± " +\
+                          f"{std_val_loss:0.4f} - " +\
+                          f"Training time: {end - start:0.04f} - " +\
+                          f"New best config.")
                 else:
-                    print(f"Epoch {self.epoch} - Train loss: {train_loss:0.4f} - Val loss: {val_loss:0.4f} - Training time: {end - start:0.04f} - New best config.")
+                    print(f"Epoch {self.epoch} - " +\
+                          f"Training Loss: {train_loss:0.4f} ± " +\
+                          f"{std_train_loss:0.4f} - " +\
+                          f"Validation Loss: {val_loss:0.4f} ± " +\
+                          f"{std_val_loss:0.4f} - " +\
+                          f"Training time: {end - start:0.04f} - ")
                 start = time.time()
             self.epoch += 1
 

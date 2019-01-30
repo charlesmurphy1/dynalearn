@@ -30,10 +30,8 @@ class CVAE(nn.Module):
         self.min_val_loss = np.inf
 
         if self.use_cuda:
-            self.inference_layers = self.inference_layers.cuda()
-            self.mu_layer = self.mu_layer.cuda()
-            self.var_layer = self.var_layer.cuda()
-            self.generative_layers = self.generative_layers.cuda()
+            self.encoder = self.encoder.cuda()
+            self.decoder = self.decoder.cuda()
 
         self.encoder.apply(init_weights)
         self.decoder.apply(init_weights)
