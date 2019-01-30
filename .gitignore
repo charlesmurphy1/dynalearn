@@ -11,3 +11,7 @@
 # Sublime-text extension
 *.sublime-project
 *.sublime-workspace
+
+#Python entension
+*.pyc
+*checkpoint.ipynb
