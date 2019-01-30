@@ -13,6 +13,7 @@ process occurs.
 
 import networkx as nx
 import pickle
+import os
 
 __all__ = ['Dynamical_Network']
 
@@ -34,7 +35,8 @@ class Dynamical_Network(nx.Graph):
 			
 
 	"""
-	def __init__(self, graph, dt=0.01, filename=None, full_data_mode=False):
+	def __init__(self, graph, dt=0.01, filename=None, full_data_mode=False,
+				 overwrite=False):
 		"""
 		Initializes a Dynamical_Network object.
 
@@ -48,25 +50,27 @@ class Dynamical_Network(nx.Graph):
 		else:
 			self.dt = dt
 
-		self.continu_simu = True
+		self.continue_simu = True
 
 		self.t = []
-		self.activity = self._init_nodes_activity()
+		self.activity = self.init_activity()
 
 		self.full_data_mode = full_data_mode
 
 		if filename is None:
 			self.saving_file = None
 		else:
+			if overwrite:
+				os.remove(filename)
 			self.saving_file = open(filename, "wb")
 
 
-	def _init_nodes_activity_(self):
+	def init_activity(self):
 		"""
 		Initializes the nodes activity states. (virtual) (private)
 
 		"""
-		raise NotImplementedError("self._init_nodes_activity_() has not been impletemented")
+		raise NotImplementedError("self.init_activity() has not been impletemented")
 
 
 	def _state_transition_(self):
@@ -94,7 +98,7 @@ class Dynamical_Network(nx.Graph):
 		t_init = self.t[-1]
 		t = t_init
 
-		while(t < t_init + step) and self.continu_simu:
+		while(t < t_init + step) and self.continue_simu:
 
 			forward_activity = self._state_transition()
 			self.activity = forward_activity.copy()
@@ -167,11 +171,13 @@ class Dynamical_Network(nx.Graph):
 		"""
 
 
-		if self.saving_file is None:
-			raise NameError('In Dynamical_Network object -> \
-							missing _saving_file member to save.')
+		# if self.saving_file is None:
+		# 	raise NameError('In Dynamical_Network object -> \
+		# 					missing _saving_file member to save.')
 
-		pickle.dump([self.t[-1], self.activity], self.saving_file)
+		# pickle.dump([self.t[-1], self.activity], self.saving_file)
+
+		pass
 
 
 	def close(self):

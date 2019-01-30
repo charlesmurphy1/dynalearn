@@ -40,28 +40,29 @@ class SISNetwork(Dynamical_Network):
 
     """
     def __init__(self, graph, rate, init_active=0.01, dt=0.01,
-                 filename=None, full_data_mode=False):
+                 filename=None, full_data_mode=False, overwrite=True):
 
         self.rate = rate
         self.init_active = init_active
         self.infected = set()
         super(SISNetwork, self).__init__(graph, dt=dt, filename=filename,
-                                         full_data_mode=full_data_mode)
+                                         full_data_mode=full_data_mode,
+                                         overwrite=overwrite)
 
 
-    def _init_nodes_activity(self):
+    def init_activity(self):
 
         n = self.number_of_nodes()
         n_init_active = ceil(n * self.init_active)
-        init_activity = {v:'S' for v in self.nodes()}
+        activity = {v:'S' for v in self.nodes()}
         ind = sample(self.nodeset, n_init_active)
         self.infected = self.infected.union(ind)
         for i in ind:
-            init_activity[i] = 'I'
+            activity[i] = 'I'
 
         self.t.append(0)
 
-        return init_activity
+        return activity
 
 
     def _state_transition(self):
@@ -86,7 +87,7 @@ class SISNetwork(Dynamical_Network):
         self.infected = new_infected
 
         if len(new_infected) == 0:
-            self.continu_simu = False
+            self.continue_simu = False
 
         return activity
 
@@ -113,7 +114,7 @@ class SISNetwork(Dynamical_Network):
 class SIRNetwork(Dynamical_Network):
     """docstring for SIRNetwork"""
     def __init__(self, g, rate, init_active=0.01, dt=0.01,
-                 filename=None, full_data_mode=False):
+                 filename=None, full_data_mode=False, overwrite=True):
 
         self.rate = rate
         self.init_active = init_active
@@ -121,22 +122,23 @@ class SIRNetwork(Dynamical_Network):
         self.infected = set()
 
         super(SIRNetwork, self).__init__(g, dt=dt, filename=filename,
-                                         full_data_mode=full_data_mode)
+                                         full_data_mode=full_data_mode,
+                                         overwrite=overwrite)
 
 
-    def _init_nodes_activity(self):
+    def init_activity(self):
 
         n = self.number_of_nodes()
         n_init_active = ceil(n * self.init_active)
-        init_activity = {v:'S' for v in self.nodes()}
+        activity = {v:'S' for v in self.nodes()}
         ind = sample(self.nodeset, n_init_active)
         self.infected = self.infected.union(ind)
         for i in ind:
-            init_activity[i] = 'I'
+            activity[i] = 'I'
 
         self.t.append(0)
 
-        return init_activity
+        return activity
 
     def _state_transition(self):
 
@@ -161,7 +163,7 @@ class SIRNetwork(Dynamical_Network):
         self.infected = new_infected
 
         if len(new_infected) == 0:
-            self.continu_simu = False
+            self.continue_simu = False
 
         return activity
 
@@ -221,7 +223,7 @@ if __name__ == '__main__':
         err_act = [list(err.values())]
 
 
-        while(t[-1] < T and m_net.continu_simu):
+        while(t[-1] < T and m_net.continue_simu):
 
             m_net.update(step=step, save=save)
 
