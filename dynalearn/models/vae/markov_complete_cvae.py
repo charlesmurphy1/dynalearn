@@ -96,6 +96,7 @@ class Markov_Complete_CVAE(nn.Module):
         z = torch.randn(batch_size, self.n_embedding)
         if self.use_cuda:
             z = z.cuda()
+
         sample = self.decoder(z, past_states).detach().cpu().data.numpy()
         self.train(True)
         
@@ -120,10 +121,11 @@ class Markov_Complete_CVAE(nn.Module):
 
             outputs = self.forward(inputs, past_states)
             loss = self._vae_loss(inputs, outputs)
-            loss_value.append(loss.data)
+            loss_value.append(loss.data.detach().cpu().numpy())
         self.train(True)
+        loss_value = np.array(loss_value)
 
-        return sum(loss_value) / len(loss_value)
+        return np.mean(loss_value), np.std(loss_value)
 
 
     def fit(self, train_dataset, val_dataset=None, epochs=10, batch_size=64,
@@ -149,13 +151,15 @@ class Markov_Complete_CVAE(nn.Module):
                 loss.backward()
                 self.optimizer.step()
 
-            train_loss = self.evaluate(train_dataset, batch_size)
-            criterion = train_loss
+            avg_train_loss, std_train_loss = self.evaluate(train_dataset,
+                                                           batch_size)
+            criterion = avg_train_loss
             if val_dataset is not None:
-                val_loss = self.evaluate(val_dataset, batch_size)
-                criterion = val_loss
+                avg_val_loss, std_val_loss = self.evaluate(val_dataset,
+                                                           batch_size)
+                criterion = avg_val_loss
             else:
-                val_loss = 0
+                avg_val_loss = 0
 
             if criterion < self.criterion:
                 self.criterion = criterion
@@ -172,17 +176,17 @@ class Markov_Complete_CVAE(nn.Module):
                 if new_best:
                     print(f"Epoch {self.epoch} - " +\
                           f"Training Loss: {avg_train_loss:0.4f} ± " +\
-                          f"{std_train_loss:0.4f} - " +\
+                          f"{std_train_loss:0.2f} - " +\
                           f"Validation Loss: {avg_val_loss:0.4f} ± " +\
-                          f"{std_val_loss:0.4f} - " +\
+                          f"{std_val_loss:0.2f} - " +\
                           f"Training time: {end - start:0.04f} - " +\
-                          f"New best config.")
+                          f"New best")
                 else:
                     print(f"Epoch {self.epoch} - " +\
-                          f"Training Loss: {train_loss:0.4f} ± " +\
-                          f"{std_train_loss:0.4f} - " +\
-                          f"Validation Loss: {val_loss:0.4f} ± " +\
-                          f"{std_val_loss:0.4f} - " +\
+                          f"Training Loss: {avg_train_loss:0.4f} ± " +\
+                          f"{std_train_loss:0.2f} - " +\
+                          f"Validation Loss: {avg_val_loss:0.4f} ± " +\
+                          f"{std_val_loss:0.2f} - " +\
                           f"Training time: {end - start:0.04f} - ")
                 start = time.time()
             self.epoch += 1
