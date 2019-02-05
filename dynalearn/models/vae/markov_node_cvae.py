@@ -1,8 +1,11 @@
 import numpy as np
+import math
 from random import randint
-import progressbar
+import sys
 import torch
 import torch.nn as nn
+from torch.nn.parameter import Parameter
+import torch.nn.init as init
 from torch.nn import functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
@@ -11,38 +14,114 @@ from .cvae import CVAE
 
 import time
 
+class NodeLinear(nn.Module):
+    def __init__(self, num_nodes, in_features, out_features, bias=True):
+        super(NodeLinear, self).__init__()
+        self.num_nodes = num_nodes
+        self.in_features = in_features
+        self.out_features = out_features
+
+        self.weight = Parameter(torch.Tensor(num_nodes,
+                                             in_features,
+                                             out_features))
+        if bias:
+            self.bias = Parameter(torch.Tensor(num_nodes,
+                                               out_features))
+        else:
+            self.register_parameter('bias', None)
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        if self.bias is not None:
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)
+            bound = 1 / math.sqrt(fan_in)
+            init.uniform_(self.bias, -bound, bound)
+
+    def forward(self, input):
+        batch_size = input.size(0)
+        input = input.view(batch_size, self.num_nodes, 1, self.in_features)
+        ans = torch.matmul(input, self.weight).view(batch_size,
+                                                    self.num_nodes,
+                                                    self.out_features)
+        if self.bias is not None:
+            return ans + self.bias
+        else:
+            return ans
+
+    def extra_repr(self):
+        return 'in_features={}, out_features={}, bias={}'.format(
+            self.in_features, self.out_features, self.bias is not None
+        )
+
 
 class Markov_Node_CVAE(nn.Module):
     def __init__(self, graph, n_hidden, n_embedding,
-                 optimizer=None, loss=None, use_cuda=False):
+                 optimizer=None, loss=None, metrics=None, 
+                 use_cuda=False, keepprob=1):
         super(Markov_Node_CVAE, self).__init__()
         
         self.graph = graph
-        self.n_nodes = self.graph.number_of_nodes()
+        self.num_nodes = self.graph.number_of_nodes()
         self.degrees = dict(self.graph.degree())
         self.n_hidden = n_hidden
         self.n_embedding = n_embedding
         self.use_cuda = use_cuda
-        # self.encoders = {}
-        # self.decoders = {}
 
-        # for n in self.graph.node:
-        #     self.encoders[str(n)] = Fc_CEncoder(1, n_hidden, n_embedding,
-        #                                         self.degrees[n] + 1,
-        #                                         keepprob=1,
-        #                                         use_cuda=self.use_cuda)
-        #     self.decoders[str(n)] = Fc_CDecoder(1, n_hidden, n_embedding,
-        #                                         self.degrees[n] + 1,
-        #                                         keepprob=1,
-        #                                         use_cuda=self.use_cuda)
-        #     if self.use_cuda:
-        #         self.encoders[str(n)] = self.encoders[str(n)].cuda()
-        #         self.decoders[str(n)] = self.decoders[str(n)].cuda()
+        relu = nn.ReLU()
+        tanh = nn.Tanh()
+        sigmoid = nn.Sigmoid()
+        dropout = nn.Dropout(1 - keepprob)
 
-        # self.encoders = nn.ModuleDict(self.encoders)
-        # self.decoders = nn.ModuleDict(self.decoders)
-        self.encoders.apply(init_weights)
-        self.decoders.apply(init_weights)
+        # Encoder
+        layers = [NodeLinear(self.num_nodes,
+                             self.num_nodes + 1,
+                             self.n_hidden[0])]
+
+        for i in range(1, len(n_hidden)):
+            layers.append(relu)
+            layers.append(dropout)
+            layers.append(NodeLinear(self.num_nodes,
+                                     self.n_hidden[i - 1], 
+                                     self.n_hidden[i]))
+        self.encoder = nn.Sequential(*layers, tanh, dropout)
+        self.mu = NodeLinear(self.num_nodes,
+                             self.n_hidden[-1],
+                             self.n_embedding)
+        self.var = NodeLinear(self.num_nodes,
+                              self.n_hidden[-1],
+                              self.n_embedding)
+
+        # Decoder
+        layers = []
+        for i in range(len(n_hidden) - 1, 0, -1):
+            layers.append(NodeLinear(self.num_nodes, 
+                                     self.n_hidden[i],
+                                     self.n_hidden[i - 1]))
+            layers.append(relu)
+            layers.append(dropout)
+        self.decoder = nn.Sequential(NodeLinear(self.num_nodes,
+                                                self.n_embedding + self.num_nodes,
+                                                self.n_hidden[-1]),
+                                     tanh,
+                                     dropout,
+                                     *layers,
+                                     NodeLinear(self.num_nodes,
+                                                self.n_hidden[0],
+                                                1),
+                                     sigmoid)
+
+        if self.use_cuda:
+            self.encoder = self.encoder.cuda()
+            self.mu = self.mu.cuda()
+            self.var = self.var.cuda()
+            self.decoder = self.decoder.cuda()
+
+        self.encoder.apply(init_weights)
+        self.mu.apply(init_weights)
+        self.var.apply(init_weights)
+        self.decoder.apply(init_weights)
 
         if optimizer is None:
             self.optimizer = torch.optim.SGD(self.parameters(), lr = 1e-2)
@@ -58,14 +137,11 @@ class Markov_Node_CVAE(nn.Module):
         self.epoch = 0
         self.criterion = np.inf
 
-        
-
-
 
     def _sample_embedding(self, mu, var):
         var = 1e-6 + F.softplus(var)
         batch_size = mu.size(0)
-        eps = torch.randn(batch_size, self.n_embedding)
+        eps = torch.randn(batch_size, self.num_nodes, self.n_embedding)
 
         if self.use_cuda:
             eps = eps.cuda()
@@ -73,53 +149,62 @@ class Markov_Node_CVAE(nn.Module):
         return mu + var * eps
 
 
-    def _vae_loss(self, inputs, outputs):
-        recon_data = outputs[0]
+    def _vae_loss(self, states, outputs):
+        recon_states = outputs[0]
         mu = outputs[1]
         var= outputs[2]
 
-        batch_size = inputs.size(0)
-        recon_loss = self.loss(recon_data, inputs) / batch_size
+        batch_size = states.size(0)
+        recon_loss = self.loss(recon_states, states) / batch_size
         
         KL_loss = 0.5 * torch.sum(
-                                torch.pow(mu, 2) +
-                                torch.pow(var, 2) -
-                                torch.log(1e-8 + torch.pow(var, 2)) - 1
-                               ).sum() / batch_size
-        return recon_loss + KL_loss
+                                    torch.pow(mu, 2) +
+                                    torch.pow(var, 2) -
+                                    torch.log(1e-8 + torch.pow(var, 2)) - 1
+                                 ) / batch_size
+
+        return recon_loss, KL_loss
 
 
-    def forward(self, node, x, c):
-        z_mu, z_var = self.encoders[str(node)](x, c)
+    def forward(self, x):
+        present, past = x[0], x[1]
+        batch_size = present.size(0)
+        conditional = past.repeat(1, 1, self.num_nodes)
+
+        x = torch.cat([present, conditional], 2)
+
+        h = self.encoder(x)
+        z_mu, z_var = self.mu(h), self.var(h)
         z = self._sample_embedding(z_mu, z_var)
-        y = self.decoders[str(node)](z, c)
+        z = torch.cat([z, conditional], 2)
+
+        y = self.decoder(z)
         
         return y, z_mu, z_var
     
 
-    def predict(self, past_states, batch_size=32):
+    def predict(self, past, batch_size=32):
+        # print(past.size())
 
+        if past.dim() < 3:
+            _past = past.view(1, self.num_nodes, 1).repeat(batch_size, 1, 1)
+        else:
+            _past = past.clone()
+
+        conditional = _past.repeat(1, 1, self.num_nodes)
         sample = {}
         z = {}
         self.train(False)
         self.eval()
-        # for n in self.graph.node:
-        #     if past_states[n].dim() == 1:
-        #         past_states[n] = past_states[n].repeat(batch_size, 1)
+        
+        z = torch.randn(batch_size, self.num_nodes, self.n_embedding)
+        z = torch.cat([z, conditional], 2)
 
-        #     if self.use_cuda:
-        #         past_states[n] = past_states[n].cuda()
+        sample = self.decoder(z).detach().cpu().data.numpy()
 
-
-        #     z[n] = torch.randn(batch_size, self.n_embedding)
-        #     if self.use_cuda:
-        #         z[n] = z[n].cuda()
-        #     sample[n] = self.decoders[str(n)](z[n],
-        #                                       past_states[n]
-        #                                      ).detach().cpu().data.numpy()
         self.train(True)
 
-        return sample, z, past_states
+        return sample, z, past
 
 
     def evaluate(self, dataset, batch_size=64):
@@ -128,24 +213,31 @@ class Markov_Node_CVAE(nn.Module):
         self.eval()
 
         data_loader = DataLoader(dataset, batch_size)
-        loss_value = np.zeros(len(data_loader) * self.n_nodes)
+        loss_value = np.zeros(len(data_loader))
+        recon_value = np.zeros(len(data_loader))
+        kl_value = np.zeros(len(data_loader))
         i = 0
 
         for batch in data_loader:
-            inputs, past_states = batch
-            # for n in self.graph.node:
-            #     node_input = inputs[n]
-            #     node_past = past_states[n]
-            #     if self.use_cuda:
-            #         node_input = node_input.cuda()
-            #         node_past = node_past.cuda()
+            present, past = batch
+            if self.use_cuda:
+                present = present.cuda()
+                past = past.cuda()
 
-            #     node_output = self.forward(n, node_input, node_past)
-            #     loss_value[i] = self._vae_loss(node_input, node_output).clone().cpu().detach().numpy()
-            #     i += 1
+            outputs = self.forward((present, past))
+            recon, KL = self._vae_loss(present,
+                                       outputs
+                                      )
+            loss_value[i] = recon.detach().cpu().numpy() +\
+                            KL.detach().cpu().numpy()
+            recon_value[i] = recon.detach().cpu().numpy()
+            kl_value[i] = KL.detach().cpu().numpy()
+            i += 1
+
         self.train(True)
-
-        return np.mean(loss_value), np.std(loss_value)
+        return (np.mean(loss_value), np.std(loss_value)), \
+               (np.mean(recon_value), np.std(recon_value)), \
+               (np.mean(kl_value), np.std(kl_value))
 
 
     def fit(self, train_dataset, val_dataset=None, epochs=10, batch_size=64,
@@ -154,42 +246,53 @@ class Markov_Node_CVAE(nn.Module):
         train_loader = DataLoader(train_dataset, batch_size)
 
         self.train(True)
-
         start = time.time()
+        train_metrics = self.evaluate(train_dataset,
+                                        batch_size)
+        if val_dataset is not None:
+            val_metrics = self.evaluate(val_dataset,
+                                        batch_size)
+        else:
+            val_metrics = None
+        if verbose and self.epoch == 0:
+            self.progress(self.epoch,
+                          0,
+                          train_metrics,
+                          val_metrics,
+                          False)
         for i in range(epochs):
 
+            self.epoch += 1
             for j, batch in enumerate(train_loader):
-                loss = 0    
-                inputs, past_states = batch
+
                 self.optimizer.zero_grad()
-                # for n in self.graph.node:
+                present, past = batch
 
-                #     node_input = inputs[n]
-                #     node_past = past_states[n]
-                #     if self.use_cuda:
-                #         node_input = node_input.cuda()
-                #         node_past = node_past.cuda()
-                
-                #     node_output = self.forward(n, node_input, node_past)
-                #     loss += self._vae_loss(node_input, node_output)
+                if self.use_cuda:
+                    present = present.cuda()
+                    past = past.cuda()
 
+                outputs = self.forward((present, past))
+
+                recon, KL = self._vae_loss(present, outputs)
+                loss = recon + KL
                 loss.backward()
                 self.optimizer.step()
 
-            avg_train_loss, std_train_loss = self.evaluate(train_dataset,
-                                                           batch_size)
-            new_criterion = avg_train_loss
+            train_metrics = self.evaluate(train_dataset,
+                                          batch_size)
+            new_criterion = train_metrics[0][0]
             if val_dataset is not None:
-                avg_val_loss, std_val_loss = self.evaluate(val_dataset,
-                                                           batch_size)
-                new_criterion = avg_val_loss
+                val_metrics = self.evaluate(val_dataset,
+                                            batch_size)
+                new_criterion = val_metrics[0][0]
             else:
-                avg_val_loss = 0
+                val_metrics = None
 
             if new_criterion < self.criterion:
                 self.criterion = new_criterion
                 if keep_best:
-                    best_param = self.state_dict()
+                    self.best_param = self.state_dict()
                     new_best = True
             else:
                 new_best = False
@@ -198,26 +301,36 @@ class Markov_Node_CVAE(nn.Module):
             if verbose:
                 end = time.time()
 
-                if new_best:
-                    print(f"Epoch {self.epoch} - " +\
-                          f"Training Loss: {avg_train_loss:0.4f} ± " +\
-                          f"{std_train_loss:0.2f} - " +\
-                          f"Validation Loss: {avg_val_loss:0.4f} ± " +\
-                          f"{std_val_loss:0.2f} - " +\
-                          f"Training time: {end - start:0.04f} - " +\
-                          f"New best config.")
-                else:
-                    print(f"Epoch {self.epoch} - " +\
-                          f"Training Loss: {avg_train_loss:0.4f} ± " +\
-                          f"{std_train_loss:0.2f} - " +\
-                          f"Validation Loss: {avg_val_loss:0.4f} ± " +\
-                          f"{std_val_loss:0.2f} - " +\
-                          f"Training time: {end - start:0.04f} - ")
-                start = time.time()
-            self.epoch += 1
+                self.progress(self.epoch,
+                              end - start,
+                              train_metrics,
+                              val_metrics,
+                              new_best)
 
-        if keep_best: self.load_state_dict(best_param)
+                start = time.time()
+
+        if keep_best: self.load_state_dict(self.best_param)
         return None
+
+
+    def progress(self, epoch, time, train_metrics,
+                 val_metrics=None, is_best=False):
+        if is_best: sys.stdout.write(f"New best epoch: {epoch} "+\
+                                     f"- Time: {time:0.02f}\n")
+        else: sys.stdout.write(f"Epoch: {epoch} - Time: {time:0.02f}\n")
+
+        loss, recon, kl = train_metrics
+        sys.stdout.write(f"\t Training - " +\
+                         f"Loss: {loss[0]:0.4f} ± {loss[1]:0.2f}, " +\
+                         f"Recon.: {recon[0]:0.4f} ± {recon[1]:0.2f}, " +\
+                         f"KL-div.: {kl[0]:0.4f} ± {kl[1]:0.2f}\n")
+        if val_metrics:
+            loss, recon, kl = val_metrics
+            sys.stdout.write(f"\t Validation - " +\
+                             f"Loss: {loss[0]:0.4f} ± {loss[1]:0.2f}, " +\
+                             f"Recon.: {recon[0]:0.4f} ± {recon[1]:0.2f}, " +\
+                             f"KL-div.: {kl[0]:0.4f} ± {kl[1]:0.2f}\n")
+        sys.stdout.flush()
 
 
     def save_params(self, f):

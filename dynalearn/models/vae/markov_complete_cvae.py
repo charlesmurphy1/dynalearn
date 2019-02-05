@@ -76,10 +76,11 @@ class Markov_Complete_CVAE(nn.Module):
         return recon_loss + KL_loss
 
 
-    def forward(self, x, c):
-        z_mu, z_var = self.encoder(x, c)
+    def forward(self, x):
+        _present ,_past = x[0], x[1]
+        z_mu, z_var = self.encoder(_present, _past)
         z = self._sample_embedding(z_mu, z_var)
-        y = self.decoder(z, c)
+        y = self.decoder(z, _past)
         
         return y, z_mu, z_var
     
@@ -112,15 +113,14 @@ class Markov_Complete_CVAE(nn.Module):
         data_loader = DataLoader(dataset, batch_size)
 
         for batch in data_loader:
-        
-            inputs, past_states = batch
             
+            present, past = batch
             if self.use_cuda:
-                inputs = inputs.cuda()
-                past_states = past_states.cuda()
+                present = present.cuda()
+                past = past.cuda()
 
-            outputs = self.forward(inputs, past_states)
-            loss = self._vae_loss(inputs, outputs)
+            outputs = self.forward((present, past))
+            loss = self._vae_loss(present, outputs)
             loss_value.append(loss.data.detach().cpu().numpy())
         self.train(True)
         loss_value = np.array(loss_value)
@@ -140,14 +140,15 @@ class Markov_Complete_CVAE(nn.Module):
 
             for j, batch in enumerate(train_loader):
                 self.optimizer.zero_grad()
-                inputs, past_states = batch
-            
-                if self.use_cuda:
-                    inputs = inputs.cuda()
-                    past_states = past_states.cuda()
 
-                outputs = self.forward(inputs, past_states)
-                loss = self._vae_loss(inputs, outputs)
+                present, past = batch
+                if self.use_cuda:
+                    present = present.cuda()
+                    past = past.cuda()
+
+
+                outputs = self.forward((present, past))
+                loss = self._vae_loss(present, outputs)
                 loss.backward()
                 self.optimizer.step()
 
