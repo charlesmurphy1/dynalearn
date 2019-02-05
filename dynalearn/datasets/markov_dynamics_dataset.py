@@ -39,7 +39,6 @@ class SIS_ToStructuredData(object):
     def __init__(self, graph=None):
         if graph:
             num_nodes = graph.number_of_nodes()
-            # self_edge = torch.ones(num_nodes, 1).int()
             adjacency_matrix = torch.from_numpy(nx.to_numpy_array(graph)).int()
             self.edge_mask = 1 - adjacency_matrix.byte()
         else:
