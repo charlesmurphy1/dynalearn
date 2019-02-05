@@ -13,7 +13,7 @@ import time
 
 
 class Markov_Node_CVAE(nn.Module):
-    def __init__(self, graph, n_hidden, n_embedding,
+    def __init__(self, graph, encoder, decoder,
                  optimizer=None, loss=None, use_cuda=False,
                  keepprob=1):
         super(Markov_Node_CVAE, self).__init__()
@@ -23,12 +23,8 @@ class Markov_Node_CVAE(nn.Module):
         self.n_embedding = n_embedding
         self.use_cuda = use_cuda
 
-        self.encoder = NodeModelEncoder(self.num_nodes, self.n_hidden,
-                                        self.n_embedding, keepprob,
-                                        self.use_cuda)
-        self.decoder = NodeModelDecoder(self.num_nodes, self.n_hidden,
-                                        self.n_embedding, keepprob,
-                                        self.use_cuda)
+        self.encoder = encoder
+        self.decoder = decoder
 
         if optimizer is None:
             self.optimizer = torch.optim.SGD(self.parameters(), lr = 1e-2)

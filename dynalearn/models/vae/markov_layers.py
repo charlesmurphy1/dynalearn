@@ -46,10 +46,10 @@ class NodeLinear(nn.Module):
             self.in_features, self.out_features, self.bias is not None
         )
 
-class NodeModelEncoder(nn.Module):
+class NodeEncoder(nn.Module):
     def __init__(self, num_nodes, n_hidden, n_embedding,
                  keepprob=1, use_cuda=False):
-        super(NodeModelEncoder, self).__init__()
+        super(NodeEncoder, self).__init__()
         self.num_nodes = num_nodes
         self.n_hidden = n_hidden
         self.n_embedding = n_embedding
@@ -88,10 +88,10 @@ class NodeModelEncoder(nn.Module):
         return self.mu(h), self.var(h)
 
 
-class NodeModelDecoder(nn.Module):
+class NodeDecoder(nn.Module):
     def __init__(self, num_nodes, n_hidden, n_embedding,
                  keepprob=1, use_cuda=False):
-        super(NodeModelDecoder, self).__init__()
+        super(NodeDecoder, self).__init__()
         self.num_nodes = num_nodes
         self.n_hidden = n_hidden
         self.n_embedding = n_embedding
@@ -128,8 +128,8 @@ class NodeModelDecoder(nn.Module):
         return self.decoder(z)
 
 
-class NodeNeighborLinear(nn.Module):
-    def __init__(self, graph, in_features, out_features, bias=True):
+class SparseNodeLinear(nn.Module):
+    def __init__(self, graph, out_features, bias=True):
         super(SparseNodeLinear, self).__init__()
 
         self.num_nodes = graph.number_of_nodes()
@@ -138,7 +138,7 @@ class NodeNeighborLinear(nn.Module):
         self.out_features = out_features
 
         self.weight = Parameter(torch.Tensor(num_nodes,
-                                             in_features,
+                                             num_nodes + 1,
                                              out_features))
         if bias:
             self.bias = Parameter(torch.Tensor(num_nodes,
@@ -151,8 +151,10 @@ class NodeNeighborLinear(nn.Module):
     def get_edgeMask(self, graph):
         adj = nx.to_numpy_array(graph)
         np.fill_diagonal(adj, 1)
+        adj = np.concatenate([np.ones([self.num_nodes, 1]), adj])
+        mask = 1 - torch.tensor(adj).byte()
 
-        return 1 - torch.tensor(adj).byte()
+        return mask.view(self.num_nodes, 1, self.num_nodes + 1)
 
 
     def reset_parameters(self):
@@ -163,17 +165,60 @@ class NodeNeighborLinear(nn.Module):
             init.uniform_(self.bias, -bound, bound)
 
     def forward(self, input):
-        # batch_size = input.size(0)
-        # input = input.view(batch_size, self.num_nodes, 1, self.in_features)
-        # ans = torch.matmul(input, self.weight).view(batch_size,
-        #                                             self.num_nodes,
-        #                                             self.out_features)
-        # if self.bias is not None:
-        #     return ans + self.bias
-        # else:
-        #     return ans
+        batch_size = input.size(0)
+
+        input = input.view(batch_size, self.num_nodes, 1, self.in_features)
+        input.mask_fill_(self.edgeMask, 0)
+        ans = torch.matmul(input, self.weight).view(batch_size,
+                                                    self.num_nodes,
+                                                    self.out_features)
+        if self.bias is not None:
+            return ans + self.bias
+        else:
+            return ans
 
     def extra_repr(self):
         return 'in_features={}, out_features={}, bias={}'.format(
             self.in_features, self.out_features, self.bias is not None
         )
+
+
+class SparseNodeEncoder(nn.Module):
+    def __init__(self, graph, n_hidden, n_embedding,
+                 keepprob=1, use_cuda=False):
+        super(SparseNodeEncoder, self).__init__()
+        self.num_nodes = graph.number_of_nodes()
+        self.n_hidden = n_hidden
+        self.n_embedding = n_embedding
+        self.use_cuda = use_cuda
+
+        relu = nn.ReLU()
+        tanh = nn.Tanh()
+        sigmoid = nn.Sigmoid()
+        dropout = nn.Dropout(1 - keepprob)
+
+        layers = [SparseNodeLinear(graph,
+                                   self.n_hidden[0])]
+        for i in range(1, len(n_hidden)):
+            layers.append(relu)
+            layers.append(dropout)
+            layers.append(NodeLinear(self.num_nodes,
+                                     self.n_hidden[i - 1], 
+                                     self.n_hidden[i]))
+        self.encoder = nn.Sequential(*layers, tanh, dropout)
+        self.mu = NodeLinear(self.num_nodes,
+                             self.n_hidden[-1],
+                             self.n_embedding)
+        self.var = NodeLinear(self.num_nodes,
+                              self.n_hidden[-1],
+                              self.n_embedding)
+
+        if self.use_cuda:
+            self.encoder = self.encoder.cuda()
+            self.mu = self.mu.cuda()
+            self.var = self.var.cuda()
+
+    def forward(self, x):
+        x = torch.cat([x[0], x[1]], 2)
+        h = self.encoder(x)
+        return self.mu(h), self.var(h)
