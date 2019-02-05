@@ -18,9 +18,7 @@ class Markov_Node_CVAE(nn.Module):
                  keepprob=1):
         super(Markov_Node_CVAE, self).__init__()
         
-        self.graph = graph
-        self.num_nodes = self.graph.number_of_nodes()
-        self.degrees = dict(self.graph.degree())
+        self.num_nodes = graph.number_of_nodes()
         self.n_hidden = n_hidden
         self.n_embedding = n_embedding
         self.use_cuda = use_cuda
