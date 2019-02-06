@@ -1,4 +1,6 @@
 import math
+import networkx as nx
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.init as init
@@ -47,13 +49,11 @@ class NodeLinear(nn.Module):
         )
 
 class NodeEncoder(nn.Module):
-    def __init__(self, num_nodes, n_hidden, n_embedding,
-                 keepprob=1, use_cuda=False):
+    def __init__(self, graph, n_hidden, n_embedding, keepprob=1):
         super(NodeEncoder, self).__init__()
-        self.num_nodes = num_nodes
+        self.num_nodes = graph.number_of_nodes()
         self.n_hidden = n_hidden
         self.n_embedding = n_embedding
-        self.use_cuda = use_cuda
 
         relu = nn.ReLU()
         tanh = nn.Tanh()
@@ -77,10 +77,6 @@ class NodeEncoder(nn.Module):
                               self.n_hidden[-1],
                               self.n_embedding)
 
-        if self.use_cuda:
-            self.encoder = self.encoder.cuda()
-            self.mu = self.mu.cuda()
-            self.var = self.var.cuda()
 
     def forward(self, x):
         x = torch.cat([x[0], x[1]], 2)
@@ -89,13 +85,11 @@ class NodeEncoder(nn.Module):
 
 
 class NodeDecoder(nn.Module):
-    def __init__(self, num_nodes, n_hidden, n_embedding,
-                 keepprob=1, use_cuda=False):
+    def __init__(self, graph, n_hidden, n_embedding, keepprob=1):
         super(NodeDecoder, self).__init__()
-        self.num_nodes = num_nodes
+        self.num_nodes = graph.number_of_nodes()
         self.n_hidden = n_hidden
         self.n_embedding = n_embedding
-        self.use_cuda = use_cuda
 
         relu = nn.ReLU()
         tanh = nn.Tanh()
@@ -120,8 +114,6 @@ class NodeDecoder(nn.Module):
                                                 1),
                                      sigmoid)
 
-        if self.use_cuda:
-            self.decoder = self.decoder.cuda()
 
     def forward(self, z):
         z = torch.cat([z[0], z[1]], 2)
@@ -133,28 +125,31 @@ class SparseNodeLinear(nn.Module):
         super(SparseNodeLinear, self).__init__()
 
         self.num_nodes = graph.number_of_nodes()
-        self.edgeMask = self.get_edgeMask(graph)
-        self.in_features = in_features
         self.out_features = out_features
 
-        self.weight = Parameter(torch.Tensor(num_nodes,
-                                             num_nodes + 1,
+
+        self.weight = Parameter(torch.Tensor(self.num_nodes,
+                                             self.num_nodes + 1,
                                              out_features))
+        self.edgeMask = Parameter(torch.Tensor(self.num_nodes,
+                                               self.num_nodes + 1),
+                                  requires_grad=False)
+
+        self.compute_edgeMask(graph)
         if bias:
-            self.bias = Parameter(torch.Tensor(num_nodes,
+            self.bias = Parameter(torch.Tensor(self.num_nodes,
                                                out_features))
         else:
             self.register_parameter('bias', None)
 
         self.reset_parameters()
 
-    def get_edgeMask(self, graph):
+    def compute_edgeMask(self, graph):
         adj = nx.to_numpy_array(graph)
         np.fill_diagonal(adj, 1)
-        adj = np.concatenate([np.ones([self.num_nodes, 1]), adj])
+        adj = np.concatenate([np.ones([self.num_nodes, 1]), adj], 1)
         mask = 1 - torch.tensor(adj).byte()
-
-        return mask.view(self.num_nodes, 1, self.num_nodes + 1)
+        self.edgeMask.data = mask.view(self.num_nodes, 1, self.num_nodes + 1)
 
 
     def reset_parameters(self):
@@ -167,8 +162,8 @@ class SparseNodeLinear(nn.Module):
     def forward(self, input):
         batch_size = input.size(0)
 
-        input = input.view(batch_size, self.num_nodes, 1, self.in_features)
-        input.mask_fill_(self.edgeMask, 0)
+        input = input.view(batch_size, self.num_nodes, 1, self.num_nodes + 1)
+        input.masked_fill_(self.edgeMask, 0)
         ans = torch.matmul(input, self.weight).view(batch_size,
                                                     self.num_nodes,
                                                     self.out_features)
@@ -185,12 +180,11 @@ class SparseNodeLinear(nn.Module):
 
 class SparseNodeEncoder(nn.Module):
     def __init__(self, graph, n_hidden, n_embedding,
-                 keepprob=1, use_cuda=False):
+                 keepprob=1):
         super(SparseNodeEncoder, self).__init__()
         self.num_nodes = graph.number_of_nodes()
         self.n_hidden = n_hidden
         self.n_embedding = n_embedding
-        self.use_cuda = use_cuda
 
         relu = nn.ReLU()
         tanh = nn.Tanh()
@@ -198,7 +192,8 @@ class SparseNodeEncoder(nn.Module):
         dropout = nn.Dropout(1 - keepprob)
 
         layers = [SparseNodeLinear(graph,
-                                   self.n_hidden[0])]
+                                   self.n_hidden[0],
+                                   True)]
         for i in range(1, len(n_hidden)):
             layers.append(relu)
             layers.append(dropout)
@@ -212,11 +207,6 @@ class SparseNodeEncoder(nn.Module):
         self.var = NodeLinear(self.num_nodes,
                               self.n_hidden[-1],
                               self.n_embedding)
-
-        if self.use_cuda:
-            self.encoder = self.encoder.cuda()
-            self.mu = self.mu.cuda()
-            self.var = self.var.cuda()
 
     def forward(self, x):
         x = torch.cat([x[0], x[1]], 2)

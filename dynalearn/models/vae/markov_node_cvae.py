@@ -7,24 +7,27 @@ from torch.utils.data import DataLoader, TensorDataset
 from torch.nn import functional as F
 from .fc_cvae import Fc_CEncoder, Fc_CDecoder
 from .cvae import CVAE
-from .markov_layers import NodeModelEncoder, NodeModelDecoder
+from .markov_layers import NodeEncoder, NodeDecoder, SparseNodeEncoder
 
 import time
 
 
 class Markov_Node_CVAE(nn.Module):
-    def __init__(self, graph, encoder, decoder,
-                 optimizer=None, loss=None, use_cuda=False,
-                 keepprob=1):
+    def __init__(self, encoder, decoder, optimizer=None,
+                 loss=None, use_cuda=False):
         super(Markov_Node_CVAE, self).__init__()
         
-        self.num_nodes = graph.number_of_nodes()
-        self.n_hidden = n_hidden
-        self.n_embedding = n_embedding
-        self.use_cuda = use_cuda
 
         self.encoder = encoder
         self.decoder = decoder
+
+        self.num_nodes = self.encoder.num_nodes
+        self.n_embedding = self.encoder.n_embedding
+        self.use_cuda = use_cuda
+
+        if self.use_cuda:
+            self.encoder = self.encoder.cuda()
+            self.decoder = self.decoder.cuda()
 
         if optimizer is None:
             self.optimizer = torch.optim.SGD(self.parameters(), lr = 1e-2)
@@ -276,3 +279,23 @@ class Markov_Node_CVAE(nn.Module):
                 descriptor) or string containing a file name.
         """
         self.optimizer.load_state_dict(torch.load(f, map_location='cpu'))
+
+
+
+def basicMarkovCVAE(graph, n_hidden, n_embedding,
+                    keepprob=1, optimizer=None,
+                    loss=None, use_cuda=False):
+    
+    encoder = NodeEncoder(graph, n_hidden, n_embedding, keepprob)
+    decoder = NodeDecoder(graph, n_hidden, n_embedding, keepprob)
+
+    return Markov_Node_CVAE(encoder, decoder, optimizer, loss, use_cuda)
+
+
+def sparseMarkovCVAE(graph, n_hidden, n_embedding,
+                    keepprob=1, optimizer=None,
+                    loss=None, use_cuda=False):
+    encoder = SparseNodeEncoder(graph, n_hidden, n_embedding, keepprob)
+    decoder = NodeDecoder(graph, n_hidden, n_embedding, keepprob)
+
+    return Markov_Node_CVAE(encoder, decoder, optimizer, loss, use_cuda)
