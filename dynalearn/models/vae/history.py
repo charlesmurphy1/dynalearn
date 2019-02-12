@@ -39,47 +39,58 @@ class History(object):
 
     def progression(self, epoch, time, training_metrics=None, model_metrics=None,
                     is_best=False, show_var=True):
-        if is_best: sys.stdout.write(f"New best Epoch: {epoch} "+\
-                                     f"- Time: {time:0.02f}")
-        else: sys.stdout.write(f"Epoch: {epoch} - Time: {time:0.02f}")
+        if is_best: 
+            sys.stdout.write("New best Epoch: {0} ".format(epoch) +\
+                             "- Time: {0:0.02f}".format(time))
+        else: 
+            sys.stdout.write("Epoch: {0} ".format(epoch) +\
+                             "- Time: {0:0.02f}".format(time))
+
         if 'lr' in self.model_measures:
             lr = self.model_measures['lr'][-1][1]
-            sys.stdout.write(f" - lr: {lr}")
         elif 'learning_rate' in self.model_measures:
             lr = self.model_measures['learning_rate'][-1][1]
-            sys.stdout.write(f" - lr: {lr}")
-        sys.stdout.write(f"\n")
+
+        sys.stdout.write(" - lr: {0}".format(lr))
+        sys.stdout.write("\n")
 
         if is_best:
             if training_metrics and self.train_measures:
-                sys.stdout.write(f"\t Train. - ")
+                sys.stdout.write("\t Train. - ")
                 for m in training_metrics:
                     if m in self.train_measures:
-                        sys.stdout.write(f"{m}: {self.train_measures[m][-1][1]:0.4f}")
+                        mean = self.train_measures[m][-1][1]
+                        std = self.train_measures[m][-1][2]
+                        sys.stdout.write("{0}: {1:0.4f}".format(m, mean))
                         if show_var:
-                            sys.stdout.write(f" ± {self.train_measures[m][-1][2]:0.2f}")
-                        sys.stdout.write(f", ")
-                sys.stdout.write(f"\n")
+                            sys.stdout.write("{0}: {1:0.4f}".format(m, std))
+                        sys.stdout.write(", ")
+                sys.stdout.write("\n")
 
             if training_metrics and self.val_measures:
-                sys.stdout.write(f"\t Val. - ")
+                sys.stdout.write("\t Val. - ")
                 for m in training_metrics:
                     if m in self.val_measures:
-                        sys.stdout.write(f"{m}: {self.val_measures[m][-1][1]:0.4f}")
+                        mean = self.val_measures[m][-1][1]
+                        std = self.val_measures[m][-1][2]
+                        sys.stdout.write("{0}: {1:0.4f}".format(m, mean))
                         if show_var:
-                            sys.stdout.write(f" ± {self.val_measures[m][-1][2]:0.2f}")
-                        sys.stdout.write(f", ")
-                sys.stdout.write(f"\n")
+                            sys.stdout.write("{0}: {1:0.4f}".format(m, std))
+                        sys.stdout.write(", ")
+                sys.stdout.write("\n")
 
             if model_metrics and self.model_measures:
-                sys.stdout.write(f"\t Model - ")
+                sys.stdout.write("\t Model - ")
                 for m in model_metrics:
+
                     if m in self.model_measures:
-                        sys.stdout.write(f"{m}: {self.model_measures[m][-1][1]:0.4f}")
+                        mean = self.model_measures[m][-1][1]
+                        std = self.model_measures[m][-1][2]
+                        sys.stdout.write("{0}: {1:0.4f}".format(m, mean))
                         if show_var:
-                            sys.stdout.write(f" ± {self.model_measures[m][-1][2]:0.2f}")
-                        sys.stdout.write(f", ")
-                sys.stdout.write(f"\n")
+                            sys.stdout.write("{0}: {1:0.4f}".format(m, std))
+                        sys.stdout.write(", ")
+                sys.stdout.write("\n")
         sys.stdout.flush()
 
 

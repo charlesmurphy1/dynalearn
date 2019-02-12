@@ -153,9 +153,9 @@ class CVAE(nn.Module):
                 end = time.time()
 
                 if not new_best:
-                    print(f"Epoch {self.epoch} - Train loss: {train_loss:0.4f} - Val loss: {val_loss:0.4f} - Training time: {end - start:0.04f}")
+                    print("Epoch {0} - Train loss: {1:0.4f} - Val loss: {2:0.4f} - Training time: {3}".format(self.epoch, train_loss, val_loss, end - start))
                 else:
-                    print(f"Epoch {self.epoch} - Train loss: {train_loss:0.4f} - Val loss: {val_loss:0.4f} - Training time: {end - start:0.04f} - New best config.")
+                    print("Epoch {0} - Train loss: {1:0.4f} - Val loss: {2:0.4f} - Training time: {3} - New best config.".format(self.epoch, train_loss, val_loss, end - start))
                 start = time.time()
             self.epoch += 1
 

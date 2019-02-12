@@ -34,8 +34,8 @@ class SIS_StateToFloat(object):
         elif state == 'I':
             return 1
         else:
-            raise ValueError(f'Wrong value of state: got {state} but expected'+
-                              ' "S" or "I" for state.')
+            raise ValueError('Wrong value of state: got {0} but expected'+
+                             ' "S" or "I" for state.'.format(state))
 
 
 class SIS_ToStructuredData(object):

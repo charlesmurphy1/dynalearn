@@ -166,11 +166,11 @@ def increment_filename(path, name):
                 is_not_finished = True
                 i = 0
                 while(is_not_finished):
-                    f = os.path.join(path, f"{name}_{i}")
+                    f = os.path.join(path, "{0}_{1}".format(name, i))
                     if os.path.exists(f):
                         i+= 1
                     else:
-                        name += f"_{i}"
+                        name += "_{0}".format(i)
                         is_not_finished = False
 
     return name
@@ -179,7 +179,7 @@ def increment_path(path):
     is_not_finished = os.path.exists(path)
     i = 0
     while(is_not_finished):
-        new_path = f"{path}_{i}"
+        new_path = "{0}_{1}".format(path, i)
         if os.path.exists(new_path):
             i+= 1
         else:
