@@ -12,6 +12,7 @@ Defines a variety of useful functions for bm use and training.
 import os
 import torch
 import numpy as np
+from math import floor, log2
 
 __all__ = ['sigmoid', 'random_binary', 'is_iterable', 'get_bits',
            'add_one_to_bits', 'add_one_to_bits_torch', 'log_sum_exp',
