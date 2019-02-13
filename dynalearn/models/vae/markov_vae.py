@@ -17,6 +17,7 @@ class MarkovVAE(nn.Module):
         self.encoder = None
         self.decoder = None
         self.optimizer = None
+        self.scheduler = None
         self.loss = None
 
         self.use_cuda = False
@@ -40,6 +41,23 @@ class MarkovVAE(nn.Module):
         raise NotImplemented("self._get_conditional() has not been" +\
                              "implemented.")
 
+
+    def setup_trainer(self, optimizer, loss, scheduler):
+        if optimizer is None:
+            self.optimizer = torch.optim.SGD(self.parameters(), lr = 1e-3)
+        else:
+            self.optimizer = optimizer(self.parameters())
+
+        if loss is None:
+            self.loss = nn.BCELoss(reduction="sum")
+        else:
+            self.loss = loss
+
+        if scheduler is None:
+            f = lambda epoch: 1
+            self.scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer, f)
+        else:
+            self.scheduler = scheduler(self.optimizer)
 
     def _model_loss(self, states, outputs, beta=1):
         recon_states = outputs[0]
@@ -195,6 +213,7 @@ class MarkovVAE(nn.Module):
             self.load_state_dict(self.current_param)
         else:
             self.current_param = self.state_dict()
+            self.best_param = self.state_dict()
 
         start = time.time()
 

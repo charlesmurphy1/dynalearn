@@ -12,7 +12,7 @@ from .markov_layers import CompleteEncoder, CompleteDecoder
 
 
 class MarkovCompleteVAE(MarkovVAE):
-    def __init__(self, encoder, decoder, optimizer=None, loss=None,
+    def __init__(self, encoder, decoder, optimizer=None, scheduler=None, loss=None,
                  use_cuda=False):
         super(MarkovCompleteVAE, self).__init__()
         self.encoder = encoder

@@ -48,10 +48,10 @@ class History(object):
 
         if 'lr' in self.model_measures:
             lr = self.model_measures['lr'][-1][1]
+            sys.stdout.write(" - lr: {0}".format(lr))
         elif 'learning_rate' in self.model_measures:
             lr = self.model_measures['learning_rate'][-1][1]
-
-        sys.stdout.write(" - lr: {0}".format(lr))
+            sys.stdout.write(" - lr: {0}".format(lr))
         sys.stdout.write("\n")
 
         if is_best:
@@ -162,6 +162,8 @@ class History(object):
                 fig[m], ax[m] = plt.subplots(1, 1)
             for m in model_metrics:
                 fig[m], ax[m] = plt.subplots(1, 1)
+        else:
+            fig, ax = ax[0], ax[1]
 
         for m in training_metrics:
             if m in self.train_measures:
@@ -194,13 +196,18 @@ class History(object):
             plt.show()
 
         if path:
-            for m in training_metrics:
-                fig[m].savefig(os.path.join(path, 'png', m + '.png'))
-                fig[m].savefig(os.path.join(path, 'pdf', m + '.pdf'))
+            if type(fig) == dict:
+                for m in training_metrics:
+                    fig[m].savefig(os.path.join(path, 'png', m + '.png'))
+                    fig[m].savefig(os.path.join(path, 'pdf', m + '.pdf'))
 
-            for m in model_metrics:
-                fig[m].savefig(os.path.join(path, 'png', m + '.png'))
-                fig[m].savefig(os.path.join(path, 'pdf', m + '.pdf'))
+                for m in model_metrics:
+                    fig[m].savefig(os.path.join(path, 'png', m + '.png'))
+                    fig[m].savefig(os.path.join(path, 'pdf', m + '.pdf'))
+            else:
+                fig.savefig(os.path.join(path, 'png', self.name + '.png'))
+                fig.savefig(os.path.join(path, 'pdf', self.name + '.pdf'))
+
 
         return fig, ax
 
