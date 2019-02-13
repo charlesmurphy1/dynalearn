@@ -49,7 +49,7 @@ class MarkovVAE(nn.Module):
             self.optimizer = optimizer(self.parameters())
 
         if loss is None:
-            self.loss = nn.BCELoss(reduction="sum")
+            self.loss = nn.BCELoss(reduction="None")
         else:
             self.loss = loss
 
@@ -199,8 +199,6 @@ class MarkovVAE(nn.Module):
         return measures
 
 
-
-
     def fit(self, train_dataset, val_dataset=None, epochs=10, batch_size=64,
             verbose=True, keep_best=True, training_metrics=None, 
             model_metrics=None, show_var=False, beta=1):
@@ -285,6 +283,11 @@ class MarkovVAE(nn.Module):
                                                           train_measures,
                                                           val_measures,
                                                           model_measures)
+
+            if type(self.scheduler) == torch.optim.lr_scheduler.ReduceLROnPlateau:
+                self.scheduler.step(new_criterion)
+            else:
+                self.scheduler.step()
 
             # Checking for best configurations
             if new_criterion <= self.criterion:

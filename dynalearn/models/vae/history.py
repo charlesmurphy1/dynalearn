@@ -48,10 +48,10 @@ class History(object):
 
         if 'lr' in self.model_measures:
             lr = self.model_measures['lr'][-1][1]
-            sys.stdout.write(" - lr: {0}".format(lr))
+            sys.stdout.write(", lr: {0}".format(lr))
         elif 'learning_rate' in self.model_measures:
             lr = self.model_measures['learning_rate'][-1][1]
-            sys.stdout.write(" - lr: {0}".format(lr))
+            sys.stdout.write(", lr: {0}".format(lr))
         sys.stdout.write("\n")
 
         if is_best:

@@ -12,13 +12,11 @@ from .markov_layers import CompleteEncoder, CompleteDecoder
 
 
 class MarkovCompleteVAE(MarkovVAE):
-    def __init__(self, encoder, decoder, optimizer=None, scheduler=None, loss=None,
-                 use_cuda=False):
+    def __init__(self, encoder, decoder, optimizer=None, loss=None,
+                 scheduler=None, use_cuda=False):
         super(MarkovCompleteVAE, self).__init__()
         self.encoder = encoder
         self.decoder = decoder
-        self.optimizer = optimizer
-        self.loss = loss
         self.use_cuda = use_cuda
 
         self.num_nodes = self.encoder.num_nodes
@@ -28,16 +26,7 @@ class MarkovCompleteVAE(MarkovVAE):
             self.encoder = self.encoder.cuda()
             self.decoder = self.decoder.cuda()
 
-        if optimizer is None:
-            self.optimizer = torch.optim.SGD(self.parameters(), lr = 1e-3)
-        else:
-            self.optimizer = optimizer(self.parameters())
-
-
-        if loss is None:
-            self.loss = nn.BCELoss(reduction="sum")
-        else:
-            self.loss = loss
+        self.setup_trainer(optimizer, loss, scheduler)
         
     def _get_embedding_size(self):
         return torch.Size([self.n_embedding])
@@ -52,8 +41,13 @@ class MarkovCompleteVAE(MarkovVAE):
 
 
 def basicMarkovCompleteVAE(graph, n_hidden, n_embedding, keepprob=1,
-                           optimizer=None, loss=None, use_cuda=False):
+                           optimizer=None, loss=None, scheduler=None,
+                           use_cuda=False):
     encoder = CompleteEncoder(graph, n_hidden, n_embedding, keepprob)
     decoder = CompleteDecoder(graph, n_hidden, n_embedding, keepprob)
 
-    return MarkovCompleteVAE(encoder, decoder, optimizer, loss, use_cuda)
+    return MarkovCompleteVAE(encoder, decoder, 
+                             optimizer=optimizer,
+                             loss=loss,
+                             scheduler=scheduler,
+                             use_cuda=use_cuda)
