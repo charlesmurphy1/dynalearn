@@ -305,10 +305,13 @@ class SparseNodeEncoder(nn.Module):
 
 
 class NodeDegreeEncoder(nn.Module):
-    def __init__(self, graph, n_hidden, n_embedding, keepprob=1):
+    def __init__(self, graph, n_hidden, n_embedding, kmax=None, keepprob=1):
         super(NodeDegreeEncoder, self).__init__()
         self.num_nodes = graph.number_of_nodes()
-        self.kmax = max(graph.degree)[1]
+        if kmax is None:
+            self.kmax = max(graph.degree)[1]
+        else:
+            self.kmax = kmax
         self.n_hidden = n_hidden
         self.n_embedding = n_embedding
 
@@ -317,7 +320,7 @@ class NodeDegreeEncoder(nn.Module):
         sigmoid = nn.Sigmoid()
         dropout = nn.Dropout(1 - keepprob)
 
-        layers = [nn.Conv1d(self.kmax + 2, n_hidden[0], 1)]
+        layers = [nn.Conv1d(self.kmax + 3, n_hidden[0], 1)]
         for i in range(1, len(n_hidden)):
             batchnorm = nn.BatchNorm1d(self.n_hidden[i - 1])
             layers.append(batchnorm)
@@ -337,10 +340,13 @@ class NodeDegreeEncoder(nn.Module):
 
 
 class NodeDegreeDecoder(nn.Module):
-    def __init__(self, graph, n_hidden, n_embedding, keepprob=1):
+    def __init__(self, graph, n_hidden, n_embedding, kmax=None, keepprob=1):
         super(NodeDegreeDecoder, self).__init__()
         self.num_nodes = graph.number_of_nodes()
-        self.kmax = max(graph.degree)[1]
+        if kmax is None:
+            self.kmax = max(graph.degree)[1]
+        else:
+            self.kmax = kmax
         self.n_hidden = n_hidden
         self.n_embedding = n_embedding
 
@@ -356,7 +362,7 @@ class NodeDegreeDecoder(nn.Module):
             layers.append(batchnorm)
             layers.append(relu)
             layers.append(dropout)
-        self.decoder = nn.Sequential(nn.Conv1d(self.n_embedding + self.kmax + 1,
+        self.decoder = nn.Sequential(nn.Conv1d(self.n_embedding + self.kmax + 2,
                                                self.n_hidden[-1], 1),
                                      nn.BatchNorm1d(self.n_hidden[-1]),
                                      relu,

@@ -46,7 +46,13 @@ class MarkovNodeVAE(MarkovVAE):
         return torch.Size([1, self.num_nodes])
 
 
-    def _get_conditional(self, past):
+    def _format_present(self, present):
+        batch_size = present.size(0)
+        return present.view(batch_size, 1, self.num_nodes)
+
+    def _format_past(self, past):
+        batch_size = past.size(0)
+        past = past.view(batch_size, 1, self.num_nodes)
         return past.repeat(1, self.num_nodes, 1)
 
 

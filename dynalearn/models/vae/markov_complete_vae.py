@@ -36,9 +36,6 @@ class MarkovCompleteVAE(MarkovVAE):
         return torch.Size([self.num_nodes])
 
 
-    def _get_conditional(self, past):
-        return past
-
 
 def basicMarkovCompleteVAE(graph, n_hidden, n_embedding, keepprob=1,
                            optimizer=None, loss=None, scheduler=None,

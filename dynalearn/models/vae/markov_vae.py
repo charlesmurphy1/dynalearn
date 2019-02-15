@@ -37,9 +37,12 @@ class MarkovVAE(nn.Module):
                              "implemented.")
 
 
-    def _get_conditional(self, past):
-        raise NotImplemented("self._get_conditional() has not been" +\
-                             "implemented.")
+    def _format_present(self, present):
+        return present
+
+
+    def _format_past(self, past):
+        return past
 
 
     def setup_trainer(self, optimizer, loss, scheduler):
@@ -82,11 +85,12 @@ class MarkovVAE(nn.Module):
         return mu + var * eps
 
     def forward(self, present, past):
-        conditional = self._get_conditional(past)
+        _present = self._format_present(present)
+        _past = self._format_past(past)
 
-        z_mu, z_var = self.encoder(present, conditional)
+        z_mu, z_var = self.encoder(_present, _past)
         z = self._sample_embedding(z_mu, z_var)
-        y = self.decoder(z, conditional)
+        y = self.decoder(z, _past)
         
         return y, z_mu, z_var
 
@@ -103,15 +107,15 @@ class MarkovVAE(nn.Module):
         else:
             past = past.clone()
 
-        conditional = self._get_conditional(past)
+        _past = self._format_past(past)
 
         z = torch.randn(batch_size, *self._get_embedding_size())
 
         if self.use_cuda:
             z = z.cuda()
-            conditional = conditional.cuda()
+            _past = _past.cuda()
 
-        sample = self.decoder(z, conditional).detach().cpu().numpy()
+        sample = self.decoder(z, _past).detach().cpu().numpy()
         self.train(True)
 
         return sample, z, past
@@ -313,16 +317,18 @@ class MarkovVAE(nn.Module):
         return None
 
 
-    def save_params(self, f):
-        torch.save(self.state_dict(), f)
+    def save_params(self, path):
+        with open(path, "wb") as f:
+            torch.save(self.state_dict(), f)
 
 
-    def load_params(self, f):
-        params = torch.load(f, map_location='cpu')
+    def load_params(self, path):
+        with open(path, "rb") as f:
+            params = torch.load(f, map_location='cpu')
         self.load_state_dict(params)
 
 
-    def save_optimizer(self, f):
+    def save_optimizer(self, path):
         """
         Saves the state of the current optimizer.
 
@@ -330,10 +336,11 @@ class MarkovVAE(nn.Module):
             f: File-like object (has to implement fileno that returns a file
                 descriptor) or string containing a file name.
         """
-        torch.save(self.optimizer.state_dict(), f)
+        with open(path, "wb") as f:
+            torch.save(self.optimizer.state_dict(), f)
 
 
-    def load_optimizer(self, f):
+    def load_optimizer(self, path):
         """
         Loads the optimizer state saved using the ``torch.save()`` method or the
         ``save_optimizer_state()`` method of this class.
@@ -342,4 +349,26 @@ class MarkovVAE(nn.Module):
             f: File-like object (has to implement fileno that returns a file
                 descriptor) or string containing a file name.
         """
-        self.optimizer.load_state_dict(torch.load(f, map_location='cpu'))
+        with open(path, "rb") as f:
+            self.optimizer.load_state_dict(torch.load(f, map_location='cpu'))
+
+
+    def save_history(self, path):
+        self.history.save(path)
+
+
+    def load_history(self, path):
+        self.history.load(path)
+
+
+    def save_state(self, path):
+        import os
+
+        if not os.path.exists(path):
+            os.mkdir(path)
+            
+        self.save_params(os.path.join(path, "params.pt"))
+        self.save_optimizer(os.path.join(path, "optimizer.pt"))
+        self.save_history(os.path.join(path, "history.pt"))
+
+

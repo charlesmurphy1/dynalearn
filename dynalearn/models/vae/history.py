@@ -214,22 +214,25 @@ class History(object):
 
     def save(self, path):
         """
-        Saves all metrics.
+        Saves metrics.
         """
-        with open(os.path.join(path, self.name + ".json"), "wb") as f:
+        with open(path, "wb") as f:
             data = {}
             data['train'] = self.train_measures
             data['val'] = self.val_measures
             data['model'] = self.model_measures
-            pickle.dump(self.metrics, f)
-            pickle.dump(self.metrics, f)
-            pickle.dump(self.metrics, f)
+            data['current-epoch'] = self.current_epoch
+            pickle.dump(data, f)
 
 
     def load(self, path):
         """
         Load metrics.
         """
-        with open(path + ".json", "rb") as f:
-            self.metrics = pickle.load(f)
+        with open(path, "rb") as f:
+            data = pickle.load(f)
+            self.train_measures = data['train']
+            self.val_measures = data['val']
+            self.model_measures = data['model']
+            self.current_epoch = data['current-epoch']
         

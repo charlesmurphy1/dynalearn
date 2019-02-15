@@ -66,24 +66,6 @@ class SIS_ToStructuredData(object):
         return present_states, past_states
 
 
-class SIS_ToInfectedDegree(object):
-    def __init__(self, graph):
-        super(SIS_ToInfectedDegree, self).__init__()
-        
-        self.num_nodes = graph.number_of_nodes()
-        adjacency_matrix = torch.from_numpy(nx.to_numpy_array(graph,
-                                            nodelist=range(self.num_nodes))).int()
-        self.edgeMask = 1 - adjacency_matrix.byte()
-
-    def __call__(self, states):
-        N = self.num_nodes
-        present, past = states[0], states[1]
-        past = past.repeat(N, 1)
-        past.masked_fill_(self.edgeMask, 0)
-        past = torch.sum(past, 0).view(1, N)
-        return present, past
-
-
 class ResizeData(object):
     def __init__(self, size):
         self.size = size
