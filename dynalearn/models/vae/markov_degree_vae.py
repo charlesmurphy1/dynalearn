@@ -53,9 +53,12 @@ class MarkovDegreeVAE(MarkovVAE):
         past = past.contiguous().view(batch_size, 1, self.num_nodes)
         _past = past.repeat(1, self.num_nodes, 1)
         _past.masked_fill_(self.edgeMask, 0)
-        inf_degree = torch.sum(_past, 1).contiguous().view([batch_size, 1,
-                                                            self.num_nodes])
+        inf_degree = torch.sum(_past, 1).contiguous().view([batch_size, 1, self.num_nodes])
         degree_onehot = torch.zeros(batch_size, self.kmax + 1, self.num_nodes)
+
+        if self.use_cuda:
+            degree_onehot = degree_onehot.cuda()
+
         degree_onehot.scatter_(1, inf_degree.long(), 1).float()
 
         return torch.cat([past, degree_onehot], 1)
@@ -67,6 +70,8 @@ class MarkovDegreeVAE(MarkovVAE):
                                             nodelist=range(self.num_nodes))).int()
 
         self.edgeMask = 1 - adjacency_matrix.byte()
+        if self.use_cuda:
+            self.edgeMask = self.edgeMask.cuda()
 
 
 def basicMarkovDegreeVAE(graph, n_hidden, n_embedding, kmax=None,

@@ -98,7 +98,7 @@ class Dynamical_Network(nx.Graph):
 		t_init = self.t[-1]
 		t = t_init
 
-		while(t < t_init + step) and self.continue_simu:
+		while(t < t_init + step):
 
 			forward_activity = self._state_transition()
 			self.activity = forward_activity.copy()

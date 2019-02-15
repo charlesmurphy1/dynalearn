@@ -120,7 +120,8 @@ class SISDataset(MarkovDataset):
 
     def generate(self, graph, num_sample, T,
                  init_active=0.01, dt=0.01,
-                 pre_transform=None):
+                 pre_transform=None,
+                 null_activity_steps=100):
         sis = SISNetwork(graph, self.rate, init_active=0.01, dt=0.01)
 
         sample = 0
@@ -130,8 +131,9 @@ class SISDataset(MarkovDataset):
             sis.activity = sis.init_activity()
             sis.continue_simu = True
             t = 0
+            i = 0
             prev_activity = None
-            while(t < T and sis.continue_simu and sample < num_sample):
+            while(t < T and sample < num_sample and i < null_activity_steps):
                 t += dt
                 sis.update(record=False)
                 sample += 1
@@ -142,6 +144,9 @@ class SISDataset(MarkovDataset):
                     for transform in pre_transform:
                         states = transform(states)
                     self.complete_data.append(states)
+
+                if not sis.continue_simu:
+                    i += 1
 
                 prev_activity = activity
 

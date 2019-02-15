@@ -309,7 +309,7 @@ class NodeDegreeEncoder(nn.Module):
         super(NodeDegreeEncoder, self).__init__()
         self.num_nodes = graph.number_of_nodes()
         if kmax is None:
-            self.kmax = max(graph.degree)[1]
+            self.kmax = max(dict(graph.degree()).values())
         else:
             self.kmax = kmax
         self.n_hidden = n_hidden
@@ -344,7 +344,7 @@ class NodeDegreeDecoder(nn.Module):
         super(NodeDegreeDecoder, self).__init__()
         self.num_nodes = graph.number_of_nodes()
         if kmax is None:
-            self.kmax = max(graph.degree)[1]
+            self.kmax = max(dict(graph.degree()).values())
         else:
             self.kmax = kmax
         self.n_hidden = n_hidden

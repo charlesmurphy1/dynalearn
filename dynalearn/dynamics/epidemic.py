@@ -54,15 +54,15 @@ class SISNetwork(Dynamical_Network):
 
         n = self.number_of_nodes()
         n_init_active = ceil(n * self.init_active)
-        if n_init_active == 0:
-            n_init_active = 1
         activity = {v:'S' for v in self.nodes()}
-        ind = sample(self.nodeset, n_init_active)
-        self.infected = self.infected.union(ind)
-        for i in ind:
-            activity[i] = 'I'
-
         self.t.append(0)
+
+        if n_init_active > 0:
+            n_init_active = 1
+            ind = sample(self.nodeset, n_init_active)
+            self.infected = self.infected.union(ind)
+            for i in ind:
+                activity[i] = 'I'
 
         return activity
 
