@@ -1,4 +1,2 @@
-from .bernoulli_dataset import *
-from .normal_dataset import *
-from .markov_dynamics_dataset import *
-from .mnist_dataset import *
+from .markov_binary_dynamics_generator import *
+from .markov_multistate_dynamics_generator import *

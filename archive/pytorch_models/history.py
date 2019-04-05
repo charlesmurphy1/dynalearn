@@ -4,7 +4,6 @@ import os
 import pickle
 import sys
 
-__all__ = ['History']
 
 class History(object):
     """
@@ -27,6 +26,7 @@ class History(object):
         self.train_measures = {}
         self.val_measures = {}
         self.model_measures = {}
+
 
         self.current_epoch = 0
 

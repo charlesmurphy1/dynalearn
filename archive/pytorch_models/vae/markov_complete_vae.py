@@ -8,7 +8,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
 from .markov_vae import MarkovVAE
-from .markov_layers import CompleteEncoder, CompleteDecoder
+from .layers import CompleteEncoder, CompleteDecoder
 
 
 class MarkovCompleteVAE(MarkovVAE):

@@ -1,32 +1,15 @@
-from setuptools import setup
+from setuptools import setup, find_packages
+from setuptools.extension import Extension
+import numpy as np
 
+extensions = [
+]
 
-# packages = ["dynalearn",
-#             "dynalearn.dynamics",
-#             "dynalearn.model",
-#             "dynalearn.trainer",
-#             "dynalearn.history",
-#             "dynalearn.utilities"]
-
-packages = ["dynalearn",
-            "dynalearn.dynamics",
-            "dynalearn.models",
-            "dynalearn.datasets",
-            "dynalearn.utilities"]
-
-
-extras_require = {'all': ['numpy', 'matplotlib', 'torch', 'networkx']}
-
-
-setup(name='dynalearn',
-      version='0.1',
-      description='Deep learning framework for dynamics on network.',
-      url='https://github.com/charlesmurphy1/dynalearn',
-      author='Charles Murphy',
-      author_email='charles.murphy121@gmail.com',
-      license='MIT',
-      packages=packages,
-      requirements= extras_require,
-      zip_safe=False)
-
-#requirement
+setup(
+    name="dynalearn",
+    version=0.1,
+    packages=find_packages(),
+    include_package_data=True,
+    ext_modules=extensions,
+    setup_requires=[]
+)

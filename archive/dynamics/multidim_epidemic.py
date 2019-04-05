@@ -16,8 +16,6 @@ from random import sample, random
 
 from .dynamical_network import *
 
-__all__ = ['SIkSNetwork']
-
 
 class DSISNetwork(Dynamical_Network):
     """
@@ -52,12 +50,12 @@ class DSISNetwork(Dynamical_Network):
             Name of file for saving activity states. If ``None``, it does not save the states.
 
     """
-    def __init__(self, graph, inf_rate, rec_rate, D, in_coupling, out_coupling,
-                 init_active=0.01, init_num=1, dt=0.01, filename=None,
-                 full_data_mode=False):
+    def __init__(self, graph, infection_prob, recovery_prob, D,
+                 in_coupling, out_coupling, init_active=0.01, init_num=1,
+                 filename=None, full_data_mode=False):
 
-        self.inf_rate = inf_rate
-        self.rec_rate = rec_rate
+        self.infection_prob = infection_prob
+        self.recovery_prob = recovery_prob
         self.D = D
         self.in_coupling = in_coupling
         self.out_coupling = out_coupling
@@ -67,7 +65,7 @@ class DSISNetwork(Dynamical_Network):
 
         self.disease_list = list(range(self.D))
 
-        super(DSISNetwork, self).__init__(graph, dt=dt, filename=filename,
+        super(DSISNetwork, self).__init__(graph, filename=filename,
                                          full_data_mode=full_data_mode)
 
 
@@ -102,14 +100,14 @@ class DSISNetwork(Dynamical_Network):
             for n in neighbors:
                 num = 1 - (np.dot(self.activity[n], self.activity[inf]) +\
                            np.dot(1 - self.activity[n], 1 - self.activity[inf]))
-                p = self.inf_rate * self.out_coupling**num * self.dt
+                p = self.infection_prob * self.out_coupling**num
                 for d in range(self.D):
                     if random() < p and self.activity[inf][d] == 1:
                         activity[n][d] = 1
                         new_infected.add(n)
             
             num = np.dot(self.activity[inf], self.activity[inf])
-            p = self.rec_rate * self.in_coupling**num * self.dt
+            p = self.recovery_prob * self.in_coupling**num
 
             for d in range(self.D):
                 if random() < p: activity[inf][d] = 0
@@ -147,8 +145,8 @@ class DSISNetwork(Dynamical_Network):
         std = {'S': np.std(S_array), 'I_{tot}': np.std(all_I_array)}
 
         for i in range(self.D):
-            avg[f'n = {i + 1}'] = np.mean(I_array[:, i])
-            std[f'n = {i + 1}'] = np.std(I_array[:, i])
+            avg['n = {0}'.format(i + 1)] = np.mean(I_array[:, i])
+            std['n = {0}'.format(i + 1)] = np.std(I_array[:, i])
 
         return avg, std
 

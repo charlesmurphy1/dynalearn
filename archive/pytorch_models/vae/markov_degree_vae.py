@@ -10,7 +10,7 @@ from torch.nn import functional as F
 
 
 from .markov_vae import MarkovVAE
-from .markov_layers import NodeDegreeEncoder, NodeDegreeDecoder
+from .layers import NodeDegreeEncoder, NodeDegreeDecoder
 
 class MarkovDegreeVAE(MarkovVAE):
     def __init__(self, graph, encoder, decoder, optimizer=None, loss=None,

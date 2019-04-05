@@ -6,16 +6,15 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.nn import functional as F
 
-from .history import History
+from dynalearn.pytorch_models.history import History
 
 
-class MarkovVAE(nn.Module):
+class MarkovNN(nn.Module):
     def __init__(self):
-        super(MarkovVAE, self).__init__()
+        super(MarkovNN, self).__init__()
         
 
-        self.encoder = None
-        self.decoder = None
+        self.model = None
         self.optimizer = None
         self.scheduler = None
         self.loss = None
@@ -27,32 +26,15 @@ class MarkovVAE(nn.Module):
         self.history = History("history")
         self.current_param = None
 
-    def _get_embedding_size(self):
-        raise NotImplemented("self._get_embedding_size() has not been" +\
-                             "implemented.")
 
-
-    def _get_past_size(self):
-        raise NotImplemented("self._get_past_size() has not been" +\
-                             "implemented.")
-
-
-    def _format_present(self, present):
-        return present
-
-
-    def _format_past(self, past):
-        return past
-
-
-    def setup_trainer(self, optimizer, loss, scheduler):
+    def compile(self, optimizer=None, loss=None, scheduler=None):
         if optimizer is None:
             self.optimizer = torch.optim.SGD(self.parameters(), lr = 1e-3)
         else:
             self.optimizer = optimizer(self.parameters())
 
         if loss is None:
-            self.loss = nn.BCELoss(reduction="None")
+            self.loss = nn.CrossEntropy(reduction="none")
         else:
             self.loss = loss
 
@@ -62,69 +44,26 @@ class MarkovVAE(nn.Module):
         else:
             self.scheduler = scheduler(self.optimizer)
 
-    def _model_loss(self, states, outputs, beta=1):
-        recon_states = outputs[0]
-        mu = outputs[1]
-        var= outputs[2]
 
-        batch_size = states.size(0)
-        recon_loss = self.loss(recon_states, states)
-        
-        KL_loss = 0.5 * (torch.pow(mu, 2) + torch.pow(var, 2) -\
-                  torch.log(1e-8 + torch.pow(var, 2)) - 1)
+    def forward(self, inputs, adj):
 
-        return torch.mean(recon_loss), beta * torch.mean(KL_loss)
-
-    def _sample_embedding(self, mu, var):
-        var = 1e-6 + F.softplus(var)
-        batch_size = mu.size(0)
-        eps = torch.randn(batch_size, *self._get_embedding_size())
-
-        if self.use_cuda:
-            eps = eps.cuda()
-        return mu + var * eps
-
-    def forward(self, present, past):
-        _present = self._format_present(present)
-        _past = self._format_past(past)
-
-        z_mu, z_var = self.encoder(_present, _past)
-        z = self._sample_embedding(z_mu, z_var)
-        y = self.decoder(z, _past)
-        
-        return y, z_mu, z_var
+        outputs = self.model(inputs, adj)
+        return outputs
 
 
-    def predict(self, past, batch_size=32):
+    def predict(self, inputs, adj, batch_size=32):
+
         self.train(False)
         self.eval()
-
-        if past.dim() < 1 + len(self._get_past_size()):
-            s = [batch_size, *[1] * len(self._get_past_size())]
-            past = past.view(1, *self._get_past_size()).repeat(*s)
-        elif past.size(0) != batch_size:
-            raise ValueError("Size at dimension 0 does not match batch_size.")
-        else:
-            past = past.clone()
-
-        _past = self._format_past(past)
-
-        z = torch.randn(batch_size, *self._get_embedding_size())
-
-        if self.use_cuda:
-            z = z.cuda()
-            _past = _past.cuda()
-
-        sample = self.decoder(z, _past).detach().cpu().numpy()
+        outputs = self.forward(inputs, adj).detach().cpu()
         self.train(True)
 
-        return sample, z, past
+        return outputs
 
 
     def evaluate_on_dataset(self, dataset,
                             training_metrics=None,
-                            batch_size=64,
-                            beta=1):
+                            batch_size=64):
         
         self.train(False)
         self.eval()
@@ -138,25 +77,20 @@ class MarkovVAE(nn.Module):
         else:
             training_metrics = []
         for i, batch in enumerate(data_loader):
-            present, past = batch
+            inputs, adj, targets = batch
             if self.use_cuda:
-                present = present.cuda()
-                past = past.cuda()
+                inputs = inputs.cuda()
+                targets = targets.cuda()
 
-            outputs = self.forward(present, past)
-            recon, kl_div = self._model_loss(present, outputs, beta)
-            recon = recon.detach().cpu().numpy()
-            kl_div = kl_div.detach().cpu().numpy()
+            outputs = self.forward(inputs, adj)
+            loss = self.loss(outputs, targets).mean().detach().cpu().numpy()
+            loss = np.sum(loss)
 
             for j, m in enumerate(training_metrics):
                 if type(m) is tuple:
-                    measures[m][i] = training_metrics[j](present, outputs).detach().cpu().numpy()
+                    measures[m][i] = training_metrics[j](outputs, targets).detach().cpu().numpy()
                 elif m == "loss":
-                    measures[m][i] = recon + kl_div
-                elif m == "recon":
-                    measures[m][i] = recon
-                elif m == "kl_div":
-                    measures[m][i] = kl_div
+                    measures[m][i] = loss
 
         for m in measures:
             measures[m] = (np.mean(measures[m]), np.std(measures[m]))
@@ -204,8 +138,9 @@ class MarkovVAE(nn.Module):
 
 
     def fit(self, train_dataset, val_dataset=None, epochs=10, batch_size=64,
-            verbose=True, keep_best=True, training_metrics=None, 
-            model_metrics=None, show_var=False, beta=1):
+            verbose=True, progress_bar=None, keep_best=True,
+            training_metrics=None,  model_metrics=None,
+            show_var=False):
 
         train_loader = DataLoader(train_dataset, batch_size)
 
@@ -220,18 +155,15 @@ class MarkovVAE(nn.Module):
         start = time.time()
 
         # Evaluating model before starting the training
-
-        # Show initial progression
+        ## Show initial progression
         if self.epoch == 0:
             train_measures = self.evaluate_on_dataset(train_dataset,
                                           training_metrics=training_metrics,
-                                          batch_size=batch_size,
-                                          beta=beta)
+                                          batch_size=batch_size)
             if val_dataset is not None:
                 val_measures = self.evaluate_on_dataset(val_dataset,
                                             training_metrics=training_metrics,
-                                            batch_size=batch_size,
-                                            beta=beta)
+                                            batch_size=batch_size)
             else:
                 val_measures = {}
 
@@ -247,36 +179,47 @@ class MarkovVAE(nn.Module):
                                          is_best=True,
                                          show_var=show_var)
 
+
         # Start training
         for i in range(epochs):
             self.epoch += 1
+
+            if progress_bar:
+                bar = progress_bar(range(len(train_loader)), 'Epoch {}'.format(i))
+
             for j, batch in enumerate(train_loader):
 
                 self.optimizer.zero_grad()
-                present, past = batch
+                inputs, adj, targets = batch
 
                 if self.use_cuda:
-                    present = present.cuda()
-                    past = past.cuda()
+                    inputs = inputs.cuda()
+                    adj = adj.cuda()
+                    targets = targets.cuda()
 
-                outputs = self.forward(present, past)
+                outputs = self.forward(inputs, adj)
 
-                recon, KL = self._model_loss(present, outputs, beta)
-                loss = recon + KL
+                loss = -self.loss(outputs, targets).mean()
+
                 loss.backward()
                 self.optimizer.step()
+                if progress_bar:
+                    bar.update()
+
+            if progress_bar:
+                bar.close()
+
+
 
             # Evaluating metrics
             train_measures = self.evaluate_on_dataset(train_dataset,
                                            training_metrics=training_metrics,
-                                           batch_size=batch_size,
-                                           beta=beta)
+                                           batch_size=batch_size)
 
             if val_dataset is not None:
                 val_measures = self.evaluate_on_dataset(val_dataset,
                                              training_metrics=training_metrics,
-                                             batch_size=batch_size,
-                                             beta=beta)
+                                             batch_size=batch_size)
             else:
                 val_measures = {}
 
@@ -310,6 +253,7 @@ class MarkovVAE(nn.Module):
                                          training_metrics=training_metrics,
                                          is_best=new_best,
                                          show_var=show_var)
+
                 start = time.time()
 
         self.current_param = self.state_dict()

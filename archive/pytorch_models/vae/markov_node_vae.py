@@ -7,8 +7,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 from torch.nn import functional as F
 
-from .markov_layers import NodeEncoder, NodeDecoder, SparseNodeEncoder
 from .markov_vae import MarkovVAE
+from .layers import NodeEncoder, NodeDecoder, SparseNodeEncoder
 
 class MarkovNodeVAE(MarkovVAE):
     def __init__(self, encoder, decoder, optimizer=None, loss=None,

@@ -16,22 +16,20 @@ from random import sample, random
 
 from .dynamical_network import *
 
-__all__ = ['SIkSNetwork']
 
-
-class SIkSNetwork(Dynamical_Network):
+class ComplexSISNetwork(Dynamical_Network):
     """
-        Class for SIkS dynamical network.
+        Class for SIS dynamical network.
 
         **Parameters**
         graph : nx.Graph
             A graph on which the dynamical process occurs.
 
-        rate : float
-            Normalized infection rate.
+        infection_prob : function
+            Infection probability function.
 
-        K : int
-            Number of intermediate states.
+        recovery_prob : function
+            Recovery probability function.
 
         init_active : Float
             Initial fraction of infected nodes.
@@ -43,16 +41,17 @@ class SIkSNetwork(Dynamical_Network):
             Name of file for saving activity states. If ``None``, it does not save the states.
 
     """
-    def __init__(self, graph, rate, K, init_active=0.01, dt=0.01,
+    def __init__(self, graph, infection_prob, recovery_prob, init_active=0.01,
                  filename=None, full_data_mode=False):
 
-        self.rate = rate
-        self.K = K
+        self.infection_prob = infection_prob
+        self.recovery_prob = recovery_prob
         self.init_active = init_active
         self.infected = set()
-
-        self.infected_time = {}
-        super(SIkSNetwork, self).__init__(graph, dt=dt, filename=filename,
+        
+        self.inf_probs = {}
+        self.rec_probs = {}
+        super(ComplexSISNetwork, self).__init__(graph, filename=filename,
                                          full_data_mode=full_data_mode)
 
 
@@ -64,11 +63,9 @@ class SIkSNetwork(Dynamical_Network):
         ind = sample(self.nodeset, n_init_active)
 
         self.infected = self.infected.union(ind)
-        self.infected_time = {v:0 for v in self.nodes()}
 
         for i in ind:
             init_activity[i] = 'I'
-            self.infected_time[i] += 1
 
         self.t.append(0)
 
@@ -85,28 +82,33 @@ class SIkSNetwork(Dynamical_Network):
 
         return infected_neighbors
 
+    def compute_probs(self):
+
+        for node in self.nodes():
+            l = len(self.get_infected_neighbors(node))
+            self.inf_probs[node] = self.infection_prob(l)
+            self.rec_probs[node] = self.recovery_prob(l)
+
 
     def _state_transition(self):
 
         activity = self.activity.copy()
 
         new_infected = self.infected.copy()
+        self.compute_probs()
 
         for inf in self.infected:
 
             neighbors = self.neighbors(inf)
             for n in neighbors:
                 
-                if random() < self.rate * self.dt:
+                if random() < self.inf_probs[n]:
                     activity[n] = 'I'
-                    self.infected_time[n] += 1
                     new_infected.add(n)
 
             if random() < self.dt:
-                self.infected_time[n] += 1
-                if self.infected_time[n] > self.K:
-                    activity[inf] = 'S'
-                    new_infected.remove(inf)
+                activity[inf] = 'S'
+                new_infected.remove(inf)
 
         self.infected = new_infected
 

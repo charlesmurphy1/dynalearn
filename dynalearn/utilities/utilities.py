@@ -14,11 +14,6 @@ import torch
 import numpy as np
 from math import floor, log2
 
-__all__ = ['sigmoid', 'random_binary', 'is_iterable', 'get_bits',
-           'add_one_to_bits', 'add_one_to_bits_torch', 'log_sum_exp',
-           'log_mean_exp', 'log_diff_exp', 'log_std_exp', 'count_units',
-           'exp_mov_avg', 'increment_filename']
-
 def sigmoid(x):
 	return 1 / (1 + torch.exp(-x))
 
@@ -54,15 +49,18 @@ def get_bits(x, size=None):
 	return (x // 2**np.arange(size)) % 2
 
 
-def add_one_to_bits(x):
+def increment_bit(x, base=2):
 
-	val = x * 1
-	i = np.where(x==0)[0][0]
-	index = np.arange(len(x))
-	val[index <= i] = 0
-	val[i] = 1
+    val = x * 1
+    for i in range(base):
+        if i in x:
+            i = np.min(np.where(x==i)[0])
+            index = np.arange(len(x))
+            val[index <= i] = 0
+            val[i] = 1
 
-	return val
+    return val
+
 
 def add_one_to_bits_torch(x):
 	# print(np.where(x.numpy()==0))
