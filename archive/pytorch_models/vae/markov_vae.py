@@ -107,14 +107,14 @@ class MarkovVAE(nn.Module):
         else:
             past = past.clone()
 
-        _past = self._format_past(past)
 
         z = torch.randn(batch_size, *self._get_embedding_size())
 
         if self.use_cuda:
             z = z.cuda()
-            _past = _past.cuda()
+            past = past.cuda()
 
+        _past = self._format_past(past)
         sample = self.decoder(z, _past).detach().cpu().numpy()
         self.train(True)
 

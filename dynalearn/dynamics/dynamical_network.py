@@ -72,7 +72,6 @@ class DynamicalNetwork(nx.Graph):
 
 			forward_states = self.transition_states()
 			self.states = forward_states.copy()
-
 		self.t.append(t)
 
 		return self.states
