@@ -1,3 +1,3 @@
 from .base import MarkovPredictor
 from .complete_model import CompleteMarkovPredictor
-from .node_model import GATMarkovPredictor
+from .node_model import GATBinaryMarkovPredictor

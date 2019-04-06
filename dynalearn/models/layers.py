@@ -136,7 +136,7 @@ class GraphAttention(Layer):
 
             # Linear combination with neighbors' features
             node_features = K.dot(dropout_attn, dropout_feat)  # (N x F')
-            node_features = node_features + dropout_feat # skip connection
+            node_features = dropout_feat + node_features # skip connection
             
 
             if self.use_bias:

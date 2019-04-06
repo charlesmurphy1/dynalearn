@@ -7,9 +7,11 @@ from dynalearn.models.base import MarkovPredictor
 from dynalearn.models.layers import GraphAttention
 
 
-class GATMarkovPredictor(MarkovPredictor):
+class GATBinaryMarkovPredictor(MarkovPredictor):
     def __init__(self, graph, n_hidden, n_heads,
                  weight_decay=1e-4, dropout=0.6, **kwargs):
+        super(GATBinaryMarkovPredictor, self).__init__(**kwargs)
+        
         if type(n_hidden) is int:
             n_hidden = [n_hidden]
         if type(n_heads) is int:
@@ -23,7 +25,12 @@ class GATMarkovPredictor(MarkovPredictor):
         self.n_heads = n_heads
         self.weight_decay = weight_decay
         self.dropout = dropout
-        super(GATMarkovPredictor, self).__init__(**kwargs)
+
+        self.params["n_hidden"] = self.n_hidden
+        self.params["n_heads"] = self.n_heads
+        self.params["weight_decay"] = self.weight_decay
+        self.params["dropout"] = self.dropout
+
 
 
     def get_model(self):

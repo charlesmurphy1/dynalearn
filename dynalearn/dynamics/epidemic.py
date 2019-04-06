@@ -28,6 +28,9 @@ class EpidemicNetwork(DynamicalNetwork):
             self.inv_state_label = {state_label[i]:i for i in state_label}
             self.state_nodeset = {l: set() for l in state_label}
 
+        self.params = {"name":type(self).__name__,
+                       "states": self.state_label}
+
         super(EpidemicNetwork, self).__init__(graph)
 
     def initialize_states(self):
@@ -100,11 +103,13 @@ class SISNetwork(EpidemicNetwork):
     """
     def __init__(self, graph, infection_prob, recovery_prob, init_param=None):
 
+        state_label = {'S':0, 'I':1}
+        super(SISNetwork, self).__init__(graph, state_label, init_param)
+
         self.infection_prob = infection_prob
         self.recovery_prob = recovery_prob
-        state_label = {'S':0, 'I':1}
-        
-        super(SISNetwork, self).__init__(graph, state_label, init_param)
+        self.params["infection_prob"] = self.infection_prob
+        self.params["recovery_prob"] = self.recovery_prob
 
 
     def transition_states(self):
@@ -145,7 +150,7 @@ class SISNetwork(EpidemicNetwork):
             p_I = 1 - self.recovery_prob
         
         return {'S':1 - p_I, 'I':p_I}
-        
+
 
 class SIRNetwork(EpidemicNetwork):
     """
@@ -167,12 +172,13 @@ class SIRNetwork(EpidemicNetwork):
     """
     def __init__(self, graph, infection_prob, recovery_prob, init_param=None):
 
+        state_label = {'S':0, 'I':1, 'R':-1}
+        super(SISNetwork, self).__init__(graph, state_label, init_param)
+        
         self.infection_prob = infection_prob
         self.recovery_prob = recovery_prob
-        self.init_param = init_param
-        state_label = {'S':0, 'I':1, 'R':2}
-        
-        super(SIRNetwork, self).__init__(graph, state_label, init_param)
+        self.params["infection_prob"] = self.infection_prob
+        self.params["recovery_prob"] = self.recovery_prob
 
 
     def transition_states(self):

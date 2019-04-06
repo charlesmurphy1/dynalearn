@@ -5,6 +5,7 @@ class MarkovPredictor():
     
     def __init__(self):
         self._model = None
+        self.params = {"name": type(self).__name__}
         return    
     
     @property
@@ -32,4 +33,3 @@ class MarkovPredictor():
         else:
             self._model = self.get_model()
             return self._model.summary()
-
