@@ -6,44 +6,89 @@ import time
 
 
 class MarkovBinaryDynamicsGenerator():
-    def __init__(self, batch_size, shuffle=False,
-                 max_null_iter=100, with_structure=False,
-                 prohibited_node_index=[], gamma=0):
-        self.data_input = None
-        self.data_target = None
-        self.graph = None
-        self.dynamics = None
-        
-        self.batch_size = batch_size
+    def __init__(self, graph_gen, dynamics_gen, batch_size,
+                 shuffle=False, max_null_iter=100):
+        self.graph_gen = graph_gen
+        self.dynamics_gen = dynamics_gen
 
+        # Data
+        self.graph_inputs = dict()
+        self.state_inputs = dict()
+        self.targets = dict()
+        self.sample_weights = dict()
+        self.state_index = dict()
+        self.graph_index = set()
+    
+        # Params        
+        self.batch_size = batch_size
         self.shuffle = shuffle
         self.max_null_iter = max_null_iter
         self.with_structure = with_structure
         self.gamma = gamma
         self.iteration = 0
-        self.avail_index = set()
+        self.current_graph_name = None
 
         if type(prohibited_node_index) is not list:
             raise ValueError('prohibited_node_index must be a list')
         else:
             self.prohibited_node_index = prohibited_node_index
 
-        if self.with_structure:
-            self.sample = self.with_structure_sampling
-        else:
-            self.sample = self.without_structure_sampling
-
+    def _reset_graph_index(self):
+        self.graph_index = set(self.graph_inputs.keys())
 
     def sample(self):
-        raise NotImplementedError()
+        # if self.shuffle:
+        #     index =  random.sample(self.state_index, 1)[0]
+        #     graph_name = random.sample(self.graph_index, 1)[0]
+        # else:
+        #     if len(self.state_index) == 0:
+        #         if len(self.graph_index) == 0:
+        #             self.graph_index = set(self.graph_inputs.keys())
+
+        #         self.current_graph_name = self.graph_index.pop()
+        #         self.state_index = set(range(self.state_inputs[self.current_graph_name].shape[0]))
+        #     index = self.state_index.pop()
+        #     graph_name = self.current_graph_name
+
+        # self.state_index = self.state_index.difference([index])
+        # if len(self.state_index) == 0:
+        #     self.state_index = set(range(self.data_input.shape[0]))
+
+        # if self.batch_size is None:
+        #     weights = np.ones(self.N)
+        # else:
+        #     node_index = np.random.choice(range(N),
+        #                                   replace=False,
+        #                                   size=self.batch_size,
+        #                                   p=sample_weights)
+        #     weights = np.zeros(self.N)
+        #     weights[node_index] += 1
+        # inputs = self.data_input[index, :]
+        # targets = self.data_target[index, :]
+        # return inputs, targets, weights
+        if self.shuffle:
+            if len(self.graph_index) == 0:
+                self.reset_graph_index()
+            graph_name = random.sample(self.graph_index, 1)[0]
 
 
-    def generate(self, num_sample, T, progress_bar=None):
-        sample = 0
+    def generate(self, num_sample, T, progress_bar=None, gamma=0.):
 
         if progress_bar: bar = progress_bar(range(num_sample))
-        self.data_input = np.zeros([num_sample, self.N])
-        self.data_target = np.zeros([num_sample, self.N])
+
+        sample = 0
+        name, graph = self.graph_gen.generate()
+        N = graph.number_of_nodes()
+
+
+        self.graph_inputs[name] = graph
+        self.state_inputs[name] = np.zeros([num_sample, N])
+        self.targets[name] = np.zeros([num_sample, N])
+        self.sample_weights[name] = self.get_sample_weights(graph, gamma)
+        self.dynamics.graph = graph
+
+        if self.current_graph_name is None:
+            self.current_graph_name = name
 
         while sample < num_sample:
             self.dynamics.initialize_states()
@@ -52,8 +97,8 @@ class MarkovBinaryDynamicsGenerator():
 
                 t0 = time.time()
                 inputs, targets = self.update_dynamics()
-                self.data_input[sample, :] = inputs
-                self.data_target[sample, :] = targets
+                self.state_inputs[name][sample, :] = inputs
+                self.target[name][sample, :] = targets
                 t1 = time.time()
 
                 if progress_bar:
@@ -66,49 +111,24 @@ class MarkovBinaryDynamicsGenerator():
 
                 if sample == num_sample or null_iteration == self.max_null_iter:
                     break
-        self.avail_index = set(range(self.data_input.shape[0]))
+
+        self.state_index[name] = set(range(self.state_inputs[name].shape[0]))
+        self.graph_index.add(name)
 
 
-    def set_graph(self, graph):
-        self.graph = graph
-        self.N = self.graph.number_of_nodes()
-        self.adj = nx.to_numpy_array(self.graph) + np.eye(self.N)
+    def get_sample_weights(self, graph, gamma):
         degrees = dict(graph.degree())
         deg_seq = np.array([degrees[i] for i in degrees])
-        s_w = deg_seq**self.gamma
-        self.sample_weights = s_w * 1
-        self.sample_weights[self.prohibited_node_index] = 0
-        self.sample_weights /= np.sum(self.sample_weights)
+        return deg_seq**gamma np.sum(deg_seq**gamma)
 
-    def set_gamma(self, gamma):
-        self.gamma = gamma
-        degrees = dict(self.graph.degree())
-        deg_seq = np.array([degrees[i] for i in degrees])
-        s_w = deg_seq**self.gamma
-        self.sample_weights = s_w * 1
-        self.sample_weights[self.prohibited_node_index] = 0
-        self.sample_weights /= np.sum(self.sample_weights)
-
-    def clear(self):
-        self.data_input = None
-        self.data_target = None
-        self.graph = None
 
     def __len__(self):
-        if self.data_input is not None:
-            return self.data_input.shape[0]
-        else:
-            return 0
+
+        return np.prod([self.state_inputs[name].shape[0] for name in self.state_inputs])
+
 
     def __iter__(self):
-        if self.dynamics is None:
-            raise ValueError("self.data must always be defined.")
-        elif self.graph is None:
-            raise ValueError("self.graph must always not be None.")
-        elif self.data_input is None and not self.online:
-            raise ValueError("data must not be empty.")
-        else:
-            return self
+        return self
 
 
     def update_dynamics(self):
@@ -116,63 +136,13 @@ class MarkovBinaryDynamicsGenerator():
         self.dynamics.update()
         targets = self.dynamics.states
         return inputs, targets
-
-
-    def with_structure_sampling(self):
-        if self.shuffle:
-            index =  random.sample(self.avail_index, 1)[0]
-        else:
-            index = self.iteration
-            self.iteration += 1
-            if self.iteration == self.data_input.shape[0]:
-                self.iteration = 0
-
-        self.avail_index = self.avail_index.difference([index])
-        if len(self.avail_index) == 0:
-            self.avail_index = set(range(self.data_input.shape[0]))
-
-        if self.batch_size is None:
-            weights = np.ones(self.N)
-        else:
-            node_index = np.random.choice(range(N),
-                                          replace=False,
-                                          size=self.batch_size,
-                                          p=self.sample_weights)
-            weights = np.zeros(self.N)
-            weights[node_index] += 1
-        inputs = self.data_input[index, :]
-        targets = self.data_target[index, :]
-        return inputs, targets, weights
-
-
-    def without_structure_sampling(self):
-        if len(self.avail_index) < self.batch_size:
-            batch_size = len(self.avail_index)
-        else:
-            batch_size = self.batch_size
-
-        if self.shuffle:
-            index =  random.sample(self.avail_index, batch_size)
-        else:
-            index = self.avail_index[:batch_size]
-
-        self.avail_index = self.avail_index.difference(index)
-        if len(self.avail_index) == 0:
-            self.avail_index = set(range(self.data_input.shape[0]))
-
-        inputs = self.data_input[index, :]
-        targets = self.data_target[index, :]
-        weights = np.ones(self.batch_size)
-
-        return inputs, targets, weights
         
 
     def __next__(self):
         inputs, targets, weights = self.sample()
 
-        if self.with_structure:
-            adj = self.adj
-            inputs = [inputs, adj]
+        adj = self.adj
+        inputs = [inputs, adj]
 
         return inputs, targets, weights
 

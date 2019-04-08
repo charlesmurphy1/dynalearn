@@ -16,7 +16,7 @@ import pickle
 import os
 
 
-class DynamicalNetwork(nx.Graph):
+class Dynamics():
 	"""
 		Base class for dynamical network.
 
@@ -33,10 +33,11 @@ class DynamicalNetwork(nx.Graph):
 	"""
 	def __init__(self, graph):
 		"""
-		Initializes a DynamicalNetwork object.
+		Initializes a Dynamics object.
 
 		"""
-		super(DynamicalNetwork, self).__init__(graph)
+		self.graph = graph
+		self.params = dict()
 		self.initialize_states()
 
 

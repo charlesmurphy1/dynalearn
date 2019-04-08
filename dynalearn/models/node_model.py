@@ -26,6 +26,7 @@ class GATBinaryMarkovPredictor(MarkovPredictor):
         self.weight_decay = weight_decay
         self.dropout = dropout
 
+        self.params["name"] = type(self).__name__
         self.params["n_hidden"] = self.n_hidden
         self.params["n_heads"] = self.n_heads
         self.params["weight_decay"] = self.weight_decay

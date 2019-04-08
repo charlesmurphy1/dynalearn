@@ -5,7 +5,7 @@ class MarkovPredictor():
     
     def __init__(self):
         self._model = None
-        self.params = {"name": type(self).__name__}
+        self.params = {}
         return    
     
     @property
