@@ -1,4 +1,3 @@
-import dynalearn.datasets
-import dynalearn.dynamics
+import dynalearn.generators
 import dynalearn.models
 import dynalearn.utilities

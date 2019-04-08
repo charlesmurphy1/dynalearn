@@ -14,13 +14,13 @@ import numpy as np
 from math import ceil
 from random import sample, random, choice
 
-from .dynamical_network import *
+from .dynamics import *
 
 
-class Epidemic(Dynamics):
-    def __init__(self, graph, state_label, init_state):
+class EpidemicDynamics(Dynamics):
+    def __init__(self, state_label, init_state):
 
-        super(EpidemicNetwork, self).__init__(graph)
+        super(EpidemicDynamics, self).__init__()
         self.init_state = init_state
 
         if "S" not in state_label or "I" not in state_label:
@@ -65,23 +65,22 @@ class Epidemic(Dynamics):
         return num_neighbors
 
     def get_avg_state(self):
+        N = self.graph.number_of_nodes()
+        state_dict = {l:np.zeros(N) for l in self.state_label}
 
-        
-        state_dict = {i:np.zeros(self.graph.number_of_nodes()) for i in self.state_label}
+        for v in self.graph.nodes():
+            label = self.inv_state_label[self.states[v]]
+            state_dict[label][v] = 1
 
-        for v in self.nodes():
-            l = self.inv_state_label[self.states[v]]
-            state_dict[l][i] = 1
-
-        avg_states = {l: np.mean(state_dict[l] for l in state_dict)}
-        std_states = {l: np.std(state_dict[l] for l in state_dict)}
+        avg_states = {l: np.mean(state_dict[l]) for l in state_dict}
+        std_states = {l: np.std(state_dict[l]) for l in state_dict}
         return avg_states, std_states
 
     def get_state_from_value(self, state):
         inv_state_label = {self.state_label[i]:i for i in self.state_label}
 
 
-class SISDynamics(Epidemic):
+class SISDynamics(EpidemicDynamics):
     """
         Class for  discrete SIS dynamics.
 
@@ -99,9 +98,8 @@ class SISDynamics(Epidemic):
             Name of file for saving states. If ``None``, it does not save the states.
 
     """
-    def __init__(self, graph, infection_prob, recovery_prob, init_state=None):
-        super(SISNetwork, self).__init__(graph,
-                                         {'S':0, 'I':1},
+    def __init__(self, infection_prob, recovery_prob, init_state=None):
+        super(SISDynamics, self).__init__({'S':0, 'I':1},
                                          init_state)
 
         self.params["infection_prob"] = infection_prob
@@ -148,7 +146,7 @@ class SISDynamics(Epidemic):
         return {'S':1 - p_I, 'I':p_I}
 
 
-class SIRNetwork(EpidemicNetwork):
+class SIRDynamics(EpidemicDynamics):
     """
         Class for  discrete SIR dynamical network.
 
@@ -167,8 +165,7 @@ class SIRNetwork(EpidemicNetwork):
 
     """
     def __init__(self, graph, infection_prob, recovery_prob, init_state=None):
-        super(SISNetwork, self).__init__(graph,
-                                         {'S':0, 'I':1, 'R':-1},
+        super(SIRDynamics, self).__init__({'S':0, 'I':1, 'R':-1},
                                          init_state)
         
         self.params["infection_prob"] = infection_prob

@@ -31,22 +31,21 @@ class Dynamics():
 			
 
 	"""
-	def __init__(self, graph):
+	def __init__(self):
 		"""
 		Initializes a Dynamics object.
 
 		"""
-		self.graph = graph
+		self._graph = None
 		self.params = dict()
-		self.initialize_states()
 
-
-	def initial_states(self):
+	
+	def initialize_states(self):
 		"""
 		Initializes the nodes activity states. (virtual) (private)
 
 		"""
-		raise NotImplementedError("self.initial_states() has not been impletemented")
+		raise NotImplementedError("self.initialize_states() has not been impletemented")
 
 
 	def transition_states(self):
@@ -55,6 +54,30 @@ class Dynamics():
 
 		"""
 		raise NotImplementedError("self.transition_states() has not been impletemented")	
+
+
+	def get_avg_state(self):
+		"""
+		Get the average states. (virtual)
+
+		**Returns**
+		avg_state : Activity
+
+		"""
+		raise NotImplementedError("self.get_avg_states has not been implemented.")
+
+
+	@property
+	def graph(self):
+		if self._graph is None:
+			raise ValueError('No graph has been given to the dynamics.')
+		else:
+			return self._graph
+
+	@graph.setter
+	def graph(self, graph):
+		self._graph = graph
+		self.initialize_states()
 
 
 	def update(self, step=1):
@@ -76,15 +99,3 @@ class Dynamics():
 		self.t.append(t)
 
 		return self.states
-
-
-	def get_avg_states(self):
-		"""
-		Get the average states. (virtual)
-
-		**Returns**
-		avg_state : Activity
-
-		"""
-		NotImplementedError("self.get_avg_states has not been implemented.")
-		return 0

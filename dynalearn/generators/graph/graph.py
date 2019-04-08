@@ -2,14 +2,15 @@ import networkx as nx
 import h5py
 
 
-class GraphGenerator(nx.Graph):
-    def __int__(self, generator):
+class GraphGenerator():
+    def __init__(self, generator):
+        super(GraphGenerator, self).__init__()
         self.generator = generator
         self.params = dict()
         self.instance_index = 0
 
 
-    def generate(self, num_sample):
+    def generate(self):
         index = self.instance_index
         self.instance_index += 1
         name = type(self).__name__ + '_' + str(index)
@@ -52,13 +53,13 @@ class EmptyGraph(GraphGenerator):
 
 class BAGraph(GraphGenerator):
     def __init__(self, N, M):
-        super(BA_Graph, self).__init__(lambda: nx.barabasi_albert_graph(N, M))
+        super(BAGraph, self).__init__(lambda: nx.barabasi_albert_graph(N, M))
         self.params['N'] = N
         self.params['M'] = M
 
 
 class ERGraph(GraphGenerator):
     def __init__(self, N, p):
-        super(ER_Graph, self).__init__(lambda: nx.gnp_random_graph(N, p))
+        super(ERGraph, self).__init__(lambda: nx.gnp_random_graph(N, p))
         self.params['N'] = N
         self.params['p'] = p
