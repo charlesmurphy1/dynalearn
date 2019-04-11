@@ -12,26 +12,24 @@ Defines DynamicalNetwork sub-classes for epidemic spreading dynamics.
 
 import numpy as np
 from math import ceil
-from random import sample, random, choice
-
-from .dynamics import *
+from dynalearn.dynamics import *
 
 
 class EpidemicDynamics(Dynamics):
     def __init__(self, state_label, init_state):
 
         super(EpidemicDynamics, self).__init__()
-        self.init_state = init_state
 
         if "S" not in state_label or "I" not in state_label:
             raise ValueError("state_label must contain states 'S' and 'I'.")
         else:
             self.state_label = state_label
             self.inv_state_label = {state_label[i]:i for i in state_label}
-            self.state_nodeset = {l: set() for l in state_label}
+        self.init_state = init_state
 
-        self.params["states"] = self.state_label
-        self.params["init_state"] = init_state
+        for name, value in self.state_label.items():
+            self.params["state_" + name] = value
+
 
 
     def initialize_states(self):
@@ -39,12 +37,9 @@ class EpidemicDynamics(Dynamics):
         if self.init_state is not None:
             init_n_infected = ceil(N * self.init_state)
         else:
-            init_n_infected = choice(range(N))
-        nodeset = list(self.graph.nodes())
-        ind = sample(nodeset, init_n_infected)
-        self.state_nodeset['S'] = set(range(N)).difference(ind)
-        self.state_nodeset['I'] = set().union(ind)
-
+            init_n_infected = np.random.choice(range(N))
+        nodeset = np.array(self.graph.nodes())
+        ind = np.random.choice(nodeset, size=init_n_infected, replace=False)
         states = np.ones(N) * self.state_label['S']
         states[ind] = self.state_label['I']
 
@@ -53,16 +48,22 @@ class EpidemicDynamics(Dynamics):
         self.continue_simu = True
         self.states = states
 
-    def get_num_neighbors(self, node, state):
 
-        neighbors = self.graph.neighbors(node)
-        num_neighbors = 0
+    def transition(self):
 
-        for n in neighbors:
-            if self.states[n] == self.state_label[state]:
-                num_neighbors += 1                
+        p = self.predict(self.states)
+        new_states = np.random.binomial(1, p)
+        if np.sum(new_states) == 0:
+            self.continue_simu = False
 
-        return num_neighbors
+        return new_states
+
+    def infected_degrees(self, states):
+        N = self.graph.number_of_nodes()
+        if len(states.shape) < 2:
+            states = states.reshape(1, N)
+        adj = nx.to_numpy_array(self.graph)
+        return np.matmul(states, adj)
 
     def get_avg_state(self):
         N = self.graph.number_of_nodes()
@@ -78,6 +79,35 @@ class EpidemicDynamics(Dynamics):
 
     def get_state_from_value(self, state):
         inv_state_label = {self.state_label[i]:i for i in self.state_label}
+
+
+    def estimate_cltp(self, in_states, out_states):
+        N = self.graph.number_of_nodes()
+        if len(in_states.shape) < 2:
+            states = states.reshape(1, N)
+
+        inf_deg = self.infected_degrees(in_states)
+
+        avg_prob = {}
+        var_prob = {}
+
+        for l in range(int(np.max(inf_deg))):
+            for in_s in self.state_label:
+                for out_s in self.state_label:
+                    in_condition = np.where(np.logical_and(states == in_s,
+                                                           inf_deg == l),
+                                            np.ones(N),
+                                            np.zeros(N))
+
+                    avail_state = out_states[in_condition == 1]
+                    n_sample = len(avail_state)
+                    out_condition = np.zeros(n_sample)
+                    out_condition[avail_state == out_s] = 1
+
+                    avg_prob[(in_s, out_s)] = np.mean(out_condition)
+                    var_prob[(in_s, out_s)] = np.std(out_condition) / np.sqrt(n_sample)
+
+        return avg_prob, var_prob
 
 
 class SISDynamics(EpidemicDynamics):
@@ -106,44 +136,29 @@ class SISDynamics(EpidemicDynamics):
         self.params["recovery_prob"] = recovery_prob
 
 
-    def transition_states(self):
+    def predict(self, states):
+        N = self.graph.number_of_nodes()
+        if len(states.shape) < 2:
+            states = states.reshape(1, N)
 
-        states = self.states.copy()
+        beta = self.params["infection_prob"]
+        alpha = self.params["recovery_prob"]
 
-        new_susceptible = self.state_nodeset['S'].copy()
-        new_infected = self.state_nodeset['I'].copy()
+        inf_deg = self.infected_degrees(states)
 
-        for inf in self.state_nodeset['I']:
-            neighbors = self.graph.neighbors(inf)
+        state_prob = np.zeros(states.shape)
+        state_prob[states == 0] = 1 - (1 - beta)**inf_deg[states==0]
+        state_prob[states == 1] = 1 - alpha
 
-            for n in neighbors:
-                if random() < self.params["infection_prob"] and states[n] == self.state_label['S']:
-                    states[n] = self.state_label['I']
-                    new_infected.add(n)
-                    new_susceptible.remove(n)
+        return state_prob
 
-            if random() < self.params["recovery_prob"]:
-                states[inf] = 0
-                new_susceptible.add(inf)
-                new_infected.remove(inf)
 
-        self.state_nodeset['S'] = new_susceptible
-        self.state_nodeset['I'] = new_infected
+    def cond_local_trans_prob(self):
+        N = self.graph.number_of_nodes()
+        p_s = 1 - (1 - self.infection_prob)**np.arange(N)
+        p_i = np.ones(N) * (1 - self.recovery_prob)
 
-        if len(self.state_nodeset['I']) == 0:
-            self.continue_simu = False
-
-        return states
-
-    def node_transition_probability(self, node):
-        num_infected = self.get_num_neighbors(self.graph, node, 'I')
-
-        if self.states[node] == self.state_label['I']:
-            p_I = 1 - (1 - self.params["infection_prob"])**num_infected
-        else:
-            p_I = 1 - self.params["recovery_prob"]
-        
-        return {'S':1 - p_I, 'I':p_I}
+        return {'S': p_s, 'I': p_i}
 
 
 class SIRDynamics(EpidemicDynamics):

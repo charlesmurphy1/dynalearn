@@ -30,6 +30,7 @@ class MarkovPredictor():
         self._model = None
         self._num_nodes = num_nodes
         self.params = {}
+        # print(tf.get_seed(None))
     
     @property
     def model(self):

@@ -1,3 +1,3 @@
-from .base import MarkovPredictor
-from .node_model import GATMarkovBinaryPredictor
-from .trainer import Trainer
+import dynalearn.models.layers
+import dynalearn.models.base
+from dynalearn.models.node_model import *

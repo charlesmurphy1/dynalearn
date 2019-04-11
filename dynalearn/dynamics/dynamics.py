@@ -12,6 +12,7 @@ process occurs.
 """
 
 import networkx as nx
+import numpy as np
 import pickle
 import os
 
@@ -48,12 +49,19 @@ class Dynamics():
 		raise NotImplementedError("self.initialize_states() has not been impletemented")
 
 
-	def transition_states(self):
+	def predict(self, states):
+		"""
+		Computes the next activity states probability distribution. (virtual) (private)
+
+		"""
+		raise NotImplementedError("self.transition() has not been impletemented")
+
+	def transition(self):
 		"""
 		Computes the next activity states. (virtual) (private)
 
 		"""
-		raise NotImplementedError("self.transition_states() has not been impletemented")	
+		raise NotImplementedError("self.transition() has not been impletemented")
 
 
 	def get_avg_state(self):
@@ -94,7 +102,7 @@ class Dynamics():
 		"""
 		for t in range(self.t[-1] + 1, self.t[-1] + 1 + step):
 
-			forward_states = self.transition_states()
+			forward_states = self.transition()
 			self.states = forward_states.copy()
 		self.t.append(t)
 

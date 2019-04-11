@@ -1,16 +1,14 @@
 import numpy as np
 import networkx as nx
-import random
-from dynalearn.generators.dynamics.epidemic import SISDynamics
 import time
 
 
 class MarkovBinaryDynamicsGenerator():
-    def __init__(self, graph_gen, state_gen, batch_size,
+    def __init__(self, graph_model, dynamics_model, batch_size,
                  shuffle=False, prohibited_node_index=[],
                  max_null_iter=100):
-        self.graph_gen = graph_gen
-        self.state_gen = state_gen
+        self.graph_model = graph_model
+        self.dynamics_model = dynamics_model
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.current_graph_name = None
@@ -33,7 +31,7 @@ class MarkovBinaryDynamicsGenerator():
         if progress_bar: bar = progress_bar(range(num_sample))
 
         sample = 0
-        name, graph = self.graph_gen.generate()
+        name, graph = self.graph_model.generate()
         N = graph.number_of_nodes()
 
 
@@ -41,10 +39,10 @@ class MarkovBinaryDynamicsGenerator():
         self.state_inputs[name] = np.zeros([num_sample, N])
         self.targets[name] = np.zeros([num_sample, N])
         self.sample_weights[name] = self._get_sample_weights(graph, gamma)
-        self.state_gen.graph = graph
+        self.dynamics_model.graph = graph
 
         while sample < num_sample:
-            self.state_gen.initialize_states()
+            self.dynamics_model.initialize_states()
             null_iteration = 0
             for t in range(T):
 
@@ -59,7 +57,7 @@ class MarkovBinaryDynamicsGenerator():
                     bar.update()
 
                 sample += 1
-                if not self.state_gen.continue_simu:
+                if not self.dynamics_model.continue_simu:
                     null_iteration += 1
 
                 if sample == num_sample or null_iteration == self.max_null_iter:
@@ -82,8 +80,8 @@ class MarkovBinaryDynamicsGenerator():
 
     def _sample(self):
         if self.shuffle:
-            g_index = random.sample(self.graph_index, 1)[0]
-            s_index = random.sample(self.state_index[g_index], 1)[0]
+            g_index = np.random.choice(list(self.graph_index))
+            s_index = np.random.choice(list(self.state_index[g_index]))
             self.state_index[g_index].remove(s_index)
         else:
             g_index = self.current_graph_name
@@ -120,35 +118,14 @@ class MarkovBinaryDynamicsGenerator():
 
 
     def _update_states(self):
-        inputs = self.state_gen.states
-        self.state_gen.update()
-        targets = self.state_gen.states
+        inputs = self.dynamics_model.states
+        self.dynamics_model.update()
+        targets = self.dynamics_model.states
         return inputs, targets
         
 
     def __next__(self):
         return self._sample()
-
-
-class SISGenerator(MarkovBinaryDynamicsGenerator):
-    def __init__(self, graph_gen, infection_prob, recovery_prob, batch_size,
-                 shuffle=False, init_param=None, max_null_iter=100,
-                 prohibited_node_index=[]):
-
-        self.infection_prob = infection_prob
-        self.recovery_prob = recovery_prob
-        self.init_param = init_param
-
-        state_gen = SISDynamics(self.infection_prob,
-                               self.recovery_prob,
-                               self.init_param)
-
-        super(SISGenerator, self).__init__(graph_gen, state_gen,
-                                           batch_size,
-                                           shuffle=shuffle,
-                                           prohibited_node_index=prohibited_node_index,
-                                           max_null_iter=max_null_iter)
-
 
 
 

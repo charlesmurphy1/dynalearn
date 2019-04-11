@@ -6,11 +6,13 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import binary_crossentropy
 
 
-class Trainer:
-	def __init__(self, model, data_generator,
+class Experiment:
+	def __init__(self, name, model, data_generator,
 				 loss=binary_crossentropy, optimizer=Adam, 
 				 metrics=['accuracy'], learning_rate=1e-4,
 				 callbacks=None, numpy_seed=1, tensorflow_seed=2):
+
+		self.name = name
 		self.history = {}
 		self.epoch = 0
 
@@ -24,15 +26,13 @@ class Trainer:
 		self.np_seed = numpy_seed
 		self.tf_seed = tensorflow_seed
 
-		np.random.seed(self.np_seed)
-		tf.set_random_seed(self.tf_seed)
 		self.model.model.compile(self.optimizer, self.loss, self.metrics)
 
 
 	def generate_data(self, num_sample, T, **kwargs):
 		self.data_generator.generate(num_sample, T, **kwargs)
 
-	def train(self, epochs, steps_per_epoch, verbose):
+	def train_model(self, epochs, steps_per_epoch, verbose):
 		i_epoch = self.epoch
 		f_epoch = self.epoch + epochs
 		history = self.model.model.fit_generator(self.data_generator,
@@ -78,29 +78,26 @@ class Trainer:
 			h5file.create_dataset('/optimizer/params/' + name, data=value)
 
 		h5file.create_dataset('/optimizer/loss', data=self.loss.__name__)
-		h5file.create_dataset('/optimizer/np_seed', data=self.np_seed)
-		h5file.create_dataset('/optimizer/tf_seed', data=self.tf_seed)
 	
 	def save_hdf5_history(self, h5file):
-
 		for name, value in self.history.items():
 			h5file.create_dataset('/history/' + name, data=value,
 								  fillvalue=np.nan)
 
 	def save_hdf5_data(self, h5file):
-		graph_name = type(self.data_generator.graph_gen).__name__
-		graph_params = self.data_generator.graph_gen.params
+		graph_name = type(self.data_generator.graph_model).__name__
+		graph_params = self.data_generator.graph_model.params
 
-		dynamics_name = type(self.data_generator.state_gen).__name__
-		dynamics_params = self.data_generator.state_gen.params
+		dynamics_name = type(self.data_generator.dynamics_model).__name__
+		dynamics_params = self.data_generator.dynamics_model.params
 
-		h5file.create_dataset('/params/graph/name', data=graph_name)
+		h5file.create_dataset('/graph/name', data=graph_name)
 		for name, value in graph_params.items():
-			h5file.create_dataset('/params/graph/' + name, data=value)
+			h5file.create_dataset('/graph/params/' + name, data=value)
 
-		h5file.create_dataset('/params/dynamics/name', data=dynamics_name)
+		h5file.create_dataset('/dynamics/name', data=dynamics_name)
 		for name, value in dynamics_params.items():
-			h5file.create_dataset('/params/dynamics/' + name, data=value)
+			h5file.create_dataset('/dynamics/params/' + name, data=value)
 
 		for g_name in self.data_generator.graph_inputs:
 			inputs = self.data_generator.state_inputs[g_name]
@@ -111,9 +108,11 @@ class Trainer:
 			h5file.create_dataset('/data/' + g_name + '/targets', data=targets)
 
 
-
-
-
-
-
-		
+	def save_hdf5_all(self, h5file):
+		h5file.create_dataset('/np_seed', data=self.np_seed)
+		h5file.create_dataset('/tf_seed', data=self.tf_seed)
+		h5file.create_dataset('/name/', data=self.name)
+		self.save_hdf5_model(h5file)
+		self.save_hdf5_optimizer(h5file)
+		self.save_hdf5_history(h5file)
+		self.save_hdf5_data(h5file)
