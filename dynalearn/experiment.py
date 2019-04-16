@@ -4,6 +4,7 @@ import tensorflow as tf
 
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import binary_crossentropy
+import tensorflow.keras.backend as K
 
 
 class Experiment:
@@ -18,9 +19,12 @@ class Experiment:
 
 		self.model = model
 		self.data_generator = data_generator
+		self.graph_model = self.data_generator.graph_model
+		self.dynamics_model = self.data_generator.dynamics_model
 
 		self.loss = loss
-		self.optimizer = optimizer(learning_rate)
+		self.optimizer = optimizer
+		self.optimizer.lr = K.variable(learning_rate)
 		self.metrics=metrics
 		self.callbacks=callbacks
 		self.np_seed = numpy_seed
@@ -56,6 +60,7 @@ class Experiment:
 		return history
 
 
+
 	def save_hdf5_model(self, h5file):
 		model_name = type(self.model).__name__
 		model_params = self.model.params
@@ -63,10 +68,22 @@ class Experiment:
 			h5file.create_dataset('/model/params/' + name, data=value)
 
 		h5file.create_dataset('/model/name', data=model_name)
-		for layer in self.model.model.layers:
-			for w, value in zip(layer.weights, layer.get_weights()):
-				name = w.name
-				h5file.create_dataset('/model/weights/' + name, data=value)
+		weights = self.model.model.get_weights()
+
+		for i, w in enumerate(weights):
+			h5file.create_dataset('/model/weights/w_' + str(i), data=w)
+
+
+	def load_hdf5_model(self, h5file):
+		if str(h5file['/model/name/'][...]) != type(self.model).__name__:
+			raise ValueError('invalid type for model during loading.')
+
+		weights = [None for i in h5file['/model/weights'].keys()]
+		for k, v in h5file['/model/weights'].items():
+			weights[int(k[2:])] = np.array(v)
+
+		self.model.model.set_weights(weights)
+		return 0
 
 
 	def save_hdf5_optimizer(self, h5file):
@@ -77,19 +94,26 @@ class Experiment:
 		for name, value in optimizer_params.items():
 			h5file.create_dataset('/optimizer/params/' + name, data=value)
 
-		h5file.create_dataset('/optimizer/loss', data=self.loss.__name__)
+		h5file.create_dataset('/loss', data=self.loss.__name__)
 	
+
 	def save_hdf5_history(self, h5file):
 		for name, value in self.history.items():
 			h5file.create_dataset('/history/' + name, data=value,
 								  fillvalue=np.nan)
 
-	def save_hdf5_data(self, h5file):
-		graph_name = type(self.data_generator.graph_model).__name__
-		graph_params = self.data_generator.graph_model.params
 
-		dynamics_name = type(self.data_generator.dynamics_model).__name__
-		dynamics_params = self.data_generator.dynamics_model.params
+	def load_hdf5_history(self, h5file):
+		for k, v in h5file["/history/"].items():
+			self.history[k] = list(v[...])
+
+
+	def save_hdf5_data(self, h5file):
+		graph_name = type(self.graph_model).__name__
+		graph_params = self.graph_model.params
+
+		dynamics_name = type(self.dynamics_model).__name__
+		dynamics_params = self.dynamics_model.params
 
 		h5file.create_dataset('/graph/name', data=graph_name)
 		for name, value in graph_params.items():
@@ -107,6 +131,12 @@ class Experiment:
 			h5file.create_dataset('/data/' + g_name + '/inputs', data=inputs)
 			h5file.create_dataset('/data/' + g_name + '/targets', data=targets)
 
+
+	def load_hdf5_data(self, h5file):
+		for k, v in h5file['/data/'].items():
+			self.data_generator.graph_inputs[k] = v["adj_matrix"][...]
+			self.data_generator.state_inputs[k] = v["inputs"][...]
+			self.data_generator.targets[k] = v["targets"][...]
 
 	def save_hdf5_all(self, h5file):
 		h5file.create_dataset('/np_seed', data=self.np_seed)

@@ -9,6 +9,7 @@ class MarkovBinaryDynamicsGenerator():
                  max_null_iter=100):
         self.graph_model = graph_model
         self.dynamics_model = dynamics_model
+        self.num_states = dynamics_model.num_states
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.current_graph_name = None
@@ -77,6 +78,10 @@ class MarkovBinaryDynamicsGenerator():
         n_sample = self.state_inputs[graph_name].shape[0]
         self.state_index[graph_name] = set(range(n_sample))
 
+    def _to_one_hot(self, arr, num_classes):
+        ans = np.zeros((arr.shape[0], num_classes), dtype="int")
+        ans[np.arange(arr.shape[0]), arr.astype("int")] = 1
+        return ans
 
     def _sample(self):
         if self.shuffle:
@@ -96,7 +101,8 @@ class MarkovBinaryDynamicsGenerator():
 
         adj = self.graph_inputs[g_index]
         inputs = self.state_inputs[g_index][s_index, :]
-        targets = self.targets[g_index][s_index, :]
+        # targets = self.targets[g_index][s_index, :]
+        targets = self._to_one_hot(self.targets[g_index][s_index, :], self.num_states)
         weights = self.sample_weights[g_index]
         return [inputs, adj], targets, weights
 

@@ -32,11 +32,12 @@ class Dynamics():
 			
 
 	"""
-	def __init__(self):
+	def __init__(self, num_states):
 		"""
 		Initializes a Dynamics object.
 
 		"""
+		self._num_states = num_states
 		self._graph = None
 		self.params = dict()
 
@@ -86,6 +87,11 @@ class Dynamics():
 	def graph(self, graph):
 		self._graph = graph
 		self.initialize_states()
+
+
+	@property
+	def num_states(self):
+		return self._num_states
 
 
 	def update(self, step=1):
