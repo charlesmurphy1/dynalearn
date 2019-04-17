@@ -42,7 +42,7 @@
             "max_null_iter": 100,
             "gamma": 0,
             "num_sample": 10000,
-            "num_graphs": 1
+            "num_graphs": 5
         }
     },
  "training": 
