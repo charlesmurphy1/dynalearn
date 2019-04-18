@@ -7,13 +7,16 @@ import tensorflow.keras.backend as K
 from dynalearn.models.layers import GraphAttention
 
 
-# def bce_label_smoothing(label_smoothing=0.):
-#     # def bce_with_label_smoothing(y_true, y_pred):
-#     #     y_true = (1 - label_smoothing) * y_true + label_smoothing * (1 - y_true)
-#     #     return keras.losses.categorical_crossentropy(y_true, y_pred)
-#     def bce_with_label_smoothing(y_true, y_pred):
-#         return keras.losses.binary_crossentropy(y_true, y_pred)
-#     return bce_with_label_smoothing
+class noisy_crossentropy:
+    def __init__(self, noise=0):
+        self.noise = noise
+
+    def __call__(self, y_true, y_pred):
+        num_states = y_true.shape[1]
+        y_true = y_true * (1 - self.noise) + \
+                 (1 - y_true) * self.noise / num_states
+
+        return keras.losses.categorical_crossentropy(y_true, y_pred)
 
 
 
@@ -108,7 +111,12 @@ def get_experiment(params):
     # Define model
     model = get_model(params["model"]["name"], params)
     optimizer = keras.optimizers.get(params["training"]["optimizer"])
-    loss = keras.losses.binary_crossentropy
+    # loss = keras.losses.binary_crossentropy
+    if params["training"]["loss"] == "noisy_cross_entropy":
+        loss = noisy_cross_entropy(params["training"]["target_noise"])
+    else:
+        loss = keras.losses.get(params["training"]["loss"])
+
     metrics = ["accuracy"]
     callbacks = []
 

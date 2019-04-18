@@ -102,7 +102,8 @@ class MarkovBinaryDynamicsGenerator():
         adj = self.graph_inputs[g_index]
         inputs = self.state_inputs[g_index][s_index, :]
         # targets = self.targets[g_index][s_index, :]
-        targets = self._to_one_hot(self.targets[g_index][s_index, :], self.num_states)
+        targets = self._to_one_hot(self.targets[g_index][s_index, :],
+                                   self.num_states)
         weights = self.sample_weights[g_index]
         return [inputs, adj], targets, weights
 

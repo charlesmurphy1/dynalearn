@@ -53,6 +53,7 @@ class GraphAttention(Layer):
         self.kernels = []       # Layer kernels for attention heads
         self.biases = []        # Layer biases for attention heads
         self.attn_kernels = []  # Attention kernels for attention heads
+        self.attn_biases = []   # Attention biases for attention heads
 
         if attn_heads_reduction == 'concat':
             # Output will have shape (..., K * F')
@@ -77,7 +78,7 @@ class GraphAttention(Layer):
                                      name='kernel_{}'.format(head))
             self.kernels.append(kernel)
 
-            # # Layer bias
+            # Layer bias
             if self.use_bias:
                 bias = self.add_weight(shape=(int(self.F_), ),
                                        initializer=self.bias_initializer,
@@ -92,12 +93,26 @@ class GraphAttention(Layer):
                                                regularizer=self.attn_kernel_regularizer,
                                                constraint=self.attn_kernel_constraint,
                                                name='attn_kernel_self_{}'.format(head),)
-            attn_kernel_neighs = self.add_weight(shape=(int(self.F_), 1),
-                                                 initializer=self.attn_kernel_initializer,
-                                                 regularizer=self.attn_kernel_regularizer,
-                                                 constraint=self.attn_kernel_constraint,
-                                                 name='attn_kernel_neigh_{}'.format(head))
-            self.attn_kernels.append([attn_kernel_self, attn_kernel_neighs])
+            attn_kernel_neigh = self.add_weight(shape=(int(self.F_), 1),
+                                                initializer=self.attn_kernel_initializer,
+                                                regularizer=self.attn_kernel_regularizer,
+                                                constraint=self.attn_kernel_constraint,
+                                                name='attn_kernel_neigh_{}'.format(head))
+            self.attn_kernels.append([attn_kernel_self, attn_kernel_neigh])
+
+            # Layer bias
+            if self.use_bias:
+                attn_bias_self = self.add_weight(shape=(1, ),
+                                                 initializer=self.bias_initializer,
+                                                 regularizer=self.bias_regularizer,
+                                                 constraint=self.bias_constraint,
+                                                 name='attn_bias_self_{}'.format(head))
+                attn_bias_neigh = self.add_weight(shape=(1, ),
+                                                  initializer=self.bias_initializer,
+                                                  regularizer=self.bias_regularizer,
+                                                  constraint=self.bias_constraint,
+                                                  name='attn_bias_neigh_{}'.format(head))
+                self.attn_biases.append([attn_bias_self, attn_bias_neigh])
         self.built = True
 
     def call(self, inputs):
@@ -112,10 +127,17 @@ class GraphAttention(Layer):
             # Compute inputs to attention network
             features = K.dot(X, kernel)  # (N x F')
 
+            if self.use_bias:
+                features = K.bias_add(features, self.biases[head])
+
             # Compute feature combinations
             # Note: [[a_1], [a_2]]^T [[Wh_i], [Wh_2]] = [a_1]^T [Wh_i] + [a_2]^T [Wh_j]
             attn_for_self = K.dot(features, attention_kernel[0])    # (N x 1), [a_1]^T [Wh_i]
             attn_for_neighs = K.dot(features, attention_kernel[1])  # (N x 1), [a_2]^T [Wh_j]
+
+            if self.use_bias:
+                attn_for_self = K.bias_add(attn_for_self, self.attn_biases[head][0])
+                attn_for_neighs = K.bias_add(attn_for_neighs, self.attn_biases[head][1])
 
             # Attention head a(Wh_i, Wh_j) = a^T [[Wh_i], [Wh_j]]
             dense = attn_for_self + K.transpose(attn_for_neighs)  # (N x N) via broadcasting
@@ -138,9 +160,6 @@ class GraphAttention(Layer):
             node_features = K.dot(dropout_attn, dropout_feat)  # (N x F')
             node_features = node_features + dropout_feat # skip connection
             
-
-            if self.use_bias:
-                node_features = K.bias_add(node_features, self.biases[head])
 
             # Add output of attention head to final output
             outputs.append(node_features)

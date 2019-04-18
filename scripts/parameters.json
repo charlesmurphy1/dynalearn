@@ -42,7 +42,7 @@
             "max_null_iter": 100,
             "gamma": 0,
             "num_sample": 10000,
-            "num_graphs": 5
+            "num_graphs": 1
         }
     },
  "training": 
@@ -50,11 +50,12 @@
         "optimizer": "Adam",
         "loss": "categorical_crossentropy",
         "learning_rate": 0.0001,
-        "steps_per_epoch": 10000,
-        "epochs": 10
+        "target_noise": 0.1,
+        "steps_per_epoch": 5000,
+        "epochs": 50
     },
  "np_seed": 1,
  "tf_seed": 2,
  "experiment_name": "cedar_experiment",
- "path": "."
+ "path": "../data/"
 }
