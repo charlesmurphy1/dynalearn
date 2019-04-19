@@ -14,15 +14,22 @@ color_palette = {
 	"grey": "#525252"
 }
 
+def get_plot_label(i):
+    alphabet = 'abcdefghijklmnpoqrstuvwxyz'
+    return "(" + alphabet[i] + ")"
+
 def main():
 	prs = ap.ArgumentParser(description="Get local transition probability \
 										 figure from path to parameters.")
 	prs.add_argument('--path', '-p', type=str, required=True,
 					 help='Path to parameters.')
+	prs.add_argument('--save', '-s', type=str, required=False,
+					 help='Path where to save.')
 	if len(sys.argv) == 1:
 		prs.print_help()
 		sys.exit(1)
 	args = prs.parse_args()
+
 	with open(args.path, 'r') as f:
 		params = json.load(f)
 
@@ -38,40 +45,73 @@ def main():
 			states.append(k[6:])
 
 
-	fig, ax = plt.subplots(len(states),
-						   len(states),
-						   figsize=(4 * len(states), 3 * len(states)),
-						   sharex=True, sharey=True)
+	fig, ax = plt.subplots(1, 1, figsize=(6, 5))
+	transitions = params["dynamics"]["params"]["relevant_transitions"]
 
 	N = params["graph"]["params"]["N"]
 	kmin = np.min(np.sum(data["data/ERGraph_0/adj_matrix"], 0))
 	kmax = np.max(np.sum(data["data/ERGraph_0/adj_matrix"], 0)) - 1
 	k = np.arange(N)
-	for i, in_s in enumerate(states):
-		for j, out_s in enumerate(states):
-			ground_truth_ltp = an_data["analytics/local_trans_prob/ground_truth/" + in_s + "_to_" + out_s][...]
-			model_ltp = an_data["analytics/local_trans_prob/model/" + in_s + "_to_" + out_s][...]
-			estimate_ltp = an_data["analytics/local_trans_prob/estimate/" +in_s + "_to_" + out_s][...]
-			ax[i, j].plot(k, ground_truth_ltp, marker='None', linestyle='-',
-						  color=color_palette["blue"])
-			ax[i, j].plot(k, model_ltp[:, 0], marker='s', linestyle='None',
-						  color=color_palette["orange"])
-			ax[i, j].plot(k, estimate_ltp[:, 0], marker='v', linestyle='None',
-						  color=color_palette["purple"])
+	degrees = np.sum(data["data/ERGraph_0/adj_matrix"], 0)
 
-			ax[i, j].fill_between(k, model_ltp[:, 0] - model_ltp[:, 1],
-								  model_ltp[:, 0] + model_ltp[:, 1],
-								  color=color_palette["grey"], alpha=0.3)
-			ax[i, j].fill_between(k, estimate_ltp[:, 0] - estimate_ltp[:, 1],
-								  estimate_ltp[:, 0] + estimate_ltp[:, 1],
-								  color=color_palette["grey"], alpha=0.3)
-			if i==len(states) - 1: ax[i, j].set_xlabel(r"Infected degree $\ell$")
-			if j==0:ax[i, j].set_ylabel(r"Transition Probability")
-			ax[i, j].set_title(r"$P(" + out_s + r"|" + in_s + r", \ell$)")
-			ax[i, j].set_xlim([kmin, kmax])
-			ax[i, j].set_ylim([0, 1])
+	axx = ax.twinx()
+	axx.hist(degrees, bins=np.arange(kmin, kmax+1, 1),
+			 color=color_palette["grey"], density=True,
+			 alpha=0.2)
+	axx.set_ylabel('Degree distribution')
 
-	plt.show()
+	for t in transitions:
+		in_s, out_s = t[0], t[1]
+		if in_s == "S" and out_s=="I":
+			color = color_palette["orange"]
+		elif in_s == "I" and out_s=="S":
+			color = color_palette["blue"]
+
+		fill_color = color_palette["grey"]
+
+		ground_truth_ltp = an_data["analytics/local_trans_prob/ground_truth/" + in_s + "_to_" + out_s][...]
+		model_ltp = an_data["analytics/local_trans_prob/model/" + in_s + "_to_" + out_s][...]
+		estimate_ltp = an_data["analytics/local_trans_prob/estimate/" +in_s + "_to_" + out_s][...]
+
+		ax.fill_between(k, model_ltp[:, 0] - model_ltp[:, 1],
+							  model_ltp[:, 0] + model_ltp[:, 1],
+							  color=fill_color, alpha=0.3)
+		ax.fill_between(k, estimate_ltp[:, 0] - estimate_ltp[:, 1],
+							  estimate_ltp[:, 0] + estimate_ltp[:, 1],
+							  color=fill_color, alpha=0.3)
+		ax.plot(k, model_ltp[:, 0], marker='s', linestyle='None', alpha=1,
+					  color=color, markeredgewidth=1, markeredgecolor='k')
+		ax.plot(k, estimate_ltp[:, 0], marker='v', linestyle='None', alpha=1,
+					  color=color, markeredgewidth=1, markeredgecolor='k')
+		ax.plot(k, ground_truth_ltp, marker='None', linestyle='-.', linewidth=2, 
+					  color=color)
+		ax.set_xlabel(r"Infected degree $\ell$", fontsize=14)
+		ax.set_ylabel(r"Transition Probability", fontsize=14)
+		ax.set_xlim([kmin, kmax])
+		ax.set_ylim([0, 1])
+
+	# Making legend
+	labels = [r'$P(S\to I|\ell)$', r'$P(I \to S|\ell)$', "ground truth", "model", "estimate"]
+	markers = [ax.plot([-1], [-1], linestyle='none', marker='s', markersize=10,
+					   color=color_palette["orange"],label=labels[0]),
+			   ax.plot([-1], [-1], linestyle='none', marker='s', markersize=10,
+			   		   color=color_palette["blue"],label=labels[1]),
+			   ax.plot([-1], [-1], linestyle='-.', linewidth=2,
+			   		   color=color_palette["grey"],label=labels[2]),
+			   ax.plot([-1], [-1], marker='s', markeredgewidth=1,
+			   		   markeredgecolor='k', linestyle='None',
+			   		   color=color_palette["grey"],label=labels[3]),
+			    ax.plot([-1], [-1], marker='v', markeredgewidth=1,
+			   		   markeredgecolor='k', linestyle='None',
+			   		   color=color_palette["grey"],label=labels[4])]
+	ax.legend(loc='upper left', shadow=False,
+              fancybox=False, prop={'size': 12}, frameon=False,
+              numpoints=1, ncol=1)
+
+	if args.save is None:
+		plt.show()
+	else:
+		fig.savefig(os.path.join(args.save))
 
 
 

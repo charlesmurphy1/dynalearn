@@ -82,6 +82,10 @@ class Experiment:
 		for k, v in h5file['/model/weights'].items():
 			weights[int(k[2:])] = np.array(v)
 
+		# ww = self.model.model.get_weights()
+		# for i in range(len(weights)):
+		# 	print(weights[i].shape, ww[i].shape)
+
 		self.model.model.set_weights(weights)
 		return 0
 

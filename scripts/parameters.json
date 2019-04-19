@@ -15,7 +15,8 @@
             "num_states": 2,
             "infection_prob": 0.04,
             "recovery_prob": 0.1,
-            "init_param": "None"
+            "init_param": "None",
+            "relevant_transitions": ["SI", "IS"]
         }
     },
  "model": 
