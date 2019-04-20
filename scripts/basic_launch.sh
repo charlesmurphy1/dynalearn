@@ -4,4 +4,8 @@
 #SBATCH --mem=4000M               # memory (per node)
 #SBATCH --time=0-03:00            # time (DD-HH:MM)
 
-python test_for_cedar.py
+PATH_TO_EXP="../data/er10"
+
+python launch_training_script.py -p $PATH_TO_EXP+"/parameters.json"
+python launch_analytics_script.py -p $PATH_TO_EXP+"/parameters.json"
+python figure_local_transition_probability.py -p $PATH_TO_EXP+"/parameters.json"

@@ -29,8 +29,6 @@ class MarkovBinaryDynamicsGenerator():
 
     def generate(self, num_sample, T, progress_bar=None, gamma=0.):
 
-        if progress_bar: bar = progress_bar(range(num_sample))
-
         sample = 0
         name, graph = self.graph_model.generate()
         N = graph.number_of_nodes()
@@ -54,8 +52,8 @@ class MarkovBinaryDynamicsGenerator():
                 t1 = time.time()
 
                 if progress_bar:
-                    bar.set_description(str(round(t1 - t0, 5)))
-                    bar.update()
+                    progress_bar.set_description(str(round(t1 - t0, 5)))
+                    progress_bar.update()
 
                 sample += 1
                 if not self.dynamics_model.continue_simu:
