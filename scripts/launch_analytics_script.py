@@ -73,6 +73,47 @@ def main():
             p_bar.update()
     p_bar.close()
 
+    if N < 15:
+        # Compute Markov matrices and occurence
+        num_all_states = len(state_label)**N
+        all_states = np.zeros((num_all_states, N)).astype("int")
+        dynamics_markovmat = {}
+        model_markovmat = {}
+        occurence = {}
+        for i in range(1, num_all_states):
+            all_states[i] = u.increment_int_from_base(all_states[i - 1], len(state_label))
+
+        p_bar = tqdm.tqdm(range(num_all_states * num_graphs), "Markov matrix")
+        for g in graphs:
+            dynamics_markovmat[g] = np.zeros((num_all_states, num_all_states))
+            model_markovmat[g] = np.zeros((num_all_states, num_all_states))
+            occurence[g] = np.zeros((num_all_states, num_all_states))
+
+            for i, s in enumerate(all_states):
+                dynamics_p = dynamics.predict(s)
+                model_p = model.model.predict([s, graphs[g]], steps=1)
+                dynamics_logp = np.trace(np.log(dynamics_p.T[all_states]), axis1=1, axis2=2)
+                model_logp = np.trace(np.log(model_p.T[all_states]), axis1=1, axis2=2)
+                dynamics_logp[dynamics_logp<-50] = -50
+                model_logp[model_logp<-50] = -50
+                dynamics_markovmat[g][:, i] = dynamics_logp
+                model_markovmat[g][:, i] = model_logp
+                p_bar.update()
+        p_bar.close()
+
+        p_bar = tqdm.tqdm(range(num_states), "State occurence")
+        for g in graphs:
+            for i in range(len(states[g]) - 1):
+                in_state = states[g][i]
+                out_state = states[g][i + 1]
+                in_i = u.base_to_int(in_state, len(state_label))
+                out_i = u.base_to_int(out_state, len(state_label))
+                occurence[g][out_i, in_i] += 1
+                p_bar.update()
+        p_bar.close()
+
+
+
     # Getting max/min infected degree
     transitions = params["dynamics"]["params"]["relevant_transitions"]
     for g in graphs:
@@ -153,6 +194,14 @@ def main():
         # Saving transition probabilities
         h5file.create_dataset("/analytics/trans_prob/" + g + "/ground_truth", data=dynamics_tp[g])
         h5file.create_dataset("/analytics/trans_prob/" + g + "/model", data=model_tp[g])
+        if N < 15:
+            group = "/analytics/markovmatrix/" + g + "/ground_truth/"
+            h5file.create_dataset(group, data=dynamics_markovmat[g])
+            group = "/analytics/markovmatrix/" + g + "/model/"
+            h5file.create_dataset(group, data=model_markovmat[g])
+            group = "/analytics/occurence/" + g
+            h5file.create_dataset(group, data=occurence[g])
+
 
     for t in transitions:
         in_s, out_s = t[0], t[1]
@@ -169,6 +218,7 @@ def main():
         group = "/analytics/local_trans_prob/estimate/" + in_s + "_to_" + out_s
         avg, var = avg_estimate_ltp[(in_s, out_s)], var_estimate_ltp[(in_s, out_s)]
         h5file.create_dataset(group, data=np.vstack((avg, var)).T)
+
 
         # # Saving attention coefficients
         # for layer in range(len(attn_layers)):

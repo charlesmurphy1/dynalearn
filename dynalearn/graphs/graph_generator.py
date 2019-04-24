@@ -19,35 +19,35 @@ class GraphGenerator:
 
 
 class CycleGraph(GraphGenerator):
-    def __init__(self, N, rand_gen):
+    def __init__(self, N, rand_gen=None):
         generator = lambda: nx.cycle_graph(N)
         super(CycleGraph, self).__init__(generator)
         self.params['N'] = N
 
 
 class CompleteGraph(GraphGenerator):
-    def __init__(self, N, rand_gen):
+    def __init__(self, N, rand_gen=None):
         generator = lambda: nx.complet_graph(N)
         super(CompleteGraph, self).__init__(generator)
         self.params['N'] = N
 
 
 class StarGraph(GraphGenerator):
-    def __init__(self, N, rand_gen):
+    def __init__(self, N, rand_gen=None):
         generator = lambda: nx.star_graph(N)
         super(StarGraph, self).__init__(generator)
         self.params['N'] = N
 
 
 class EmptyGraph(GraphGenerator):
-    def __init__(self, N, rand_gen):
+    def __init__(self, N, rand_gen=None):
         generator = lambda: nx.empty_graph(N)
         super(EmptyGraph, self).__init__(generator)
         self.params['N'] = N
 
 
 class RegularGraph(GraphGenerator):
-    def __init__(self, N, degree, rand_gen):
+    def __init__(self, N, degree, rand_gen=None):
         generator = lambda: nx.random_regular_graph(N, degree, seed=rand_gen)
 
         super(RegularGraph, self).__init__(generator)
@@ -56,7 +56,7 @@ class RegularGraph(GraphGenerator):
 
 
 class BAGraph(GraphGenerator):
-    def __init__(self, N, M, rand_gen):
+    def __init__(self, N, M, rand_gen=None):
         generator = lambda: nx.barabasi_albert_graph(N, M, seed=rand_gen)
         super(BAGraph, self).__init__(generator)
         self.params['N'] = N
@@ -64,7 +64,7 @@ class BAGraph(GraphGenerator):
 
 
 class ERGraph(GraphGenerator):
-    def __init__(self, N, p, rand_gen):
+    def __init__(self, N, p, rand_gen=None):
         generator = lambda: nx.gnp_random_graph(N, p, seed=rand_gen)
         super(ERGraph, self).__init__(generator)
         self.params['N'] = N

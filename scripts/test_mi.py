@@ -2,31 +2,41 @@ import utilities as u
 import numpy as np
 import matplotlib.pyplot as plt
 
+import dynalearn as dl
 
-N = 100
-delay = 1
+N = 1000
+p = 0.01
+inf_prob = 0.4
+rec_prob = 0.8
+T = 1000
 num_states = 2
-x = np.random.randint(0, num_states, N)
-y = np.random.randint(0, num_states, N)
 
-num_sample = 1
+dynamics = dl.dynamics.SISDynamics(inf_prob, rec_prob, init_state=0.1)
+graph = dl.graphs.ERGraph(N, p)
+name, g = graph.generate()
+dynamics.graph = g
 
-perturbed_MI = np.zeros(N)
-Z = u.information(x, delay, num_states) / 2
+TS = np.zeros((T, N))
+for i in range(T):
+	dynamics.update()
+	TS[i, :] = dynamics.states
 
-for i in range(N):
-	print(i)
-	for s in range(num_sample):
-		y_perturbed = y * 1
-		index = np.random.choice(range(N), size=i, replace=False)
-		y_perturbed[index] = x[index] * 1
-		perturbed_MI[i] += u.mutual_information(x, y_perturbed, delay, num_states) / num_sample
-
-# plt.plot(perturbed_MI, '-', color='#1f77b4')
-plt.plot(perturbed_MI / Z, 'o', color='#1f77b4', alpha=0.3)
-plt.ylabel('Normalized mutual information')
-plt.xlabel('Number of common bits')
-plt.yscale('log')
+num_sample = 50
+delays = [1, 2, 3, 4, 5, 6]
+avg_mi = []
+var_mi = []
+for d in delays:
+	_mi = []
+	for i in range(num_sample):
+		print(d, i)
+		nodes = np.random.choice(range(N), 2, replace=False)
+		x = u.mutual_information(TS[:, nodes[0]], TS[:, nodes[1]], d, num_states)
+		_mi.append(x)
+	avg_mi.append(np.mean(_mi))
+	var_mi.append(np.std(_mi))
+plt.errorbar(delays, avg_mi, yerr=var_mi, marker='o', linestyle='-')
 plt.show()
+	
+
 
 

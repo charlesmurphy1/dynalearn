@@ -114,6 +114,7 @@ def get_experiment(params):
     # Define model
 
     model = get_model(params["model"]["name"], params)
+    model.model.summary()
     optimizer = keras.optimizers.get(params["training"]["optimizer"])
     if params["training"]["loss"] == "noisy_crossentropy":
         loss = get_noisy_crossentropy(noise=params["training"]["target_noise"])
@@ -183,6 +184,9 @@ def increment_int_from_base(x, base):
 
     return val
 
+def base_to_int(x, base):
+    return int(np.sum(x * base**np.arange(len(x))))
+
 def bin_ts(ts, delay, num_states):
     delay += 1
     states = np.zeros((num_states**delay, delay))
@@ -202,12 +206,12 @@ def bin_ts1_ts2(ts1, ts2, delay, num_states):
     states = np.zeros((num_states**(2 * delay), 2 * delay))
     counts = np.zeros(num_states**(2 * delay))
 
-    s1 = np.array([0, 0])
+    s1 = np.zeros(delay)
     for i in range(num_states**(delay)):
-        s2 = np.array([0, 0])
+        s2 = np.zeros(delay)
         for j in range(num_states**(delay)):
-            states[i * num_states**(delay) + j, :2] = s1
-            states[i * num_states**(delay) + j, 2:] = s2
+            states[i * num_states**(delay) + j, :delay] = s1
+            states[i * num_states**(delay) + j, delay:] = s2
             s2 = increment_int_from_base(s2, num_states)
         s1 = increment_int_from_base(s1, num_states)
 

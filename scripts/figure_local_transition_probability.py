@@ -59,7 +59,7 @@ def main():
     axx = ax.twinx()
     axx.hist(degrees, bins=np.arange(kmin, kmax+1, 1),
              color=color_palette["grey"], density=True,
-             alpha=0.2)
+             alpha=0.5)
     axx.set_ylabel('Degree distribution')
 
     for t in transitions:
@@ -112,7 +112,7 @@ def main():
     ax.legend(loc='upper left', shadow=False,
               fancybox=False, prop={'size': 12}, frameon=False,
               numpoints=1, ncol=1)
-
+    plt.tight_layout(0.1)
     if args.save is None:
         plt.show()
     else:
