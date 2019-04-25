@@ -27,7 +27,7 @@ class CycleGraph(GraphGenerator):
 
 class CompleteGraph(GraphGenerator):
     def __init__(self, N, rand_gen=None):
-        generator = lambda: nx.complet_graph(N)
+        generator = lambda: nx.complete_graph(N)
         super(CompleteGraph, self).__init__(generator)
         self.params['N'] = N
 

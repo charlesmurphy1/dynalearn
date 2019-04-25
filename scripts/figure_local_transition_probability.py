@@ -33,8 +33,8 @@ def main():
     with open(args.path, 'r') as f:
         params = json.load(f)
 
-    filename = os.path.join(params["path"], "experiment.h5")
-    an_filename = os.path.join(params["path"], "analytics.h5")
+    filename = os.path.join(params["path"], params["name"] + "_data.h5")
+    an_filename = os.path.join(params["path"], params["name"] + "_analytics.h5")
     data = h5py.File(filename, 'r')
     an_data = h5py.File(an_filename, 'r')
     graph_label = params["graph"]["name"] + "_0"
@@ -50,14 +50,13 @@ def main():
 
     N = params["graph"]["params"]["N"]
     g = list(data["data/"].keys())[0]
-    print(g)
     kmin = np.min(np.sum(data["data/" + g + "/adj_matrix"], 0))
     kmax = np.max(np.sum(data["data/" + g + "/adj_matrix"], 0)) - 1
     k = np.arange(N)
     degrees = np.sum(data["data/" + g + "/adj_matrix"], 0)
 
     axx = ax.twinx()
-    axx.hist(degrees, bins=np.arange(kmin, kmax+1, 1),
+    axx.hist(degrees, bins=np.arange(0, kmax+1, 1),
              color=color_palette["grey"], density=True,
              alpha=0.5)
     axx.set_ylabel('Degree distribution')
@@ -92,7 +91,7 @@ def main():
                       color=color)
         ax.set_xlabel(r"Infected degree $\ell$", fontsize=14)
         ax.set_ylabel(r"Transition Probability", fontsize=14)
-        ax.set_xlim([kmin, kmax])
+        ax.set_xlim([0, kmax])
         ax.set_ylim([0, 1])
 
     # Making legend
@@ -113,10 +112,7 @@ def main():
               fancybox=False, prop={'size': 12}, frameon=False,
               numpoints=1, ncol=1)
     plt.tight_layout(0.1)
-    if args.save is None:
-        plt.show()
-    else:
-        fig.savefig(os.path.join(params["path"], args.save))
+    fig.savefig(os.path.join(params["path"], params["name"] + "_" + args.save))
 
 
 

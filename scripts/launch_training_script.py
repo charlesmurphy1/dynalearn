@@ -18,8 +18,6 @@ def main():
                                          figure from path to parameters.")
     prs.add_argument('--path', '-p', type=str, required=True,
                      help='Path to parameters.')
-    prs.add_argument('--save', '-s', type=str, required=False,
-                     help='Path where to save.')
 
     if len(sys.argv) == 1:
         prs.print_help()
@@ -30,30 +28,31 @@ def main():
         params = json.load(f)
 
     print("Building experiment\n-------------------")
-    experiment = u.get_experiment(params)
-
-    print("Building dataset\n----------------")
-    p_bar = tqdm.tqdm(range(params["data_generator"]["params"]["num_graphs"]*
-                            params["data_generator"]["params"]["num_sample"]))
-    for i in range(params["data_generator"]["params"]["num_graphs"]):
-        experiment.generate_data(params["data_generator"]["params"]["num_sample"],
-                                 params["data_generator"]["params"]["T"],
-                                 gamma=params["data_generator"]["params"]["gamma"],
-                                 progress_bar=p_bar)
-
-    p_bar.close()
+    experiment = u.get_experiment(params, True)
+    experiment.model.model.summary()
 
     print("Training\n--------")
     experiment.train_model(params["training"]["epochs"],
                            params["training"]["steps_per_epoch"],
                            verbose=1)
 
-    if args.save is None:
-        h5file = h5py.File(os.path.join(params["path"], "experiment.h5"), 'w')
-    else:
-        h5file = h5py.File(os.path.join(params["path"], args.save), 'w')
-    experiment.save_hdf5_all(h5file)
+    h5file = h5py.File(os.path.join(params["path"], params["name"] + "_model.h5"), 'w')
+    experiment.save_hdf5_model(h5file)
     h5file.close()
+
+    h5file = h5py.File(os.path.join(params["path"], params["name"] + "_data.h5"), 'w')
+    experiment.save_hdf5_data(h5file)
+    h5file.close()
+
+    h5file = h5py.File(os.path.join(params["path"], params["name"] + "_optimizer.h5"), 'w')
+    experiment.save_hdf5_optimizer(h5file)
+    h5file.close()
+
+    h5file = h5py.File(os.path.join(params["path"], params["name"] + "_history.h5"), 'w')
+    experiment.save_hdf5_history(h5file)
+    h5file.close()
+
+
 
 if __name__ == '__main__':
     main()

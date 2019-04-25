@@ -33,8 +33,8 @@ def main():
     with open(args.path, 'r') as f:
         params = json.load(f)
 
-    filename = os.path.join(params["path"], "experiment.h5")
-    an_filename = os.path.join(params["path"], "analytics.h5")
+    filename = os.path.join(params["path"], params["name"] + "_data.h5")
+    an_filename = os.path.join(params["path"], params["name"] + "_analytics.h5")
     data = h5py.File(filename, 'r')
     an_data = h5py.File(an_filename, 'r')
     graph_label = params["graph"]["name"] + "_0"
@@ -81,10 +81,7 @@ def main():
     plt.colorbar(p2, ax=ax[2])
     plt.tight_layout(4. ,h_pad=4.)
 
-    if args.save is None:
-        plt.show()
-    else:
-        fig.savefig(os.path.join(params["path"], args.save))
+    fig.savefig(os.path.join(params["path"], params["name"] + "_" + args.save))
 
 
 

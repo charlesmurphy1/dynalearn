@@ -94,7 +94,7 @@ def get_datagenerator(gen_name, graph_model, dynamics_model, params):
         raise ValueError('wrong string name for data generator.')
 
 
-def get_experiment(params):
+def get_experiment(params, build_dataset=False):
     # Define seeds
     np.random.seed(params["np_seed"])
     tf.set_random_seed(params["tf_seed"])
@@ -110,11 +110,20 @@ def get_experiment(params):
                                        graph,
                                        dynamics,
                                        params)
+    if build_dataset:
+        print("Building dataset\n-------------------")
+        p_bar = tqdm.tqdm(range(params["data_generator"]["params"]["num_graphs"]*
+                                params["data_generator"]["params"]["num_sample"]))
+        for i in range(params["data_generator"]["params"]["num_graphs"]):
+            data_generator.generate(params["data_generator"]["params"]["num_sample"],
+                                    params["data_generator"]["params"]["T"],
+                                    gamma=params["data_generator"]["params"]["gamma"],
+                                    progress_bar=p_bar)
+        p_bar.close()
 
     # Define model
 
     model = get_model(params["model"]["name"], params)
-    model.model.summary()
     optimizer = keras.optimizers.get(params["training"]["optimizer"])
     if params["training"]["loss"] == "noisy_crossentropy":
         loss = get_noisy_crossentropy(noise=params["training"]["target_noise"])
@@ -123,21 +132,17 @@ def get_experiment(params):
     schedule = get_schedule(params["training"]["schedule"])
     metrics = ["accuracy"]
     callbacks = [keras.callbacks.LearningRateScheduler(schedule, verbose=1)]
+
     # if params["training"]["with_mutual_info_metrics"]:
-    #     temp_generator = get_datagenerator(params["data_generator"]["name"],
-    #                                        graph,
-    #                                        dynamics,
-    #                                        params)
-    #     temp_generator.generate(5000, 5000)
-    #     for g in temp_generator.graph_inputs: 
-    #         adj = temp_generator.graph_inputs[g]
-    #         states = temp_generator.state_inputs[g]
-    #     cb = MutualInformationMetrics(states, adj, 1, params["dynamics"]["params"]["num_states"])
+    #     for g in data_generator.graph_inputs: 
+    #         adj = data_generator.graph_inputs[g]
+    #         states = data_generator.state_inputs[g]
+    #     cb = MutualInformationMetrics(states, adj, params["dynamics"]["params"]["num_states"])
     #     callbacks.append(cb)
 
 
     # Define experiment
-    experiment = dl.Experiment(params["experiment_name"],
+    experiment = dl.Experiment(params["name"],
                                model,
                                data_generator,
                                loss=loss,
@@ -187,125 +192,109 @@ def increment_int_from_base(x, base):
 def base_to_int(x, base):
     return int(np.sum(x * base**np.arange(len(x))))
 
-def bin_ts(ts, delay, num_states):
-    delay += 1
-    states = np.zeros((num_states**delay, delay))
-    counts = np.zeros(num_states**delay)
+# def bin_timeseries(ts, num_states):
+#     N = ts.shape[1]
+#     states = np.arange(num_states).reshape(num_states, 1)
+#     counts = np.zeros((num_states, N))
 
-    for i in range(1, num_states**delay):
-        states[i] = increment_int_from_base(states[i - 1], num_states)
-
-    for t in range(len(ts) - delay + 1):
-        _ts = ts[t:t+delay]
-        i = np.where(np.all(states == _ts, axis=1))[0][0]
-        counts[i] += 1
-    return counts, states
-
-def bin_ts1_ts2(ts1, ts2, delay, num_states):
-    delay += 1
-    states = np.zeros((num_states**(2 * delay), 2 * delay))
-    counts = np.zeros(num_states**(2 * delay))
-
-    s1 = np.zeros(delay)
-    for i in range(num_states**(delay)):
-        s2 = np.zeros(delay)
-        for j in range(num_states**(delay)):
-            states[i * num_states**(delay) + j, :delay] = s1
-            states[i * num_states**(delay) + j, delay:] = s2
-            s2 = increment_int_from_base(s2, num_states)
-        s1 = increment_int_from_base(s1, num_states)
-
-    for t in range(len(ts1) - delay + 1):
-        _ts1 = ts1[t:t+delay]
-        _ts2 = ts2[t:t+delay]
-        _ts = np.concatenate((_ts1, _ts2))
-        i = np.where(np.all(states == _ts, axis=1))[0][0]
-        counts[i] += 1
-
-    return counts, states
+#     for x in ts:
+#         for i in range(num_states):
+#             counts[i] += x==states[i]
+#     return counts, states
 
 
-def information(ts, delay, num_states):
-    counts, states = bin_ts(ts, delay, num_states)
-    marginal_prob = counts / np.sum(counts)
-    info = 0
-    for i in range(num_states**delay):
-        marg = marginal_prob[i]
-        if marg > 0 :
-            info -= marg * np.log(marg)
+# def bin_two_timeseries(ts1, ts2, num_states):
+#     N = ts1.shape[1]
+#     states = np.zeros((num_states**2, 2))
+#     counts = np.zeros((num_states**2, N))
+#     for i in range(num_states):
+#         for j in range(num_states):
+#             states[i * num_states + j, 0] = i
+#             states[i * num_states + j, 1] = j
 
-    return info
-
-
-def mutual_information(ts1, ts2, delay, num_states):
-    counts1, states1 = bin_ts(ts1, delay, num_states)
-    counts2, states2 = bin_ts(ts2, delay, num_states)
-    counts12, states12 = bin_ts1_ts2(ts1, ts2, delay, num_states)
-    marginal_prob_1 = counts1 / np.sum(counts1)
-    marginal_prob_2 = counts2 / np.sum(counts2)
-    joint_prob = counts12 / np.sum(counts12)
-
-    mutual_info = 0
-
-    for i in range(num_states**delay):
-        marg1 = marginal_prob_1[i]
-        for j in range(num_states**delay):
-            marg2 = marginal_prob_2[j]
-            joint = joint_prob[i * num_states**delay + j]
-            if joint > 0 and marg1 > 0 and marg2 > 0:
-                mutual_info += joint * np.log(joint / marg1 / marg2)
-    return mutual_info
+#     for x, y in zip(ts1, ts2):
+#         x, y = x.reshape(len(x), 1), y.reshape(len(x), 1)
+#         xy = np.concatenate((x, y), axis=1)
+#         for i in range(num_states**2):
+#             counts[i] += np.all(xy==states[i], axis=1)
+#     return counts, states
 
 
-class MutualInformationMetrics(keras.callbacks.Callback):
-    def __init__(self, states, adj, delay, num_states, verbose=1):
-        super(MutualInformationMetrics, self).__init__()
-        self.adj = adj
-        self.states = states
-        self.N = self.adj.shape[0]
-        self.num_samples = self.states.shape[0]
-        self.delay = delay
-        self.num_states = num_states
-        self.verbose = verbose
+# def information(ts, num_states):
+#     if len(ts.shape) == 1:
+#         ts = ts.reshape(ts.shape[0], 1)
+#     N = ts.shape[1]
+#     counts, states = bin_timeseries(ts, num_states)
+#     marginal_prob = counts / np.sum(counts)
+#     info = np.zeros(N)
+#     for i in range(num_states):
+#         marg = marginal_prob[i]
+#         index = marg > 0
+#         info[index] -= marg[index] * np.log2(marg[index])
 
-    def on_train_begin(self, logs={}):
-        self._data = {}
+#     return info
 
-    def on_epoch_end(self, epoch, logs={}):
-        info = np.zeros(self.N)
-        mutual_info = np.zeros(self.N)
-        predictions = np.array([self.model.predict([s, self.adj], steps=1)
-                                for s in self.states])
-        y_true = self.states
-        y_pred = np.zeros((self.num_samples, self.N))
-        if self.verbose: p_bar = tqdm.tqdm(range(self.N * self.num_samples), desc="Computing y_pred")
-        for i in range(self.num_samples):
-            for j in range(self.N):
-                if self.verbose: p_bar.update()
-                new_state = np.random.choice(range(self.num_states),
-                                             p=predictions[i, j, :])
-                y_pred[i, j] = new_state
-        if self.verbose:
-            p_bar.close()
+
+# def mutual_information(ts1, ts2, num_states):
+#     if len(ts1.shape) == 1:
+#         ts1 = ts1.reshape(ts1.shape[0], 1)
+#     if len(ts2.shape) == 1:
+#         ts2 = ts2.reshape(ts2.shape[0], 1)
+#     N = ts1.shape[1]
+#     counts1, states1 = bin_timeseries(ts1, num_states)
+#     counts2, states2 = bin_timeseries(ts2, num_states)
+#     counts12, states12 = bin_two_timeseries(ts1, ts2, num_states)
+#     marginal_prob_1 = counts1 / np.sum(counts1, axis=0)
+#     marginal_prob_2 = counts2 / np.sum(counts2, axis=0)
+#     joint_prob = counts12 / np.sum(counts12, axis=0)
+
+#     mutual_info = np.zeros(N)
+#     for i in range(num_states):
+#         marg1 = marginal_prob_1[i]
+#         for j in range(num_states):
+#             marg2 = marginal_prob_2[j]
+#             joint = joint_prob[i * num_states + j]
+#             index = joint > 0
+#             mutual_info[index] += joint[index] * np.log2(joint[index] / marg1[index] / marg2[index])
+#     return mutual_info
+
+
+# class MutualInformationMetrics(keras.callbacks.Callback):
+#     def __init__(self, states, adj, num_states, verbose=1):
+#         super(MutualInformationMetrics, self).__init__()
+#         self.adj = adj
+#         self.states = states
+#         self.N = self.adj.shape[0]
+#         self.num_samples = self.states.shape[0]
+#         self.num_states = num_states
+#         self.verbose = verbose
+#         self.session = K.get_session()
+
+#     def on_train_begin(self, logs={}):
+#         self._data = {}
+
+#     def on_epoch_end(self, epoch, logs={}):
+#         info = np.zeros(self.N)
+#         mutual_info = np.zeros(self.N)
+#         p = np.array([self.model.predict([s, self.adj], steps=1)
+#                       for s in self.states])
+#         dist = tf.distributions.Categorical(probs=p)
+#         y_true = self.states
+#         y_pred = dist.sample().eval(session=self.session)
         
-        if self.verbose: p_bar = tqdm.tqdm(range(self.N), desc="Computing MI")
 
-        for i in range(self.N):
-            info[i] = information(y_true[:, i], self.delay, self.num_states)
-            mutual_info[i] = mutual_information(y_true[:, i], y_pred[:, i],
-                                                self.delay,
-                                                self.num_states)
-            if self.verbose: p_bar.update()
-        if self.verbose:
-            p_bar.close()
-            print("Epoch {0}\t Avg. information: {1}\t Avg. mutual information: {2}".format(epoch, np.mean(info), np.mean(mutual_info)))
+#         info = information(y_true, self.num_states)
+#         mutual_info = mutual_information(y_true, y_pred, self.num_states)
+#         if self.verbose:
+#             print("\n")
+#             print("Epoch {0}\t Avg. information: {1}\t Avg. mutual information: {2}".format(epoch, np.mean(info), np.mean(mutual_info)))
 
-        self._data[epoch] = np.array([info, mutual_info]).T
+#         self._data[epoch] = np.array([info, mutual_info]).T
 
-        return
+#         return
 
-    def get_data(self):
-        return self._data
+#     def get_data(self):
+#         return self._data
         
 
 
