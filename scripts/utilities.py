@@ -84,12 +84,18 @@ def get_model(model_name, params):
 
 
 def get_datagenerator(gen_name, graph_model, dynamics_model, params):
+    if "using_gt" in params["training"]:
+        using_gt = params["training"]["using_gt"]
+    else:
+        using_gt = False
+
     if 'MarkovBinaryDynamicsGenerator' == gen_name:
         return dl.generators.MarkovBinaryDynamicsGenerator(graph_model, dynamics_model,
                                                            params["data_generator"]["params"]["batch_size"],
                                                            shuffle=True, 
                                                            prohibited_node_index=[],
-                                                           max_null_iter=params["data_generator"]["params"]["max_null_iter"])
+                                                           max_null_iter=params["data_generator"]["params"]["max_null_iter"],
+                                                           using_ground_truth=using_gt)
     else:
         raise ValueError('wrong string name for data generator.')
 
@@ -130,7 +136,7 @@ def get_experiment(params, build_dataset=False):
     else:
         loss = keras.losses.get(params["training"]["loss"])
     schedule = get_schedule(params["training"]["schedule"])
-    metrics = ["accuracy"]
+    metrics = []
     callbacks = [keras.callbacks.LearningRateScheduler(schedule, verbose=1)]
 
     # if params["training"]["with_mutual_info_metrics"]:

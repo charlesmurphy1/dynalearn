@@ -48,7 +48,7 @@ class GATMarkovBinaryPredictor(MarkovPredictor):
 
         x = inputs
         for i in range(len(self.n_hidden)):
-            attn = GraphAttention(self.n_hidden[i],
+            attn = GraphAttention(self.n_hidden[i], 8,
                                   attn_heads=self.n_heads[i],
                                   attn_heads_reduction='concat',
                                   kernel_initializer=glorot_uniform(self.seed),

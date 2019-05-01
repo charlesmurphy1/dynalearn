@@ -1,24 +1,20 @@
 #!/bin/bash
 
-# Antoine Allard
-# antoineallard.info
-# Janvier 2019
+# Charles Murphy
+# Avril 2019
 
 # Ce code soumet une tache sur cedar.
-
-# Compilation: g++ -O3 src/solve_analytical_extensive_component_size.cpp -o bin/solve_analytical_extensive_component_size
 
 # =~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=
 # Ecriture du script de soumission et des commandes a executer.
 cat <<END_OF_SCRIPT > script1.pbs
 #!/bin/bash
 # ---------------------------------------------------------------------
-# SLURM script for job submission on a Compute Canada cluster.
+# Dynalearn submission script.
 # ---------------------------------------------------------------------
 #SBATCH --job-name=NAME1_extensive_component_size
-#SBATCH --account=def-aallard
-#SBATCH --time=TIME
-#SBATCH --mem-per-cpu=MEM
+#SBATCH --account=def-murphy9
+#SBATCH --time=12:00:00
 #SBATCH --output=log_files/analytical_extensive_component_size/NAME1/%x-%j.txt
 #SBATCH --array=1-NBTASKS
 # ---------------------------------------------------------------------

@@ -79,7 +79,7 @@ def main():
     ax.set_xlabel(r"Degree $k$", fontsize=14)
     ax.set_ylabel(r"Loss", fontsize=14)
     ax.set_xlim([0, kmax])
-    # ax.set_ylim([0, 1])
+    ax.set_ylim([0, 1])
 
     # Making legend
     labels = ["Binary data", "Dynamics prob."]

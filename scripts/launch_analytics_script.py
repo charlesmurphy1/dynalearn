@@ -126,8 +126,50 @@ def compute_ltp(dynamics, model, states, targets, graphs, rel_trans):
     return avg_dynamics_ltp, avg_model_ltp, avg_estimate_ltp,\
            var_model_ltp, var_estimate_ltp
 
+
+def compute_star_ltp(dynamics, model, rel_trans):
+    N = model.num_nodes
+    degrees = np.arange(N).astype('int')
+
+    star_g = dl.graphs.StarGraph(N)
+    name, g = star_g.generate()
+    graphs = {name: nx.to_numpy_array(g)}
+    _states = np.zeros((len(rel_trans) * N, N))
+    for i, t in enumerate(rel_trans):
+        in_l = dynamics.state_label[t[0]]
+        _states[i * N:(i + 1) * N, 0] = in_l
+    for i in range(1, N):
+        for j in range(len(rel_trans)):
+            _states[i + N * j, 1:i] = 1
+    states = {name: _states}
+
+    dynamics_star_ltp = {(t[0], t[1]): np.zeros(len(degrees)) for t in rel_trans}
+    model_star_ltp = {(t[0], t[1]): np.zeros(len(degrees)) for t in rel_trans}
+
+    p_bar = tqdm.tqdm(range(len(rel_trans) * N), "Star Local transition probabilities")
+    for g in graphs:
+        dynamics.graph = nx.from_numpy_array(graphs[g])
+        in_states = states[g]
+
+        for s in in_states:
+            dynamics_core_p = dynamics.predict(s)[0, :]
+            model_core_p = model.model.predict([s, graphs[g]], steps=1)[0, :]
+            num_infected = int(np.sum(s[1:] == 1))
+            for t in rel_trans:
+                in_s, out_s = t[0], t[1]
+                if s[0] == dynamics.state_label[in_s]:
+                    out_l = dynamics.state_label[out_s]
+                    dynamics_star_ltp[(in_s, out_s)][num_infected] = dynamics_core_p[out_l]
+                    model_star_ltp[(in_s, out_s)][num_infected] = model_core_p[out_l]
+            p_bar.update()
+    p_bar.close()
+
+    return dynamics_star_ltp, model_star_ltp
+
+
 def compute_attn_coeff(dynamics, model, attn_layers, states, graphs):
     N = model.num_nodes
+    states = {g: states[g][:20] for g in states}
     num_states = np.sum([states[g].shape[0] for g in graphs])
     state_label = dynamics.state_label
 
@@ -273,25 +315,6 @@ def main():
 
 
 
-    if N < 15:
-        # Compute Markov matrices and occurence
-        dynamics_markovmat, model_markovmat = compute_markov_matrix(dynamics,
-                                                                    model,
-                                                                    states,
-                                                                    graphs)
-        for g in graphs:
-            group = "/analytics/markovmatrix/" + g + "/ground_truth/"
-            an_h5file.create_dataset(group, data=dynamics_markovmat[g])
-            group = "/analytics/markovmatrix/" + g + "/model/"
-            an_h5file.create_dataset(group, data=model_markovmat[g])
-
-        # Compute state occurence
-        occurence = compute_state_occurence(dynamics, model, states, graphs)
-        for g in graphs:
-            group = "/analytics/occurence/" + g
-            an_h5file.create_dataset(group, data=occurence[g])
-
-
     # Getting Local transition probabilities
     ltp_data = compute_ltp(dynamics, model, states, targets, graphs, rel_trans)
     for t in rel_trans:
@@ -308,6 +331,19 @@ def main():
         group = "/analytics/local_trans_prob/estimate/" + in_s + "_to_" + out_s
         avg, var = ltp_data[2][(in_s, out_s)], ltp_data[4][(in_s, out_s)]
         an_h5file.create_dataset(group, data=np.vstack((avg, var)).T)
+
+    # Getting Local transition probabilities of star graph
+    ltp_data = compute_star_ltp(dynamics, model, rel_trans)
+    for t in rel_trans:
+        in_s, out_s = t[0], t[1]
+
+        group = "/analytics/star_ltp/ground_truth/" + in_s + "_to_" + out_s
+        val = ltp_data[0][(in_s, out_s)]
+        an_h5file.create_dataset(group, data=val)
+
+        group = "/analytics/star_ltp/model/" + in_s + "_to_" + out_s
+        val = ltp_data[1][(in_s, out_s)]
+        an_h5file.create_dataset(group, data=val)
 
     # Getting loss per node
     loss_data = compute_loss(dynamics, model, states, graphs)
@@ -331,11 +367,30 @@ def main():
             group = "/analytics/attn_coeff/layer"  + str(layer) + "/" + g
             an_h5file.create_dataset(group, data=attn_coeff[g][layer])
 
-    for t in rel_trans:
-        in_s, out_s = t[0], t[1]
-        for layer in range(len(attn_layers)):
-            group = "/analytics/attn_coeff/layer" + str(layer) + "/" + in_s + "_to_" + out_s
-            an_h5file.create_dataset(group, data=cond_attn[layer][(in_s, out_s)])
+    for in_s in dynamics.state_label:
+        for out_s in dynamics.state_label:
+            for layer in range(len(attn_layers)):
+                group = "/analytics/attn_coeff/layer" + str(layer) + "/" + in_s + "_to_" + out_s
+                an_h5file.create_dataset(group, data=cond_attn[layer][(in_s, out_s)])
+
+
+    if N <= 15:
+        # Compute Markov matrices and occurence
+        dynamics_markovmat, model_markovmat = compute_markov_matrix(dynamics,
+                                                                    model,
+                                                                    states,
+                                                                    graphs)
+        for g in graphs:
+            group = "/analytics/markovmatrix/" + g + "/ground_truth/"
+            an_h5file.create_dataset(group, data=dynamics_markovmat[g])
+            group = "/analytics/markovmatrix/" + g + "/model/"
+            an_h5file.create_dataset(group, data=model_markovmat[g])
+
+        # Compute state occurence
+        occurence = compute_state_occurence(dynamics, model, states, graphs)
+        for g in graphs:
+            group = "/analytics/occurence/" + g
+            an_h5file.create_dataset(group, data=occurence[g])
 
     an_h5file.close()
 

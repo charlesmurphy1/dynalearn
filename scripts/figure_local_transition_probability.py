@@ -81,8 +81,8 @@ def main():
                         model_ltp[:, 0][m_index] + model_ltp[:, 1][m_index],
                         color=fill_color, alpha=0.3)
         ax.fill_between(k[e_index], estimate_ltp[:, 0][e_index] - estimate_ltp[:, 1][e_index],
-                              estimate_ltp[:, 0][e_index] + estimate_ltp[:, 1][e_index],
-                              color=fill_color, alpha=0.3)
+                        estimate_ltp[:, 0][e_index] + estimate_ltp[:, 1][e_index],
+                        color=fill_color, alpha=0.3)
         ax.plot(k[m_index], model_ltp[:, 0][m_index], marker='s', linestyle='None', alpha=1,
                       color=color, markeredgewidth=1, markeredgecolor='k')
         ax.plot(k[e_index], estimate_ltp[:, 0][e_index], marker='v', linestyle='None', alpha=1,

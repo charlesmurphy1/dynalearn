@@ -39,49 +39,50 @@ def main():
     an_data = h5py.File(an_filename, 'r')
     graph_label = params["graph"]["name"] + "_0"
 
-    states = []
-    for k in data["dynamics/params"]:
-        if k[:5] == "state":
-            states.append(k[6:])
+    if params["graph"]["params"]["N"] <= 15:
+        states = []
+        for k in data["dynamics/params"]:
+            if k[:5] == "state":
+                states.append(k[6:])
 
 
-    fig, ax = plt.subplots(1, 3, figsize=(18, 5), sharex=True, sharey=True)
+        fig, ax = plt.subplots(1, 3, figsize=(18, 5), sharex=True, sharey=True)
 
-    N = params["graph"]["params"]["N"]
-    g = list(data["data/"].keys())[0]
-
-
-    ground_truth_mm = an_data["analytics/markovmatrix/" + g + "/ground_truth"][...]
-    model_mm = an_data["analytics/markovmatrix/" + g + "/model"][...]
-    occurence = an_data["analytics/occurence/" + g][...]
-
-    occurence /= np.sum(occurence)
-    occurence[occurence == 0] = 1e-15
-    occurence = np.log(occurence)
+        N = params["graph"]["params"]["N"]
+        g = list(data["data/"].keys())[0]
 
 
-    p0 = ax[0].imshow(ground_truth_mm, vmin=-20, vmax=0, origin='lower')
-    ax[0].set_xlabel(r'Configuration at ($t$)', fontsize=14)
-    ax[0].set_ylabel(r'Configuration at ($t + 1$)', fontsize=14)
-    ax[0].text(0.85, 0.1, get_plot_label(0),
-               bbox=dict(facecolor='white', edgecolor='black'),
-               transform=ax[0].transAxes, fontsize=14)
-    plt.colorbar(p0, ax=ax[0])
-    p1 = ax[1].imshow(model_mm, vmin=-20, vmax=0, origin='lower')
-    ax[1].set_xlabel(r'Configuration at ($t$)', fontsize=14)
-    ax[1].text(0.85, 0.1, get_plot_label(1),
-               bbox=dict(facecolor='white', edgecolor='black'),
-               transform=ax[1].transAxes, fontsize=14)
-    plt.colorbar(p1, ax=ax[1])
-    p2 = ax[2].imshow(occurence, vmin=-20, vmax=0, origin='lower')
-    ax[2].text(0.85, 0.1, get_plot_label(2),
-               bbox=dict(facecolor='white', edgecolor='black'),
-               transform=ax[2].transAxes, fontsize=14)
-    ax[2].set_xlabel(r'Configuration at ($t$)', fontsize=14)
-    plt.colorbar(p2, ax=ax[2])
-    plt.tight_layout(4. ,h_pad=4.)
+        ground_truth_mm = an_data["analytics/markovmatrix/" + g + "/ground_truth"][...]
+        model_mm = an_data["analytics/markovmatrix/" + g + "/model"][...]
+        occurence = an_data["analytics/occurence/" + g][...]
 
-    fig.savefig(os.path.join(params["path"], params["name"] + "_" + args.save))
+        occurence /= np.sum(occurence)
+        occurence[occurence == 0] = 1e-15
+        occurence = np.log(occurence)
+
+
+        p0 = ax[0].imshow(ground_truth_mm, vmin=-20, vmax=0, origin='lower')
+        ax[0].set_xlabel(r'Configuration at ($t$)', fontsize=14)
+        ax[0].set_ylabel(r'Configuration at ($t + 1$)', fontsize=14)
+        ax[0].text(0.85, 0.1, get_plot_label(0),
+                   bbox=dict(facecolor='white', edgecolor='black'),
+                   transform=ax[0].transAxes, fontsize=14)
+        plt.colorbar(p0, ax=ax[0])
+        p1 = ax[1].imshow(model_mm, vmin=-20, vmax=0, origin='lower')
+        ax[1].set_xlabel(r'Configuration at ($t$)', fontsize=14)
+        ax[1].text(0.85, 0.1, get_plot_label(1),
+                   bbox=dict(facecolor='white', edgecolor='black'),
+                   transform=ax[1].transAxes, fontsize=14)
+        plt.colorbar(p1, ax=ax[1])
+        p2 = ax[2].imshow(occurence, vmin=-20, vmax=0, origin='lower')
+        ax[2].text(0.85, 0.1, get_plot_label(2),
+                   bbox=dict(facecolor='white', edgecolor='black'),
+                   transform=ax[2].transAxes, fontsize=14)
+        ax[2].set_xlabel(r'Configuration at ($t$)', fontsize=14)
+        plt.colorbar(p2, ax=ax[2])
+        plt.tight_layout(4. ,h_pad=4.)
+
+        fig.savefig(os.path.join(params["path"], params["name"] + "_" + args.save))
 
 
 

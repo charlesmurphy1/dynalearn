@@ -6,7 +6,7 @@ import time
 class MarkovBinaryDynamicsGenerator():
     def __init__(self, graph_model, dynamics_model, batch_size,
                  shuffle=False, prohibited_node_index=[],
-                 max_null_iter=100):
+                 max_null_iter=100, using_ground_truth=False):
         self.graph_model = graph_model
         self.dynamics_model = dynamics_model
         self.num_states = dynamics_model.num_states
@@ -15,11 +15,13 @@ class MarkovBinaryDynamicsGenerator():
         self.current_graph_name = None
         self.prohibited_node_index = prohibited_node_index
         self.max_null_iter = max_null_iter
+        self.using_ground_truth = using_ground_truth
 
         # Data
         self.graph_inputs = dict()
         self.state_inputs = dict()
         self.targets = dict()
+        self.gt_targets = dict()
         self.sample_weights = dict()
 
         # Iterations
@@ -37,6 +39,7 @@ class MarkovBinaryDynamicsGenerator():
         self.graph_inputs[name] = nx.to_numpy_array(graph)
         self.state_inputs[name] = np.zeros([num_sample, N])
         self.targets[name] = np.zeros([num_sample, N])
+        self.gt_targets[name] = np.zeros([num_sample, N, self.num_states])
         self.sample_weights[name] = self._get_sample_weights(graph, gamma)
         self.dynamics_model.graph = graph
 
@@ -46,9 +49,11 @@ class MarkovBinaryDynamicsGenerator():
             for t in range(T):
 
                 t0 = time.time()
-                inputs, targets = self._update_states()
+                inputs, targets, gt_targets = self._update_states()
+
                 self.state_inputs[name][sample, :] = inputs
                 self.targets[name][sample, :] = targets
+                self.gt_targets[name][sample, :, :] = gt_targets
                 t1 = time.time()
 
                 if progress_bar:
@@ -99,9 +104,11 @@ class MarkovBinaryDynamicsGenerator():
 
         adj = self.graph_inputs[g_index]
         inputs = self.state_inputs[g_index][s_index, :]
-        # targets = self.targets[g_index][s_index, :]
-        targets = self._to_one_hot(self.targets[g_index][s_index, :],
-                                   self.num_states)
+        if self.using_ground_truth:
+            targets = self.gt_targets[g_index][s_index, :, :]
+        else:
+            targets = self._to_one_hot(self.targets[g_index][s_index, :],
+                                       self.num_states)
         weights = self.sample_weights[g_index]
         return [inputs, adj], targets, weights
 
@@ -126,7 +133,8 @@ class MarkovBinaryDynamicsGenerator():
         inputs = self.dynamics_model.states
         self.dynamics_model.update()
         targets = self.dynamics_model.states
-        return inputs, targets
+        gt_targets = self.dynamics_model.predict(inputs)
+        return inputs, targets, gt_targets
         
 
     def __next__(self):

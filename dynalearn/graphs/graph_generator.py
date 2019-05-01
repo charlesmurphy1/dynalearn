@@ -34,7 +34,7 @@ class CompleteGraph(GraphGenerator):
 
 class StarGraph(GraphGenerator):
     def __init__(self, N, rand_gen=None):
-        generator = lambda: nx.star_graph(N)
+        generator = lambda: nx.star_graph(N - 1)
         super(StarGraph, self).__init__(generator)
         self.params['N'] = N
 
