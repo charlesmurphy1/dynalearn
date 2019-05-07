@@ -93,10 +93,12 @@ def compute_state_occurence(dynamics, model, states, graphs):
     return occurence
 
 
-def compute_ltp(dynamics, model, states, targets, graphs, rel_trans):
+def compute_ltp(dynamics, model, states, targets, graphs):
     N = model.num_nodes
     degrees = np.arange(N).astype('int')
-    avg_dynamics_ltp = {(t[0], t[1]): np.zeros(len(degrees)) for t in rel_trans}
+    state_label = dynamics.state_label
+    avg_dynamics_ltp = {(i, j): np.zeros(len(degrees)) for i in state_label
+                                                       for j in state_label}
 
     avg_model_ltp = avg_dynamics_ltp.copy()
     avg_estimate_ltp = avg_dynamics_ltp.copy()
@@ -112,14 +114,14 @@ def compute_ltp(dynamics, model, states, targets, graphs, rel_trans):
         dynamics_ltp = dynamics.ltp(in_states)
         model_ltp = dynamics.model_ltp(model.model, in_states)
         estimate_ltp = dynamics.estimate_ltp(in_states, out_states) 
-        for t in rel_trans:
-            in_s, out_s = t[0], t[1]
-            avg_dynamics_ltp[(in_s, out_s)] = dynamics_ltp[(in_s, out_s)][degrees]
-            avg_model_ltp[(in_s, out_s)] = model_ltp[0][(in_s, out_s)][degrees]
-            avg_estimate_ltp[(in_s, out_s)] = estimate_ltp[0][(in_s, out_s)][degrees]
+        for in_s in state_label:
+            for out_s in state_label:            
+                avg_dynamics_ltp[(in_s, out_s)] = dynamics_ltp[(in_s, out_s)][degrees]
+                avg_model_ltp[(in_s, out_s)] = model_ltp[0][(in_s, out_s)][degrees]
+                avg_estimate_ltp[(in_s, out_s)] = estimate_ltp[0][(in_s, out_s)][degrees]
 
-            var_model_ltp[(in_s, out_s)] = model_ltp[1][(in_s, out_s)][degrees]
-            var_estimate_ltp[(in_s, out_s)] = estimate_ltp[1][(in_s, out_s)][degrees]
+                var_model_ltp[(in_s, out_s)] = model_ltp[1][(in_s, out_s)][degrees]
+                var_estimate_ltp[(in_s, out_s)] = estimate_ltp[1][(in_s, out_s)][degrees]
         p_bar.update()
     p_bar.close()
 
@@ -127,44 +129,45 @@ def compute_ltp(dynamics, model, states, targets, graphs, rel_trans):
            var_model_ltp, var_estimate_ltp
 
 
-def compute_star_ltp(dynamics, model, rel_trans):
+def compute_generalization_ltp(dynamics, model):
     N = model.num_nodes
-    degrees = np.arange(N).astype('int')
+    degree = np.arange(N).astype('int')
+    inf_degree = degree.copy()
+    state_label = dynamics.state_label
 
-    star_g = dl.graphs.StarGraph(N)
-    name, g = star_g.generate()
-    graphs = {name: nx.to_numpy_array(g)}
-    _states = np.zeros((len(rel_trans) * N, N))
-    for i, t in enumerate(rel_trans):
-        in_l = dynamics.state_label[t[0]]
-        _states[i * N:(i + 1) * N, 0] = in_l
-    for i in range(1, N):
-        for j in range(len(rel_trans)):
-            _states[i + N * j, 1:i] = 1
-    states = {name: _states}
+    dynamics_ltp = {(i, j): np.zeros((N, N)) for i in state_label
+                                             for j in state_label}
+    model_ltp = {(i, j): np.zeros((N, N)) for i in state_label
+                                          for j in state_label}    
 
-    dynamics_star_ltp = {(t[0], t[1]): np.zeros(len(degrees)) for t in rel_trans}
-    model_star_ltp = {(t[0], t[1]): np.zeros(len(degrees)) for t in rel_trans}
+    p_bar = tqdm.tqdm(range(N), "Generalization")                                         
+    for k in degree:
+        if k>0:
+            graph = nx.star_graph(k)
+            graph.add_nodes_from(range(k, N))
+        else:
+            graph = nx.empty_graph(N)
+        adj = nx.to_numpy_array(graph)
+        dynamics.graph = graph
+        states = np.zeros(N)
+        for in_s in state_label:
+            states[0] = state_label[in_s] 
+            neigh = 0
+            for l in inf_degree[:k+1]:
+                if neigh > 0:
+                    states[neigh] = 1
+                dynamics_core = dynamics.predict(states)[0, :]
+                model_core = model.model.predict([states, adj], steps=1)[0, :]
+                for out_s in state_label:
+                    out_l = state_label[out_s]
+                    dynamics_ltp[(in_s, out_s)][k, l] = dynamics_core[out_l]
+                    model_ltp[(in_s, out_s)][k, l] = model_core[out_l]
+                neigh += 1
 
-    p_bar = tqdm.tqdm(range(len(rel_trans) * N), "Star Local transition probabilities")
-    for g in graphs:
-        dynamics.graph = nx.from_numpy_array(graphs[g])
-        in_states = states[g]
-
-        for s in in_states:
-            dynamics_core_p = dynamics.predict(s)[0, :]
-            model_core_p = model.model.predict([s, graphs[g]], steps=1)[0, :]
-            num_infected = int(np.sum(s[1:] == 1))
-            for t in rel_trans:
-                in_s, out_s = t[0], t[1]
-                if s[0] == dynamics.state_label[in_s]:
-                    out_l = dynamics.state_label[out_s]
-                    dynamics_star_ltp[(in_s, out_s)][num_infected] = dynamics_core_p[out_l]
-                    model_star_ltp[(in_s, out_s)][num_infected] = model_core_p[out_l]
-            p_bar.update()
+        p_bar.update()
     p_bar.close()
 
-    return dynamics_star_ltp, model_star_ltp
+    return dynamics_ltp, model_ltp
 
 
 def compute_attn_coeff(dynamics, model, attn_layers, states, graphs):
@@ -296,7 +299,6 @@ def main():
     dynamics = experiment.data_generator.dynamics_model
 
     N = model.num_nodes
-    rel_trans = params["dynamics"]["params"]["relevant_transitions"]
 
     an_h5file = h5py.File(os.path.join(params["path"],
                                        params["name"] + "_analytics.h5"),
@@ -316,34 +318,34 @@ def main():
 
 
     # Getting Local transition probabilities
-    ltp_data = compute_ltp(dynamics, model, states, targets, graphs, rel_trans)
-    for t in rel_trans:
-        in_s, out_s = t[0], t[1]
+    ltp_data = compute_ltp(dynamics, model, states, targets, graphs)
+    for in_s in dynamics.state_label:
+        for out_s in dynamics.state_label:
 
-        group = "/analytics/local_trans_prob/ground_truth/" + in_s + "_to_" + out_s
-        val = ltp_data[0][(in_s, out_s)]
-        an_h5file.create_dataset(group, data=val)
+            group = "/analytics/local_trans_prob/ground_truth/" + in_s + "_to_" + out_s
+            val = ltp_data[0][(in_s, out_s)]
+            an_h5file.create_dataset(group, data=val)
 
-        group = "/analytics/local_trans_prob/model/" + in_s + "_to_" + out_s
-        avg, var = ltp_data[1][(in_s, out_s)], ltp_data[3][(in_s, out_s)] 
-        an_h5file.create_dataset(group, data=np.vstack((avg, var)).T)
+            group = "/analytics/local_trans_prob/model/" + in_s + "_to_" + out_s
+            avg, var = ltp_data[1][(in_s, out_s)], ltp_data[3][(in_s, out_s)] 
+            an_h5file.create_dataset(group, data=np.vstack((avg, var)).T)
 
-        group = "/analytics/local_trans_prob/estimate/" + in_s + "_to_" + out_s
-        avg, var = ltp_data[2][(in_s, out_s)], ltp_data[4][(in_s, out_s)]
-        an_h5file.create_dataset(group, data=np.vstack((avg, var)).T)
+            group = "/analytics/local_trans_prob/estimate/" + in_s + "_to_" + out_s
+            avg, var = ltp_data[2][(in_s, out_s)], ltp_data[4][(in_s, out_s)]
+            an_h5file.create_dataset(group, data=np.vstack((avg, var)).T)
 
     # Getting Local transition probabilities of star graph
-    ltp_data = compute_star_ltp(dynamics, model, rel_trans)
-    for t in rel_trans:
-        in_s, out_s = t[0], t[1]
+    ltp_data = compute_generalization_ltp(dynamics, model)
+    for in_s in dynamics.state_label:
+        for out_s in dynamics.state_label:
 
-        group = "/analytics/star_ltp/ground_truth/" + in_s + "_to_" + out_s
-        val = ltp_data[0][(in_s, out_s)]
-        an_h5file.create_dataset(group, data=val)
+            group = "/analytics/generalization/ground_truth/" + in_s + "_to_" + out_s
+            val = ltp_data[0][(in_s, out_s)]
+            an_h5file.create_dataset(group, data=val)
 
-        group = "/analytics/star_ltp/model/" + in_s + "_to_" + out_s
-        val = ltp_data[1][(in_s, out_s)]
-        an_h5file.create_dataset(group, data=val)
+            group = "/analytics/generalization/model/" + in_s + "_to_" + out_s
+            val = ltp_data[1][(in_s, out_s)]
+            an_h5file.create_dataset(group, data=val)
 
     # Getting loss per node
     loss_data = compute_loss(dynamics, model, states, graphs)

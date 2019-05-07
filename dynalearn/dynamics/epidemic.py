@@ -48,22 +48,13 @@ class EpidemicDynamics(Dynamics):
         self.continue_simu = True
         self.states = states
 
-
-    # def transition(self):
-
-    #     p = self.predict(self.states)
-    #     new_states = np.random.binomial(1, p)
-    #     if np.sum(new_states) == 0:
-    #         self.continue_simu = False
-
-    #     return new_states
-
     def infected_degrees(self, states):
         N = self.graph.number_of_nodes()
         if len(states.shape) < 2:
             states = states.reshape(1, N)
         adj = nx.to_numpy_array(self.graph)
-        return np.matmul(states, adj)
+        cond = (states==self.state_label['I'])
+        return np.matmul(cond, adj)
 
     def get_avg_state(self):
         N = self.graph.number_of_nodes()
@@ -206,7 +197,7 @@ class SISDynamics(EpidemicDynamics):
 
 class SIRDynamics(EpidemicDynamics):
     """
-        Class for  discrete SIR dynamical network.
+        Class for  discrete SIR dynamics.
 
         **Parameters**
         graph : nx.Graph
@@ -222,54 +213,63 @@ class SIRDynamics(EpidemicDynamics):
             Name of file for saving states. If ``None``, it does not save the states.
 
     """
-    def __init__(self, graph, infection_prob, recovery_prob, init_state=None):
-        super(SIRDynamics, self).__init__({'S':0, 'I':1, 'R':-1},
+    def __init__(self, infection_prob, recovery_prob, init_state=None):
+        super(SIRDynamics, self).__init__({'S':0, 'I':1, 'R':2},
                                          init_state)
-        
+
         self.params["infection_prob"] = infection_prob
         self.params["recovery_prob"] = recovery_prob
 
 
-    def transition_states(self):
+    def transition(self):
+        beta = self.params["infection_prob"]
+        alpha = self.params["recovery_prob"]
+        inf_deg = np.squeeze(self.infected_degrees(self.states))
+        inf_prob = 1 - (1 - beta)**inf_deg
+        rec_prob = alpha
+        new_states = self.states*1
 
-        states = self.states.copy()
+        new_states[(self.states==0) * (np.random.rand(*self.states.shape)<inf_prob)] = 1
+        new_states[(self.states==1) * (np.random.rand(*self.states.shape)<rec_prob)] = 2
 
-        new_susceptible = self.state_nodeset['S'].copy()
-        new_infected = self.state_nodeset['I'].copy()
-        new_recovered = self.state_nodeset['R'].copy()
+        if np.sum(new_states==1) == 0:
+            continue_simu = False
 
-        for inf in self.state_nodeset['I']:
-            neighbors = self.graph.neighbors(inf)
+        return new_states 
 
-            for n in neighbors:
-                if random() < self.params["infection_prob"] and states[n] == self.state_label['S']:
-                    states[n] = self.state_label['I']
-                    new_infected.add(n)
-                    new_susceptible.remove(n)
 
-            if random() < self.params["recovery_prob"]:
-                states[inf] = self.state_label['R']
-                new_recovered.add(inf)
-                new_infected.remove(inf)
+    def predict(self, states):
+        N = self.graph.number_of_nodes()
 
-        self.state_nodeset['S'] = new_susceptible
-        self.state_nodeset['I'] = new_infected
-        self.state_nodeset['R'] = new_recovered
+        beta = self.params["infection_prob"]
+        alpha = self.params["recovery_prob"]
+        inf_deg = self.infected_degrees(states).squeeze()
 
-        if len(self.state_nodeset['I']) == 0:
-            self.continue_simu = False
+        state_prob = np.zeros((states.shape[0], self.num_states))
+        state_prob[states == 0, 0] = (1 - beta)**inf_deg[states==0]
+        state_prob[states == 0, 1] = 1 - (1 - beta)**inf_deg[states==0]
+        state_prob[states == 0, 2] = 0
+        state_prob[states == 1, 0] = 0
+        state_prob[states == 1, 1] = 1 - alpha
+        state_prob[states == 1, 2] = alpha
+        state_prob[states == 2, 0] = 0
+        state_prob[states == 2, 1] = 0
+        state_prob[states == 2, 2] = 1
 
-        return states
+        return state_prob
 
-    def node_transition_probability(self, node):
-        num_infected = self.get_num_neighbors(self.graph, states, 'I')
 
-        if self.states[node] == self.state_label['S']:
-            p_I = 1 - (1 - self.params["infection_prob"])**num_infected
-            p_R = 0
-        elif self.states[node] == self.state_label['I']:
-            p_I = 1 - self.params["recovery_prob"]
-            p_R = self.params["recovery_prob"]
-        
-        return {'S':1 - p_I - p_R, 'I':p_I, 'R':p_R}
-               
+    def ltp(self, in_states):
+        N = self.graph.number_of_nodes()
+        p_inf = 1 - (1 - self.params["infection_prob"])**np.arange(N)
+        p_rec = np.ones(N) * self.params["recovery_prob"]
+
+        return {('S', 'S'): 1 - p_inf,
+                ('S', 'I'): p_inf,
+                ('S', 'R'): np.zeros(N),
+                ('I', 'S'): np.zeros(N),
+                ('I', 'I'): 1 - p_rec,
+                ('I', 'R'): p_rec,
+                ('R', 'S'): np.zeros(N),
+                ('R', 'I'): np.zeros(N),
+                ('R', 'R'): np.zeros(N)}

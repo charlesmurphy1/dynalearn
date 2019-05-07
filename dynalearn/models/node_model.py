@@ -1,5 +1,5 @@
 import numpy as np
-from tensorflow.keras.layers import Input, LeakyReLU, Dense, BatchNormalization
+from tensorflow.keras.layers import Input, LeakyReLU, Dense, BatchNormalization, Activation
 from tensorflow.keras.models import Model
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.initializers import glorot_uniform
@@ -46,7 +46,9 @@ class GATMarkovBinaryPredictor(MarkovPredictor):
         inputs = Input(shape=(1, ))
         adj = Input(shape=(self.num_nodes, ))
 
-        x = inputs
+        x = Dense(self.n_hidden[0], activation='tanh',
+                  kernel_initializer=glorot_uniform(self.seed))(inputs)
+
         for i in range(len(self.n_hidden)):
             attn = GraphAttention(self.n_hidden[i], 8,
                                   attn_heads=self.n_heads[i],
@@ -60,7 +62,8 @@ class GATMarkovBinaryPredictor(MarkovPredictor):
 
             x = BatchNormalization(momentum=self.bn_momentum,
                                    epsilon=self.bn_epsilon)(x)
-            x = LeakyReLU(0.2)(x)
+            # x = LeakyReLU(0.2)(x)
+            x = Activation('relu')(x)
 
         outputs = Dense(self.num_states, activation='softmax', 
                         kernel_initializer=glorot_uniform(self.seed))(x)

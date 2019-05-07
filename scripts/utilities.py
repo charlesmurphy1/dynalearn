@@ -84,10 +84,10 @@ def get_model(model_name, params):
 
 
 def get_datagenerator(gen_name, graph_model, dynamics_model, params):
-    if "using_gt" in params["training"]:
-        using_gt = params["training"]["using_gt"]
+    if "with_truth" in params["training"]:
+        with_truth = params["training"]["with_truth"]
     else:
-        using_gt = False
+        with_truth = False
 
     if 'MarkovBinaryDynamicsGenerator' == gen_name:
         return dl.generators.MarkovBinaryDynamicsGenerator(graph_model, dynamics_model,
@@ -95,7 +95,7 @@ def get_datagenerator(gen_name, graph_model, dynamics_model, params):
                                                            shuffle=True, 
                                                            prohibited_node_index=[],
                                                            max_null_iter=params["data_generator"]["params"]["max_null_iter"],
-                                                           using_ground_truth=using_gt)
+                                                           with_truth=with_truth)
     else:
         raise ValueError('wrong string name for data generator.')
 

@@ -6,7 +6,7 @@ import time
 class MarkovBinaryDynamicsGenerator():
     def __init__(self, graph_model, dynamics_model, batch_size,
                  shuffle=False, prohibited_node_index=[],
-                 max_null_iter=100, using_ground_truth=False):
+                 max_null_iter=100, with_truth=False):
         self.graph_model = graph_model
         self.dynamics_model = dynamics_model
         self.num_states = dynamics_model.num_states
@@ -15,7 +15,7 @@ class MarkovBinaryDynamicsGenerator():
         self.current_graph_name = None
         self.prohibited_node_index = prohibited_node_index
         self.max_null_iter = max_null_iter
-        self.using_ground_truth = using_ground_truth
+        self.with_truth = with_truth
 
         # Data
         self.graph_inputs = dict()
@@ -104,7 +104,7 @@ class MarkovBinaryDynamicsGenerator():
 
         adj = self.graph_inputs[g_index]
         inputs = self.state_inputs[g_index][s_index, :]
-        if self.using_ground_truth:
+        if self.with_truth:
             targets = self.gt_targets[g_index][s_index, :, :]
         else:
             targets = self._to_one_hot(self.targets[g_index][s_index, :],

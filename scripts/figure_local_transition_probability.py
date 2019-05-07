@@ -9,7 +9,7 @@ import sys
 color_palette = {
     "blue": "#1f77b4",
     "orange": "#ff7f0e",
-    "purple": "#542788",
+    "purple": "#9A80B9",
     "red": "#d73027",
     "grey": "#525252"
 }
@@ -60,6 +60,8 @@ def main():
              color=color_palette["grey"], density=True,
              alpha=0.5)
     axx.set_ylabel('Degree distribution')
+    labels = []
+    markers = []
 
     for t in transitions:
         in_s, out_s = t[0], t[1]
@@ -67,7 +69,11 @@ def main():
             color = color_palette["orange"]
         elif in_s == "I" and out_s=="S":
             color = color_palette["blue"]
-
+        elif in_s == "I" and out_s=="R":
+            color = color_palette["purple"]
+        labels.append(r'$P({0}|{1}, \ell)$'.format(out_s, in_s))
+        markers.append(ax.plot([-1], [-1], linestyle='none', marker='s', markersize=10,
+                       color=color,label=labels[-1]))
         fill_color = color_palette["grey"]
 
         ground_truth_ltp = an_data["analytics/local_trans_prob/ground_truth/" + in_s + "_to_" + out_s][...]
@@ -95,12 +101,8 @@ def main():
         ax.set_ylim([0, 1])
 
     # Making legend
-    labels = [r'$P(S\to I|\ell)$', r'$P(I \to S|\ell)$', "ground truth", "model", "estimate"]
-    markers = [ax.plot([-1], [-1], linestyle='none', marker='s', markersize=10,
-                       color=color_palette["orange"],label=labels[0]),
-               ax.plot([-1], [-1], linestyle='none', marker='s', markersize=10,
-                       color=color_palette["blue"],label=labels[1]),
-               ax.plot([-1], [-1], linestyle='-.', linewidth=2,
+    labels.extend(["ground truth", "model", "estimate"])
+    markers = [ax.plot([-1], [-1], linestyle='-.', linewidth=2,
                        color=color_palette["grey"],label=labels[2]),
                ax.plot([-1], [-1], marker='s', markeredgewidth=1,
                        markeredgecolor='k', linestyle='None',
@@ -108,9 +110,9 @@ def main():
                 ax.plot([-1], [-1], marker='v', markeredgewidth=1,
                        markeredgecolor='k', linestyle='None',
                        color=color_palette["grey"],label=labels[4])]
-    ax.legend(loc='upper left', shadow=False,
-              fancybox=False, prop={'size': 12}, frameon=False,
-              numpoints=1, ncol=1)
+    ax.legend(loc='upper left', fancybox=True, fontsize=12, framealpha=1)
+    # axx.legend(labels, markers, loc='upper left', fancybox=True, fontsize=12, framealpha=1)
+
     plt.tight_layout(0.1)
     fig.savefig(os.path.join(params["path"], params["name"] + "_" + args.save))
 
