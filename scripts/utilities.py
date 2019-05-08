@@ -139,14 +139,6 @@ def get_experiment(params, build_dataset=False):
     metrics = []
     callbacks = [keras.callbacks.LearningRateScheduler(schedule, verbose=1)]
 
-    # if params["training"]["with_mutual_info_metrics"]:
-    #     for g in data_generator.graph_inputs: 
-    #         adj = data_generator.graph_inputs[g]
-    #         states = data_generator.state_inputs[g]
-    #     cb = MutualInformationMetrics(states, adj, params["dynamics"]["params"]["num_states"])
-    #     callbacks.append(cb)
-
-
     # Define experiment
     experiment = dl.Experiment(params["name"],
                                model,

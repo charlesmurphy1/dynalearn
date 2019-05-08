@@ -31,7 +31,7 @@ def main():
     experiment = u.get_experiment(params, True)
     experiment.model.model.summary()
 
-    print("Training\n--------")
+    print("Training:\n--------")
     experiment.train_model(params["training"]["epochs"],
                            params["training"]["steps_per_epoch"],
                            verbose=1)

@@ -39,6 +39,7 @@ class Dynamics():
 		"""
 		self._num_states = num_states
 		self._graph = None
+		self._degree = None
 		self.params = dict()
 
 	
@@ -79,13 +80,21 @@ class Dynamics():
 	@property
 	def graph(self):
 		if self._graph is None:
-			raise ValueError('No graph has been given to the dynamics.')
+			raise ValueError('No graph has been parsed to the dynamics.')
 		else:
 			return self._graph
+
+	@property
+	def degree(self):
+		if self._degree is None:
+			raise ValueError('No graph has been parsed to the dynamics.')
+		else:
+			return self._degree
 
 	@graph.setter
 	def graph(self, graph):
 		self._graph = graph
+		self._degree = np.sum(nx.to_numpy_array(graph), axis=1)
 		self.initialize_states()
 
 

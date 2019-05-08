@@ -1,5 +1,5 @@
 import tensorflow as tf
-
+import numpy as np
 
 class MarkovPredictor():
     
@@ -15,6 +15,7 @@ class MarkovPredictor():
         if self._model is None:
             self._model = self._prepare_model()
         return self._model
+
 
     def _prepare_model(self):
         raise NotImplemented("_prepare_model() must be implemented")

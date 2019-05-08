@@ -199,6 +199,7 @@ class GraphAttention(Layer):
 
             # Apply softmax to get attention coefficients
             dense = K.sigmoid(dense)  # (N x N)
+            # dense = K.softmax(dense, axis=-1)
 
             # Apply dropout to features and attention coefficients
             dropout_attn = Dropout(self.dropout_rate)(dense)  # (N x N)
@@ -206,7 +207,7 @@ class GraphAttention(Layer):
 
             # Linear combination with neighbors' features
             node_features = K.dot(dropout_attn, dropout_feat)  # (N x F')
-            node_features = node_features + dropout_feat # skip connection
+            node_features = node_features + K.tanh(dropout_feat) # skip connection
             
 
             # Add output of attention head to final output

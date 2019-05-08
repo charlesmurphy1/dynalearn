@@ -180,7 +180,6 @@ class SISDynamics(EpidemicDynamics):
         state_prob[states == 0, 1] = 1 - (1 - beta)**inf_deg[states==0]
         state_prob[states == 1, 0] = alpha
         state_prob[states == 1, 1] = 1 - alpha
-
         return state_prob
 
 
@@ -234,7 +233,6 @@ class SIRDynamics(EpidemicDynamics):
 
         if np.sum(new_states==1) == 0:
             continue_simu = False
-
         return new_states 
 
 
@@ -272,4 +270,6 @@ class SIRDynamics(EpidemicDynamics):
                 ('I', 'R'): p_rec,
                 ('R', 'S'): np.zeros(N),
                 ('R', 'I'): np.zeros(N),
-                ('R', 'R'): np.zeros(N)}
+                ('R', 'R'): np.ones(N)}
+
+
