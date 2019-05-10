@@ -8,7 +8,7 @@ import tensorflow.keras.backend as K
 
 
 class Experiment:
-    def __init__(self, name, model, data_generator,
+    def __init__(self, name, model, data_generator, validation=None,
                  loss=categorical_crossentropy, optimizer=Adam, 
                  metrics=['accuracy'], learning_rate=1e-4,
                  callbacks=None, numpy_seed=1, tensorflow_seed=2):
@@ -19,6 +19,7 @@ class Experiment:
 
         self.model = model
         self.data_generator = data_generator
+        self.validation = validation
         self.graph_model = self.data_generator.graph_model
         self.dynamics_model = self.data_generator.dynamics_model
 
@@ -36,11 +37,13 @@ class Experiment:
     def generate_data(self, num_sample, T, **kwargs):
         self.data_generator.generate(num_sample, T, **kwargs)
 
-    def train_model(self, epochs, steps_per_epoch, verbose):
+    def train_model(self, epochs, steps_per_epoch, validation_steps=0, verbose=1):
         i_epoch = self.epoch
         f_epoch = self.epoch + epochs
         history = self.model.model.fit_generator(self.data_generator,
+                                                 validation_data=self.validation,
                                                  steps_per_epoch=steps_per_epoch,
+                                                 validation_steps=validation_steps,
                                                  initial_epoch=i_epoch,
                                                  epochs=f_epoch,
                                                  verbose=verbose,

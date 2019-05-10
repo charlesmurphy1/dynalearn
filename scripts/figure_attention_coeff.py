@@ -47,6 +47,8 @@ def main():
 
     num_layer = len(an_data["analytics/attn_coeff"])
     fig, ax = plt.subplots(1, num_layer, figsize=(6 * num_layer, 5), sharex=True)
+    if num_layer == 1:
+        ax = [ax]
     transitions = params["dynamics"]["params"]["relevant_transitions"]
 
     N = params["graph"]["params"]["N"]
@@ -55,22 +57,13 @@ def main():
     labels = []
     markers = []
 
+
     for i, l in enumerate(an_data["analytics/attn_coeff"]):
         for t in transitions:
             in_s, out_s = t[0], t[1]
-            # if in_s == "S" and out_s=="I":
-            #     color = color_palette["orange"]
-            # elif in_s == "I" and out_s=="R":
-            #     color = color_palette["purple"]
-            # else:
-            #     print(in_s, out_s)
-            # labels.append(r'$\alpha({0}\leftarrow {1})$'.format(in_s, out_s))
-            # markers.append(ax[i].plot([-1], [-1], linestyle='none', marker='s', markersize=10,
-            #                color=color,label=labels[-1]))
-            # fill_color = color_palette["grey"]
 
             attn_coeff = an_data["analytics/attn_coeff/" + l + "/" + in_s + "_to_" + out_s][...]
-            ax[i].hist(attn_coeff, density=True, alpha=0.5, label=r'$\alpha({0}\leftarrow {1})$'.format(in_s, out_s))
+            x = ax[i].hist(attn_coeff, bins=100, density=True, alpha=0.5, label=r'$\alpha({0}\leftarrow {1})$'.format(in_s, out_s), align='left')
             ax[i].set_xlabel(r"Attention coefficient", fontsize=14)
             if i == 0:
                 ax[i].set_ylabel(r"Distribution", fontsize=14)

@@ -104,29 +104,7 @@ class GraphAttention(Layer):
                                                 name='attn_kernel_1_neigh_{}'.format(head))
 
 
-            # attn_kernel_1_self = self.add_weight(shape=(int(self.F_), int(self.attn_features)),
-            #                                    initializer=self.attn_kernel_initializer,
-            #                                    regularizer=self.attn_kernel_regularizer,
-            #                                    constraint=self.attn_kernel_constraint,
-            #                                    name='attn_kernel_1_self_{}'.format(head),)
-            # attn_kernel_1_neigh = self.add_weight(shape=(int(self.F_), int(self.attn_features)),
-            #                                     initializer=self.attn_kernel_initializer,
-            #                                     regularizer=self.attn_kernel_regularizer,
-            #                                     constraint=self.attn_kernel_constraint,
-            #                                     name='attn_kernel_1_neigh_{}'.format(head))
-
-            # attn_kernel_2_self = self.add_weight(shape=(int(self.attn_features), 1),
-            #                                    initializer=self.attn_kernel_initializer,
-            #                                    regularizer=self.attn_kernel_regularizer,
-            #                                    constraint=self.attn_kernel_constraint,
-            #                                    name='attn_kernel_2_self_{}'.format(head),)
-            # attn_kernel_2_neigh = self.add_weight(shape=(int(self.attn_features), 1),
-            #                                     initializer=self.attn_kernel_initializer,
-            #                                     regularizer=self.attn_kernel_regularizer,
-            #                                     constraint=self.attn_kernel_constraint,
-            #                                     name='attn_kernel_2_neigh_{}'.format(head))
             self.attn_kernels_1.append([attn_kernel_1_self, attn_kernel_1_neigh])
-            # self.attn_kernels_2.append([attn_kernel_2_self, attn_kernel_2_neigh])
 
             # Layer bias
             if self.use_bias:
@@ -140,18 +118,7 @@ class GraphAttention(Layer):
                                                   regularizer=self.bias_regularizer,
                                                   constraint=self.bias_constraint,
                                                   name='attn_bias_1_neigh_{}'.format(head))
-                # attn_bias_2_self = self.add_weight(shape=(1, ),
-                #                                  initializer=self.bias_initializer,
-                #                                  regularizer=self.bias_regularizer,
-                #                                  constraint=self.bias_constraint,
-                #                                  name='attn_bias_2_self_{}'.format(head))
-                # attn_bias_2_neigh = self.add_weight(shape=(1, ),
-                #                                   initializer=self.bias_initializer,
-                #                                   regularizer=self.bias_regularizer,
-                #                                   constraint=self.bias_constraint,
-                #                                   name='attn_bias_2_neigh_{}'.format(head))
                 self.attn_biases_1.append([attn_bias_1_self, attn_bias_1_neigh])
-                # self.attn_biases_2.append([attn_bias_2_self, attn_bias_2_neigh])
         self.built = True
 
     def call(self, inputs):
@@ -182,13 +149,6 @@ class GraphAttention(Layer):
             # attn_for_self = LeakyReLU(alpha=0.2)(attn_for_self)
             # attn_for_neighs = LeakyReLU(alpha=0.2)(attn_for_neighs)
             
-            # attention_kernel = self.attn_kernels_2[head]  # Attention kernel a in the paper (2F' x 1)
-            # attn_for_self = K.dot(attn_for_self, attention_kernel[0])    # (N x 1), [a_1]^T [Wh_i]
-            # attn_for_neighs = K.dot(attn_for_neighs, attention_kernel[1])  # (N x 1), [a_2]^T [Wh_j]
-            # if self.use_bias:
-            #     attn_for_self = K.bias_add(attn_for_self, self.attn_biases_2[head][0])
-            #     attn_for_neighs = K.bias_add(attn_for_neighs, self.attn_biases_2[head][1])
-
             # Attention head a(Wh_i, Wh_j) = a^T [[Wh_i], [Wh_j]]
             dense = attn_for_self + K.transpose(attn_for_neighs)  # (N x N) via broadcasting
 
@@ -207,7 +167,7 @@ class GraphAttention(Layer):
 
             # Linear combination with neighbors' features
             node_features = K.dot(dropout_attn, dropout_feat)  # (N x F')
-            node_features = node_features + K.tanh(dropout_feat) # skip connection
+            node_features = node_features + dropout_feat # skip connection
             
 
             # Add output of attention head to final output

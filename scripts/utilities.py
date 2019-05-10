@@ -100,7 +100,7 @@ def get_datagenerator(gen_name, graph_model, dynamics_model, params):
         raise ValueError('wrong string name for data generator.')
 
 
-def get_experiment(params, build_dataset=False):
+def get_experiment(params, build_dataset=False, val_sample_size=1000):
     # Define seeds
     np.random.seed(params["np_seed"])
     tf.set_random_seed(params["tf_seed"])
@@ -116,15 +116,24 @@ def get_experiment(params, build_dataset=False):
                                        graph,
                                        dynamics,
                                        params)
+    val_generator = get_datagenerator(params["data_generator"]["name"],
+                                           graph,
+                                           dynamics,
+                                           params)
     if build_dataset:
         print("Building dataset\n-------------------")
         p_bar = tqdm.tqdm(range(params["data_generator"]["params"]["num_graphs"]*
-                                params["data_generator"]["params"]["num_sample"]))
+                                params["data_generator"]["params"]["num_sample"]+
+                                val_sample_size))
         for i in range(params["data_generator"]["params"]["num_graphs"]):
             data_generator.generate(params["data_generator"]["params"]["num_sample"],
                                     params["data_generator"]["params"]["T"],
                                     gamma=params["data_generator"]["params"]["gamma"],
                                     progress_bar=p_bar)
+            val_generator.generate(val_sample_size,
+                                   params["data_generator"]["params"]["T"],
+                                   gamma=params["data_generator"]["params"]["gamma"],
+                                   progress_bar=p_bar)
         p_bar.close()
 
     # Define model
@@ -143,6 +152,7 @@ def get_experiment(params, build_dataset=False):
     experiment = dl.Experiment(params["name"],
                                model,
                                data_generator,
+                               validation=val_generator,
                                loss=loss,
                                optimizer=optimizer,
                                metrics=metrics,

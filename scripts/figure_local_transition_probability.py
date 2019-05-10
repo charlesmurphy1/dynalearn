@@ -65,11 +65,11 @@ def main():
 
     for t in transitions:
         in_s, out_s = t[0], t[1]
-        if in_s == "S" and out_s=="I":
-            color = color_palette["orange"]
-        elif in_s == "I" and out_s=="S":
+        if in_s == "S":
             color = color_palette["blue"]
-        elif in_s == "I" and out_s=="R":
+        elif in_s == "I":
+            color = color_palette["orange"]
+        elif in_s == "R":
             color = color_palette["purple"]
         labels.append(r'$P({0}|{1}, \ell)$'.format(out_s, in_s))
         markers.append(ax.plot([-1], [-1], linestyle='none', marker='s', markersize=10,

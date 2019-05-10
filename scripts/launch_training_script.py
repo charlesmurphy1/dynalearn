@@ -25,6 +25,7 @@ def main():
     args = prs.parse_args()
 
     with open(args.path, 'r') as f:
+        print(args.path)
         params = json.load(f)
 
     print("Building experiment\n-------------------")
@@ -34,6 +35,7 @@ def main():
     print("Training:\n--------")
     experiment.train_model(params["training"]["epochs"],
                            params["training"]["steps_per_epoch"],
+                           validation_steps=1000,
                            verbose=1)
 
     h5file = h5py.File(os.path.join(params["path"], params["name"] + "_model.h5"), 'w')
