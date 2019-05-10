@@ -297,6 +297,9 @@ def main():
     num_sample = int(args.num_sample)
     experiment = u.get_experiment(params, False)
 
+    if experiment.model.num_nodes < 500:
+        os.environ['CUDA_VISIBLE_DEVICES'] = ''
+
     h5file = h5py.File(os.path.join(params["path"], params["name"] + "_model.h5"), 'r')
     experiment.load_hdf5_model(h5file)
     h5file.close()

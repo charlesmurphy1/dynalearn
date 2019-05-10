@@ -13,6 +13,8 @@ import utilities as u
 import tqdm
 
 
+
+
 def main():
     prs = ap.ArgumentParser(description="Get local transition probability \
                                          figure from path to parameters.")
@@ -31,6 +33,9 @@ def main():
     print("Building experiment\n-------------------")
     experiment = u.get_experiment(params, True)
     experiment.model.model.summary()
+
+    if experiment.model.num_nodes < 500:
+        os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
     print("Training:\n--------")
     experiment.train_model(params["training"]["epochs"],
