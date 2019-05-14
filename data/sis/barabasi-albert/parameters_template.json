@@ -54,7 +54,7 @@
         "schedule": {"epoch":10, "factor":2},
         "target_noise": 0,
         "steps_per_epoch": NUM_SAMPLE,
-        "epochs": 20,
+        "epochs": 40,
         "with_truth": WITH_TRUTH
     },
  "np_seed": 1,

@@ -100,7 +100,7 @@ def get_datagenerator(gen_name, graph_model, dynamics_model, params):
         raise ValueError('wrong string name for data generator.')
 
 
-def get_experiment(params, build_dataset=False, val_sample_size=1000):
+def get_experiment(params, build_dataset=False, val_sample_size=None):
     # Define seeds
     np.random.seed(params["np_seed"])
     tf.set_random_seed(params["tf_seed"])
@@ -117,9 +117,11 @@ def get_experiment(params, build_dataset=False, val_sample_size=1000):
                                        dynamics,
                                        params)
     val_generator = get_datagenerator(params["data_generator"]["name"],
-                                           graph,
-                                           dynamics,
-                                           params)
+                                      graph,
+                                      dynamics,
+                                      params)
+    if val_sample_size is None:
+        val_sample_size = int(params["data_generator"]["params"]["num_sample"] * 0.2)
     if build_dataset:
         print("Building dataset\n-------------------")
         p_bar = tqdm.tqdm(range(params["data_generator"]["params"]["num_graphs"]*

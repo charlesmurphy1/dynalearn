@@ -62,7 +62,6 @@ class GATMarkovBinaryPredictor(MarkovPredictor):
 
             x = BatchNormalization(momentum=self.bn_momentum,
                                    epsilon=self.bn_epsilon)(x)
-            # x = LeakyReLU(0.2)(x)
             x = Activation('relu')(x)
 
         outputs = Dense(self.num_states, activation='softmax', 

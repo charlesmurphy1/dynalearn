@@ -38,7 +38,7 @@
         "params":
         {
 
-            "T": 100,
+            "T": 20,
             "batch_size": NUM_NODES,
             "max_null_iter": 10,
             "gamma": 0,

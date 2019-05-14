@@ -205,8 +205,8 @@ def ltp_generalization(path, save):
         model_ltp = np.zeros(N)
         err_model_ltp = np.zeros(N)
         for l in inf_deg:
-            t_ltp = all_true_ltp[:l, l]
-            m_ltp = all_model_ltp[:l, l]
+            t_ltp = all_true_ltp[:, l]
+            m_ltp = all_model_ltp[:, l]
             true_ltp[l] = np.mean(t_ltp)
             model_ltp[l] = np.mean(m_ltp)
             err_model_ltp[l] = np.std(m_ltp) / np.sqrt(len(m_ltp))

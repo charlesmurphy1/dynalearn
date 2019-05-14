@@ -1,5 +1,5 @@
 #!/bin/bash
 
-for d in `find . -maxdepth 1 -type d`; do 
-    bash ${d}/launch.sh
-done
+bash barabasi-albert/launch.sh
+# bash dense-erdos-renyi/launch.sh
+bash sparse-erdos-renyi/launch.sh

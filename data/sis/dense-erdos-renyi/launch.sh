@@ -4,7 +4,7 @@ PATH_TO_SCRIPT="/home/charles/Documents/ulaval/doctorat/projects/dynalearn/scrip
 PATH_TO_EXP="/home/charles/Documents/ulaval/doctorat/projects/dynalearn/data/sis/dense-erdos-renyi"
 
 num_nodes=(100)
-num_sample=(100000)
+num_sample=(10000)
 p=(0.5)
 with_truth=(0)
 prefix="der"
