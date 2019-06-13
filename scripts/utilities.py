@@ -20,32 +20,24 @@ def get_noisy_crossentropy(noise=0):
 
 def get_graph(graph_name, params):
     if "CycleGraph" == graph_name:
-        return dl.graphs.CycleGraph(params["graph"]["params"]["N"], params["np_seed"])
+        return dl.graphs.CycleGraph(params["graph"]["params"]["N"])
     elif "CompleteGraph" == graph_name:
-        return dl.graphs.CompleteGraph(
-            params["graph"]["params"]["N"], params["np_seed"]
-        )
+        return dl.graphs.CompleteGraph(params["graph"]["params"]["N"])
     elif "StarGraph" == graph_name:
-        return dl.graphs.StarGraph(params["graph"]["params"]["N"], params["np_seed"])
+        return dl.graphs.StarGraph(params["graph"]["params"]["N"])
     elif "EmptyGraph" == graph_name:
-        return dl.graphs.EmptyGraph(params["graph"]["params"]["N"], params["np_seed"])
+        return dl.graphs.EmptyGraph(params["graph"]["params"]["N"])
     elif "RegularGraph" == graph_name:
         return dl.graphs.RegularGraph(
-            params["graph"]["params"]["N"],
-            params["graph"]["params"]["degree"],
-            params["np_seed"],
+            params["graph"]["params"]["N"], params["graph"]["params"]["degree"]
         )
     elif "ERGraph" == graph_name:
         return dl.graphs.ERGraph(
-            params["graph"]["params"]["N"],
-            params["graph"]["params"]["p"],
-            params["np_seed"],
+            params["graph"]["params"]["N"], params["graph"]["params"]["p"]
         )
     elif "BAGraph" == graph_name:
         return dl.graphs.BAGraph(
-            params["graph"]["params"]["N"],
-            params["graph"]["params"]["M"],
-            params["np_seed"],
+            params["graph"]["params"]["N"], params["graph"]["params"]["M"]
         )
     else:
         raise ValueError("wrong string name for graph.")
@@ -73,8 +65,8 @@ def get_dynamics(dynamics_name, params):
 
 
 def get_model(model_name, params):
-    if "GATMarkovBinaryPredictor" == model_name:
-        return dl.models.GATMarkovBinaryPredictor(
+    if "LocalStatePredictor" == model_name:
+        return dl.models.LocalStatePredictor(
             params["graph"]["params"]["N"],
             params["dynamics"]["params"]["num_states"],
             params["model"]["params"]["n_hidden"],

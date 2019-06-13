@@ -4,17 +4,17 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.initializers import glorot_uniform
 
-from .base import MarkovPredictor
+from .base import DynamicsPredictor
 from .layers import GraphAttention
 
 
-class GATMarkovBinaryPredictor(MarkovPredictor):
+class LocalStatePredictor(DynamicsPredictor):
     def __init__(self, num_nodes, num_states, n_hidden, n_heads,
                  weight_decay=1e-4, dropout=0.6, bn_momentum=0.99,
                  bn_epsilon=0.0001, seed=None,
                  **kwargs):
         
-        super(GATMarkovBinaryPredictor, self).__init__(num_nodes,
+        super(LocalStatePredictor, self).__init__(num_nodes,
                                                        num_states,
                                                        **kwargs)
         

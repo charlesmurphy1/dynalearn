@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-class MarkovPredictor():
+class DynamicsPredictor():
     
     def __init__(self, num_nodes, num_states):
         self._model = None
