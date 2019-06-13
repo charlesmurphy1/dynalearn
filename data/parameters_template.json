@@ -1,0 +1,72 @@
+{"graph":
+    {
+        "name": "NETWORK",
+        "params":
+        {
+            "N": NUM_NODES,
+            "DENSITYLABEL": DENSITY
+        }
+    },
+ "dynamics":
+    {
+        "name": "DYNAMICS",
+        "params":
+        {
+            "num_states": NUM_STATES,
+            "infection_prob": 0.04,
+            "recovery_prob": 0.08,
+            "init_param": "None"
+        }
+    },
+ "model":
+    {
+        "name": "LocalStatePredictor",
+        "params":
+        {
+            "n_hidden": [32],
+            "n_heads": [1],
+            "dropout": 0,
+            "weight_decay": 0.0001,
+            "bn_epsilon": 0.001,
+            "bn_momentum": 0.99
+        }
+    },
+ "generator":
+    {
+        "name": "DynamicsGenerator",
+        "params":
+        {
+
+            "T": 1000,
+            "max_null_iter": 1,
+            "num_sample": NUM_SAMPLE,
+            "val_fraction": 0.1,
+            "num_graphs": 1,
+            "with_truth": WITH_TRUTH
+        }
+    },
+ "sampler":
+    {
+        "name": "RandomSampler",
+        "params":
+        {
+            "sampling_bias": SAMPLING_BIAS,
+            "batchsize":32,
+            "sample_from_weight": 1
+        }
+    },
+ "training":
+    {
+        "optimizer": "Adam",
+        "loss": "noisy_crossentropy",
+        "learning_rate": 0.001,
+        "schedule": {"epoch":10, "factor":2},
+        "target_noise": 0,
+        "steps_per_epoch": NUM_SAMPLE,
+        "epochs": 30
+    },
+ "np_seed": 1,
+ "tf_seed": 2,
+ "path": "PATH_TO_EXP",
+ "name": "EXP_NAME"
+}
