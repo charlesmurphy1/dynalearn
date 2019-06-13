@@ -1,2 +1,2 @@
 # dynalearn
-A Python framework for dynamics on network learning in PyTorch.
+A Python framework for dynamics on network learning in Keras.
