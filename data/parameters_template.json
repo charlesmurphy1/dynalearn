@@ -20,7 +20,7 @@
     },
  "model":
     {
-        "name": "GATMarkovBinaryPredictor",
+        "name": "LocalStatePredictor",
         "params":
         {
             "n_hidden": [32],
