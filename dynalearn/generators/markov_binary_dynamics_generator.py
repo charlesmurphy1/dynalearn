@@ -3,18 +3,15 @@ import networkx as nx
 import time
 
 
-class MarkovBinaryDynamicsGenerator():
-    def __init__(self, graph_model, dynamics_model, batch_size,
-                 shuffle=False, prohibited_node_index=[],
-                 max_null_iter=100, with_truth=False):
+class MarkovBinaryDynamicsGenerator:
+    def __init__(
+        self, graph_model, dynamics_model, batch_size, shuffle=False, with_truth=False
+    ):
         self.graph_model = graph_model
         self.dynamics_model = dynamics_model
         self.num_states = dynamics_model.num_states
-        self.batch_size = batch_size
         self.shuffle = shuffle
         self.current_graph_name = None
-        self.prohibited_node_index = prohibited_node_index
-        self.max_null_iter = max_null_iter
         self.with_truth = with_truth
 
         # Data
@@ -28,13 +25,11 @@ class MarkovBinaryDynamicsGenerator():
         self.state_index = dict()
         self.graph_index = set()
 
-
-    def generate(self, num_sample, T, progress_bar=None, gamma=0.):
+    def generate(self, num_sample, T, progress_bar=None, gamma=0.0, max_null_iter=0):
 
         sample = 0
         name, graph = self.graph_model.generate()
         N = graph.number_of_nodes()
-
 
         self.graph_inputs[name] = nx.to_numpy_array(graph)
         self.state_inputs[name] = np.zeros([num_sample, N])
@@ -64,7 +59,7 @@ class MarkovBinaryDynamicsGenerator():
                 if not self.dynamics_model.continue_simu:
                     null_iteration += 1
 
-                if sample == num_sample or null_iteration == self.max_null_iter:
+                if sample == num_sample or null_iteration == max_null_iter:
                     break
 
         self.state_index[name] = set(range(self.state_inputs[name].shape[0]))
@@ -72,10 +67,8 @@ class MarkovBinaryDynamicsGenerator():
         if self.current_graph_name is None:
             self.current_graph_name = name
 
-
     def _reset_graph_index(self):
         self.graph_index = set(self.graph_inputs.keys())
-
 
     def _reset_state_index(self, graph_name):
         n_sample = self.state_inputs[graph_name].shape[0]
@@ -99,7 +92,8 @@ class MarkovBinaryDynamicsGenerator():
             self.graph_index.remove(g_index)
             if len(self.graph_index) == 0:
                 self._reset_graph_index()
-                for g in self.graph_index: self._reset_state_index(g)
+                for g in self.graph_index:
+                    self._reset_state_index(g)
             self.current_graph_name = list(self.graph_index)[0]
 
         adj = self.graph_inputs[g_index]
@@ -107,27 +101,24 @@ class MarkovBinaryDynamicsGenerator():
         if self.with_truth:
             targets = self.gt_targets[g_index][s_index, :, :]
         else:
-            targets = self._to_one_hot(self.targets[g_index][s_index, :],
-                                       self.num_states)
+            targets = self._to_one_hot(
+                self.targets[g_index][s_index, :], self.num_states
+            )
         weights = self.sample_weights[g_index]
-        return [inputs, adj], targets, weights
-
+        # return [inputs, adj], targets, weights
+        return [inputs, adj], targets
 
     def _get_sample_weights(self, graph, gamma):
         degrees = dict(graph.degree())
         deg_seq = np.array([degrees[i] for i in degrees])
-        deg_seq[self.prohibited_node_index] = 0
-        return deg_seq**gamma / np.sum(deg_seq**gamma)
-
+        return deg_seq ** gamma / np.sum(deg_seq ** gamma)
 
     def __len__(self):
         names = self.state_inputs.keys()
         return np.sum([self.state_inputs[n].shape[0] for n in names])
 
-
     def __iter__(self):
         return self
-
 
     def _update_states(self):
         inputs = self.dynamics_model.states
@@ -135,12 +126,6 @@ class MarkovBinaryDynamicsGenerator():
         targets = self.dynamics_model.states
         gt_targets = self.dynamics_model.predict(inputs)
         return inputs, targets, gt_targets
-        
 
     def __next__(self):
         return self._sample()
-
-
-
-
-

@@ -33,7 +33,7 @@
     },
  "generator":
     {
-        "name": "MarkovBinaryDynamicsGenerator",
+        "name": "DynamicsGenerator",
         "params":
         {
 

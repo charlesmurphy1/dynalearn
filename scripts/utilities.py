@@ -91,9 +91,11 @@ def get_generator(gen_name, graph_model, dynamics_model, params):
             dynamics_model,
             params["sampler"]["params"]["batch_size"],
             shuffle=True,
-            prohibited_node_index=[],
-            max_null_iter=params["generator"]["params"]["max_null_iter"],
             with_truth=with_truth,
+        )
+    elif "DynamicsGenerator" == gen_name:
+        return dl.generators.DynamicsGenerator(
+            graph_model, dynamics_model, with_truth=False, verbose=1
         )
     else:
         raise ValueError("wrong string name for data generator.")
@@ -128,14 +130,16 @@ def get_experiment(params, build_dataset=False, val_sample_size=None):
             generator.generate(
                 params["generator"]["params"]["num_sample"],
                 params["generator"]["params"]["T"],
-                gamma=params["sampler"]["params"]["sampling_bias"],
-                progress_bar=p_bar,
+                max_null_iter=params["generator"]["params"]["max_null_iter"]
+                # gamma=params["sampler"]["params"]["sampling_bias"],
+                # progress_bar=p_bar,
             )
             val_generator.generate(
                 val_sample_size,
                 params["generator"]["params"]["T"],
-                gamma=params["sampler"]["params"]["sampling_bias"],
-                progress_bar=p_bar,
+                max_null_iter=params["generator"]["params"]["max_null_iter"]
+                # gamma=params["sampler"]["params"]["sampling_bias"],
+                # progress_bar=p_bar,
             )
         p_bar.close()
 
