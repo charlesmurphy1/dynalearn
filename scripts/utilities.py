@@ -9,95 +9,102 @@ from dynalearn.models.layers import GraphAttention
 
 
 def get_noisy_crossentropy(noise=0):
-
     def noisy_crossentropy(y_true, y_pred):
         num_classes = tf.cast(K.shape(y_true)[1], tf.float32)
-        y_true = y_true * (1 - noise) +\
-                 (1 - y_true) * noise / num_classes
+        y_true = y_true * (1 - noise) + (1 - y_true) * noise / num_classes
 
         return keras.losses.categorical_crossentropy(y_true, y_pred)
 
     return noisy_crossentropy
 
 
-
-
-
 def get_graph(graph_name, params):
-    if 'CycleGraph' == graph_name:
-        return dl.graphs.CycleGraph(params["graph"]["params"]['N'],
-                                    params["np_seed"])
-    elif 'CompleteGraph' == graph_name:
-        return dl.graphs.CompleteGraph(params["graph"]["params"]['N'],
-                                       params["np_seed"])
-    elif 'StarGraph' == graph_name:
-        return dl.graphs.StarGraph(params["graph"]["params"]['N'],
-                                   params["np_seed"])
-    elif 'EmptyGraph' == graph_name:
-        return dl.graphs.EmptyGraph(params["graph"]["params"]['N'],
-                                    params["np_seed"])
-    elif 'RegularGraph' == graph_name:
-        return dl.graphs.RegularGraph(params["graph"]["params"]['N'],
-                                      params["graph"]["params"]['degree'],
-                                      params["np_seed"])
-    elif 'ERGraph' == graph_name:
-        return dl.graphs.ERGraph(params["graph"]["params"]['N'],
-                                 params["graph"]["params"]['p'],
-                                 params["np_seed"])
-    elif 'BAGraph' == graph_name:
-        return dl.graphs.BAGraph(params["graph"]["params"]['N'],
-                                 params["graph"]["params"]['M'],
-                                 params["np_seed"])
+    if "CycleGraph" == graph_name:
+        return dl.graphs.CycleGraph(params["graph"]["params"]["N"], params["np_seed"])
+    elif "CompleteGraph" == graph_name:
+        return dl.graphs.CompleteGraph(
+            params["graph"]["params"]["N"], params["np_seed"]
+        )
+    elif "StarGraph" == graph_name:
+        return dl.graphs.StarGraph(params["graph"]["params"]["N"], params["np_seed"])
+    elif "EmptyGraph" == graph_name:
+        return dl.graphs.EmptyGraph(params["graph"]["params"]["N"], params["np_seed"])
+    elif "RegularGraph" == graph_name:
+        return dl.graphs.RegularGraph(
+            params["graph"]["params"]["N"],
+            params["graph"]["params"]["degree"],
+            params["np_seed"],
+        )
+    elif "ERGraph" == graph_name:
+        return dl.graphs.ERGraph(
+            params["graph"]["params"]["N"],
+            params["graph"]["params"]["p"],
+            params["np_seed"],
+        )
+    elif "BAGraph" == graph_name:
+        return dl.graphs.BAGraph(
+            params["graph"]["params"]["N"],
+            params["graph"]["params"]["M"],
+            params["np_seed"],
+        )
     else:
-        raise ValueError('wrong string name for graph.')
+        raise ValueError("wrong string name for graph.")
 
 
 def get_dynamics(dynamics_name, params):
-    if 'SISDynamics' == dynamics_name:
-        if params["dynamics"]["params"]['init_param'] == "None":
-            params["dynamics"]["params"]['init_param'] = None
-        return dl.dynamics.SISDynamics(params["dynamics"]["params"]['infection_prob'],
-                                       params["dynamics"]["params"]['recovery_prob'],
-                                       params["dynamics"]["params"]['init_param']
-                                       )
-    elif 'SIRDynamics' == dynamics_name:
-        if params["dynamics"]["params"]['init_param'] == "None":
-            params["dynamics"]["params"]['init_param'] = None
-        return dl.dynamics.SIRDynamics(params["dynamics"]["params"]['infection_prob'],
-                                       params["dynamics"]["params"]['recovery_prob'],
-                                       params["dynamics"]["params"]['init_param'])
+    if "SISDynamics" == dynamics_name:
+        if params["dynamics"]["params"]["init_param"] == "None":
+            params["dynamics"]["params"]["init_param"] = None
+        return dl.dynamics.SISDynamics(
+            params["dynamics"]["params"]["infection_prob"],
+            params["dynamics"]["params"]["recovery_prob"],
+            params["dynamics"]["params"]["init_param"],
+        )
+    elif "SIRDynamics" == dynamics_name:
+        if params["dynamics"]["params"]["init_param"] == "None":
+            params["dynamics"]["params"]["init_param"] = None
+        return dl.dynamics.SIRDynamics(
+            params["dynamics"]["params"]["infection_prob"],
+            params["dynamics"]["params"]["recovery_prob"],
+            params["dynamics"]["params"]["init_param"],
+        )
     else:
-        raise ValueError('wrong string name for dynamics.')
+        raise ValueError("wrong string name for dynamics.")
 
-        
+
 def get_model(model_name, params):
-    if 'GATMarkovBinaryPredictor' == model_name:
-        return dl.models.GATMarkovBinaryPredictor(params["graph"]["params"]["N"],
-                                                  params["dynamics"]["params"]["num_states"],
-                                                  params["model"]["params"]["n_hidden"], 
-                                                  params["model"]["params"]["n_heads"],
-                                                  weight_decay=params["model"]["params"]["weight_decay"],
-                                                  dropout=params["model"]["params"]["dropout"],
-                                                  seed=params['tf_seed'])
+    if "GATMarkovBinaryPredictor" == model_name:
+        return dl.models.GATMarkovBinaryPredictor(
+            params["graph"]["params"]["N"],
+            params["dynamics"]["params"]["num_states"],
+            params["model"]["params"]["n_hidden"],
+            params["model"]["params"]["n_heads"],
+            weight_decay=params["model"]["params"]["weight_decay"],
+            dropout=params["model"]["params"]["dropout"],
+            seed=params["tf_seed"],
+        )
     else:
-        raise ValueError('wrong string name for model.')
+        raise ValueError("wrong string name for model.")
 
 
-def get_datagenerator(gen_name, graph_model, dynamics_model, params):
+def get_generator(gen_name, graph_model, dynamics_model, params):
     if "with_truth" in params["training"]:
         with_truth = params["training"]["with_truth"]
     else:
         with_truth = False
 
-    if 'MarkovBinaryDynamicsGenerator' == gen_name:
-        return dl.generators.MarkovBinaryDynamicsGenerator(graph_model, dynamics_model,
-                                                           params["data_generator"]["params"]["batch_size"],
-                                                           shuffle=True, 
-                                                           prohibited_node_index=[],
-                                                           max_null_iter=params["data_generator"]["params"]["max_null_iter"],
-                                                           with_truth=with_truth)
+    if "MarkovBinaryDynamicsGenerator" == gen_name:
+        return dl.generators.MarkovBinaryDynamicsGenerator(
+            graph_model,
+            dynamics_model,
+            params["sampler"]["params"]["batch_size"],
+            shuffle=True,
+            prohibited_node_index=[],
+            max_null_iter=params["generator"]["params"]["max_null_iter"],
+            with_truth=with_truth,
+        )
     else:
-        raise ValueError('wrong string name for data generator.')
+        raise ValueError("wrong string name for data generator.")
 
 
 def get_experiment(params, build_dataset=False, val_sample_size=None):
@@ -111,31 +118,33 @@ def get_experiment(params, build_dataset=False, val_sample_size=None):
     # Define dynamics
     dynamics = get_dynamics(params["dynamics"]["name"], params)
 
-    # Define data generator 
-    data_generator = get_datagenerator(params["data_generator"]["name"],
-                                       graph,
-                                       dynamics,
-                                       params)
-    val_generator = get_datagenerator(params["data_generator"]["name"],
-                                      graph,
-                                      dynamics,
-                                      params)
+    # Define data generator
+    generator = get_generator(params["generator"]["name"], graph, dynamics, params)
+    val_generator = get_generator(params["generator"]["name"], graph, dynamics, params)
     if val_sample_size is None:
-        val_sample_size = int(params["data_generator"]["params"]["num_sample"] * 0.2)
+        val_sample_size = int(params["generator"]["params"]["num_sample"] * 0.2)
     if build_dataset:
         print("Building dataset\n-------------------")
-        p_bar = tqdm.tqdm(range(params["data_generator"]["params"]["num_graphs"]*
-                                params["data_generator"]["params"]["num_sample"]+
-                                val_sample_size))
-        for i in range(params["data_generator"]["params"]["num_graphs"]):
-            data_generator.generate(params["data_generator"]["params"]["num_sample"],
-                                    params["data_generator"]["params"]["T"],
-                                    gamma=params["data_generator"]["params"]["gamma"],
-                                    progress_bar=p_bar)
-            val_generator.generate(val_sample_size,
-                                   params["data_generator"]["params"]["T"],
-                                   gamma=params["data_generator"]["params"]["gamma"],
-                                   progress_bar=p_bar)
+        p_bar = tqdm.tqdm(
+            range(
+                params["generator"]["params"]["num_graphs"]
+                * params["generator"]["params"]["num_sample"]
+                + val_sample_size
+            )
+        )
+        for i in range(params["generator"]["params"]["num_graphs"]):
+            generator.generate(
+                params["generator"]["params"]["num_sample"],
+                params["generator"]["params"]["T"],
+                gamma=params["sampler"]["params"]["sampling_bias"],
+                progress_bar=p_bar,
+            )
+            val_generator.generate(
+                val_sample_size,
+                params["generator"]["params"]["T"],
+                gamma=params["sampler"]["params"]["sampling_bias"],
+                progress_bar=p_bar,
+            )
         p_bar.close()
 
     # Define model
@@ -151,18 +160,19 @@ def get_experiment(params, build_dataset=False, val_sample_size=None):
     callbacks = [keras.callbacks.LearningRateScheduler(schedule, verbose=1)]
 
     # Define experiment
-    experiment = dl.Experiment(params["name"],
-                               model,
-                               data_generator,
-                               validation=val_generator,
-                               loss=loss,
-                               optimizer=optimizer,
-                               metrics=metrics,
-                               learning_rate=params["training"]["learning_rate"],
-                               callbacks=callbacks,
-                               numpy_seed=params["np_seed"],
-                               tensorflow_seed=params["tf_seed"])
-
+    experiment = dl.Experiment(
+        params["name"],
+        model,
+        generator,
+        validation=val_generator,
+        loss=loss,
+        optimizer=optimizer,
+        metrics=metrics,
+        learning_rate=params["training"]["learning_rate"],
+        callbacks=callbacks,
+        numpy_seed=params["np_seed"],
+        tensorflow_seed=params["tf_seed"],
+    )
 
     return experiment
 
@@ -199,8 +209,10 @@ def increment_int_from_base(x, base):
 
     return val
 
+
 def base_to_int(x, base):
-    return int(np.sum(x * base**np.arange(len(x))))
+    return int(np.sum(x * base ** np.arange(len(x))))
+
 
 # def bin_timeseries(ts, num_states):
 #     N = ts.shape[1]
@@ -291,7 +303,7 @@ def base_to_int(x, base):
 #         dist = tf.distributions.Categorical(probs=p)
 #         y_true = self.states
 #         y_pred = dist.sample().eval(session=self.session)
-        
+
 
 #         info = information(y_true, self.num_states)
 #         mutual_info = mutual_information(y_true, y_pred, self.num_states)
@@ -305,7 +317,6 @@ def base_to_int(x, base):
 
 #     def get_data(self):
 #         return self._data
-        
 
 
 def get_all_attn_layers(model):
@@ -318,6 +329,3 @@ def get_all_attn_layers(model):
             attn_layers.append(model.get_attn_layer(num_attn))
 
     return attn_layers
-
-
-

@@ -20,7 +20,7 @@
     },
  "model":
     {
-        "name": "LocalStatePredictor",
+        "name": "GATMarkovBinaryPredictor",
         "params":
         {
             "n_hidden": [32],
@@ -33,7 +33,7 @@
     },
  "generator":
     {
-        "name": "DynamicsGenerator",
+        "name": "MarkovBinaryDynamicsGenerator",
         "params":
         {
 
@@ -51,7 +51,7 @@
         "params":
         {
             "sampling_bias": SAMPLING_BIAS,
-            "batchsize":32,
+            "batch_size":32,
             "sample_from_weight": 1
         }
     },
