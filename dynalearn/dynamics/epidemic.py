@@ -51,8 +51,7 @@ class EpidemicDynamics(Dynamics):
         if len(states.shape) < 2:
             states = states.reshape(1, N)
         adj = nx.to_numpy_array(self.graph)
-        cond = states == self.state_label["I"]
-        return np.matmul(cond, adj)
+        return np.matmul(states == self.state_label["I"], adj)
 
     def get_avg_state(self):
         N = self.graph.number_of_nodes()
@@ -85,7 +84,7 @@ class EpidemicDynamics(Dynamics):
             for out_s, out_l in self.state_label.items():
                 avg_prob[(in_s, out_s)] = np.zeros(N)
                 var_prob[(in_s, out_s)] = np.zeros(N)
-                for k in np.arange(np.max(inf_deg)):
+                for k in np.arange(np.max(inf_deg) + 1):
                     avail_state = out_states[(in_states == in_l) * (inf_deg == k)]
                     n_sample = avail_state.shape[0]
                     out_condition = np.zeros(n_sample)
@@ -116,7 +115,7 @@ class EpidemicDynamics(Dynamics):
             for out_s, out_l in self.state_label.items():
                 avg_prob[(in_s, out_s)] = np.zeros(N)
                 var_prob[(in_s, out_s)] = np.zeros(N)
-                for k in np.arange(int(np.max(inf_deg))):
+                for k in np.arange(int(np.max(inf_deg)) + 1):
                     avail_state = model_prediction[
                         (in_states == in_l) * (inf_deg == k), out_l
                     ]

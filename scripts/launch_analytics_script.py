@@ -22,12 +22,12 @@ def compute_transition_probability(dynamics, model, states, graphs):
     for g in graphs:
         dynamics.graph = nx.from_numpy_array(graphs[g])
 
-        dynamics_tp[g] = np.zeros((states[g].shape[0],
-                                   states[g].shape[1],
-                                   dynamics.num_states))
-        model_tp[g] = np.zeros((states[g].shape[0],
-                                states[g].shape[1],
-                                dynamics.num_states))
+        dynamics_tp[g] = np.zeros(
+            (states[g].shape[0], states[g].shape[1], dynamics.num_states)
+        )
+        model_tp[g] = np.zeros(
+            (states[g].shape[0], states[g].shape[1], dynamics.num_states)
+        )
         for i, s in enumerate(states[g]):
             dynamics_tp[g][i, :, :] = dynamics.predict(s)
             model_tp[g][i, :, :] = model.model.predict([s, graphs[g]], steps=1)
@@ -41,15 +41,14 @@ def compute_markov_matrix(dynamics, model, states, graphs):
     N = model.num_nodes
     state_label = dynamics.state_label
     num_graphs = len(graphs)
-    num_all_states = len(state_label)**N
+    num_all_states = len(state_label) ** N
 
     all_states = np.zeros((num_all_states, N)).astype("int")
     dynamics_markovmat = {}
     model_markovmat = {}
 
     for i in range(1, num_all_states):
-        all_states[i] = u.increment_int_from_base(all_states[i - 1],
-                                                  len(state_label))
+        all_states[i] = u.increment_int_from_base(all_states[i - 1], len(state_label))
 
     p_bar = tqdm.tqdm(range(num_all_states * num_graphs), "Markov matrix")
     for g in graphs:
@@ -59,12 +58,10 @@ def compute_markov_matrix(dynamics, model, states, graphs):
         for i, s in enumerate(all_states):
             dynamics_p = dynamics.predict(s)
             model_p = model.model.predict([s, graphs[g]], steps=1)
-            dynamics_logp = np.trace(np.log(dynamics_p.T[all_states]),
-                                     axis1=1, axis2=2)
-            model_logp = np.trace(np.log(model_p.T[all_states]),
-                                  axis1=1, axis2=2)
-            dynamics_logp[dynamics_logp<-50] = -50
-            model_logp[model_logp<-50] = -50
+            dynamics_logp = np.trace(np.log(dynamics_p.T[all_states]), axis1=1, axis2=2)
+            model_logp = np.trace(np.log(model_p.T[all_states]), axis1=1, axis2=2)
+            dynamics_logp[dynamics_logp < -50] = -50
+            model_logp[model_logp < -50] = -50
             dynamics_markovmat[g][:, i] = dynamics_logp
             model_markovmat[g][:, i] = model_logp
             p_bar.update()
@@ -76,7 +73,7 @@ def compute_markov_matrix(dynamics, model, states, graphs):
 def compute_state_occurence(dynamics, model, states, graphs):
     N = model.num_nodes
     state_label = dynamics.state_label
-    num_all_states = len(state_label)**N
+    num_all_states = len(state_label) ** N
 
     num_states = np.sum([states[g].shape[0] for g in graphs])
     p_bar = tqdm.tqdm(range(num_states), "State occurence")
@@ -96,16 +93,16 @@ def compute_state_occurence(dynamics, model, states, graphs):
 
 def compute_ltp(dynamics, model, states, targets, graphs):
     N = model.num_nodes
-    degrees = np.arange(N).astype('int')
+    degrees = np.arange(N).astype("int")
     state_label = dynamics.state_label
-    avg_dynamics_ltp = {(i, j): np.zeros(len(degrees)) for i in state_label
-                                                       for j in state_label}
+    avg_dynamics_ltp = {
+        (i, j): np.zeros(len(degrees)) for i in state_label for j in state_label
+    }
 
     avg_model_ltp = avg_dynamics_ltp.copy()
     avg_estimate_ltp = avg_dynamics_ltp.copy()
     var_model_ltp = avg_dynamics_ltp.copy()
     var_estimate_ltp = avg_dynamics_ltp.copy()
-
 
     p_bar = tqdm.tqdm(range(len(graphs)), "Local transition probabilities")
     for g in graphs:
@@ -114,38 +111,45 @@ def compute_ltp(dynamics, model, states, targets, graphs):
         out_states = targets[g]
         dynamics_ltp = dynamics.ltp(in_states)
         model_ltp = dynamics.model_ltp(model.model, in_states)
-        estimate_ltp = dynamics.estimate_ltp(in_states, out_states) 
+        estimate_ltp = dynamics.estimate_ltp(in_states, out_states)
         for in_s in state_label:
-            for out_s in state_label:            
+            for out_s in state_label:
                 avg_dynamics_ltp[(in_s, out_s)] = dynamics_ltp[(in_s, out_s)][degrees]
                 avg_model_ltp[(in_s, out_s)] = model_ltp[0][(in_s, out_s)][degrees]
-                avg_estimate_ltp[(in_s, out_s)] = estimate_ltp[0][(in_s, out_s)][degrees]
+                avg_estimate_ltp[(in_s, out_s)] = estimate_ltp[0][(in_s, out_s)][
+                    degrees
+                ]
 
                 var_model_ltp[(in_s, out_s)] = model_ltp[1][(in_s, out_s)][degrees]
-                var_estimate_ltp[(in_s, out_s)] = estimate_ltp[1][(in_s, out_s)][degrees]
+                var_estimate_ltp[(in_s, out_s)] = estimate_ltp[1][(in_s, out_s)][
+                    degrees
+                ]
         p_bar.update()
     p_bar.close()
 
-    return avg_dynamics_ltp, avg_model_ltp, avg_estimate_ltp,\
-           var_model_ltp, var_estimate_ltp
+    return (
+        avg_dynamics_ltp,
+        avg_model_ltp,
+        avg_estimate_ltp,
+        var_model_ltp,
+        var_estimate_ltp,
+    )
 
 
 def compute_generalization_ltp(dynamics, model, degree=None):
     N = model.num_nodes
     # if degree is None:
     #     degree = np.arange(N).astype('int')
-    degree = np.arange(N).astype('int')
-    inf_degree = degree.astype('int')
+    degree = np.arange(N).astype("int")
+    inf_degree = degree.astype("int")
     state_label = dynamics.state_label
 
-    dynamics_ltp = {(i, j): np.zeros((N, N)) for i in state_label
-                                             for j in state_label}
-    model_ltp = {(i, j): np.zeros((N, N)) for i in state_label
-                                          for j in state_label}    
+    dynamics_ltp = {(i, j): np.zeros((N, N)) for i in state_label for j in state_label}
+    model_ltp = {(i, j): np.zeros((N, N)) for i in state_label for j in state_label}
 
-    p_bar = tqdm.tqdm(range(len(degree)**2 * len(state_label)), "Generalization")                                         
+    p_bar = tqdm.tqdm(range(len(degree) ** 2 * len(state_label)), "Generalization")
     for k in degree:
-        if k>0:
+        if k > 0:
             graph = nx.star_graph(k)
             graph.add_nodes_from(range(k, N))
         else:
@@ -154,7 +158,7 @@ def compute_generalization_ltp(dynamics, model, degree=None):
         dynamics.graph = graph
         states = np.zeros(N)
         for in_s in state_label:
-            states[0] = state_label[in_s] 
+            states[0] = state_label[in_s]
             neigh = 0
             for l in inf_degree:
                 if neigh > 0:
@@ -181,10 +185,10 @@ def compute_attn_coeff(dynamics, model, attn_layers, states, graphs):
 
     # Getting attention coefficients
     p_bar = tqdm.tqdm(range(num_states), "Attention coefficients")
-    cond_attn = {l:{(in_s, out_s): []
-                    for in_s in state_label
-                    for out_s in state_label}
-                 for l in range(len(attn_layers))}
+    cond_attn = {
+        l: {(in_s, out_s): [] for in_s in state_label for out_s in state_label}
+        for l in range(len(attn_layers))
+    }
 
     attn_coeff = {}
     for g in graphs:
@@ -200,8 +204,8 @@ def compute_attn_coeff(dynamics, model, attn_layers, states, graphs):
                 for in_s in state_label:
                     for out_s in state_label:
                         in_l, out_l = state_label[in_s], state_label[out_s]
-                        avail_s = (s==in_l) * (s==out_l).T * adj
-                        a = attn_coeff[g][layer][i, avail_s==1]
+                        avail_s = (s == in_l) * (s == out_l).T * adj
+                        a = attn_coeff[g][layer][i, avail_s == 1]
                         cond_attn[layer][(in_s, out_s)].extend(a)
 
             p_bar.update()
@@ -219,7 +223,7 @@ def compute_loss(dynamics, model, states, graphs):
     losses_from_dynamics = {}
     losses_from_data_per_degree = {k: [] for k in range(N)}
     losses_from_dynamics_per_degree = {k: [] for k in range(N)}
-    loss = lambda x, y: - np.sum(x * np.log(y), axis=1)
+    loss = lambda x, y: -np.sum(x * np.log(y), axis=1)
 
     p_bar = tqdm.tqdm(range(num_states), "Losses")
     for g in graphs:
@@ -240,8 +244,12 @@ def compute_loss(dynamics, model, states, graphs):
             p_bar.update()
 
         for k in range(int(np.min(degrees)), int(np.max(degrees) + 1)):
-            losses_from_data_per_degree[k].extend(list(losses_from_dynamics[g][i, :][degrees==k]))
-            losses_from_dynamics_per_degree[k].extend(list(losses_from_data[g][i, :][degrees==k]))
+            losses_from_data_per_degree[k].extend(
+                list(losses_from_dynamics[g][i, :][degrees == k])
+            )
+            losses_from_dynamics_per_degree[k].extend(
+                list(losses_from_data[g][i, :][degrees == k])
+            )
 
     avg_loss_from_data = np.zeros(N)
     var_loss_from_data = np.zeros(N)
@@ -253,16 +261,51 @@ def compute_loss(dynamics, model, states, graphs):
         dynamics_num = len(losses_from_data_per_degree[k])
         if data_num > 0:
             avg_loss_from_data[k] = np.mean(losses_from_data_per_degree[k])
-            var_loss_from_data[k] = np.std(losses_from_data_per_degree[k]) / np.sqrt(data_num)
+            var_loss_from_data[k] = np.std(losses_from_data_per_degree[k]) / np.sqrt(
+                data_num
+            )
         if dynamics_num > 0:
             avg_loss_from_dynamics[k] = np.mean(losses_from_dynamics_per_degree[k])
-            var_loss_from_dynamics[k] = np.std(losses_from_dynamics_per_degree[k]) / np.sqrt(dynamics_num)
+            var_loss_from_dynamics[k] = np.std(
+                losses_from_dynamics_per_degree[k]
+            ) / np.sqrt(dynamics_num)
 
     p_bar.close()
 
-    return losses_from_data, losses_from_dynamics,\
-           avg_loss_from_data, var_loss_from_data,\
-           avg_loss_from_dynamics, var_loss_from_dynamics
+    return (
+        losses_from_data,
+        losses_from_dynamics,
+        avg_loss_from_data,
+        var_loss_from_data,
+        avg_loss_from_dynamics,
+        var_loss_from_dynamics,
+    )
+
+
+def compute_counts(dynamics, states, graphs):
+    avail_states = list(dynamics.state_label.values())
+    counts_dict = dict()
+
+    num_states = np.sum([states[i].shape[0] for i in graphs])
+    p_bar = tqdm.tqdm(range(num_states), "Counts")
+    for i in graphs:
+        adj = graphs[i]
+        N = adj.shape[0]
+        for j, state in enumerate(states[i]):
+            l = np.zeros((N, len(avail_states)))
+            for in_s in avail_states:
+                l[:, in_s] = np.matmul(state == in_s, adj)
+            for n, s in enumerate(state):
+                summary = (s, *l[n, :])
+                if summary in counts_dict:
+                    counts_dict[summary] += 1
+                else:
+                    counts_dict[summary] = 1
+            p_bar.update()
+
+    p_bar.close()
+
+    return np.array([[*s, counts_dict[s]] for s in counts_dict])
 
 
 def compute_minmax_degree(graphs, N):
@@ -278,41 +321,41 @@ def compute_minmax_degree(graphs, N):
     return kmin, kmax
 
 
-
 def main():
-    prs = ap.ArgumentParser(description="Get local transition probability \
-                                         figure from path to parameters.")
-    prs.add_argument('--path_to_param', '-p', type=str, required=True,
-                     help='Path to parameters.')
-    prs.add_argument('--num_sample', '-n', default=-1,
-                     help='Number of samples to use.')
+    prs = ap.ArgumentParser(
+        description="Get local transition probability \
+                                         figure from path to parameters."
+    )
+    prs.add_argument(
+        "--path_to_param", "-p", type=str, required=True, help="Path to parameters."
+    )
+    prs.add_argument("--num_sample", "-n", default=-1, help="Number of samples to use.")
     if len(sys.argv) == 1:
         prs.print_help()
         sys.exit(1)
     args = prs.parse_args()
-    with open(args.path_to_param, 'r') as f:
+    with open(args.path_to_param, "r") as f:
         params = json.load(f)
-
 
     num_sample = int(args.num_sample)
     experiment = u.get_experiment(params, False)
 
     if experiment.model.num_nodes < 500:
-        os.environ['CUDA_VISIBLE_DEVICES'] = ''
+        os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-    h5file = h5py.File(os.path.join(params["path"], params["name"] + "_model.h5"), 'r')
+    h5file = h5py.File(os.path.join(params["path"], params["name"] + "_model.h5"), "r")
     experiment.load_hdf5_model(h5file)
     h5file.close()
 
-    h5file = h5py.File(os.path.join(params["path"], params["name"] + "_data.h5"), 'r')
+    h5file = h5py.File(os.path.join(params["path"], params["name"] + "_data.h5"), "r")
     experiment.load_hdf5_data(h5file)
     h5file.close()
 
-    graphs = experiment.data_generator.graph_inputs
+    graphs = experiment.data_generator.graphs
     states = {}
     targets = {}
     for g in graphs:
-        states[g] = experiment.data_generator.state_inputs[g][:num_sample]
+        states[g] = experiment.data_generator.inputs[g][:num_sample]
         targets[g] = experiment.data_generator.targets[g][:num_sample]
 
     model = experiment.model
@@ -320,22 +363,23 @@ def main():
 
     N = model.num_nodes
     kmin, kmax = compute_minmax_degree(graphs, N)
-    an_h5file = h5py.File(os.path.join(params["path"],
-                                       params["name"] + "_analytics.h5"),
-                          'w')
+    an_h5file = h5py.File(
+        os.path.join(params["path"], params["name"] + "_analytics.h5"), "w"
+    )
 
     # Getting transition probability
-    dynamics_tp, model_tp = compute_transition_probability(dynamics,
-                                                           model,
-                                                           states,
-                                                           graphs)
+    dynamics_tp, model_tp = compute_transition_probability(
+        dynamics, model, states, graphs
+    )
 
     # Saving transition probabilities
     for g in graphs:
-        an_h5file.create_dataset("/analytics/trans_prob/" + g + "/ground_truth", data=dynamics_tp[g])
-        an_h5file.create_dataset("/analytics/trans_prob/" + g + "/model", data=model_tp[g])
-
-
+        an_h5file.create_dataset(
+            "/analytics/trans_prob/" + g + "/ground_truth", data=dynamics_tp[g]
+        )
+        an_h5file.create_dataset(
+            "/analytics/trans_prob/" + g + "/model", data=model_tp[g]
+        )
 
     # Getting Local transition probabilities
     ltp_data = compute_ltp(dynamics, model, states, targets, graphs)
@@ -347,7 +391,7 @@ def main():
             an_h5file.create_dataset(group, data=val)
 
             group = "/analytics/local_trans_prob/model/" + in_s + "_to_" + out_s
-            avg, var = ltp_data[1][(in_s, out_s)], ltp_data[3][(in_s, out_s)] 
+            avg, var = ltp_data[1][(in_s, out_s)], ltp_data[3][(in_s, out_s)]
             an_h5file.create_dataset(group, data=np.vstack((avg, var)).T)
 
             group = "/analytics/local_trans_prob/estimate/" + in_s + "_to_" + out_s
@@ -356,16 +400,15 @@ def main():
 
     # Getting Local transition probabilities of star graph
     if N < 100:
-        degree = np.arange(N).astype('int')
+        degree = np.arange(N).astype("int")
     else:
-        x = np.unique(np.linspace(0, kmin, 10, dtype='int'))
-        y = np.unique(np.linspace(kmin + 1, kmax, 25, dtype='int'))
-        z = np.unique(np.linspace(kmax + 1, N - 1, 10, dtype='int'))
+        x = np.unique(np.linspace(0, kmin, 10, dtype="int"))
+        y = np.unique(np.linspace(kmin + 1, kmax, 25, dtype="int"))
+        z = np.unique(np.linspace(kmax + 1, N - 1, 10, dtype="int"))
         degree = np.concatenate((x, y, z))
 
     ltp_data = compute_generalization_ltp(dynamics, model, degree)
-    an_h5file.create_dataset("/analytics/generalization/degree_class",
-                             data=degree)
+    an_h5file.create_dataset("/analytics/generalization/degree_class", data=degree)
     for in_s in dynamics.state_label:
         for out_s in dynamics.state_label:
 
@@ -377,42 +420,57 @@ def main():
             val = ltp_data[1][(in_s, out_s)]
             an_h5file.create_dataset(group, data=val)
 
-
     # Getting loss per node
     loss_data = compute_loss(dynamics, model, states, graphs)
     for g in graphs:
-        an_h5file.create_dataset("/analytics/losses/" + g + "/from_data",
-                              data=loss_data[0][g])
-        an_h5file.create_dataset("/analytics/losses/" + g + "/from_dynamics",
-                              data=loss_data[1][g])
-        an_h5file.create_dataset("/analytics/losses/from_data_per_degree",
-                              data=np.vstack((loss_data[2], loss_data[3])).T)
-        an_h5file.create_dataset("/analytics/losses/from_dynamics_per_degree",
-                              data=np.vstack((loss_data[4], loss_data[5])).T)
+        an_h5file.create_dataset(
+            "/analytics/losses/" + g + "/from_data", data=loss_data[0][g]
+        )
+        an_h5file.create_dataset(
+            "/analytics/losses/" + g + "/from_dynamics", data=loss_data[1][g]
+        )
+        an_h5file.create_dataset(
+            "/analytics/losses/from_data_per_degree",
+            data=np.vstack((loss_data[2], loss_data[3])).T,
+        )
+        an_h5file.create_dataset(
+            "/analytics/losses/from_dynamics_per_degree",
+            data=np.vstack((loss_data[4], loss_data[5])).T,
+        )
+
+    # Getting counts
+    counts = compute_counts(dynamics, states, graphs)
+    an_h5file.create_dataset("analytics/counts", data=counts)
 
     # Getting attention coefficients
     attn_layers = u.get_all_attn_layers(model)
-    attn_coeff, cond_attn = compute_attn_coeff(dynamics, model, attn_layers,
-                                               states, graphs)
+    attn_coeff, cond_attn = compute_attn_coeff(
+        dynamics, model, attn_layers, states, graphs
+    )
     # Saving attention coefficients
     for g in graphs:
         for layer in range(len(attn_layers)):
-            group = "/analytics/attn_coeff/layer"  + str(layer) + "/" + g
+            group = "/analytics/attn_coeff/layer" + str(layer) + "/" + g
             an_h5file.create_dataset(group, data=attn_coeff[g][layer])
 
     for in_s in dynamics.state_label:
         for out_s in dynamics.state_label:
             for layer in range(len(attn_layers)):
-                group = "/analytics/attn_coeff/layer" + str(layer) + "/" + in_s + "_to_" + out_s
+                group = (
+                    "/analytics/attn_coeff/layer"
+                    + str(layer)
+                    + "/"
+                    + in_s
+                    + "_to_"
+                    + out_s
+                )
                 an_h5file.create_dataset(group, data=cond_attn[layer][(in_s, out_s)])
-
 
     if N <= 15:
         # Compute Markov matrices and occurence
-        dynamics_markovmat, model_markovmat = compute_markov_matrix(dynamics,
-                                                                    model,
-                                                                    states,
-                                                                    graphs)
+        dynamics_markovmat, model_markovmat = compute_markov_matrix(
+            dynamics, model, states, graphs
+        )
         for g in graphs:
             group = "/analytics/markovmatrix/" + g + "/ground_truth/"
             an_h5file.create_dataset(group, data=dynamics_markovmat[g])
@@ -427,5 +485,6 @@ def main():
 
     an_h5file.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

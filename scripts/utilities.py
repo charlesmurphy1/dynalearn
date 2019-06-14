@@ -87,11 +87,7 @@ def get_generator(gen_name, graph_model, dynamics_model, params):
 
     if "MarkovBinaryDynamicsGenerator" == gen_name:
         return dl.generators.MarkovBinaryDynamicsGenerator(
-            graph_model,
-            dynamics_model,
-            params["sampler"]["params"]["batch_size"],
-            shuffle=True,
-            with_truth=with_truth,
+            graph_model, dynamics_model, shuffle=True, with_truth=with_truth
         )
     elif "DynamicsGenerator" == gen_name:
         return dl.generators.DynamicsGenerator(

@@ -33,12 +33,12 @@
     },
  "generator":
     {
-        "name": "DynamicsGenerator",
+        "name": "MarkovBinaryDynamicsGenerator",
         "params":
         {
 
-            "T": 1000,
-            "max_null_iter": 1,
+            "T": 5,
+            "max_null_iter": 5,
             "num_sample": NUM_SAMPLE,
             "val_fraction": 0.1,
             "num_graphs": 1,

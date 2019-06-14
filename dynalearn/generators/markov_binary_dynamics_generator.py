@@ -4,9 +4,7 @@ import time
 
 
 class MarkovBinaryDynamicsGenerator:
-    def __init__(
-        self, graph_model, dynamics_model, batch_size, shuffle=False, with_truth=False
-    ):
+    def __init__(self, graph_model, dynamics_model, shuffle=False, with_truth=False):
         self.graph_model = graph_model
         self.dynamics_model = dynamics_model
         self.num_states = dynamics_model.num_states
@@ -15,8 +13,8 @@ class MarkovBinaryDynamicsGenerator:
         self.with_truth = with_truth
 
         # Data
-        self.graph_inputs = dict()
-        self.state_inputs = dict()
+        self.graphs = dict()
+        self.inputs = dict()
         self.targets = dict()
         self.gt_targets = dict()
         self.sample_weights = dict()
@@ -31,8 +29,8 @@ class MarkovBinaryDynamicsGenerator:
         name, graph = self.graph_model.generate()
         N = graph.number_of_nodes()
 
-        self.graph_inputs[name] = nx.to_numpy_array(graph)
-        self.state_inputs[name] = np.zeros([num_sample, N])
+        self.graphs[name] = nx.to_numpy_array(graph)
+        self.inputs[name] = np.zeros([num_sample, N])
         self.targets[name] = np.zeros([num_sample, N])
         self.gt_targets[name] = np.zeros([num_sample, N, self.num_states])
         self.sample_weights[name] = self._get_sample_weights(graph, gamma)
@@ -46,7 +44,7 @@ class MarkovBinaryDynamicsGenerator:
                 t0 = time.time()
                 inputs, targets, gt_targets = self._update_states()
 
-                self.state_inputs[name][sample, :] = inputs
+                self.inputs[name][sample, :] = inputs
                 self.targets[name][sample, :] = targets
                 self.gt_targets[name][sample, :, :] = gt_targets
                 t1 = time.time()
@@ -62,16 +60,16 @@ class MarkovBinaryDynamicsGenerator:
                 if sample == num_sample or null_iteration == max_null_iter:
                     break
 
-        self.state_index[name] = set(range(self.state_inputs[name].shape[0]))
+        self.state_index[name] = set(range(self.inputs[name].shape[0]))
         self.graph_index.add(name)
         if self.current_graph_name is None:
             self.current_graph_name = name
 
     def _reset_graph_index(self):
-        self.graph_index = set(self.graph_inputs.keys())
+        self.graph_index = set(self.graphs.keys())
 
     def _reset_state_index(self, graph_name):
-        n_sample = self.state_inputs[graph_name].shape[0]
+        n_sample = self.inputs[graph_name].shape[0]
         self.state_index[graph_name] = set(range(n_sample))
 
     def _to_one_hot(self, arr, num_classes):
@@ -96,8 +94,8 @@ class MarkovBinaryDynamicsGenerator:
                     self._reset_state_index(g)
             self.current_graph_name = list(self.graph_index)[0]
 
-        adj = self.graph_inputs[g_index]
-        inputs = self.state_inputs[g_index][s_index, :]
+        adj = self.graphs[g_index]
+        inputs = self.inputs[g_index][s_index, :]
         if self.with_truth:
             targets = self.gt_targets[g_index][s_index, :, :]
         else:
@@ -114,8 +112,8 @@ class MarkovBinaryDynamicsGenerator:
         return deg_seq ** gamma / np.sum(deg_seq ** gamma)
 
     def __len__(self):
-        names = self.state_inputs.keys()
-        return np.sum([self.state_inputs[n].shape[0] for n in names])
+        names = self.inputs.keys()
+        return np.sum([self.inputs[n].shape[0] for n in names])
 
     def __iter__(self):
         return self
