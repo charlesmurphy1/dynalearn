@@ -183,8 +183,8 @@ def draw_ltp(path, save):
     ax_ltp_model.set_ylabel(r"$Pr[s\to s'|\,\ell]$", fontsize=14)
     ax_dist_model.set_ylabel(r"$Pr[\ell|\,s]$", fontsize=14)
     ax_dist_model.set_title(r"Learned model", fontsize=16)
-    ax_ltp_model.set_xlim([-1, kmax + 1])
-    ax_dist_model.set_xlim([-1, kmax + 1])
+    ax_ltp_model.set_xlim([-1, N])
+    ax_dist_model.set_xlim([-1, N])
     ax_ltp_model.set_ylim([-0.1, 1.1])
 
     for in_s in states:
@@ -199,7 +199,7 @@ def draw_ltp(path, save):
         elif in_s == "R":
             p_color = color_pale["purple"]
             d_color = color_dark["purple"]
-        ax_ltp_model.plot(
+        ax_dist_model.plot(
             [-1],
             [-1],
             linestyle="None",
@@ -218,7 +218,7 @@ def draw_ltp(path, save):
         elif out_s == "R":
             marker = "v"
             linestyle = ":"
-        ax_ltp_model.plot(
+        ax_dist_model.plot(
             [-1],
             [-1],
             linestyle=linestyle,
@@ -231,7 +231,7 @@ def draw_ltp(path, save):
             label=r"$s' = {0}$".format(out_s),
         )
 
-    ax_ltp_model.legend(loc="best", fancybox=True, fontsize=12, framealpha=1, ncol=2)
+    ax_dist_model.legend(loc="best", fancybox=True, fontsize=12, framealpha=1, ncol=2)
 
     plt.tight_layout(0.1)
     fig_model.savefig(os.path.join(params["path"], params["name"] + "_ltp_" + save))

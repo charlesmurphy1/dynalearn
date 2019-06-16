@@ -13,8 +13,8 @@ dynamics="sir"
 network="ser"
 num_nodes=100
 density=0.05
-num_sample=1000
-sampling_bias=0
+num_sample=10000
+sampling_bias=1
 with_truth=0
 
 # Prepare simulation
@@ -91,7 +91,7 @@ sed -i 's,SAMPLING_BIAS,'"${sampling_bias}"',g'     ${PATH_TO_EXP}/${FILENAME}/p
 sed -i 's,WITH_TRUTH,'"${with_truth}"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 
 # python ${PATH_TO_SCRIPT}/launch_training_script.py -p ${PATH_TO_EXP}/${FILENAME}/parameters.json
-# python ${PATH_TO_SCRIPT}/launch_analytics_script.py -p ${PATH_TO_EXP}/${FILENAME}/parameters.json -n 1000
+python ${PATH_TO_SCRIPT}/launch_analytics_script.py -p ${PATH_TO_EXP}/${FILENAME}/parameters.json
 python ${PATH_TO_SCRIPT}/figure_local_transition_probability.py -p  ${PATH_TO_EXP}/${FILENAME}/parameters.json -s "ltp.png"
 python ${PATH_TO_SCRIPT}/figure_attention_coeff.py -p  ${PATH_TO_EXP}/${FILENAME}/parameters.json -s "attn.png"
 python ${PATH_TO_SCRIPT}/figure_generalization.py -p  ${PATH_TO_EXP}/${FILENAME}/parameters.json -s "gen.png"

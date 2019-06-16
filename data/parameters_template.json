@@ -12,7 +12,6 @@
         "name": "DYNAMICS",
         "params":
         {
-            "num_states": NUM_STATES,
             "infection_prob": 0.04,
             "recovery_prob": 0.08,
             "init_param": "None"
@@ -33,26 +32,26 @@
     },
  "generator":
     {
-        "name": "MarkovBinaryDynamicsGenerator",
+        "name": "DynamicsGenerator",
         "params":
         {
 
-            "T": 5,
-            "max_null_iter": 5,
-            "num_sample": NUM_SAMPLE,
-            "val_fraction": 0.1,
             "num_graphs": 1,
+            "num_sample": 10000,
+            "T": 5,
+            "val_fraction": 0.1,
+            "max_null_iter": 5,
             "with_truth": WITH_TRUTH
         }
     },
  "sampler":
     {
-        "name": "RandomSampler",
+        "name": "StateBiasedSampler",
         "params":
         {
-            "sampling_bias": SAMPLING_BIAS,
             "batch_size":32,
-            "sample_from_weight": 1
+            "sampling_bias": 1,
+            "replace":1
         }
     },
  "training":
@@ -68,5 +67,6 @@
  "np_seed": 1,
  "tf_seed": 2,
  "path": "PATH_TO_EXP",
- "name": "EXP_NAME"
+ "name": "EXP_NAME",
+ "path_to_best": "best_weights"
 }

@@ -338,7 +338,12 @@ def main():
         params = json.load(f)
 
     num_sample = int(args.num_sample)
-    experiment = u.get_experiment(params, False)
+    experiment = u.get_experiment(params)
+    experiment.load_best_weights(
+        os.path.join(
+            params["path"], params["name"] + "_" + params["path_to_best"] + ".hdf5"
+        )
+    )
 
     if experiment.model.num_nodes < 500:
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -351,15 +356,15 @@ def main():
     experiment.load_hdf5_data(h5file)
     h5file.close()
 
-    graphs = experiment.data_generator.graphs
+    graphs = experiment.generator.graphs
     states = {}
     targets = {}
     for g in graphs:
-        states[g] = experiment.data_generator.inputs[g][:num_sample]
-        targets[g] = experiment.data_generator.targets[g][:num_sample]
+        states[g] = experiment.generator.inputs[g][:num_sample]
+        targets[g] = experiment.generator.targets[g][:num_sample]
 
     model = experiment.model
-    dynamics = experiment.data_generator.dynamics_model
+    dynamics = experiment.generator.dynamics_model
 
     N = model.num_nodes
     kmin, kmax = compute_minmax_degree(graphs, N)

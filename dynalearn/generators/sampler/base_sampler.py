@@ -2,16 +2,23 @@ import numpy as np
 
 
 class Sampler(object):
-    def __init__(self, verbose=1):
+    def __init__(self, batch_size=None, verbose=1):
 
         self.verbose = verbose
-        self.graph_indexes = list()
-        self.state_indexes = dict()
-        self.sample_size = 0
-        self.num_nodes = dict()
-        self.avail_nodeset = dict()
         self.params = dict()
+        self.params["batch_size"] = batch_size
+        self.num_nodes = dict()
+        self.num_samples = dict()
         self.with_weights = False
+
+        self.graph_set = list()
+        self.avail_graph_set = list()
+
+        self.state_set = dict()
+        self.avail_state_set = dict()
+
+        self.node_set = dict()
+        self.avail_node_set = dict()
 
     def __call__(self):
 
@@ -21,51 +28,37 @@ class Sampler(object):
 
         return g_index, s_index, n_index
 
-    def update(self, graphs, inputs, targets, val_size=None, test_size=None):
+    def update(self, graphs, inputs):
         for n in graphs:
             adj = graphs[n]
-            num_samples = inputs[n].shape[0]
+            self.num_samples[n] = inputs[n].shape[0]
             self.num_nodes[n] = inputs[n].shape[1]
-            self.avail_nodeset[n] = np.arange(self.num_nodes[n]).astype("int")
-            self.sample_size += num_samples
-            self.state_indexes[n] = list(range(num_samples))
-        self.graph_indexes = list(graphs.keys())
-        self.update_weights(graphs, inputs, targets)
+
+            self.node_set[n] = np.arange(self.num_nodes[n]).astype("int")
+            self.avail_node_set[n] = np.arange(self.num_nodes[n]).astype("int")
+
+            self.state_set[n] = list(range(self.num_samples[n]))
+            self.avail_state_set[n] = list(range(self.num_samples[n]))
+
+        self.graph_set = list(graphs.keys())
+        self.avail_graph_set = list(graphs.keys())
+        self.update_weights(graphs, inputs)
 
         return
 
-    def reset_indexes(self):
-        self.graph_indexes = list(self.graphs.keys())
-        for g_index in self.graph_indexes:
-            num_sample = self.inputs[g_index].shape[0]
-            self.state_indexes[g_index] = list(range(num_sample))
-        return
+    def reset_set(self):
+        self.avail_graph_set = self.graph_set.copy()
+        for n in self.graph_set:
+            self.avail_state_set[n] = self.state_set[n].copy()
 
-    def update_indexes(self, g_index, index):
-        if index in self.state_indexes[g_index]:
-            self.state_indexes[g_index].remove(index)
-        if len(self.state_indexes[g_index]) == 0:
-            if g_index in self.graph_indexes:
-                self.graph_indexes.remove(g_index)
-
-        if len(self.graph_indexes) == 0:
-            self.reset_indexes()
-        return
-
-    def val(self):
-        self.validation_mode = True
-        self.test_mode = False
-
-    def test(self):
-        self.validation_mode = False
-        self.test_mode = True
-
-    def train(self):
-        self.validation_mode = False
-        self.test_mode = False
+    def update_set(self, g_index):
+        if len(self.avail_state_set[g_index]) == 0:
+            self.avail_graph_set.remove(g_index)
+            if len(self.avail_graph_set) == 0:
+                self.reset_set()
 
     def sample_nodes(self, g_index, num_nodes):
-        return np.random.choice(self.avail_nodeset[g_index], num_nodes, replace=False)
+        return np.random.choice(self.avail_node_set[g_index], num_nodes, replace=False)
 
     def get_graph(self):
         raise NotImplementedError()
@@ -74,7 +67,24 @@ class Sampler(object):
         raise NotImplementedError()
 
     def get_nodes(self, g_index, s_index):
-        raise NotImplementedError()
+        mask = np.zeros(self.num_nodes[g_index])
+        if self.params["batch_size"] is None or self.params["batch_size"] > len(
+            self.avail_node_set[g_index]
+        ):
+            mask[self.avail_node_set[g_index]] = 1
+            return mask
+        else:
+            p = np.zeros(self.num_nodes[g_index])
+            p[self.avail_node_set[g_index]] = 1
+            p /= np.sum(p)
+            n_index = np.random.choice(
+                self.node_set[g_index],
+                size=self.params["batch_size"],
+                p=p,
+                replace=False,
+            ).astype("int")
+            mask[n_index] = 1
+            return mask
 
-    def update_weights(self, graphs, inputs, targets):
+    def update_weights(self, graphs, inputs):
         return

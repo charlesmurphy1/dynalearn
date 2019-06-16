@@ -4,9 +4,12 @@ import time
 
 
 class MarkovBinaryDynamicsGenerator:
-    def __init__(self, graph_model, dynamics_model, shuffle=False, with_truth=False):
+    def __init__(
+        self, graph_model, dynamics_model, sampler, shuffle=False, with_truth=False
+    ):
         self.graph_model = graph_model
         self.dynamics_model = dynamics_model
+        self.sampler = sampler
         self.num_states = dynamics_model.num_states
         self.shuffle = shuffle
         self.current_graph_name = None
@@ -78,14 +81,18 @@ class MarkovBinaryDynamicsGenerator:
         return ans
 
     def _sample(self):
-        if self.shuffle:
-            g_index = np.random.choice(list(self.graph_index))
-            s_index = np.random.choice(list(self.state_index[g_index]))
-            self.state_index[g_index].remove(s_index)
-        else:
-            g_index = self.current_graph_name
-            s_index = self.state_index[g_index].pop()
+        g_index = np.random.choice(list(self.graph_index))
+        s_index = np.random.choice(list(self.state_index[g_index]))
+        self.state_index[g_index].remove(s_index)
 
+        # if self.shuffle:
+        #     g_index = np.random.choice(list(self.graph_index))
+        #     s_index = np.random.choice(list(self.state_index[g_index]))
+        #     self.state_index[g_index].remove(s_index)
+        # else:
+        #     g_index = self.current_graph_name
+        #     s_index = self.state_index[g_index].pop()
+        #
         if len(self.state_index[g_index]) == 0:
             self.graph_index.remove(g_index)
             if len(self.graph_index) == 0:

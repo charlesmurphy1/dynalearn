@@ -1,5 +1,6 @@
 import dynalearn as dl
 import numpy as np
+import os
 import tensorflow as tf
 import tensorflow.keras as keras
 import tensorflow.keras.backend as K
@@ -18,24 +19,24 @@ def get_noisy_crossentropy(noise=0):
     return noisy_crossentropy
 
 
-def get_graph(graph_name, params):
-    if "CycleGraph" == graph_name:
+def get_graph(params):
+    if "CycleGraph" == params["graph"]["name"]:
         return dl.graphs.CycleGraph(params["graph"]["params"]["N"])
-    elif "CompleteGraph" == graph_name:
+    elif "CompleteGraph" == params["graph"]["name"]:
         return dl.graphs.CompleteGraph(params["graph"]["params"]["N"])
-    elif "StarGraph" == graph_name:
+    elif "StarGraph" == params["graph"]["name"]:
         return dl.graphs.StarGraph(params["graph"]["params"]["N"])
-    elif "EmptyGraph" == graph_name:
+    elif "EmptyGraph" == params["graph"]["name"]:
         return dl.graphs.EmptyGraph(params["graph"]["params"]["N"])
-    elif "RegularGraph" == graph_name:
+    elif "RegularGraph" == params["graph"]["name"]:
         return dl.graphs.RegularGraph(
             params["graph"]["params"]["N"], params["graph"]["params"]["degree"]
         )
-    elif "ERGraph" == graph_name:
+    elif "ERGraph" == params["graph"]["name"]:
         return dl.graphs.ERGraph(
             params["graph"]["params"]["N"], params["graph"]["params"]["p"]
         )
-    elif "BAGraph" == graph_name:
+    elif "BAGraph" == params["graph"]["name"]:
         return dl.graphs.BAGraph(
             params["graph"]["params"]["N"], params["graph"]["params"]["M"]
         )
@@ -43,8 +44,8 @@ def get_graph(graph_name, params):
         raise ValueError("wrong string name for graph.")
 
 
-def get_dynamics(dynamics_name, params):
-    if "SISDynamics" == dynamics_name:
+def get_dynamics(params):
+    if "SISDynamics" == params["dynamics"]["name"]:
         if params["dynamics"]["params"]["init_param"] == "None":
             params["dynamics"]["params"]["init_param"] = None
         return dl.dynamics.SISDynamics(
@@ -52,7 +53,7 @@ def get_dynamics(dynamics_name, params):
             params["dynamics"]["params"]["recovery_prob"],
             params["dynamics"]["params"]["init_param"],
         )
-    elif "SIRDynamics" == dynamics_name:
+    elif "SIRDynamics" == params["dynamics"]["name"]:
         if params["dynamics"]["params"]["init_param"] == "None":
             params["dynamics"]["params"]["init_param"] = None
         return dl.dynamics.SIRDynamics(
@@ -64,11 +65,11 @@ def get_dynamics(dynamics_name, params):
         raise ValueError("wrong string name for dynamics.")
 
 
-def get_model(model_name, params):
-    if "LocalStatePredictor" == model_name:
+def get_model(params, dynamics):
+    if "LocalStatePredictor" == params["model"]["name"]:
         return dl.models.LocalStatePredictor(
             params["graph"]["params"]["N"],
-            params["dynamics"]["params"]["num_states"],
+            len(dynamics.state_label),
             params["model"]["params"]["n_hidden"],
             params["model"]["params"]["n_heads"],
             weight_decay=params["model"]["params"]["weight_decay"],
@@ -79,69 +80,71 @@ def get_model(model_name, params):
         raise ValueError("wrong string name for model.")
 
 
-def get_generator(gen_name, graph_model, dynamics_model, params):
+def get_sampler(params, dynamics):
+    if params["sampler"]["name"] == "SequentialSampler":
+        return dl.generators.SequentialSampler(
+            batch_size=params["sampler"]["params"]["batch_size"],
+            sample_from_weight=params["sampler"]["params"]["sample_from_weight"],
+            replace=params["sampler"]["params"]["replace"],
+        )
+    elif params["sampler"]["name"] == "RandomSampler":
+        return dl.generators.RandomSampler(
+            batch_size=params["sampler"]["params"]["batch_size"],
+            replace=params["sampler"]["params"]["replace"],
+        )
+    elif params["sampler"]["name"] == "DegreeBiasedSampler":
+        return dl.generators.DegreeBiasedSampler(
+            sampling_bias=params["sampler"]["params"]["sampling_bias"],
+            batch_size=params["sampler"]["params"]["batch_size"],
+            replace=params["sampler"]["params"]["replace"],
+        )
+
+    elif params["sampler"]["name"] == "StateBiasedSampler":
+        return dl.generators.StateBiasedSampler(
+            dynamics,
+            sampling_bias=params["sampler"]["params"]["sampling_bias"],
+            batch_size=params["sampler"]["params"]["batch_size"],
+            replace=params["sampler"]["params"]["replace"],
+        )
+    else:
+        raise ValueError("wrong string name for sampler.")
+
+
+def get_generator(graph_model, dynamics_model, sampler, params):
     if "with_truth" in params["training"]:
         with_truth = params["training"]["with_truth"]
     else:
         with_truth = False
 
-    if "MarkovBinaryDynamicsGenerator" == gen_name:
+    if "MarkovBinaryDynamicsGenerator" == params["generator"]["name"]:
         return dl.generators.MarkovBinaryDynamicsGenerator(
             graph_model, dynamics_model, shuffle=True, with_truth=with_truth
         )
-    elif "DynamicsGenerator" == gen_name:
+    elif "DynamicsGenerator" == params["generator"]["name"]:
         return dl.generators.DynamicsGenerator(
-            graph_model, dynamics_model, with_truth=False, verbose=1
+            graph_model, dynamics_model, sampler, with_truth=False, verbose=1
         )
     else:
-        raise ValueError("wrong string name for data generator.")
+        raise ValueError("wrong string name for generator.")
 
 
-def get_experiment(params, build_dataset=False, val_sample_size=None):
+def get_experiment(params):
     # Define seeds
     np.random.seed(params["np_seed"])
     tf.set_random_seed(params["tf_seed"])
 
     # Define graph
-    graph = get_graph(params["graph"]["name"], params)
+    graph = get_graph(params)
 
     # Define dynamics
-    dynamics = get_dynamics(params["dynamics"]["name"], params)
+    dynamics = get_dynamics(params)
 
     # Define data generator
-    generator = get_generator(params["generator"]["name"], graph, dynamics, params)
-    val_generator = get_generator(params["generator"]["name"], graph, dynamics, params)
-    if val_sample_size is None:
-        val_sample_size = int(params["generator"]["params"]["num_sample"] * 0.2)
-    if build_dataset:
-        print("Building dataset\n-------------------")
-        p_bar = tqdm.tqdm(
-            range(
-                params["generator"]["params"]["num_graphs"]
-                * params["generator"]["params"]["num_sample"]
-                + val_sample_size
-            )
-        )
-        for i in range(params["generator"]["params"]["num_graphs"]):
-            generator.generate(
-                params["generator"]["params"]["num_sample"],
-                params["generator"]["params"]["T"],
-                max_null_iter=params["generator"]["params"]["max_null_iter"]
-                # gamma=params["sampler"]["params"]["sampling_bias"],
-                # progress_bar=p_bar,
-            )
-            val_generator.generate(
-                val_sample_size,
-                params["generator"]["params"]["T"],
-                max_null_iter=params["generator"]["params"]["max_null_iter"]
-                # gamma=params["sampler"]["params"]["sampling_bias"],
-                # progress_bar=p_bar,
-            )
-        p_bar.close()
+    sampler = get_sampler(params, dynamics)
+    generator = get_generator(graph, dynamics, sampler, params)
 
     # Define model
-
-    model = get_model(params["model"]["name"], params)
+    model = get_model(params, dynamics)
     optimizer = keras.optimizers.get(params["training"]["optimizer"])
     if params["training"]["loss"] == "noisy_crossentropy":
         loss = get_noisy_crossentropy(noise=params["training"]["target_noise"])
@@ -149,14 +152,23 @@ def get_experiment(params, build_dataset=False, val_sample_size=None):
         loss = keras.losses.get(params["training"]["loss"])
     schedule = get_schedule(params["training"]["schedule"])
     metrics = []
-    callbacks = [keras.callbacks.LearningRateScheduler(schedule, verbose=1)]
+    callbacks = [
+        keras.callbacks.LearningRateScheduler(schedule, verbose=1),
+        keras.callbacks.ModelCheckpoint(
+            os.path.join(
+                params["path"], params["name"] + "_" + params["path_to_best"] + ".hdf5"
+            ),
+            save_best_only=True,
+            monitor="val_loss",
+            mode="min",
+        ),
+    ]
 
     # Define experiment
     experiment = dl.Experiment(
         params["name"],
         model,
         generator,
-        validation=val_generator,
         loss=loss,
         optimizer=optimizer,
         metrics=metrics,
