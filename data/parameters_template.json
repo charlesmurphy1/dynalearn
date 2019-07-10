@@ -35,13 +35,13 @@
         "name": "DynamicsGenerator",
         "params":
         {
-
+            "batch_size":32,
             "num_graphs": 1,
-            "num_sample": 10000,
+            "num_sample": NUM_SAMPLE,
             "T": 5,
-            "val_fraction": 0.1,
-            "max_null_iter": 5,
-            "with_truth": WITH_TRUTH
+            "val_fraction": 0.02,
+            "max_null_iter": 100,
+            "with_truth": 0
         }
     },
  "sampler":
@@ -49,19 +49,21 @@
         "name": "StateBiasedSampler",
         "params":
         {
-            "batch_size":32,
-            "sampling_bias": 1,
-            "replace":1
+            "sampling_bias": 0.5,
+            "validation_bias": 1,
+            "replace":0,
+            "resample":1000
         }
     },
  "training":
     {
         "optimizer": "Adam",
         "loss": "noisy_crossentropy",
-        "learning_rate": 0.001,
+        "learning_rate": 0.0005,
         "schedule": {"epoch":10, "factor":2},
         "target_noise": 0,
         "steps_per_epoch": NUM_SAMPLE,
+        "pretrain_epochs": 5,
         "epochs": 30
     },
  "np_seed": 1,

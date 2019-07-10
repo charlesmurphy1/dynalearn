@@ -8,16 +8,22 @@ import copy
 
 class DynamicsGenerator:
     def __init__(
-        self, graph_model, dynamics_model, sampler, with_truth=False, verbose=1
+        self,
+        graph_model,
+        dynamics_model,
+        sampler,
+        batch_size=None,
+        with_truth=False,
+        verbose=1,
     ):
         self.graph_model = graph_model
         self.dynamics_model = dynamics_model
         self.num_states = dynamics_model.num_states
         if sampler is None:
-            self._sampler = dl.generators.SequentialSampler()
+            self._sampler = dl.generators.RandomSampler()
         else:
             self._sampler = sampler
-
+        self.batch_size = batch_size
         self.graphs = dict()
         self.inputs = dict()
         self.targets = dict()
@@ -33,7 +39,7 @@ class DynamicsGenerator:
         return self
 
     def __next__(self):
-        g_index, s_index, n_mask = self.sampler()
+        g_index, s_index, n_mask = self.sampler(self.batch_size)
         inputs = self.inputs[g_index][s_index, :]
         adj = self.graphs[g_index]
         if self.with_truth:
@@ -106,18 +112,23 @@ class DynamicsGenerator:
         ans[np.arange(arr.shape[0]), arr.astype("int")] = 1
         return ans
 
-    def parition_generator(self, fraction):
-        gen_parition = copy.deepcopy(self)
+    def parition_generator(self, fraction, bias=1):
+        gen_partition = copy.deepcopy(self)
         for i in self.graphs:
             num_nodes = self.graphs[i].shape[0]
-            n = int(np.ceil(fraction * num_nodes))
-            nodesubset = self.sampler.sample_nodes(i, n).astype("int")
-            gen_parition.sampler.avail_node_set[i] = nodesubset
-            self.sampler.avail_node_set[i] = np.setdiff1d(
-                self.sampler.avail_node_set[i], nodesubset
-            )
+            size = int(np.ceil(fraction * num_nodes))
+            nodesubset = dict()
+            for j in range(self.inputs[i].shape[0]):
+                nodesubset = self.sampler.sample_nodes(i, j, size, bias).astype("int")
+                gen_partition.sampler.avail_node_set[i][j] = nodesubset
+                self.sampler.avail_node_set[i][j] = np.setdiff1d(
+                    self.sampler.avail_node_set[i][j], nodesubset
+                )
 
-        return gen_parition
+        self.sampler.update_weights(self.graphs, self.inputs)
+        gen_partition.sampler.update_weights(self.graphs, self.inputs)
+        gen_partition.batch_size = None
+        return gen_partition
 
     @property
     def sampler(self):

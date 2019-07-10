@@ -36,7 +36,7 @@ class EpidemicDynamics(Dynamics):
             init_n_infected = ceil(N * self.init_state)
         else:
             init_n_infected = np.random.choice(range(N))
-        nodeset = np.array(self.graph.nodes())
+        nodeset = np.array(list(self.graph.nodes()))
         ind = np.random.choice(nodeset, size=init_n_infected, replace=False)
         states = np.ones(N) * self.state_label["S"]
         states[ind] = self.state_label["I"]
@@ -46,11 +46,12 @@ class EpidemicDynamics(Dynamics):
         self.continue_simu = True
         self.states = states
 
-    def infected_degrees(self, states):
-        N = self.graph.number_of_nodes()
+    def infected_degrees(self, states, adj=None):
+        if adj is None:
+            adj = nx.to_numpy_array(self.graph)
+        N = adj.shape[0]
         if len(states.shape) < 2:
             states = states.reshape(1, N)
-        adj = nx.to_numpy_array(self.graph)
         return np.matmul(states == self.state_label["I"], adj)
 
     def get_avg_state(self):
@@ -64,9 +65,6 @@ class EpidemicDynamics(Dynamics):
         avg_states = {l: np.mean(state_dict[l]) for l in state_dict}
         std_states = {l: np.std(state_dict[l]) for l in state_dict}
         return avg_states, std_states
-
-    def get_state_from_value(self, state):
-        inv_state_label = {self.state_label[i]: i for i in self.state_label}
 
     def estimate_ltp(self, in_states, out_states):
         N = self.graph.number_of_nodes()
@@ -174,12 +172,10 @@ class SISDynamics(EpidemicDynamics):
 
         return new_states
 
-    def predict(self, states):
-        N = self.graph.number_of_nodes()
-
+    def predict(self, states, adj=None):
         beta = self.params["infection_prob"]
         alpha = self.params["recovery_prob"]
-        inf_deg = self.infected_degrees(states).squeeze()
+        inf_deg = self.infected_degrees(states, adj).squeeze()
 
         state_prob = np.zeros((states.shape[0], self.num_states))
         state_prob[states == 0, 0] = (1 - beta) ** inf_deg[states == 0]
@@ -188,17 +184,17 @@ class SISDynamics(EpidemicDynamics):
         state_prob[states == 1, 1] = 1 - alpha
         return state_prob
 
-    def ltp(self, in_states):
-        N = self.graph.number_of_nodes()
-        p_inf = 1 - (1 - self.params["infection_prob"]) ** np.arange(N)
-        p_rec = np.ones(N) * self.params["recovery_prob"]
-
-        return {
-            ("S", "S"): 1 - p_inf,
-            ("S", "I"): p_inf,
-            ("I", "S"): p_rec,
-            ("I", "I"): 1 - p_rec,
-        }
+    # def ltp(self, in_states):
+    #     N = self.graph.number_of_nodes()
+    #     p_inf = 1 - (1 - self.params["infection_prob"]) ** np.arange(N)
+    #     p_rec = np.ones(N) * self.params["recovery_prob"]
+    #
+    #     return {
+    #         ("S", "S"): 1 - p_inf,
+    #         ("S", "I"): p_inf,
+    #         ("I", "S"): p_rec,
+    #         ("I", "I"): 1 - p_rec,
+    #     }
 
 
 class SIRDynamics(EpidemicDynamics):
@@ -244,12 +240,11 @@ class SIRDynamics(EpidemicDynamics):
             self.continue_simu = False
         return new_states
 
-    def predict(self, states):
-        N = self.graph.number_of_nodes()
+    def predict(self, states, adj=None):
 
         beta = self.params["infection_prob"]
         alpha = self.params["recovery_prob"]
-        inf_deg = self.infected_degrees(states).squeeze()
+        inf_deg = self.infected_degrees(states, adj).squeeze()
 
         state_prob = np.zeros((states.shape[0], self.num_states))
         state_prob[states == 0, 0] = (1 - beta) ** inf_deg[states == 0]

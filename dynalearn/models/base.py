@@ -46,3 +46,6 @@ class DynamicsPredictor:
     @num_states.setter
     def num_states(self, num_states):
         raise ValueError("num_states cannot be changed.")
+
+    def predict(self, inputs, adj):
+        return self.model.predict([inputs, adj], steps=1)

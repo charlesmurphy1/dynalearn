@@ -1,13 +1,12 @@
 from .random_sampler import RandomSampler
-from .sampling_method import DiscreteSampling
 import numpy as np
 from time import time
 import tqdm
 
 
 class BiasedSampler(RandomSampler):
-    def __init__(self, sampling_bias=0, batch_size=None, replace=False, verbose=1):
-        super(BiasedSampler, self).__init__(batch_size, replace, verbose)
+    def __init__(self, sampling_bias=0, replace=False, verbose=1):
+        super(BiasedSampler, self).__init__(replace, verbose)
         self.params["sampling_bias"] = sampling_bias
 
     def update_weights(self, graphs, inputs):
@@ -19,16 +18,14 @@ class BiasedSampler(RandomSampler):
         counts = dict()
         for n in graphs:
             adj = graphs[n]
-            for state in inputs[n]:
+            for s in inputs[n]:
                 t0 = time()
-                summaries = self.summarize(adj, state)
-                # print(summaries)
-                for s in summaries:
-                    # s = tuple(s)
-                    if s in counts:
-                        counts[s] += 1
+                summaries = self.summarize(adj, s)
+                for sum in summaries:
+                    if sum in counts:
+                        counts[sum] += 1
                     else:
-                        counts[s] = 1
+                        counts[sum] = 1
                 t1 = time()
                 if self.verbose:
                     p_bar.set_description(
@@ -40,57 +37,47 @@ class BiasedSampler(RandomSampler):
             nn = np.sum([inputs[n].shape[0] for n in graphs])
             p_bar = tqdm.tqdm(range(nn))
 
-        # Update graph and node weights
         self.node_weights = dict()
         self.state_weights = dict()
         self.graph_weights = dict()
         for n in graphs:
             adj = graphs[n]
-            self.node_weights[n] = np.zeros(inputs[n].shape)
-            for i, state in enumerate(inputs[n]):
+            self.node_weights[n] = dict()
+            self.state_weights[n] = dict()
+            for i, s in enumerate(inputs[n]):
                 t0 = time()
-                summary = self.summarize(adj, state)
-                for j, s in enumerate(summary):
-                    self.node_weights[n][i, j] = counts[s] ** (
+                summaries = self.summarize(adj, s)
+                self.node_weights[n][i] = np.zeros(self.num_nodes[n])
+                for j, sum in zip(self.avail_node_set[n][i], summaries):
+                    self.node_weights[n][i][j] = counts[sum] ** (
                         -self.params["sampling_bias"]
                     )
+                self.state_weights[n][i] = np.sum(self.node_weights[n][i])
                 t1 = time()
                 if self.verbose:
                     p_bar.set_description(
                         "Update weights - " + str(round(t1 - t0, 5)) + "s"
                     )
                     p_bar.update()
-            self.state_weights[n] = {
-                i: np.sum(self.node_weights[n][int(i), :])
-                for i in self.avail_state_set[n]
-            }
             self.graph_weights[n] = np.sum(
-                [self.node_weights[n][int(i), :] for i in self.avail_state_set[n]]
+                [self.state_weights[n][i] for i in self.state_set[n]]
             )
-        if self.verbose:
-            p_bar.close()
 
     def summarize(self, adj, state):
         raise NotImplementedError()
 
 
 class DegreeBiasedSampler(BiasedSampler):
-    def __init__(self, sampling_bias=0, batch_size=None, replace=False, verbose=1):
-        super(DegreeBiasedSampler, self).__init__(
-            sampling_bias, batch_size, replace, verbose
-        )
+    def __init__(self, sampling_bias=0, replace=False, verbose=1):
+        super(DegreeBiasedSampler, self).__init__(sampling_bias, replace, verbose)
 
     def summarize(self, adj, state):
         return np.sum(adj, axis=0)
 
 
 class StateBiasedSampler(BiasedSampler):
-    def __init__(
-        self, dynamics, sampling_bias=0, batch_size=None, replace=False, verbose=1
-    ):
-        super(StateBiasedSampler, self).__init__(
-            sampling_bias, batch_size, replace, verbose
-        )
+    def __init__(self, dynamics, sampling_bias=0, replace=False, verbose=1):
+        super(StateBiasedSampler, self).__init__(sampling_bias, replace, verbose)
         self.dynamics_states = list(dynamics.state_label.values())
 
     def summarize(self, adj, state):
