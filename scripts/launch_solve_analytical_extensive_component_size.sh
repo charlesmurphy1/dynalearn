@@ -13,7 +13,7 @@ cat <<END_OF_SCRIPT > script1.pbs
 # Dynalearn submission script.
 # ---------------------------------------------------------------------
 #SBATCH --job-name=NAME1_extensive_component_size
-#SBATCH --account=def-murphy9
+#SBATCH --account=def-aallard
 #SBATCH --time=12:00:00
 #SBATCH --output=log_files/analytical_extensive_component_size/NAME1/%x-%j.txt
 #SBATCH --array=1-NBTASKS
@@ -145,4 +145,3 @@ fi
 
 # Deletes the script.
 rm script1.pbs
-

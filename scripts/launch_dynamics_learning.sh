@@ -69,7 +69,7 @@ else
 fi
 
 making_dir_if_exist "${PATH_TO_EXP}/${FILENAME}"
-cp "./parameters_template.json" "${PATH_TO_EXP}/${FILENAME}/parameters.json"
+cp "$PATH_TO_SCRIPT/parameters_template.json" "${PATH_TO_EXP}/${FILENAME}/parameters.json"
 
 if [[ ${network} = "ser" ]]; then
     sed -i 's,NETWORK,'"ERGraph"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
@@ -104,7 +104,7 @@ sed -i 's,NUM_SAMPLE,'"${num_sample}"',g'     ${PATH_TO_EXP}/${FILENAME}/paramet
 sed -i 's,PATH_TO_EXP,'"${PATH_TO_EXP}/${FILENAME}"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 sed -i 's,EXP_NAME,'"${network}_${dynamics}_${FILENAME}"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 
-python ${PATH_TO_SCRIPT}/launch_training_script.py -p ${PATH_TO_EXP}/${FILENAME}/parameters.json
+python ${PATH_TO_SCRIPT}/launch_training.py -p ${PATH_TO_EXP}/${FILENAME}/parameters.json
 
 # ---------------------------------------------------------------------
 echo "Job finished with exit code \$? at: \`date\`"
