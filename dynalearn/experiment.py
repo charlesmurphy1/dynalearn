@@ -32,6 +32,7 @@ class Experiment:
         self.test_generator = None
         self.graph_model = self.generator.graph_model
         self.dynamics_model = self.generator.dynamics_model
+        self.metrics = {}
 
         self.loss = loss
         self.optimizer = optimizer
@@ -106,12 +107,38 @@ class Experiment:
 
         return history
 
+    def compute_metrics(self):
+        for k, m in self.metrics.items():
+            m.compute(self)
+        return
+
     def save_weights(self, filepath, overwrite=True):
         self.model.model.save_weights(filepath)
 
     def load_weights(self, filepath):
         self.model.model.load_weights(filepath)
         return 0
+
+    def save_metrics(self, filepath, overwrite=True):
+        h5file = h5py.File(filepath)
+        if "metrics" in h5file:
+            if not overwrite:
+                return
+            else:
+                del h5file["metrics"]
+        h5file.create_group("metrics")
+        h5group = h5file["metrics"]
+        for k, m in self.metrics.items():
+            m.save(h5group)
+        return
+
+    def load_metrics(self, filepath):
+        h5file = h5py.File(filepath)
+        if "metrics" in h5file:
+            for k, m in self.metrics.items():
+                m.load(h5file["metrics"])
+
+        return
 
     def save_history(self, filepath, overwrite=True):
         h5file = h5py.File(filepath)
@@ -120,8 +147,10 @@ class Experiment:
                 return
             else:
                 del h5file["history"]
+        h5file.create_group("history")
+        h5group = h5file["history"]
         for name, value in self.history.items():
-            h5file.create_dataset("history/" + name, data=value, fillvalue=np.nan)
+            h5group.create_dataset(name, data=value, fillvalue=np.nan)
         h5file.close()
 
     def load_history(self, filepath):
@@ -145,19 +174,23 @@ class Experiment:
             else:
                 h5file.close()
                 return
+        h5file.create_group("data")
+        h5group = h5file["data"]
 
         for g_name in self.generator.graphs:
             adj = self.generator.graphs[g_name]
             inputs = self.generator.inputs[g_name]
             targets = self.generator.targets[g_name]
+            gt_targets = self.generator.gt_targets[g_name]
             if g_name in h5file:
                 if overwrite:
                     del h5file[g_name]
                 else:
                     continue
-            h5file.create_dataset(g_name + "/adj_matrix", data=adj)
-            h5file.create_dataset(g_name + "/inputs", data=inputs)
-            h5file.create_dataset(g_name + "/targets", data=targets)
+            h5group.create_dataset(g_name + "/adj_matrix", data=adj)
+            h5group.create_dataset(g_name + "/inputs", data=inputs)
+            h5group.create_dataset(g_name + "/targets", data=targets)
+            h5group.create_dataset(g_name + "/gt_targets", data=gt_targets)
 
             # Training set
             avail_node_set = np.array(
@@ -183,16 +216,16 @@ class Experiment:
                 ]
             )
             graph_weights = self.generator.sampler.graph_weights[g_name]
-            h5file.create_dataset(
+            h5group.create_dataset(
                 g_name + "/training_set/avail_node_set", data=avail_node_set
             )
-            h5file.create_dataset(
+            h5group.create_dataset(
                 g_name + "/training_set/node_weights", data=node_weights
             )
-            h5file.create_dataset(
+            h5group.create_dataset(
                 g_name + "/training_set/state_weights", data=state_weights
             )
-            h5file.create_dataset(
+            h5group.create_dataset(
                 g_name + "/training_set/graph_weights", data=graph_weights
             )
 
@@ -225,16 +258,16 @@ class Experiment:
                     ]
                 )
                 graph_weights = self.val_generator.sampler.graph_weights[g_name]
-                h5file.create_dataset(
+                h5group.create_dataset(
                     g_name + "/validation_set/avail_node_set", data=avail_node_set
                 )
-                h5file.create_dataset(
+                h5group.create_dataset(
                     g_name + "/validation_set/node_weights", data=node_weights
                 )
-                h5file.create_dataset(
+                h5group.create_dataset(
                     g_name + "/validation_set/state_weights", data=state_weights
                 )
-                h5file.create_dataset(
+                h5group.create_dataset(
                     g_name + "/validation_set/graph_weights", data=graph_weights
                 )
             if self.test_generator is not None:
@@ -270,29 +303,29 @@ class Experiment:
                     ]
                 )
                 graph_weights = self.test_generator.sampler.graph_weights[g_name]
-                h5file.create_dataset(
+                h5group.create_dataset(
                     g_name + "/test_set/avail_node_set", data=avail_node_set
                 )
-                h5file.create_dataset(
+                h5group.create_dataset(
                     g_name + "/test_set/node_weights", data=node_weights
                 )
-                h5file.create_dataset(
+                h5group.create_dataset(
                     g_name + "/test_set/state_weights", data=state_weights
                 )
-                h5file.create_dataset(
+                h5group.create_dataset(
                     g_name + "/test_set/graph_weights", data=graph_weights
                 )
 
         h5file.close()
 
     def load_data(self, path):
-
         h5file = h5py.File(path)
         if "data" in h5file:
             for k, v in h5file["data"].items():
                 self.generator.graphs[k] = v["adj_matrix"][...]
                 self.generator.inputs[k] = v["inputs"][...]
                 self.generator.targets[k] = v["targets"][...]
+                self.generator.gt_targets[k] = v["gt_targets"][...]
 
                 avail_node_set = v["training_set/avail_node_set"][...]
                 node_weights = v["training_set/node_weights"][...]

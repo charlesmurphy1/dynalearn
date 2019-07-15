@@ -1,7 +1,7 @@
 #!/bin/bash
 
-PATH_TO_SCRIPT="/home/charles/Documents/ulaval/doctorat/projects/dynalearn/scripts"
-PATH_TO_EXP="/home/charles/Documents/ulaval/doctorat/projects/dynalearn/data/sir/dense-erdos-renyi"
+PATH_TO_SCRIPT="${HOME}/Documents/ulaval/doctorat/projects/dynalearn/scripts"
+PATH_TO_EXP="${HOME}/Documents/ulaval/doctorat/projects/dynalearn/data/sir/dense-erdos-renyi"
 
 num_nodes=(1000)
 num_sample=(100000)

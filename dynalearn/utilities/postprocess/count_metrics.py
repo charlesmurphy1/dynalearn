@@ -91,6 +91,8 @@ class CountMetrics(Metrics):
 
         if self.verbose:
             num_iter = np.sum([inputs[g].shape[0] for g in graphs])
+            if self.num_points < num_iter:
+                num_iter = self.num_points
             p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
 
         for g in graphs:

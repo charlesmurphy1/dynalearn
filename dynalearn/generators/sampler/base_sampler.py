@@ -73,11 +73,9 @@ class Sampler(object):
     def get_state(self, g_index):
         raise NotImplementedError()
 
-    def get_nodes(self, g_index, s_index, batch_size=None):
+    def get_nodes(self, g_index, s_index, batch_size=-1):
         mask = np.zeros(self.num_nodes[g_index])
-        if batch_size is None or batch_size > len(
-            self.avail_node_set[g_index][s_index]
-        ):
+        if batch_size == -1 or batch_size > len(self.avail_node_set[g_index][s_index]):
             mask[self.avail_node_set[g_index][s_index]] = 1
             return mask
         else:

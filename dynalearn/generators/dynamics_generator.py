@@ -12,12 +12,13 @@ class DynamicsGenerator:
         graph_model,
         dynamics_model,
         sampler,
-        batch_size=None,
+        batch_size=-1,
         with_truth=False,
         verbose=1,
     ):
         self.graph_model = graph_model
         self.dynamics_model = dynamics_model
+        self.num_nodes = graph_model.num_nodes
         self.num_states = dynamics_model.num_states
         if sampler is None:
             self._sampler = dl.generators.RandomSampler()
@@ -49,7 +50,7 @@ class DynamicsGenerator:
         weights = n_mask
         return [inputs, adj], targets, weights
 
-    def generate(self, num_sample, T, max_null_iter=100):
+    def generate(self, num_sample, T, max_null_iter=100, shuffle=True):
 
         sample = 0
         name, graph = self.graph_model.generate()
@@ -94,10 +95,15 @@ class DynamicsGenerator:
         if self.verbose:
             p_bar.close()
 
+        if shuffle:
+            index = np.random.permutation(num_sample)
+        else:
+            index = np.arange(num_sample)
+
         self.graphs[name] = adj
-        self.inputs[name] = inputs
-        self.targets[name] = targets
-        self.gt_targets[name] = gt_targets
+        self.inputs[name] = inputs[index, :]
+        self.targets[name] = targets[index, :]
+        self.gt_targets[name] = gt_targets[index, :]
         self.sampler.update(self.graphs, self.inputs)
 
     def _update_states(self):
@@ -127,7 +133,7 @@ class DynamicsGenerator:
 
         self.sampler.update_weights(self.graphs, self.inputs)
         gen_partition.sampler.update_weights(self.graphs, self.inputs)
-        gen_partition.batch_size = None
+        gen_partition.batch_size = -1
         return gen_partition
 
     @property

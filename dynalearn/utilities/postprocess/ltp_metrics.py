@@ -58,11 +58,11 @@ class LTPMetrics(Metrics):
         val_nodes=[],
         test_nodes=[],
     ):
-        infected_deg = np.array(
+        state_deg = np.array(
             [np.matmul(adj, input == state_label[s]) for s in state_label]
         ).T
         for i in range(input.shape[0]):
-            s = (input[i], *list(infected_deg[i]))
+            s = (input[i], *list(state_deg[i]))
             pred = predictions[i].reshape(1, -1)
 
             if i in train_nodes:
@@ -108,7 +108,9 @@ class LTPMetrics(Metrics):
                 n[g] = inputs[g].shape[0]
 
         if self.verbose:
-            num_iter = np.sum([inputs[g].shape[0] for g in graphs])
+            num_iter = int(np.sum([inputs[g].shape[0] for g in graphs]))
+            if self.num_points < num_iter:
+                num_iter = self.num_points
             p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
 
         for g in graphs:

@@ -37,6 +37,8 @@ class JSDGeneralizationMetrics(Metrics):
     def compute(self, experiment):
 
         N = max(self.degree_class) + 1
+        prev_N = experiment.model.num_nodes
+        experiment.model.num_nodes = N
         state_label = experiment.dynamics_model.state_label
         summaries = {}
         d = len(state_label)
@@ -77,6 +79,7 @@ class JSDGeneralizationMetrics(Metrics):
         self.data["jsd"] = np.array(
             [summaries[tuple(s)] for s in self.data["summaries"]]
         )
+        experiment.model.num_nodes = prev_N
 
 
 class ModelJSDGenMetrics(JSDGeneralizationMetrics):

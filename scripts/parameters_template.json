@@ -14,6 +14,8 @@
         {
             "infection_prob": 0.04,
             "recovery_prob": 0.08,
+            "mu": 0.5,
+            "beta": 10,
             "init_param": "None"
         }
     },
@@ -22,8 +24,8 @@
         "name": "LocalStatePredictor",
         "params":
         {
-            "n_hidden": [32],
-            "n_heads": [1],
+            "n_hidden": [32, 32],
+            "n_heads": [4, 4],
             "dropout": 0,
             "weight_decay": 0.0001,
             "bn_epsilon": 0.001,
@@ -35,11 +37,11 @@
         "name": "DynamicsGenerator",
         "params":
         {
-            "batch_size":32,
+            "batch_size": 64,
             "num_graphs": 1,
             "num_sample": NUM_SAMPLE,
-            "T": 5,
-            "val_fraction": 0.02,
+            "T": 2,
+            "val_fraction": 0.01,
             "max_null_iter": 100,
             "with_truth": 0
         }
@@ -50,7 +52,7 @@
         "params":
         {
             "sampling_bias": 0.5,
-            "validation_bias": 1,
+            "validation_bias": 0.8,
             "replace":0,
             "resample":1000
         }
@@ -63,8 +65,9 @@
         "schedule": {"epoch":10, "factor":2},
         "target_noise": 0,
         "steps_per_epoch": NUM_SAMPLE,
+        "validation_steps": 1000,
         "pretrain_epochs": 5,
-        "epochs": 30
+        "epochs": 25
     },
  "np_seed": 1,
  "tf_seed": 2,

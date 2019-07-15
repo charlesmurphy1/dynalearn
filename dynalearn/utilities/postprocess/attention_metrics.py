@@ -1,5 +1,6 @@
 from .base_metrics import Metrics
 from dynalearn.models.layers import GraphAttention
+from itertools import product
 import numpy as np
 from scipy.stats import iqr, gaussian_kde
 import tqdm
@@ -9,9 +10,10 @@ import matplotlib.pyplot as plt
 
 
 class AttentionMetrics(Metrics):
-    def __init__(self, num_points=20, verbose=1):
+    def __init__(self, num_points=100, max_num_sample=10000, verbose=1):
         super(AttentionMetrics, self).__init__(verbose)
         self.num_points = num_points
+        self.max_num_sample = max_num_sample
         self.num_layers = 0
 
     def _get_all_attn_layers(self, experiment):
@@ -35,23 +37,22 @@ class AttentionMetrics(Metrics):
         width=None,
         kde=False,
         rug=False,
-        bin=False,
+        hist=False,
         box=True,
     ):
         if ax is None:
             ax = plt.gca()
-
         samples = self.data[f"layer{layer}/{node_state}_{neighbor_state}"]
         if width is None:
             if iqr(samples) > 0:
                 width = 2 * iqr(samples) / samples.shape[0] ** (1.0 / 3)
             else:
                 width = 1e-2
-        if bin:
+        if hist:
             bins = np.arange(np.min(samples), np.max(samples), width)
-            hist, bins = np.histogram(samples, bins=bins, density=True)
+            histo, bins = np.histogram(samples, bins=bins, density=True)
             x_hist = 0.5 * (bins[1:] + bins[:-1])
-            ax.bar(x_hist, hist, width=width, color=color)
+            ax.bar(x_hist, histo, width=width, color=color)
 
         if rug:
             ax.plot(samples, [0.01] * len(samples), "|", color="k")
@@ -66,17 +67,17 @@ class AttentionMetrics(Metrics):
 
         return ax
 
-    def summarize(self, summaries, prediction, state_label, adj, input):
+    def summarize(self, summaries, prediction, state_label, adj, inputs):
         infected_deg = np.array(
-            [np.matmul(adj, input == state_label[s]) for s in state_label]
+            [np.matmul(adj, inputs == state_label[s]) for s in state_label]
         ).T
-        for i in range(input.shape[0]):
-            for j in range(input.shape[0]):
-                s = (input[i], input[j])
-            if s in summaries:
+
+        for i, j in zip(*np.nonzero(adj)):
+            s = (inputs[i], inputs[j])
+            if len(summaries[s]) < self.max_num_sample:
                 summaries[s] = np.append(summaries[s], prediction[i, j])
             else:
-                summaries[s] = np.array([prediction[i, j]])
+                continue
         return summaries
 
     def compute(self, experiment):
@@ -84,7 +85,6 @@ class AttentionMetrics(Metrics):
         inputs = experiment.generator.inputs
         state_label = experiment.dynamics_model.state_label
 
-        summaries = {}
         n = {}
         for g in graphs:
             if self.num_points < inputs[g].shape[0]:
@@ -99,9 +99,15 @@ class AttentionMetrics(Metrics):
             p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
 
         for l, layer in enumerate(attention_layers):
+            summaries = {
+                (i, j): np.array([])
+                for i, j in product(state_label.values(), state_label.values())
+            }
             for g in graphs:
                 adj = graphs[g]
                 for t in range(n[g]):
+                    if self.is_summaries_full(summaries):
+                        break
                     x = inputs[g][t]
                     predictions = layer.predict([x, adj], steps=1)
                     summaries = self.summarize(
@@ -117,3 +123,9 @@ class AttentionMetrics(Metrics):
         if self.verbose:
             p_bar.close()
         self.num_layers = len(attention_layers)
+
+    def is_summaries_full(self, summaries):
+        for s in summaries:
+            if not len(summaries[s]) > self.max_num_sample:
+                return False
+        return True

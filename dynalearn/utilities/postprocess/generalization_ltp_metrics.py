@@ -45,6 +45,9 @@ class LTPGeneralizationMetrics(Metrics):
     def compute(self, experiment):
 
         N = max(self.degree_class) + 1
+        prev_N = experiment.model.num_nodes
+        experiment.model.num_nodes = N
+
         state_label = experiment.dynamics_model.state_label
         d = len(state_label)
         summaries = {}
@@ -63,11 +66,11 @@ class LTPGeneralizationMetrics(Metrics):
                 neighbors_states = np.concatenate(
                     [i * np.ones(l) for i, l in enumerate(s)]
                 )
-                input = np.zeros(max(self.degree_class) + 1)
-                input[1 : k + 1] = neighbors_states
+                inputs = np.zeros(max(self.degree_class) + 1)
+                inputs[1 : k + 1] = neighbors_states
                 for in_s, in_l in state_label.items():
-                    input[0] = in_l
-                    summaries[(in_l, *s)] = self.get_metric(experiment, input, adj)
+                    inputs[0] = in_l
+                    summaries[(in_l, *s)] = self.get_metric(experiment, inputs, adj)
                     if self.verbose:
                         p_bar.update()
 
@@ -78,6 +81,7 @@ class LTPGeneralizationMetrics(Metrics):
         self.data["ltp"] = np.array(
             [summaries[tuple(s)] for s in self.data["summaries"]]
         )
+        experiment.model.num_nodes = prev_N
 
 
 class DynamicsLTPGenMetrics(LTPGeneralizationMetrics):

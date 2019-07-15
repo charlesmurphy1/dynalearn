@@ -21,6 +21,7 @@ echo "This is job \$SLURM_ARRAY_TASK_ID out of \$SLURM_ARRAY_TASK_COUNT jobs."
 echo ""
 # ---------------------------------------------------------------------
 
+
 calc(){ awk "BEGIN { print "$*" }"; }
 
 making_dir_if_exist () {
@@ -30,16 +31,23 @@ making_dir_if_exist () {
     fi
 }
 
-dynamics="sir"
+dynamics="st-sir"
 network="ba"
 num_nodes=1000
-# density=0.05
+# density=0.005
 density=2
 num_sample=10000
 
 # Prepare simulation
-PATH_TO_EXP="$HOME/scratch/dynalearn/data"
-PATH_TO_SCRIPT="$HOME/packages/dynalearn/scripts"
+if [ "$HOSTNAME" == "Hector" ] || [ "$HOSTNAME" == "Bernard-Jr" ];
+then
+    PATH_TO_EXP="$HOME/Documents/ulaval/doctorat/projects/dynalearn/data"
+    PATH_TO_SCRIPT="$HOME/Documents/ulaval/doctorat/projects/dynalearn/scripts"
+else
+    source ~/pyenv/bin/activate
+    PATH_TO_EXP="$HOME/scratch/dynalearn/data"
+    PATH_TO_SCRIPT="$HOME/packages/dynalearn/scripts"
+fi
 FILENAME="n${num_nodes}_d${num_sample}"
 
 if [[ ${dynamics} = "sir" ]]; then
@@ -48,7 +56,12 @@ if [[ ${dynamics} = "sir" ]]; then
 elif [[ ${dynamics} = "sis" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/sis"
     making_dir_if_exist ${PATH_TO_EXP}
-
+elif [[ ${dynamics} = "st-sir" ]]; then
+    PATH_TO_EXP="${PATH_TO_EXP}/st-sir"
+    making_dir_if_exist ${PATH_TO_EXP}
+elif [[ ${dynamics} = "st-sis" ]]; then
+    PATH_TO_EXP="${PATH_TO_EXP}/st-sis"
+    making_dir_if_exist ${PATH_TO_EXP}
 else
     echo "Wrong dynamics type"
     exit 1
@@ -95,6 +108,10 @@ if [[ ${dynamics} = "sir" ]]; then
     sed -i 's,DYNAMICS,'"SIRDynamics"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 elif [[ ${dynamics} = "sis" ]]; then
     sed -i 's,DYNAMICS,'"SISDynamics"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+elif [[ ${dynamics} = "st-sir" ]]; then
+    sed -i 's,DYNAMICS,'"SoftThresholdSIR"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+elif [[ ${dynamics} = "st-sis" ]]; then
+    sed -i 's,DYNAMICS,'"SoftThresholdSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 else
     echo "Wrong dynamics type"
     exit 1

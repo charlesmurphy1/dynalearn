@@ -54,17 +54,10 @@ plt.rc("text", usetex=True)
 plt.rc("font", family="serif")
 
 
-def train_model(params):
-    print("-------------------")
-    print("Building experiment")
-    print("-------------------")
-    experiment = get_experiment(params)
+def train_model(params, experiment):
     experiment.model.model.summary()
     schedule = get_schedule(params["training"]["schedule"])
-    metrics = [
-        dl.utilities.metrics.model_entropy,
-        dl.utilities.metrics.approx_kl_divergence,
-    ]
+    metrics = [dl.utilities.metrics.model_entropy]
     callbacks = [
         ks.callbacks.LearningRateScheduler(schedule, verbose=1),
         ks.callbacks.ModelCheckpoint(
@@ -78,9 +71,7 @@ def train_model(params):
             verbose=1,
         ),
     ]
-    N = experiment.model.num_nodes
-    if N < 500:
-        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    data_filename = os.path.join(params["path"], params["name"] + ".h5")
 
     print("----------------")
     print("Building dataset")
@@ -94,7 +85,6 @@ def train_model(params):
     )
     counts_metrics = dl.utilities.CountMetrics()
     counts_metrics.compute(experiment)
-    counts_metrics.save(os.path.join(params["path"], params["name"] + ".h5"))
 
     if experiment.val_generator is not None:
         print("Overlap train-val: " + str(counts_metrics.overlap("train", "val")))
@@ -105,23 +95,25 @@ def train_model(params):
     print("------------")
     print("Pre-Training")
     print("------------")
-    experiment.train_model(
-        params["training"]["pretrain_epochs"],
-        params["training"]["steps_per_epoch"],
-        validation_steps=params["training"]["steps_per_epoch"],
-        learning_rate=params["training"]["learning_rate"],
-    )
+    if params["training"]["pretrain_epochs"] > 0:
+        experiment.train_model(
+            params["training"]["pretrain_epochs"],
+            params["training"]["steps_per_epoch"],
+            validation_steps=params["training"]["validation_steps"],
+            learning_rate=params["training"]["learning_rate"],
+        )
     print("--------")
     print("Training")
     print("--------")
-    experiment.train_model(
-        params["training"]["epochs"],
-        params["training"]["steps_per_epoch"],
-        validation_steps=params["training"]["steps_per_epoch"],
-        metrics=metrics,
-        callbacks=callbacks,
-        learning_rate=params["training"]["learning_rate"],
-    )
+    if params["training"]["epochs"] > 0:
+        experiment.train_model(
+            params["training"]["epochs"],
+            params["training"]["steps_per_epoch"],
+            validation_steps=params["training"]["steps_per_epoch"],
+            metrics=metrics,
+            callbacks=callbacks,
+            learning_rate=params["training"]["learning_rate"],
+        )
 
     print("-----------")
     print("Saving data")
@@ -129,75 +121,68 @@ def train_model(params):
     experiment.save_weights(
         os.path.join(params["path"], params["name"] + "_weights.h5")
     )
-    experiment.save_data(os.path.join(params["path"], params["name"] + ".h5"))
-    experiment.save_history(os.path.join(params["path"], params["name"] + ".h5"))
-    return experiement
+    experiment.save_data(data_filename)
+    experiment.save_history(data_filename)
+    return experiment
 
 
-def analyze_experiment(params, experiement):
+def analyze_model(params, experiment, metrics):
     print("-----------------")
     print("Computing metrics")
     print("-----------------")
-    fig_path = os.path.join(params["path"], "figures")
-    if not os.path.exists(fig_path):
-        os.mkdir(fig_path)
+    data_filename = os.path.join(params["path"], params["name"] + ".h5")
+    experiment.metrics = metrics
+    experiment.compute_metrics()
+    experiment.save_metrics(data_filename)
+    return experiment
 
-    # LTP metrics
-    gt_metrics = dl.utilities.DynamicsLTPMetrics()
-    gt_metrics.compute(experiment)
-    gt_metrics.save(os.path.join(params["path"], params["name"] + ".h5"))
 
-    m_metrics = dl.utilities.ModelLTPMetrics()
-    m_metrics.compute(experiment)
-    m_metrics.save(os.path.join(params["path"], params["name"] + ".h5"))
+def make_figures(params, experiment):
+    if not os.path.exists(os.path.join(params["path"], "figures")):
+        os.mkdir(os.path.join(params["path"], "figures"))
+
     make_ltp_metrics_fig(
-        experiment, params, gt_metrics, m_metrics, counts_metrics, "model_ltp.png"
+        experiment,
+        params,
+        experiment.metrics["DynamicsLTPMetrics"],
+        experiment.metrics["ModelLTPMetrics"],
+        experiment.metrics["CountMetrics"],
+        "model_ltp.png",
+    )
+    make_ltp_metrics_fig(
+        experiment,
+        params,
+        experiment.metrics["DynamicsLTPMetrics"],
+        experiment.metrics["EstimatorLTPMetrics"],
+        experiment.metrics["CountMetrics"],
+        "estimator_ltp.png",
     )
 
-    e_metrics = dl.utilities.EstimatorLTPMetrics()
-    e_metrics.compute(experiment)
-    e_metrics.save(os.path.join(params["path"], params["name"] + ".h5"))
-    make_ltp_metrics_fig(
-        experiment, params, gt_metrics, e_metrics, counts_metrics, "estimator_ltp.png"
-    )
-
-    # Generalization LTP
-    degree_class = np.unique(np.linspace(0, 10, 10).astype("int"))
-    experiment.model.num_nodes = np.max(degree_class) + 1
-
-    gt_metrics = dl.utilities.DynamicsLTPGenMetrics(degree_class)
-    gt_metrics.compute(experiment)
-    gt_metrics.save(os.path.join(params["path"], params["name"] + ".h5"))
-
-    m_metrics = dl.utilities.ModelLTPGenMetrics(degree_class)
-    m_metrics.compute(experiment)
-    m_metrics.save(os.path.join(params["path"], params["name"] + ".h5"))
     make_gltp_metrics_fig(
-        experiment, params, gt_metrics, m_metrics, counts_metrics, "model_gltp.png"
+        experiment,
+        params,
+        experiment.metrics["DynamicsLTPGenMetrics"],
+        experiment.metrics["ModelLTPGenMetrics"],
+        experiment.metrics["CountMetrics"],
+        "gltp.png",
     )
-    experiment.model.num_nodes = N
 
-    # Generalization JSD
-    degree_class = np.unique(np.linspace(0, 10, 10).astype("int"))
-    experiment.model.num_nodes = np.max(degree_class) + 1
-
-    m_metrics = dl.utilities.ModelJSDGenMetrics(degree_class)
-    m_metrics.compute(experiment)
-    m_metrics.save(os.path.join(params["path"], params["name"] + ".h5"))
-
-    b_metrics = dl.utilities.BaseJSDGenMetrics(degree_class)
-    b_metrics.compute(experiment)
-    b_metrics.save(os.path.join(params["path"], params["name"] + ".h5"))
     make_gdiv_metrics_fig(
-        experiment, params, m_metrics, b_metrics, counts_metrics, "model_div.png"
+        experiment,
+        params,
+        experiment.metrics["ModelJSDGenMetrics"],
+        experiment.metrics["BaseJSDGenMetrics"],
+        experiment.metrics["CountMetrics"],
+        "div.png",
     )
-    experiment.model.num_nodes = N
 
-    # Attention coefficients
-    att = dl.utilities.AttentionMetrics()
-    att.compute(experiment)
-    att.save(os.path.join(params["path"], params["name"] + ".h5"))
-    make_attn_metrics_fig(experiment, params, att, "model_attn.png")
+    make_attn_metrics_fig(
+        experiment, params, experiment.metrics["AttentionMetrics"], "attn.png"
+    )
+
+    make_loss_metrics_fig(
+        experiment, params, experiment.metrics["LossMetrics"], "loss.png"
+    )
 
 
 def make_ltp_metrics_fig(experiment, params, gt_metrics, metrics, counts, filename):
@@ -338,16 +323,6 @@ def make_gltp_metrics_fig(experiment, params, gt_metrics, metrics, counts, filen
         for j, out_s in enumerate(state_label.values()):
             mk = m_list[j]
             ls = l_list[j]
-            gt_metrics.display(
-                in_s,
-                out_s,
-                1,
-                ax=ax_ltp,
-                fill=None,
-                color=p_color,
-                marker="None",
-                linestyle=ls,
-            )
             metrics.display(
                 in_s,
                 out_s,
@@ -357,6 +332,16 @@ def make_gltp_metrics_fig(experiment, params, gt_metrics, metrics, counts, filen
                 color=d_color,
                 marker=mk,
                 linestyle="None",
+            )
+            gt_metrics.display(
+                in_s,
+                out_s,
+                1,
+                ax=ax_ltp,
+                fill=None,
+                color=p_color,
+                marker="None",
+                linestyle=ls,
             )
     handles = []
     for i, in_s in enumerate(state_label.keys()):
@@ -501,7 +486,7 @@ def make_attn_metrics_fig(experiment, params, metrics, filename):
                     ax=axes[i, j],
                     kde=False,
                     rug=True,
-                    bin=False,
+                    hist=False,
                     box=False,
                 )
                 if j == 0:
@@ -516,12 +501,103 @@ def make_attn_metrics_fig(experiment, params, metrics, filename):
     return
 
 
+def make_loss_metrics_fig(experiment, params, metrics, filename):
+
+    for i, ds in enumerate(metrics.datasets):
+        fig, ax = plt.subplots(1, 1)
+        metrics.display(
+            "approx_loss",
+            ds,
+            ax=ax,
+            color=cd_list[0],
+            kde_linestyle="-",
+            rug_pos=-0.02,
+            kde=True,
+            rug=True,
+            hist=True,
+        )
+        metrics.display(
+            "exact_loss",
+            ds,
+            ax=ax,
+            color=cd_list[1],
+            kde_linestyle="-",
+            rug_pos=-0.04,
+            kde=True,
+            rug=True,
+            hist=True,
+        )
+        metrics.display(
+            "diff_loss",
+            ds,
+            ax=ax,
+            color=cd_list[2],
+            kde_linestyle="-",
+            rug_pos=-0.06,
+            kde=True,
+            rug=True,
+            hist=True,
+        )
+        ax.set_xlabel(r"Loss")
+        ax.set_ylabel(r"Distribution")
+        handles = []
+        handles.append(
+            Line2D(
+                [-1],
+                [-1],
+                marker="s",
+                linestyle="None",
+                markersize=10,
+                color=cd_list[0],
+                label=r"Approx.",
+            )
+        )
+        handles.append(
+            Line2D(
+                [-1],
+                [-1],
+                marker="s",
+                linestyle="None",
+                markersize=10,
+                color=cd_list[1],
+                label=r"Exact",
+            )
+        )
+        handles.append(
+            Line2D(
+                [-1],
+                [-1],
+                marker="s",
+                linestyle="None",
+                markersize=10,
+                color=cd_list[2],
+                label=r"Diff.",
+            )
+        )
+        ax.legend(
+            handles=handles,
+            loc="best",
+            fancybox=True,
+            fontsize=10,
+            framealpha=1,
+            ncol=2,
+        )
+        fig.suptitle(r"Loss distribution", fontsize=16)
+        if filename is not None:
+            fig.savefig(os.path.join(params["path"], "figures", ds + "_" + filename))
+        else:
+            plt.show()
+
+    return
+
+
 def get_noisy_crossentropy(noise=0):
     def noisy_crossentropy(y_true, y_pred):
         num_classes = tf.cast(K.shape(y_true)[1], tf.float32)
         y_true = y_true * (1 - noise) + (1 - y_true) * noise / num_classes
+        y_pred = K.clip(y_pred, K.epsilon(), 1)
 
-        return K.categorical_crossentropy(y_true, y_pred)
+        return -K.sum(y_true * K.log(y_pred), axis=-1)
 
     return noisy_crossentropy
 
@@ -565,6 +641,24 @@ def get_dynamics(params):
             params["dynamics"]["params"]["init_param"] = None
         return dl.dynamics.SIRDynamics(
             params["dynamics"]["params"]["infection_prob"],
+            params["dynamics"]["params"]["recovery_prob"],
+            params["dynamics"]["params"]["init_param"],
+        )
+    elif "SoftThresholdSIS" == params["dynamics"]["name"]:
+        if params["dynamics"]["params"]["init_param"] == "None":
+            params["dynamics"]["params"]["init_param"] = None
+        return dl.dynamics.SoftThresholdSIS(
+            params["dynamics"]["params"]["mu"],
+            params["dynamics"]["params"]["beta"],
+            params["dynamics"]["params"]["recovery_prob"],
+            params["dynamics"]["params"]["init_param"],
+        )
+    elif "SoftThresholdSIR" == params["dynamics"]["name"]:
+        if params["dynamics"]["params"]["init_param"] == "None":
+            params["dynamics"]["params"]["init_param"] = None
+        return dl.dynamics.SoftThresholdSIR(
+            params["dynamics"]["params"]["mu"],
+            params["dynamics"]["params"]["beta"],
             params["dynamics"]["params"]["recovery_prob"],
             params["dynamics"]["params"]["init_param"],
         )
