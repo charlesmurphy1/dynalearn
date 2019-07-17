@@ -5,9 +5,10 @@ import tqdm
 
 
 class LTPMetrics(Metrics):
-    def __init__(self, num_points=1000, verbose=1):
+    def __init__(self, num_points=1000, max_num_sample=1000, verbose=1):
         super(LTPMetrics, self).__init__(verbose)
         self.num_points = num_points
+        self.max_num_sample = max_num_sample
 
     def get_metric(self, adj, inputs, targets):
         raise NotImplementedError()
@@ -23,7 +24,7 @@ class LTPMetrics(Metrics):
         **plot_kwargs
     ):
         if "ltp_mu1/" + dataset not in self.data:
-            return
+            return ax
         if ax is None:
             ax = plt.gca()
         x = np.unique(np.sort(self.data["summaries"][:, neighbor_state + 1]))
@@ -49,6 +50,7 @@ class LTPMetrics(Metrics):
     def summarize(
         self,
         summaries,
+        counter,
         predictions,
         adj,
         input,
@@ -73,13 +75,21 @@ class LTPMetrics(Metrics):
                 k = "test"
             if s in summaries:
                 if k in summaries[s]:
-                    summaries[s][k] = np.append(summaries[s][k], pred, axis=0)
+                    if counter[s][k] == self.max_num_sample:
+                        continue
+                    summaries[s][k][counter[s][k], :] = pred
+                    counter[s][k] += 1
                 else:
-                    summaries[s][k] = pred
+                    summaries[s][k] = np.ones((self.max_num_sample, pred.shaped[0]))
+                    summaries[s][k][0, :] = pred
+                    counter[s][k] = 1
             else:
                 summaries[s] = {}
-                summaries[s][k] = pred
-        return summaries
+                counter[s] = {}
+                summaries[s][k] = np.ones((self.max_num_sample, pred.shaped[0]))
+                counter[s][k] = 1
+
+        return summaries, counter
 
     def compute(self, experiment):
 
@@ -100,6 +110,7 @@ class LTPMetrics(Metrics):
             test_nodeset = None
 
         summaries = {}
+        counter = {}
         n = {}
         for g in graphs:
             if self.num_points < inputs[g].shape[0]:
@@ -128,8 +139,9 @@ class LTPMetrics(Metrics):
                 else:
                     test_nodes = []
                 predictions = self.get_metric(experiment, adj, x, y)
-                summaries = self.summarize(
+                summaries, counter = self.summarize(
                     summaries,
+                    counter,
                     predictions,
                     adj,
                     x,

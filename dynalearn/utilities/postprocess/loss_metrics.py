@@ -6,9 +6,11 @@ import tqdm
 
 
 class LossMetrics(Metrics):
-    def __init__(self, num_points=1000, verbose=1):
+    def __init__(self, num_points=1000, max_num_sample=10000, verbose=1):
         super(LossMetrics, self).__init__(verbose)
         self.num_points = num_points
+        self.max_num_sample = max_num_sample
+        self.is_full = False
         self.datasets = []
 
     def loss(self, y_true, y_pred):
@@ -64,6 +66,8 @@ class LossMetrics(Metrics):
         return ax
 
     def compute(self, experiment):
+        if self.is_full:
+            return
 
         model = experiment.model
         graphs = experiment.generator.graphs
@@ -99,13 +103,18 @@ class LossMetrics(Metrics):
                 num_iter = self.num_points
             p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
 
-        approx_loss_dict = {d: [] for d in self.datasets}
-        exact_loss_dict = {d: [] for d in self.datasets}
-        diff_loss_dict = {d: [] for d in self.datasets}
+        approx_loss_dict = {d: np.ones(self.max_num_sample) for d in self.datasets}
+        exact_loss_dict = {d: np.ones(self.max_num_sample) for d in self.datasets}
+        diff_loss_dict = {d: np.ones(self.max_num_sample) for d in self.datasets}
+        counter = {d: 0 for d in self.datasets}
 
         for g in graphs:
+            if self.is_full:
+                break
             adj = graphs[g]
             for t in range(n[g]):
+                if self.is_full:
+                    break
                 x = inputs[g][t]
                 approx_y_true = self.to_one_hot(targets[g][t], num_states)
                 exact_y_true = gt_targets[g][t]
@@ -119,9 +128,12 @@ class LossMetrics(Metrics):
                     l1 = np.sum(mask * approx_loss)
                     l2 = np.sum(mask * exact_loss)
                     l3 = abs(l1 - l2)
-                    approx_loss_dict[d].append(l1)
-                    exact_loss_dict[d].append(l2)
-                    diff_loss_dict[d].append(l3)
+                    approx_loss_dict[d][counter] = l1
+                    exact_loss_dict[d][counter] = l2
+                    diff_loss_dict[d][counter] = l3
+                    counter[d] += 1
+                    if counter[d] == self.max_num_sample:
+                        self.is_full = True
 
                 if self.verbose:
                     p_bar.update()
@@ -130,9 +142,9 @@ class LossMetrics(Metrics):
             p_bar.close()
 
         for d in self.datasets:
-            self.data[d + "/approx_loss"] = np.array(approx_loss_dict[d])
-            self.data[d + "/exact_loss"] = np.array(exact_loss_dict[d])
-            self.data[d + "/diff_loss"] = np.array(diff_loss_dict[d])
+            self.data[d + "/approx_loss"] = approx_loss_dict[d]
+            self.data[d + "/exact_loss"] = exact_loss_dict[d]
+            self.data[d + "/diff_loss"] = diff_loss_dict[d]
 
     def to_one_hot(self, arr, num_states):
         ans = np.zeros((arr.shape[0], num_states), dtype="int")
