@@ -31,7 +31,7 @@ making_dir_if_exist () {
     fi
 }
 
-dynamics="st-sir"
+dynamics="st-sis"
 network="ba"
 num_nodes=1000
 # density=0.005
@@ -109,9 +109,9 @@ if [[ ${dynamics} = "sir" ]]; then
 elif [[ ${dynamics} = "sis" ]]; then
     sed -i 's,DYNAMICS,'"SISDynamics"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 elif [[ ${dynamics} = "st-sir" ]]; then
-    sed -i 's,DYNAMICS,'"SoftThresholdSIR"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+    sed -i 's,DYNAMICS,'"SoftThresholdSIRDynamics"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 elif [[ ${dynamics} = "st-sis" ]]; then
-    sed -i 's,DYNAMICS,'"SoftThresholdSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+    sed -i 's,DYNAMICS,'"SoftThresholdSISDynamics"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 else
     echo "Wrong dynamics type"
     exit 1

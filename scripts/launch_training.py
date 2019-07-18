@@ -21,18 +21,29 @@ with open(args.path, "r") as f:
     print(args.path)
     params = json.load(f)
 
-degree_class = np.unique(np.linspace(1, 100, 10).astype("int"))
+degree_class = np.unique(np.linspace(1, 50, 25).astype("int"))
+aggregator = dl.utilities.get_aggregator(params)
 metrics = {
-    "DynamicsLTPMetrics": dl.utilities.DynamicsLTPMetrics(),
-    "ModelLTPMetrics": dl.utilities.ModelLTPMetrics(),
-    "EstimatorLTPMetrics": dl.utilities.EstimatorLTPMetrics(num_points=10000),
-    "DynamicsLTPGenMetrics": dl.utilities.DynamicsLTPGenMetrics(degree_class),
-    "ModelLTPGenMetrics": dl.utilities.ModelLTPGenMetrics(degree_class),
+    "DynamicsLTPMetrics": dl.utilities.DynamicsLTPMetrics(
+        aggregator=aggregator, num_points=1000
+    ),
+    "ModelLTPMetrics": dl.utilities.ModelLTPMetrics(
+        aggregator=aggregator, num_points=1000
+    ),
+    "EstimatorLTPMetrics": dl.utilities.EstimatorLTPMetrics(
+        aggregator=aggregator, num_points=1000
+    ),
+    "DynamicsLTPGenMetrics": dl.utilities.DynamicsLTPGenMetrics(
+        degree_class, aggregator=aggregator
+    ),
+    "ModelLTPGenMetrics": dl.utilities.ModelLTPGenMetrics(
+        degree_class, aggregator=aggregator
+    ),
     "ModelJSDGenMetrics": dl.utilities.ModelJSDGenMetrics(degree_class),
     "BaseJSDGenMetrics": dl.utilities.BaseJSDGenMetrics(degree_class),
-    "AttentionMetrics": dl.utilities.AttentionMetrics(),
-    "LossMetrics": dl.utilities.LossMetrics(),
-    "CountMetrics": dl.utilities.CountMetrics(),
+    "AttentionMetrics": dl.utilities.AttentionMetrics(num_points=100),
+    "LossMetrics": dl.utilities.LossMetrics(num_points=1000),
+    "CountMetrics": dl.utilities.CountMetrics(aggregator=aggregator, num_points=1000),
 }
 
 print("-------------------")
@@ -51,6 +62,7 @@ experiment.load_weights(
 )
 experiment.load_data(os.path.join(params["path"], params["name"] + ".h5"))
 
-dl.utilities.analyze_model(params, experiment, metrics)
+experiment.metrics = metrics
+dl.utilities.analyze_model(params, experiment)
 experiment.load_metrics(os.path.join(params["path"], params["name"] + ".h5"))
 experiment = dl.utilities.make_figures(params, experiment)

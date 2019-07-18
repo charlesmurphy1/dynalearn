@@ -46,6 +46,9 @@ class LocalStatePredictor(DynamicsPredictor):
         self.bn_epsilon = bn_epsilon
         self.seed = seed
 
+        # self.params["n_in_layer"] = self.n_in_layer
+        # self.params["n_between_layers"] = self.n_between_layers
+        # self.params["n_out_layer"] = self.n_out_layer
         self.params["n_hidden"] = self.n_hidden
         self.params["n_heads"] = self.n_heads
         self.params["weight_decay"] = self.weight_decay
@@ -63,10 +66,15 @@ class LocalStatePredictor(DynamicsPredictor):
             kernel_initializer=glorot_uniform(self.seed),
         )(inputs)
 
+        x = Dense(
+            self.n_hidden[0],
+            activation="tanh",
+            kernel_initializer=glorot_uniform(self.seed),
+        )(x)
+
         for i in range(len(self.n_hidden)):
             attn = GraphAttention(
                 self.n_hidden[i],
-                8,
                 attn_heads=self.n_heads[i],
                 attn_heads_reduction="concat",
                 kernel_initializer=glorot_uniform(self.seed),
@@ -82,6 +90,11 @@ class LocalStatePredictor(DynamicsPredictor):
             )
             x = Activation("relu")(x)
 
+        x = Dense(
+            self.n_hidden[-1],
+            activation="relu",
+            kernel_initializer=glorot_uniform(self.seed),
+        )(x)
         outputs = Dense(
             self.num_states,
             activation="softmax",

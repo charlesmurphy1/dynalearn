@@ -14,6 +14,7 @@ class LossMetrics(Metrics):
         self.datasets = []
 
     def loss(self, y_true, y_pred):
+        y_pred = np.clip(y_pred, 1e-8, None)
         return -np.sum(y_true * np.log(y_pred), axis=-1)
 
     def display(
@@ -103,9 +104,9 @@ class LossMetrics(Metrics):
                 num_iter = self.num_points
             p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
 
-        approx_loss_dict = {d: np.ones(self.max_num_sample) for d in self.datasets}
-        exact_loss_dict = {d: np.ones(self.max_num_sample) for d in self.datasets}
-        diff_loss_dict = {d: np.ones(self.max_num_sample) for d in self.datasets}
+        approx_loss_dict = {d: np.zeros(self.max_num_sample) for d in self.datasets}
+        exact_loss_dict = {d: np.zeros(self.max_num_sample) for d in self.datasets}
+        diff_loss_dict = {d: np.zeros(self.max_num_sample) for d in self.datasets}
         counter = {d: 0 for d in self.datasets}
 
         for g in graphs:
@@ -128,9 +129,9 @@ class LossMetrics(Metrics):
                     l1 = np.sum(mask * approx_loss)
                     l2 = np.sum(mask * exact_loss)
                     l3 = abs(l1 - l2)
-                    approx_loss_dict[d][counter] = l1
-                    exact_loss_dict[d][counter] = l2
-                    diff_loss_dict[d][counter] = l3
+                    approx_loss_dict[d][counter[d]] = l1
+                    exact_loss_dict[d][counter[d]] = l2
+                    diff_loss_dict[d][counter[d]] = l3
                     counter[d] += 1
                     if counter[d] == self.max_num_sample:
                         self.is_full = True
@@ -142,9 +143,9 @@ class LossMetrics(Metrics):
             p_bar.close()
 
         for d in self.datasets:
-            self.data[d + "/approx_loss"] = approx_loss_dict[d]
-            self.data[d + "/exact_loss"] = exact_loss_dict[d]
-            self.data[d + "/diff_loss"] = diff_loss_dict[d]
+            self.data[d + "/approx_loss"] = approx_loss_dict[d][: counter[d]]
+            self.data[d + "/exact_loss"] = exact_loss_dict[d][: counter[d]]
+            self.data[d + "/diff_loss"] = diff_loss_dict[d][: counter[d]]
 
     def to_one_hot(self, arr, num_states):
         ans = np.zeros((arr.shape[0], num_states), dtype="int")

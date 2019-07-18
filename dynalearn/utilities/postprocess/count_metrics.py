@@ -5,33 +5,32 @@ import tqdm
 
 
 class CountMetrics(Metrics):
-    def __init__(self, num_points=1000, verbose=1):
+    def __init__(self, aggregator=None, num_points=1000, verbose=1):
         super(CountMetrics, self).__init__(verbose)
+        self.aggregator = aggregator
         self.num_points = num_points
 
-    def display(
-        self, in_state, neighbor_state, dataset, bar_width=1, ax=None, **bar_kwargs
-    ):
-        if "counts/" + dataset not in self.data:
-            return
+    def display(self, in_state, dataset, for_degree=False, ax=None, **bar_kwargs):
         if ax is None:
             ax = plt.gca()
-        if isinstance(neighbor_state, int):
-            x = np.unique(np.sort(self.data["summaries"][:, neighbor_state + 1]))
-        elif neighbor_state == "all":
+        if "counts/" + dataset not in self.data or self.aggregator is None:
+            return ax
+        if not for_degree:
+            x, y, err = self.aggregator(
+                in_state,
+                self.data["summaries"],
+                self.data["counts/" + dataset],
+                operation="sum",
+            )
+        else:
             x = np.unique(np.sort(np.sum(self.data["summaries"][:, 1:], axis=-1)))
-        y = np.zeros(x.shape)
-        for i, xx in enumerate(x):
-            if isinstance(neighbor_state, int):
-                index = (self.data["summaries"][:, neighbor_state + 1] == xx) * (
-                    self.data["summaries"][:, 0] == in_state
-                )
-            elif neighbor_state == "all":
+            y = np.zeros(x.shape)
+            for i, xx in enumerate(x):
                 index = (np.sum(self.data["summaries"][:, 1:], axis=-1) == xx) * (
                     self.data["summaries"][:, 0] == in_state
                 )
-
-            y[i] = np.sum(self.data["counts/" + dataset][index])
+                y[i] = np.sum(self.data["counts/" + dataset][index])
+        bar_width = abs(x[1] - x[0]) / (self.data["summaries"].shape[1])
         ax.bar(x + in_state * bar_width, y / np.sum(y), bar_width, **bar_kwargs)
         return ax
 

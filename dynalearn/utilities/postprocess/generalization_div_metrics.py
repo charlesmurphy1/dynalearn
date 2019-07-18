@@ -20,17 +20,22 @@ class JSDGeneralizationMetrics(Metrics):
     def get_metric(self, experiment, input, adj):
         raise NotImplementedError()
 
-    def display(self, in_state, ax=None, **plot_kwargs):
+    def display(self, in_state, ax=None, fill=None, **plot_kwargs):
         if ax is None:
             ax = plt.gca()
-        x = np.unique(np.sort(np.sum(self.data["summaries"][:, 1:], axis=-1)))
+        k = np.sum(self.data["summaries"][:, 1:], axis=-1)
+        x = np.unique(np.sort(k))
         y = np.zeros(x.shape)
-        err = np.zeros(x.shape)
+        down_err = np.zeros(x.shape)
+        up_err = np.zeros(x.shape)
         for i, xx in enumerate(x):
-            index = (self.data["summaries"][:, 0] == in_state) * (
-                np.sum(self.data["summaries"][:, 1:], axis=-1) == xx
-            )
+            index = (k == xx) * (self.data["summaries"][:, 0] == in_state)
             y[i] = np.mean(self.data["jsd"][index])
+            down_err[i] = np.percentile(self.data["jsd"][index], 16)
+            up_err[i] = np.percentile(self.data["jsd"][index], 84)
+
+        if fill is not None:
+            ax.fill_between(x, down_err, up_err, color=fill, alpha=0.3)
         ax.plot(x, y, **plot_kwargs)
         return ax
 

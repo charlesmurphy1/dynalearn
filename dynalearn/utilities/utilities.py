@@ -126,12 +126,11 @@ def train_model(params, experiment):
     return experiment
 
 
-def analyze_model(params, experiment, metrics):
+def analyze_model(params, experiment):
     print("-----------------")
     print("Computing metrics")
     print("-----------------")
     data_filename = os.path.join(params["path"], params["name"] + ".h5")
-    experiment.metrics = metrics
     experiment.compute_metrics()
     experiment.save_metrics(data_filename)
     return experiment
@@ -209,37 +208,44 @@ def make_ltp_metrics_fig(experiment, params, gt_metrics, metrics, counts, filena
         ax_dist.spines["bottom"].set_visible(False)
         ax_dist.set_xticks([])
 
+        if (
+            params["dynamics"]["name"] == "SISDynamics"
+            or params["dynamics"]["name"] == "SIRDynamics"
+        ):
+            b_width = 1.0
+        elif (
+            params["dynamics"]["name"] == "SoftThresholdSISDynamics"
+            or params["dynamics"]["name"] == "SoftThresholdSIRDynamics"
+        ):
+            b_width = 1.0 / 100
+
         for i, in_s in enumerate(state_label.values()):
             d_color = cd_list[i]
             p_color = cp_list[i]
             f_color = color_dark["grey"]
-            counts.display(
-                in_s, 1, ds, bar_width=1.0 / (d + 1), ax=ax_dist, color=d_color
-            )
+            counts.display(in_s, ds, ax=ax_dist, color=d_color)
             for j, out_s in enumerate(state_label.values()):
                 mk = m_list[j]
                 ls = l_list[j]
-                gt_metrics.display(
-                    in_s,
-                    out_s,
-                    1,
-                    ds,
-                    ax=ax_ltp,
-                    fill=None,
-                    color=p_color,
-                    marker="None",
-                    linestyle=ls,
-                )
                 metrics.display(
                     in_s,
                     out_s,
-                    1,
                     ds,
                     ax=ax_ltp,
                     fill=f_color,
                     color=d_color,
                     marker=mk,
                     linestyle="None",
+                )
+                gt_metrics.display(
+                    in_s,
+                    out_s,
+                    ds,
+                    ax=ax_ltp,
+                    fill=None,
+                    color=p_color,
+                    marker="None",
+                    linestyle=ls,
                 )
         handles = []
         for i, in_s in enumerate(state_label.keys()):
@@ -276,9 +282,20 @@ def make_ltp_metrics_fig(experiment, params, gt_metrics, metrics, counts, filena
                 )
             )
 
-        ax_ltp.set_xlabel(r"Infected degree $\ell$", fontsize=14)
-        ax_ltp.set_ylabel(r"$\mathrm{Pr}[s\to s'|\,\ell]$", fontsize=14)
-        ax_dist.set_ylabel(r"$\mathrm{Pr}[\ell|\,s]$", fontsize=14)
+        if (
+            params["dynamics"]["name"] == "SISDynamics"
+            or params["dynamics"]["name"] == "SIRDynamics"
+        ):
+            ax_ltp.set_xlabel(r"$\ell$", fontsize=14)
+            ax_ltp.set_ylabel(r"$\mathrm{Pr}[s\to s'|\,\ell]$", fontsize=14)
+            ax_dist.set_ylabel(r"$\mathrm{Pr}[\ell|\,s]$", fontsize=14)
+        elif (
+            params["dynamics"]["name"] == "SoftThresholdSISDynamics"
+            or params["dynamics"]["name"] == "SoftThresholdSIRDynamics"
+        ):
+            ax_ltp.set_xlabel(r"$\frac{\ell}{k}$", fontsize=14)
+            ax_ltp.set_ylabel(r"$\mathrm{Pr}[s\to s'|\,\frac{\ell}{k}]$", fontsize=14)
+            ax_dist.set_ylabel(r"$\mathrm{Pr}[\frac{\ell}{k}|\,s]$", fontsize=14)
         ax_dist.set_xlim(ax_ltp.get_xlim())
         ax_legend.legend(
             handles=handles,
@@ -288,7 +305,6 @@ def make_ltp_metrics_fig(experiment, params, gt_metrics, metrics, counts, filena
             framealpha=1,
             ncol=2,
         )
-        # plt.tight_layout(0.1)
         if filename is not None:
             fig.savefig(os.path.join(params["path"], "figures", ds + "_" + filename))
         else:
@@ -313,20 +329,28 @@ def make_gltp_metrics_fig(experiment, params, gt_metrics, metrics, counts, filen
     ax_dist.spines["bottom"].set_visible(False)
     ax_dist.set_xticks([])
 
+    if (
+        params["dynamics"]["name"] == "SISDynamics"
+        or params["dynamics"]["name"] == "SIRDynamics"
+    ):
+        b_width = 1.0
+    elif (
+        params["dynamics"]["name"] == "SoftThresholdSISDynamics"
+        or params["dynamics"]["name"] == "SoftThresholdSIRDynamics"
+    ):
+        b_width = 1.0 / 100
     for i, in_s in enumerate(state_label.values()):
         d_color = cd_list[i]
         p_color = cp_list[i]
         f_color = color_dark["grey"]
-        counts.display(
-            in_s, 1, "train", bar_width=1.0 / (d + 1), ax=ax_dist, color=d_color
-        )
+
+        counts.display(in_s, "train", ax=ax_dist, color=d_color)
         for j, out_s in enumerate(state_label.values()):
             mk = m_list[j]
             ls = l_list[j]
             metrics.display(
                 in_s,
                 out_s,
-                1,
                 ax=ax_ltp,
                 fill=f_color,
                 color=d_color,
@@ -336,7 +360,6 @@ def make_gltp_metrics_fig(experiment, params, gt_metrics, metrics, counts, filen
             gt_metrics.display(
                 in_s,
                 out_s,
-                1,
                 ax=ax_ltp,
                 fill=None,
                 color=p_color,
@@ -378,9 +401,20 @@ def make_gltp_metrics_fig(experiment, params, gt_metrics, metrics, counts, filen
             )
         )
 
-    ax_ltp.set_xlabel(r"Infected degree $\ell$", fontsize=14)
-    ax_ltp.set_ylabel(r"$\mathrm{Pr}[s\to s'|\,\ell]$", fontsize=14)
-    ax_dist.set_ylabel(r"$\mathrm{Pr}[\ell|\,s]$", fontsize=14)
+    if (
+        params["dynamics"]["name"] == "SISDynamics"
+        or params["dynamics"]["name"] == "SIRDynamics"
+    ):
+        ax_ltp.set_xlabel(r"$\ell$", fontsize=14)
+        ax_ltp.set_ylabel(r"$\mathrm{Pr}[s\to s'|\,\ell]$", fontsize=14)
+        ax_dist.set_ylabel(r"$\mathrm{Pr}[\ell|\,s]$", fontsize=14)
+    elif (
+        params["dynamics"]["name"] == "SoftThresholdSISDynamics"
+        or params["dynamics"]["name"] == "SoftThresholdSIRDynamics"
+    ):
+        ax_ltp.set_xlabel(r"$\frac{\ell}{k}$", fontsize=14)
+        ax_ltp.set_ylabel(r"$\mathrm{Pr}[s\to s'|\,\frac{\ell}{k}]$", fontsize=14)
+        ax_dist.set_ylabel(r"$\mathrm{Pr}[\frac{\ell}{k}|\,s]$", fontsize=14)
     ax_dist.set_xlim(ax_ltp.get_xlim())
     ax_legend.legend(
         handles=handles, loc="best", fancybox=True, fontsize=10, framealpha=1, ncol=2
@@ -412,12 +446,13 @@ def make_gdiv_metrics_fig(experiment, params, metrics, base_metrics, counts, fil
 
     for i, in_s in enumerate(state_label.values()):
         d_color = cd_list[i]
+        f_color = color_dark["grey"]
         p_color = cp_list[i]
-        counts.display(
-            in_s, "all", "train", bar_width=1.0 / (d + 1), ax=ax_dist, color=d_color
+        counts.display(in_s, "train", for_degree=True, ax=ax_dist, color=d_color)
+        metrics.display(in_s, ax=ax_div, color=p_color, fill=f_color, linestyle="-")
+        base_metrics.display(
+            in_s, ax=ax_div, color=d_color, fill=f_color, linestyle="--"
         )
-        metrics.display(in_s, ax=ax_div, color=p_color, linestyle="-")
-        base_metrics.display(in_s, ax=ax_div, color=d_color, linestyle="--")
     handles = []
     for i, in_s in enumerate(state_label.keys()):
         d_color = cd_list[i]
@@ -456,9 +491,9 @@ def make_gdiv_metrics_fig(experiment, params, metrics, base_metrics, counts, fil
         )
     )
 
-    ax_div.set_xlabel(r"Degree class", fontsize=14)
-    ax_div.set_ylabel(r"$JSD$", fontsize=14)
-    ax_dist.set_ylabel(r"$\mathrm{Pr}[\ell|\,s]$", fontsize=14)
+    ax_div.set_xlabel(r"$k$", fontsize=14)
+    ax_div.set_ylabel(r"Mean Jensen-Shannon distance", fontsize=14)
+    ax_dist.set_ylabel(r"$\mathrm{Pr}[k|\,s]$", fontsize=14)
     ax_dist.set_xlim(ax_div.get_xlim())
     ax_legend.legend(
         handles=handles, loc="best", fancybox=True, fontsize=10, framealpha=1, ncol=2
@@ -644,19 +679,19 @@ def get_dynamics(params):
             params["dynamics"]["params"]["recovery_prob"],
             params["dynamics"]["params"]["init_param"],
         )
-    elif "SoftThresholdSIS" == params["dynamics"]["name"]:
+    elif "SoftThresholdSISDynamics" == params["dynamics"]["name"]:
         if params["dynamics"]["params"]["init_param"] == "None":
             params["dynamics"]["params"]["init_param"] = None
-        return dl.dynamics.SoftThresholdSIS(
+        return dl.dynamics.SoftThresholdSISDynamics(
             params["dynamics"]["params"]["mu"],
             params["dynamics"]["params"]["beta"],
             params["dynamics"]["params"]["recovery_prob"],
             params["dynamics"]["params"]["init_param"],
         )
-    elif "SoftThresholdSIR" == params["dynamics"]["name"]:
+    elif "SoftThresholdSIRDynamics" == params["dynamics"]["name"]:
         if params["dynamics"]["params"]["init_param"] == "None":
             params["dynamics"]["params"]["init_param"] = None
-        return dl.dynamics.SoftThresholdSIR(
+        return dl.dynamics.SoftThresholdSIRDynamics(
             params["dynamics"]["params"]["mu"],
             params["dynamics"]["params"]["beta"],
             params["dynamics"]["params"]["recovery_prob"],
@@ -664,6 +699,19 @@ def get_dynamics(params):
         )
     else:
         raise ValueError("wrong string name for dynamics.")
+
+
+def get_aggregator(params):
+    if "SISDynamics" == params["dynamics"]["name"]:
+        return dl.utilities.SIS_aggregator
+    elif "SIRDynamics" == params["dynamics"]["name"]:
+        return dl.utilities.SIR_aggregator
+    elif "SoftThresholdSISDynamics" == params["dynamics"]["name"]:
+        return dl.utilities.SoftThresholdSIS_aggregator
+    elif "SoftThresholdSIRDynamics" == params["dynamics"]["name"]:
+        return dl.utilities.SoftThresholdSIR_aggregator
+    else:
+        raise ValueError("wrong string name for aggregator.")
 
 
 def get_model(params, dynamics):

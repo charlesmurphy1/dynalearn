@@ -5,43 +5,30 @@ import tqdm
 
 
 class LTPMetrics(Metrics):
-    def __init__(self, num_points=1000, max_num_sample=1000, verbose=1):
-        super(LTPMetrics, self).__init__(verbose)
+    def __init__(
+        self, aggregator=None, num_points=1000, max_num_sample=1000, verbose=1
+    ):
+        self.aggregator = aggregator
         self.num_points = num_points
         self.max_num_sample = max_num_sample
+        super(LTPMetrics, self).__init__(verbose)
 
     def get_metric(self, adj, inputs, targets):
         raise NotImplementedError()
 
-    def display(
-        self,
-        in_state,
-        out_state,
-        neighbor_state,
-        dataset,
-        ax=None,
-        fill=None,
-        **plot_kwargs
-    ):
-        if "ltp_mu1/" + dataset not in self.data:
-            return ax
+    def display(self, in_state, out_state, dataset, ax=None, fill=None, **plot_kwargs):
         if ax is None:
             ax = plt.gca()
-        x = np.unique(np.sort(self.data["summaries"][:, neighbor_state + 1]))
-        y = np.zeros(x.shape)
-        err = np.zeros(x.shape)
-        for i, xx in enumerate(x):
-            index = (self.data["summaries"][:, neighbor_state + 1] == xx) * (
-                self.data["summaries"][:, 0] == in_state
-            )
-            mu1 = self.data["ltp_mu1/" + dataset][index, out_state]
-            mu2 = self.data["ltp_mu2/" + dataset][index, out_state]
-            counts = self.data["counts/" + dataset][index]
-            y[i] = np.mean(mu1[~np.isnan(mu1)])
-            err[i] = np.sqrt(
-                (np.mean(mu2[~np.isnan(mu2)]) - np.mean(mu1[~np.isnan(mu1)]) ** 2)
-                / np.sum(counts)
-            )
+        if "ltp_mean/" + dataset not in self.data or self.aggregator is None:
+            return ax
+        x, y, err = self.aggregator(
+            in_state,
+            self.data["summaries"],
+            self.data["ltp_mean/" + dataset],
+            var=self.data["ltp_var/" + dataset],
+            out_state=out_state,
+            operation="mean",
+        )
         if fill is not None:
             ax.fill_between(x, y - err, y + err, color=fill, alpha=0.3)
         ax.plot(x, y, **plot_kwargs)
@@ -65,7 +52,7 @@ class LTPMetrics(Metrics):
         ).T
         for i in range(input.shape[0]):
             s = (input[i], *list(state_deg[i]))
-            pred = predictions[i].reshape(1, -1)
+            pred = predictions[i]
 
             if i in train_nodes:
                 k = "train"
@@ -80,13 +67,14 @@ class LTPMetrics(Metrics):
                     summaries[s][k][counter[s][k], :] = pred
                     counter[s][k] += 1
                 else:
-                    summaries[s][k] = np.ones((self.max_num_sample, pred.shaped[0]))
-                    summaries[s][k][0, :] = pred
+                    summaries[s][k] = np.zeros((self.max_num_sample, pred.shape[0]))
+                    summaries[s][k][0] = pred
                     counter[s][k] = 1
             else:
                 summaries[s] = {}
                 counter[s] = {}
-                summaries[s][k] = np.ones((self.max_num_sample, pred.shaped[0]))
+                summaries[s][k] = np.zeros((self.max_num_sample, pred.shape[0]))
+                summaries[s][k][0] = pred
                 counter[s][k] = 1
 
         return summaries, counter
@@ -162,17 +150,21 @@ class LTPMetrics(Metrics):
 
         self.data["summaries"] = np.array([[*s] for s in summaries])
         for k in ["train", "val", "test"]:
-            self.data["ltp_mu1/" + k] = np.array(
+            self.data["ltp_mean/" + k] = np.array(
                 [
-                    [*np.mean(summaries[tuple(s)][k], axis=0)]
+                    np.mean(
+                        summaries[tuple(s)][k][: counter[tuple(s)][k], :], axis=0
+                    ).squeeze()
                     if k in summaries[tuple(s)]
                     else [np.nan] * d
                     for s in self.data["summaries"]
                 ]
             )
-            self.data["ltp_mu2/" + k] = np.array(
+            self.data["ltp_var/" + k] = np.array(
                 [
-                    [*np.mean(summaries[tuple(s)][k] ** 2, axis=0)]
+                    np.var(
+                        summaries[tuple(s)][k][: counter[tuple(s)][k], :], axis=0
+                    ).squeeze()
                     if k in summaries[tuple(s)]
                     else [np.nan] * d
                     for s in self.data["summaries"]
@@ -180,31 +172,43 @@ class LTPMetrics(Metrics):
             )
             self.data["counts/" + k] = np.array(
                 [
-                    summaries[tuple(s)][k].shape[0] if k in summaries[tuple(s)] else 0
+                    counter[tuple(s)][k] if k in summaries[tuple(s)] else 0
                     for s in self.data["summaries"]
                 ]
             )
 
 
 class DynamicsLTPMetrics(LTPMetrics):
-    def __init__(self, num_points=1000, verbose=1):
-        super(DynamicsLTPMetrics, self).__init__(num_points, verbose)
+    def __init__(
+        self, aggregator=None, num_points=1000, max_num_sample=1000, verbose=1
+    ):
+        super(DynamicsLTPMetrics, self).__init__(
+            aggregator, num_points, max_num_sample, verbose
+        )
 
     def get_metric(self, experiment, adj, input, target):
         return experiment.dynamics_model.predict(input, adj)
 
 
 class ModelLTPMetrics(LTPMetrics):
-    def __init__(self, num_points=1000, verbose=1):
-        super(ModelLTPMetrics, self).__init__(num_points, verbose)
+    def __init__(
+        self, aggregator=None, num_points=1000, max_num_sample=1000, verbose=1
+    ):
+        super(ModelLTPMetrics, self).__init__(
+            aggregator, num_points, max_num_sample, verbose
+        )
 
     def get_metric(self, experiment, adj, input, target):
         return experiment.model.predict(input, adj)
 
 
 class EstimatorLTPMetrics(LTPMetrics):
-    def __init__(self, num_points=1000, verbose=1):
-        super(EstimatorLTPMetrics, self).__init__(num_points, verbose)
+    def __init__(
+        self, aggregator=None, num_points=1000, max_num_sample=1000, verbose=1
+    ):
+        super(EstimatorLTPMetrics, self).__init__(
+            aggregator, num_points, max_num_sample, verbose
+        )
 
     def get_metric(self, experiment, adj, input, target):
         one_hot_target = np.zeros(

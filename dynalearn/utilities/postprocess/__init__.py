@@ -1,3 +1,4 @@
+from .aggregator import *
 from .base_metrics import *
 from .ltp_metrics import *
 from .generalization_ltp_metrics import *

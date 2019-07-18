@@ -3,9 +3,9 @@ import networkx as nx
 import numpy as np
 
 
-class ComplexContagionSIS(EpidemicDynamics):
+class ComplexContagionSISDynamics(EpidemicDynamics):
     def __init__(self, activation_f, deactivation_f, init_state=None):
-        super(ComplexContagionSIS, self).__init__({"S": 0, "I": 1}, init_state)
+        super(ComplexContagionSISDynamics, self).__init__({"S": 0, "I": 1}, init_state)
         self.act_f = activation_f
         self.deact_f = deactivation_f
 
@@ -42,9 +42,11 @@ class ComplexContagionSIS(EpidemicDynamics):
         return state_prob
 
 
-class ComplexContagionSIR(EpidemicDynamics):
+class ComplexContagionSIRDynamics(EpidemicDynamics):
     def __init__(self, activation_f, deactivation_f, init_state=None):
-        super(ComplexContagionSIR, self).__init__({"S": 0, "I": 1, "R": 2}, init_state)
+        super(ComplexContagionSIRDynamics, self).__init__(
+            {"S": 0, "I": 1, "R": 2}, init_state
+        )
         self.act_f = activation_f
         self.deact_f = deactivation_f
 
@@ -87,26 +89,30 @@ class ComplexContagionSIR(EpidemicDynamics):
         return state_prob
 
 
-class SoftThresholdSIS(ComplexContagionSIS):
+class SoftThresholdSISDynamics(ComplexContagionSISDynamics):
     def __init__(self, mu, beta, recovery_prob, init_state=None):
 
-        act_f = lambda l: 1.0 / (np.exp((l["I"] / (l["S"] + l["I"]) - mu) * beta) + 1)
-        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
+        act_f = (
+            lambda l: 1.0
+            / (np.exp((l["I"] / (l["S"] + l["I"]) - mu) * beta) + 1).squeeze()
+        )
+        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape).squeeze()
 
-        super(SoftThresholdSIS, self).__init__(act_f, deact_f, init_state)
+        super(SoftThresholdSISDynamics, self).__init__(act_f, deact_f, init_state)
         self.params["mu"] = mu
         self.params["beta"] = beta
         self.params["recovery_prob"] = recovery_prob
 
 
-class SoftThresholdSIR(ComplexContagionSIR):
+class SoftThresholdSIRDynamics(ComplexContagionSIRDynamics):
     def __init__(self, mu, beta, recovery_prob, init_state=None):
 
-        act_f = lambda l: 1.0 / (
-            np.exp((l["I"] / (l["S"] + l["I"] + l["R"]) - mu) * beta) + 1
+        act_f = (
+            lambda l: 1.0
+            / (np.exp((l["I"] / (l["S"] + l["I"] + l["R"]) - mu) * beta) + 1).squeeze()
         )
-        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
-        super(SoftThresholdSIR, self).__init__(act_f, deact_f, init_state)
+        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape).squeeze()
+        super(SoftThresholdSIRDynamics, self).__init__(act_f, deact_f, init_state)
 
         self.params["mu"] = mu
         self.params["beta"] = beta

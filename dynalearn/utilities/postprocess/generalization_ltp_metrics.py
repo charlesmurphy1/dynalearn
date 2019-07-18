@@ -13,30 +13,28 @@ def all_combinations(k, d):
 
 
 class LTPGeneralizationMetrics(Metrics):
-    def __init__(self, degree_class, verbose=1):
-        super(LTPGeneralizationMetrics, self).__init__(verbose)
+    def __init__(self, degree_class, aggregator=None, verbose=1):
         self.degree_class = degree_class
+        self.aggregator = aggregator
+        super(LTPGeneralizationMetrics, self).__init__(verbose)
 
     def get_metric(self, experiment, input, adj):
         raise NotImplementedError()
 
-    def display(
-        self, in_state, out_state, neighbor_state, ax=None, fill=None, **plot_kwargs
-    ):
+    def display(self, in_state, out_state, ax=None, fill=None, **plot_kwargs):
         if ax is None:
             ax = plt.gca()
-        x = np.unique(np.sort(self.data["summaries"][:, neighbor_state + 1]))
-        y = np.zeros(x.shape)
-        err = np.zeros(x.shape)
-        for i, xx in enumerate(x):
-            index = (self.data["summaries"][:, neighbor_state + 1] == xx) * (
-                self.data["summaries"][:, 0] == in_state
-            )
-            p = self.data["ltp"][index]
-            y[i] = np.mean(self.data["ltp"][index, out_state], axis=0)
-            err[i] = np.sqrt(
-                (np.var(self.data["ltp"][index, out_state], axis=0)) / index.shape[0]
-            )
+        if "ltp" not in self.data or self.aggregator is None:
+            return ax
+
+        x, y, err = self.aggregator(
+            in_state,
+            self.data["summaries"],
+            self.data["ltp"],
+            var=None,
+            out_state=out_state,
+            operation="mean",
+        )
         if fill is not None:
             ax.fill_between(x, y - err, y + err, color=fill, alpha=0.3)
         ax.plot(x, y, **plot_kwargs)
@@ -81,20 +79,21 @@ class LTPGeneralizationMetrics(Metrics):
         self.data["ltp"] = np.array(
             [summaries[tuple(s)] for s in self.data["summaries"]]
         )
+
         experiment.model.num_nodes = prev_N
 
 
 class DynamicsLTPGenMetrics(LTPGeneralizationMetrics):
-    def __init__(self, verbose=1):
-        super(DynamicsLTPGenMetrics, self).__init__(verbose)
+    def __init__(self, degree_class, aggregator=None, verbose=1):
+        super(DynamicsLTPGenMetrics, self).__init__(degree_class, aggregator, verbose)
 
     def get_metric(self, experiment, input, adj):
         return experiment.dynamics_model.predict(input, adj)[0]
 
 
 class ModelLTPGenMetrics(LTPGeneralizationMetrics):
-    def __init__(self, verbose=1):
-        super(ModelLTPGenMetrics, self).__init__(verbose)
+    def __init__(self, degree_class, aggregator=None, verbose=1):
+        super(ModelLTPGenMetrics, self).__init__(degree_class, aggregator, verbose)
 
     def get_metric(self, experiment, input, adj):
         return experiment.model.predict(input, adj)[0]
