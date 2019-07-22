@@ -32,10 +32,10 @@ making_dir_if_exist () {
 }
 
 dynamics="st-sis"
-network="ba"
+network="ser"
 num_nodes=1000
-# density=0.005
-density=2
+density=0.004
+# density=2
 num_sample=10000
 
 # Prepare simulation

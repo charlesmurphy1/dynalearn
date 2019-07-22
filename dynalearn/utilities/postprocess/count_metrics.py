@@ -22,15 +22,21 @@ class CountMetrics(Metrics):
                 self.data["counts/" + dataset],
                 operation="sum",
             )
+            bar_width = np.nanmean(abs(x[1:] - np.roll(x, 1)[1:])) / (
+                self.data["summaries"].shape[1]
+            )
         else:
             x = np.unique(np.sort(np.sum(self.data["summaries"][:, 1:], axis=-1)))
+            x = x[x > 0]
             y = np.zeros(x.shape)
             for i, xx in enumerate(x):
                 index = (np.sum(self.data["summaries"][:, 1:], axis=-1) == xx) * (
                     self.data["summaries"][:, 0] == in_state
                 )
                 y[i] = np.sum(self.data["counts/" + dataset][index])
-        bar_width = abs(x[1] - x[0]) / (self.data["summaries"].shape[1])
+            bar_width = np.nanmin(abs(x[1:] - np.roll(x, 1)[1:])) / (
+                self.data["summaries"].shape[1]
+            )
         ax.bar(x + in_state * bar_width, y / np.sum(y), bar_width, **bar_kwargs)
         return ax
 

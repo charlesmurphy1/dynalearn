@@ -21,7 +21,7 @@ with open(args.path, "r") as f:
     print(args.path)
     params = json.load(f)
 
-degree_class = np.unique(np.linspace(1, 50, 25).astype("int"))
+degree_class = np.unique(np.linspace(1, 100, 25).astype("int"))
 aggregator = dl.utilities.get_aggregator(params)
 metrics = {
     "DynamicsLTPMetrics": dl.utilities.DynamicsLTPMetrics(
@@ -31,7 +31,7 @@ metrics = {
         aggregator=aggregator, num_points=1000
     ),
     "EstimatorLTPMetrics": dl.utilities.EstimatorLTPMetrics(
-        aggregator=aggregator, num_points=1000
+        aggregator=aggregator, num_points=10000
     ),
     "DynamicsLTPGenMetrics": dl.utilities.DynamicsLTPGenMetrics(
         degree_class, aggregator=aggregator
@@ -43,7 +43,7 @@ metrics = {
     "BaseJSDGenMetrics": dl.utilities.BaseJSDGenMetrics(degree_class),
     "AttentionMetrics": dl.utilities.AttentionMetrics(num_points=100),
     "LossMetrics": dl.utilities.LossMetrics(num_points=1000),
-    "CountMetrics": dl.utilities.CountMetrics(aggregator=aggregator, num_points=1000),
+    "CountMetrics": dl.utilities.CountMetrics(aggregator=aggregator, num_points=10000),
 }
 
 print("-------------------")

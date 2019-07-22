@@ -28,8 +28,6 @@ class ComplexContagionSISDynamics(EpidemicDynamics):
         return new_states
 
     def predict(self, states, adj=None):
-        N = self.graph.number_of_nodes()
-
         inf_prob = self.act_f(self.state_degree(states, adj))
         rec_prob = self.deact_f(self.state_degree(states, adj))
 

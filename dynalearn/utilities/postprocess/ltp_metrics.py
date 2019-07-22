@@ -16,7 +16,16 @@ class LTPMetrics(Metrics):
     def get_metric(self, adj, inputs, targets):
         raise NotImplementedError()
 
-    def display(self, in_state, out_state, dataset, ax=None, fill=None, **plot_kwargs):
+    def display(
+        self,
+        in_state,
+        out_state,
+        dataset,
+        num_points=None,
+        ax=None,
+        fill=None,
+        **plot_kwargs
+    ):
         if ax is None:
             ax = plt.gca()
         if "ltp_mean/" + dataset not in self.data or self.aggregator is None:
@@ -29,6 +38,11 @@ class LTPMetrics(Metrics):
             out_state=out_state,
             operation="mean",
         )
+        if num_points is not None and len(x) > num_points:
+            w = round(len(x) / num_points)
+            x = x[::w]
+            y = y[::w]
+            err = err[::w]
         if fill is not None:
             ax.fill_between(x, y - err, y + err, color=fill, alpha=0.3)
         ax.plot(x, y, **plot_kwargs)
