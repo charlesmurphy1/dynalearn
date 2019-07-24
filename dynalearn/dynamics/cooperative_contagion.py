@@ -107,26 +107,26 @@ class SimpleCouplingCoopSISDynamics(object):
         inf0[states == 0] = (
             1
             - (1 - alpha[0]) ** state_degrees["IS"][states == 0]
-            * (1 - c * alpha[0]) ** state_degrees["II"][states == 0]
+            - (1 - c * alpha[0]) ** state_degrees["II"][states == 0]
         )
         inf1[states == 0] = (
             1
             - (1 - alpha[1]) ** state_degrees["SI"][states == 0]
-            * (1 - c * alpha[1]) ** state_degrees["II"][states == 0]
+            - (1 - c * alpha[1]) ** state_degrees["II"][states == 0]
         )
 
         # Node IS
         inf1[states == 1] = (
             1
             - (1 - c * alpha[1]) ** state_degrees["SI"][states == 1]
-            * (1 - c * alpha[1]) ** state_degrees["II"][states == 1]
+            - (1 - c * alpha[1]) ** state_degrees["II"][states == 1]
         )
 
         # Node SI
         inf0[states == 2] = (
             1
             - (1 - c * alpha[0]) ** state_degrees["IS"][states == 2]
-            * (1 - c * alpha[0]) ** state_degrees["II"][states == 2]
+            - (1 - c * alpha[0]) ** state_degrees["II"][states == 2]
         )
         return inf0, inf1
 

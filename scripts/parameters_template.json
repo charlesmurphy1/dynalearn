@@ -12,8 +12,10 @@
         "name": "DYNAMICS",
         "params":
         {
-            "infection_prob": 0.04,
-            "recovery_prob": 0.08,
+            "infection_prob1": 0.04,
+            "infection_prob2": 0.03,
+            "recovery_prob1": 0.1,
+            "recovery_prob2": 0.8,
             "mu": 0.5,
             "beta": 10,
             "init_param": "None"

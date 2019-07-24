@@ -35,7 +35,7 @@ color_pale = {
     "grey": "#999999",
 }
 
-m_list = ["o", "s", "v", "x"]
+m_list = ["o", "s", "v", "^"]
 l_list = ["solid", "dashed", "dotted", "dashdot"]
 cd_list = [
     color_dark["blue"],
@@ -329,12 +329,8 @@ def make_gltp_metrics_fig(experiment, params, gt_metrics, metrics, counts, filen
     ax_dist.spines["bottom"].set_visible(False)
     ax_dist.set_xticks([])
 
+    b_width = 1.0
     if (
-        params["dynamics"]["name"] == "SISDynamics"
-        or params["dynamics"]["name"] == "SIRDynamics"
-    ):
-        b_width = 1.0
-    elif (
         params["dynamics"]["name"] == "SoftThresholdSISDynamics"
         or params["dynamics"]["name"] == "SoftThresholdSIRDynamics"
     ):
@@ -402,19 +398,16 @@ def make_gltp_metrics_fig(experiment, params, gt_metrics, metrics, counts, filen
         )
 
     if (
-        params["dynamics"]["name"] == "SISDynamics"
-        or params["dynamics"]["name"] == "SIRDynamics"
-    ):
-        ax_ltp.set_xlabel(r"$\ell$", fontsize=14)
-        ax_ltp.set_ylabel(r"$\mathrm{Pr}[s\to s'|\,\ell]$", fontsize=14)
-        ax_dist.set_ylabel(r"$\mathrm{Pr}[\ell|\,s]$", fontsize=14)
-    elif (
         params["dynamics"]["name"] == "SoftThresholdSISDynamics"
         or params["dynamics"]["name"] == "SoftThresholdSIRDynamics"
     ):
         ax_ltp.set_xlabel(r"$\frac{\ell}{k}$", fontsize=14)
         ax_ltp.set_ylabel(r"$\mathrm{Pr}[s\to s'|\,\frac{\ell}{k}]$", fontsize=14)
         ax_dist.set_ylabel(r"$\mathrm{Pr}[\frac{\ell}{k}|\,s]$", fontsize=14)
+    else:
+        ax_ltp.set_xlabel(r"$\ell$", fontsize=14)
+        ax_ltp.set_ylabel(r"$\mathrm{Pr}[s\to s'|\,\ell]$", fontsize=14)
+        ax_dist.set_ylabel(r"$\mathrm{Pr}[\ell|\,s]$", fontsize=14)
     ax_dist.set_xlim(ax_ltp.get_xlim())
     ax_legend.legend(
         handles=handles, loc="best", fancybox=True, fontsize=10, framealpha=1, ncol=2
@@ -667,16 +660,16 @@ def get_dynamics(params):
         if params["dynamics"]["params"]["init_param"] == "None":
             params["dynamics"]["params"]["init_param"] = None
         return dl.dynamics.SISDynamics(
-            params["dynamics"]["params"]["infection_prob"],
-            params["dynamics"]["params"]["recovery_prob"],
+            params["dynamics"]["params"]["infection_prob1"],
+            params["dynamics"]["params"]["recovery_prob1"],
             params["dynamics"]["params"]["init_param"],
         )
     elif "SIRDynamics" == params["dynamics"]["name"]:
         if params["dynamics"]["params"]["init_param"] == "None":
             params["dynamics"]["params"]["init_param"] = None
         return dl.dynamics.SIRDynamics(
-            params["dynamics"]["params"]["infection_prob"],
-            params["dynamics"]["params"]["recovery_prob"],
+            params["dynamics"]["params"]["infection_prob1"],
+            params["dynamics"]["params"]["recovery_prob1"],
             params["dynamics"]["params"]["init_param"],
         )
     elif "SoftThresholdSISDynamics" == params["dynamics"]["name"]:
@@ -685,7 +678,7 @@ def get_dynamics(params):
         return dl.dynamics.SoftThresholdSISDynamics(
             params["dynamics"]["params"]["mu"],
             params["dynamics"]["params"]["beta"],
-            params["dynamics"]["params"]["recovery_prob"],
+            params["dynamics"]["params"]["recovery_prob1"],
             params["dynamics"]["params"]["init_param"],
         )
     elif "SoftThresholdSIRDynamics" == params["dynamics"]["name"]:
@@ -694,8 +687,22 @@ def get_dynamics(params):
         return dl.dynamics.SoftThresholdSIRDynamics(
             params["dynamics"]["params"]["mu"],
             params["dynamics"]["params"]["beta"],
-            params["dynamics"]["params"]["recovery_prob"],
+            params["dynamics"]["params"]["recovery_prob1"],
             params["dynamics"]["params"]["init_param"],
+        )
+    elif "SimpleCouplingCoopSISDynamics" == params["dynamics"]["name"]:
+        if params["dynamics"]["params"]["init_param"] == "None":
+            params["dynamics"]["params"]["init_param"] = None
+        inf_prob = [
+            params["dynamics"]["params"]["infection_prob1"],
+            params["dynamics"]["params"]["infection_prob2"],
+        ]
+        rec_prob = [
+            params["dynamics"]["params"]["recovery_prob1"],
+            params["dynamics"]["params"]["recovery_prob2"],
+        ]
+        return dl.dynamics.SimpleCouplingCoopSISDynamics(
+            inf_prob, rec_prob, params["dynamics"]["params"]["init_param"]
         )
     else:
         raise ValueError("wrong string name for dynamics.")
