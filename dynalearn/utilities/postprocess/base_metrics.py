@@ -15,18 +15,18 @@ class Metrics:
     def display(self, *args, **kwargs):
         raise NotImplementedError()
 
-    def save(self, h5file, overwrite=True):
+    def save(self, name, h5file, overwrite=True):
         for k, v in self.data.items():
-            path = self.__class__.__name__ + "/" + str(k)
+            path = name + "/" + str(k)
             if path in h5file and overwrite:
                 del h5file[path]
                 h5file.create_dataset(path, data=v)
             elif path not in h5file:
                 h5file.create_dataset(path, data=v)
 
-    def load(self, h5file):
-        if self.__class__.__name__ in h5file:
-            self.data = self.read_h5_recursively(h5file[self.__class__.__name__])
+    def load(self, name, h5file):
+        if name in h5file:
+            self.data = self.read_h5_recursively(h5file[name])
 
     def read_h5_recursively(self, h5file, prefix=""):
         ans_dict = {}

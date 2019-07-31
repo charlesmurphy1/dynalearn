@@ -95,6 +95,7 @@ class LocalStatePredictor(DynamicsPredictor):
             activation="relu",
             kernel_initializer=glorot_uniform(self.seed),
         )(x)
+
         outputs = Dense(
             self.num_states,
             activation="softmax",

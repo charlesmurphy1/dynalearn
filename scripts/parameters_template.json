@@ -14,7 +14,7 @@
         {
             "infection_prob1": 0.04,
             "infection_prob2": 0.03,
-            "recovery_prob1": 0.1,
+            "recovery_prob1": 0.08,
             "recovery_prob2": 0.8,
             "mu": 0.5,
             "beta": 10,
@@ -26,7 +26,7 @@
         "name": "LocalStatePredictor",
         "params":
         {
-            "n_hidden": [64],
+            "n_hidden": [32],
             "n_heads": [4],
             "dropout": 0,
             "weight_decay": 0.0001,
@@ -75,6 +75,6 @@
  "tf_seed": 2,
  "path": "PATH_TO_EXP",
  "name": "EXP_NAME",
- "path_to_best": "best_weights",
- "path_to_last": "weights"
+ "path_to_best": "PATH_TO_BEST_MODEL",
+ "path_to_last": "PATH_TO_LAST_MODEL"
 }

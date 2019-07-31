@@ -8,7 +8,7 @@ class GraphGenerator:
     def __init__(self, generator):
         self.generator = generator
         self.params = dict()
-        self.num_nodes = None
+        self._num_nodes = None
         self.instance_index = 0
 
     def generate(self):
@@ -17,6 +17,18 @@ class GraphGenerator:
         name = type(self).__name__ + "_" + str(index)
         graph = self.generator()
         return name, graph
+
+    @property
+    def num_nodes(self):
+        if self._num_nodes is None:
+            raise ValueError("No number of nodes available.")
+        else:
+            return self._num_nodes
+
+    @num_nodes.setter
+    def num_nodes(self, num_nodes):
+        self._num_nodes = num_nodes
+        self.params["N"] = num_nodes
 
 
 class CycleGraph(GraphGenerator):

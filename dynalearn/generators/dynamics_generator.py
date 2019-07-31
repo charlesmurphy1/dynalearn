@@ -18,7 +18,6 @@ class DynamicsGenerator:
     ):
         self.graph_model = graph_model
         self.dynamics_model = dynamics_model
-        self.num_nodes = graph_model.num_nodes
         self.num_states = dynamics_model.num_states
         if sampler is None:
             self._sampler = dl.generators.RandomSampler()

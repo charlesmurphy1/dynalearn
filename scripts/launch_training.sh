@@ -41,7 +41,8 @@ num_sample=10000
 # Prepare simulation
 if [ "$HOSTNAME" == "Hector" ] || [ "$HOSTNAME" == "Bernard-Jr" ];
 then
-    PATH_TO_EXP="$HOME/Documents/ulaval/doctorat/projects/dynalearn/data"
+    PATH_TO_EXP="$HOME/Documents/ulaval/doctorat/projects/dynalearn/data/training"
+    making_dir_if_exist ${PATH_TO_EXP}
     PATH_TO_SCRIPT="$HOME/Documents/ulaval/doctorat/projects/dynalearn/scripts"
 else
     source ~/pyenv/bin/activate
@@ -120,8 +121,10 @@ fi
 sed -i 's,NUM_SAMPLE,'"${num_sample}"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 sed -i 's,PATH_TO_EXP,'"${PATH_TO_EXP}/${FILENAME}"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 sed -i 's,EXP_NAME,'"${network}_${dynamics}_${FILENAME}"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+sed -i 's,PATH_TO_BEST_MODEL,'"${network}_${dynamics}_best_weights"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+sed -i 's,PATH_TO_LAST_MODEL,'"${network}_${dynamics}_weights"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 
-python ${PATH_TO_SCRIPT}/launch_training.py -p ${PATH_TO_EXP}/${FILENAME}/parameters.json
+python ${PATH_TO_SCRIPT}/training.py -p ${PATH_TO_EXP}/${FILENAME}/parameters.json
 
 # ---------------------------------------------------------------------
 echo "Job finished with exit code \$? at: \`date\`"

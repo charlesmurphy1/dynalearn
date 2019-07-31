@@ -10,17 +10,18 @@ class LossMetrics(Metrics):
         super(LossMetrics, self).__init__(verbose)
         self.num_points = num_points
         self.max_num_sample = max_num_sample
-        self.is_full = False
         self.datasets = []
 
     def loss(self, y_true, y_pred):
-        y_pred = np.clip(y_pred, 1e-8, None)
+        y_pred = np.clip(y_pred, 1e-8, 1.0 - 1e-8)
         return -np.sum(y_true * np.log(y_pred), axis=-1)
 
     def display(
         self,
         loss_name,
         dataset,
+        xmin=None,
+        xmax=None,
         width=None,
         ax=None,
         color=None,
@@ -36,20 +37,24 @@ class LossMetrics(Metrics):
             ax = plt.gca()
 
         samples = self.data[f"{dataset}/{loss_name}"]
+        if xmin is None:
+            xmin = np.min(samples)
+        if xmax is None:
+            xmax = np.max(samples)
         if width is None:
             if iqr(samples) > 0:
                 width = 2 * iqr(samples) / samples.shape[0] ** (1.0 / 3)
             else:
                 width = 1e-3
         if hist:
-            bins = np.arange(np.min(samples), np.max(samples), width)
+            bins = np.arange(xmin, xmax, width)
             histo, bins = np.histogram(samples, bins=bins, density=True)
             x_hist = 0.5 * (bins[1:] + bins[:-1])
-            ax.bar(x_hist, histo, width=width, color=color, alpha=0.3)
+            ax.bar(x_hist, histo, width=width * 0.9, color=color, alpha=0.3)
 
         if kde:
             kernel = gaussian_kde(samples)
-            x_kde = np.arange(np.min(samples), np.max(samples), width)
+            x_kde = np.linspace(xmin, xmax, 1000)
             ax.plot(
                 x_kde,
                 kernel.pdf(x_kde),
@@ -67,9 +72,6 @@ class LossMetrics(Metrics):
         return ax
 
     def compute(self, experiment):
-        if self.is_full:
-            return
-
         model = experiment.model
         graphs = experiment.generator.graphs
         inputs = experiment.generator.inputs
@@ -108,13 +110,13 @@ class LossMetrics(Metrics):
         exact_loss_dict = {d: np.zeros(self.max_num_sample) for d in self.datasets}
         diff_loss_dict = {d: np.zeros(self.max_num_sample) for d in self.datasets}
         counter = {d: 0 for d in self.datasets}
-
+        is_full = False
         for g in graphs:
-            if self.is_full:
+            if is_full:
                 break
             adj = graphs[g]
             for t in range(n[g]):
-                if self.is_full:
+                if is_full:
                     break
                 x = inputs[g][t]
                 approx_y_true = self.to_one_hot(targets[g][t], num_states)
@@ -134,7 +136,7 @@ class LossMetrics(Metrics):
                     diff_loss_dict[d][counter[d]] = l3
                     counter[d] += 1
                     if counter[d] == self.max_num_sample:
-                        self.is_full = True
+                        is_full = True
 
                 if self.verbose:
                     p_bar.update()

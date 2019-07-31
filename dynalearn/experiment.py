@@ -1,8 +1,9 @@
 import copy
 import dynalearn as dl
-import h5py
 import numpy as np
+import os
 import tensorflow as tf
+
 
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import categorical_crossentropy
@@ -119,29 +120,22 @@ class Experiment:
         self.model.model.load_weights(filepath)
         return 0
 
-    def save_metrics(self, filepath, overwrite=True):
-        h5file = h5py.File(filepath)
-        if "metrics" in h5file:
-            if not overwrite:
-                return
-            else:
-                del h5file["metrics"]
-        h5file.create_group("metrics")
+    def save_metrics(self, h5file, overwrite=True):
+        if not "metrics" in h5file:
+            h5file.create_group("metrics")
         h5group = h5file["metrics"]
         for k, m in self.metrics.items():
-            m.save(h5group)
+            m.save(k, h5group)
         return
 
-    def load_metrics(self, filepath):
-        h5file = h5py.File(filepath)
+    def load_metrics(self, h5file):
         if "metrics" in h5file:
             for k, m in self.metrics.items():
-                m.load(h5file["metrics"])
+                m.load(k, h5file["metrics"])
 
         return
 
-    def save_history(self, filepath, overwrite=True):
-        h5file = h5py.File(filepath)
+    def save_history(self, h5file, overwrite=True):
         if "history" in h5file:
             if not overwrite:
                 return
@@ -153,21 +147,19 @@ class Experiment:
             h5group.create_dataset(name, data=value, fillvalue=np.nan)
         h5file.close()
 
-    def load_history(self, filepath):
-        h5file = h5py.File(filepath)
+    def load_history(self, h5file):
         if "history" in h5file:
             for k, v in h5file["history"].items():
                 self.history[k] = list(v[...])
         h5file.close()
 
-    def save_data(self, filepath, overwrite=True):
+    def save_data(self, h5file, overwrite=True):
         graph_name = type(self.graph_model).__name__
         graph_params = self.graph_model.params
 
         dynamics_name = type(self.dynamics_model).__name__
         dynamics_params = self.dynamics_model.params
 
-        h5file = h5py.File(filepath)
         if "data" in h5file:
             if overwrite:
                 del h5file["data"]
@@ -318,8 +310,7 @@ class Experiment:
 
         h5file.close()
 
-    def load_data(self, path):
-        h5file = h5py.File(path)
+    def load_data(self, h5file):
         if "data" in h5file:
             for k, v in h5file["data"].items():
                 self.generator.graphs[k] = v["adj_matrix"][...]

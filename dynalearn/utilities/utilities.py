@@ -9,6 +9,7 @@ Quebec, Canada
 Defines a variety of useful functions for bm use and training.
 """
 import dynalearn as dl
+import h5py
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.lines import Line2D
@@ -121,8 +122,9 @@ def train_model(params, experiment):
     experiment.save_weights(
         os.path.join(params["path"], params["name"] + "_weights.h5")
     )
-    experiment.save_data(data_filename)
-    experiment.save_history(data_filename)
+    h5file = h5py.File(data_filename)
+    experiment.save_data(h5file)
+    experiment.save_history(h5file)
     return experiment
 
 
@@ -131,8 +133,9 @@ def analyze_model(params, experiment):
     print("Computing metrics")
     print("-----------------")
     data_filename = os.path.join(params["path"], params["name"] + ".h5")
+    h5file = h5py.File(data_filename)
     experiment.compute_metrics()
-    experiment.save_metrics(data_filename)
+    experiment.save_metrics(h5file)
     return experiment
 
 

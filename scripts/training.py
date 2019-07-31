@@ -1,5 +1,6 @@
 import argparse as ap
 import dynalearn as dl
+import h5py
 import json
 import os
 import numpy as np
@@ -55,14 +56,14 @@ data_filename = os.path.join(params["path"], params["name"] + ".h5")
 
 if N < 500:
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
-
+h5file = h5py.File(os.path.join(params["path"], params["name"] + ".h5"))
 dl.utilities.train_model(params, experiment)
 experiment.load_weights(
     os.path.join(params["path"], params["name"] + "_" + params["path_to_best"] + ".h5")
 )
-experiment.load_data(os.path.join(params["path"], params["name"] + ".h5"))
+experiment.load_data(h5file)
 
 experiment.metrics = metrics
 dl.utilities.analyze_model(params, experiment)
-experiment.load_metrics(os.path.join(params["path"], params["name"] + ".h5"))
+experiment.load_metrics(h5file)
 experiment = dl.utilities.make_figures(params, experiment)

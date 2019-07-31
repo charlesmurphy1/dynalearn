@@ -87,13 +87,17 @@ class ComplexContagionSIRDynamics(EpidemicDynamics):
         return state_prob
 
 
+def soft_threshold_activation(state_degree, mu, beta):
+    degree = np.sum([state_degree[k] for k in state_degree])
+    act_prob = np.exp(beta * (state_degree["I"] / degree - mu) + 1).squeeze()
+    act_prob[degree == 0] = 0
+    return act_prob
+
+
 class SoftThresholdSISDynamics(ComplexContagionSISDynamics):
     def __init__(self, mu, beta, recovery_prob, init_state=None):
 
-        act_f = (
-            lambda l: 1.0
-            / (np.exp((l["I"] / (l["S"] + l["I"]) - mu) * beta) + 1).squeeze()
-        )
+        act_f = lambda l: soft_threshold_activation(l, mu, beta)
         deact_f = lambda l: recovery_prob * np.ones(l["S"].shape).squeeze()
 
         super(SoftThresholdSISDynamics, self).__init__(act_f, deact_f, init_state)
@@ -105,10 +109,7 @@ class SoftThresholdSISDynamics(ComplexContagionSISDynamics):
 class SoftThresholdSIRDynamics(ComplexContagionSIRDynamics):
     def __init__(self, mu, beta, recovery_prob, init_state=None):
 
-        act_f = (
-            lambda l: 1.0
-            / (np.exp((l["I"] / (l["S"] + l["I"] + l["R"]) - mu) * beta) + 1).squeeze()
-        )
+        act_f = lambda l: soft_threshold_activation(l, mu, beta)
         deact_f = lambda l: recovery_prob * np.ones(l["S"].shape).squeeze()
         super(SoftThresholdSIRDynamics, self).__init__(act_f, deact_f, init_state)
 
