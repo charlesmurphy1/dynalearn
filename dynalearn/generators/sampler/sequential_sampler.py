@@ -3,8 +3,8 @@ import numpy as np
 
 
 class SequentialSampler(Sampler):
-    def __init__(self, verbose=1):
-        super(SequentialSampler, self).__init__(verbose)
+    def __init__(self, verbose=1, sample_from_weights=True, resample=-1):
+        super(SequentialSampler, self).__init__(verbose, sample_from_weights, resample)
 
     def get_graph(self):
         g_index = self.avail_graph_set[0]

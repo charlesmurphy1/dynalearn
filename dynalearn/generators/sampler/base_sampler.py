@@ -2,9 +2,10 @@ import numpy as np
 
 
 class Sampler(object):
-    def __init__(self, verbose=1, resample=-1):
+    def __init__(self, verbose=1, sample_from_weights=True, resample=-1):
 
         self.verbose = verbose
+        self.sample_from_weights = sample_from_weights
         self.resample = resample
         self.iteration = 0
 
@@ -75,17 +76,37 @@ class Sampler(object):
 
     def get_nodes(self, g_index, s_index, batch_size=-1):
         mask = np.zeros(self.num_nodes[g_index])
-        if batch_size == -1 or batch_size > len(self.avail_node_set[g_index][s_index]):
-            mask[self.avail_node_set[g_index][s_index]] = 1
-            return mask
+        if self.sample_from_weights:
+            if batch_size == -1 or batch_size > len(
+                self.avail_node_set[g_index][s_index]
+            ):
+                mask[self.avail_node_set[g_index][s_index]] = 1
+                return mask
+            else:
+                p = self.node_weights[g_index][s_index]
+                p /= np.sum(p)
+                n_index = np.random.choice(
+                    self.node_set[g_index][s_index], size=batch_size, p=p, replace=False
+                ).astype("int")
+                mask[n_index] = 1
         else:
-            p = self.node_weights[g_index][s_index]
-            p /= np.sum(p)
-            n_index = np.random.choice(
-                self.node_set[g_index][s_index], size=batch_size, p=p, replace=False
-            ).astype("int")
-            mask[n_index] = 1
-            return mask
+            if batch_size == -1 or batch_size > len(
+                self.avail_node_set[g_index][s_index]
+            ):
+                p = self.node_weights[g_index][s_index]
+                p /= np.sum(p)
+                p = p[self.avail_node_set[g_index][s_index]]
+                mask[self.avail_node_set[g_index][s_index]] = p * np.sum(p > 0)
+                return mask
+            else:
+                p = self.node_weights[g_index][s_index]
+                p /= np.sum(p)
+                n_index = np.random.choice(
+                    self.node_set[g_index][s_index], size=batch_size, p=p, replace=False
+                ).astype("int")
+                p = p[n_index]
+                mask[n_index] = p * np.sum(p > 0)
+        return mask
 
     def sample_nodes(self, g_index, s_index, size=None, bias=1):
         mask = np.zeros(self.num_nodes[g_index])

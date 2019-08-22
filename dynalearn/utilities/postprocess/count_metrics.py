@@ -1,6 +1,8 @@
 from .base_metrics import Metrics
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.spatial.distance import jensenshannon
+from scipy.stats import gaussian_kde
 import tqdm
 
 
@@ -10,11 +12,24 @@ class CountMetrics(Metrics):
         self.aggregator = aggregator
         self.num_points = num_points
 
-    def display(self, in_state, dataset, for_degree=False, ax=None, **bar_kwargs):
+    def display(
+        self,
+        in_state,
+        dataset,
+        for_degree=False,
+        ax=None,
+        line=False,
+        color="k",
+        **kwargs
+    ):
         if ax is None:
             ax = plt.gca()
         if "counts/" + dataset not in self.data or self.aggregator is None:
             return ax
+        offset = in_state
+        bar_alpha = 1
+        if offset is None:
+            offset = 0
         if not for_degree:
             x, y, err = self.aggregator(
                 in_state,
@@ -22,22 +37,33 @@ class CountMetrics(Metrics):
                 self.data["counts/" + dataset],
                 operation="sum",
             )
-            bar_width = np.nanmean(abs(x[1:] - np.roll(x, 1)[1:])) / (
-                self.data["summaries"].shape[1]
-            )
+            bar_width = np.nanmean(abs(x[1:] - np.roll(x, 1)[1:]))
         else:
             x = np.unique(np.sort(np.sum(self.data["summaries"][:, 1:], axis=-1)))
             x = x[x > 0]
             y = np.zeros(x.shape)
             for i, xx in enumerate(x):
-                index = (np.sum(self.data["summaries"][:, 1:], axis=-1) == xx) * (
-                    self.data["summaries"][:, 0] == in_state
-                )
+                if in_state is None:
+                    index = np.sum(self.data["summaries"][:, 1:], axis=-1) == xx
+                else:
+                    index = (np.sum(self.data["summaries"][:, 1:], axis=-1) == xx) * (
+                        self.data["summaries"][:, 0] == in_state
+                    )
                 y[i] = np.sum(self.data["counts/" + dataset][index])
-            bar_width = np.nanmin(abs(x[1:] - np.roll(x, 1)[1:])) / (
-                self.data["summaries"].shape[1]
-            )
-        ax.bar(x + in_state * bar_width, y / np.sum(y), bar_width, **bar_kwargs)
+            bar_width = np.nanmin(abs(x[1:] - np.roll(x, 1)[1:]))
+        if in_state is not None:
+            bar_width /= self.data["summaries"].shape[1]
+
+        if line:
+            ax.plot(x, y / np.sum(y), color=color, **kwargs)
+            bar_alpha = 0.3
+        ax.bar(
+            x + offset * bar_width,
+            y / np.sum(y),
+            bar_width,
+            color=color,
+            alpha=bar_alpha,
+        )
         return ax
 
     def summarize(
@@ -95,7 +121,7 @@ class CountMetrics(Metrics):
                 n[g] = inputs[g].shape[0]
 
         if self.verbose:
-            num_iter = np.sum([inputs[g].shape[0] for g in graphs])
+            num_iter = int(np.sum([inputs[g].shape[0] for g in graphs]))
             if self.num_points < num_iter:
                 num_iter = self.num_points
             p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
@@ -133,6 +159,15 @@ class CountMetrics(Metrics):
             [summaries[s]["test"] if "test" in summaries[s] else 0 for s in summaries]
         )
 
+    def jensenshannon(self, dataset1, dataset2):
+        prob1 = self.data["counts/" + dataset1] / np.sum(
+            self.data["counts/" + dataset1]
+        )
+        prob2 = self.data["counts/" + dataset2] / np.sum(
+            self.data["counts/" + dataset2]
+        )
+        return jensenshannon(prob1, prob2)
+
     def overlap(self, dataset1, dataset2):
         prob1 = self.data["counts/" + dataset1] / np.sum(
             self.data["counts/" + dataset1]
@@ -140,4 +175,17 @@ class CountMetrics(Metrics):
         prob2 = self.data["counts/" + dataset2] / np.sum(
             self.data["counts/" + dataset2]
         )
-        return 1 - np.sum(abs(prob1 - prob2)) / 2
+        return 1 - abs(prob1 - prob2) / 2
+
+    def entropy(self, dataset, normalize=True):
+        prob = self.data["counts/" + dataset] / np.sum(self.data["counts/" + dataset])
+        entropy = -np.sum(prob[prob > 0] * np.log(prob[prob > 0]))
+
+        if normalize:
+            x = prob > 0
+            prob_uni = x / np.sum(x)
+            entropy_uni = -np.sum(
+                prob_uni[prob_uni > 0] * np.log(prob_uni[prob_uni > 0])
+            )
+            entropy /= entropy_uni
+        return entropy

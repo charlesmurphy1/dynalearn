@@ -6,7 +6,7 @@ import tqdm
 
 
 class LossMetrics(Metrics):
-    def __init__(self, num_points=1000, max_num_sample=10000, verbose=1):
+    def __init__(self, num_points=1000, max_num_sample=1000, verbose=1):
         super(LossMetrics, self).__init__(verbose)
         self.num_points = num_points
         self.max_num_sample = max_num_sample
@@ -42,7 +42,7 @@ class LossMetrics(Metrics):
         if xmax is None:
             xmax = np.max(samples)
         if width is None:
-            if iqr(samples) > 0:
+            if iqr(samples) > 1e-3:
                 width = 2 * iqr(samples) / samples.shape[0] ** (1.0 / 3)
             else:
                 width = 1e-3
@@ -101,7 +101,7 @@ class LossMetrics(Metrics):
                 n[g] = inputs[g].shape[0]
 
         if self.verbose:
-            num_iter = np.sum([inputs[g].shape[0] for g in graphs])
+            num_iter = int(np.sum([inputs[g].shape[0] for g in graphs]))
             if self.num_points < num_iter:
                 num_iter = self.num_points
             p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
@@ -122,14 +122,15 @@ class LossMetrics(Metrics):
                 approx_y_true = self.to_one_hot(targets[g][t], num_states)
                 exact_y_true = gt_targets[g][t]
                 y_pred = model.predict(x, adj)
+                p = node_weights[g][t] / np.sum(node_weights[g][t])
+
                 approx_loss = self.loss(approx_y_true, y_pred)
                 exact_loss = self.loss(exact_y_true, y_pred)
                 for d in self.datasets:
                     mask = np.zeros(x.shape[0])
-                    mask[nodeset[d][g][t]] = 1
-                    mask /= np.sum(mask)
-                    l1 = np.sum(mask * approx_loss)
-                    l2 = np.sum(mask * exact_loss)
+                    mask[nodeset[d][g][t]] = p[nodeset[d][g][t]] * len(nodeset[d][g][t])
+                    l1 = np.mean(mask * approx_loss)
+                    l2 = np.mean(mask * exact_loss)
                     l3 = abs(l1 - l2)
                     approx_loss_dict[d][counter[d]] = l1
                     exact_loss_dict[d][counter[d]] = l2

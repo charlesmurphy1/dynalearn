@@ -55,9 +55,7 @@ class GraphAttention(Layer):
         self.kernels = []  # Layer kernels for attention heads
         self.biases = []  # Layer biases for attention heads
         self.attn_kernels_1 = []  # Attention kernels for attention heads
-        self.attn_kernels_2 = []  # Attention kernels for attention heads
         self.attn_biases_1 = []  # Attention biases for attention heads
-        self.attn_biases_2 = []  # Attention biases for attention heads
 
         if attn_heads_reduction == "concat":
             # Output will have shape (..., K * F')
@@ -163,10 +161,6 @@ class GraphAttention(Layer):
                 attn_for_neighs = K.bias_add(
                     attn_for_neighs, self.attn_biases_1[head][1]
                 )
-
-            # # Add nonlinearty
-            # attn_for_self = LeakyReLU(alpha=0.2)(attn_for_self)
-            # attn_for_neighs = LeakyReLU(alpha=0.2)(attn_for_neighs)
 
             # Attention head a(Wh_i, Wh_j) = a^T [[Wh_i], [Wh_j]]
             dense = attn_for_self + K.transpose(

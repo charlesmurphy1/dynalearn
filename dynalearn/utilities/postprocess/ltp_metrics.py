@@ -191,6 +191,15 @@ class LTPMetrics(Metrics):
                 ]
             )
 
+    def entropy(self, dataset):
+        ltp = self.data["ltp_mean/" + dataset]
+        counts = self.data["counts/" + dataset]
+        ent = np.zeros(ltp.shape[0])
+        for i, l in enumerate(ltp):
+            c = counts[i]
+            ent[i] = -np.sum(l[l > 0] * np.log(l[l > 0]))
+        return np.nansum(ent * counts) / np.sum(counts)
+
 
 class DynamicsLTPMetrics(LTPMetrics):
     def __init__(

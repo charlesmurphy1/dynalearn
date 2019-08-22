@@ -1,9 +1,12 @@
 from .base_metrics import Metrics
 import matplotlib.pyplot as plt
 import numpy as np
+from random import sample
 from scipy.special import binom
 from scipy.spatial.distance import jensenshannon
 import tqdm
+
+max_num_sample = 1000
 
 
 def all_combinations(k, d):
@@ -17,7 +20,7 @@ class JSDGeneralizationMetrics(Metrics):
         super(JSDGeneralizationMetrics, self).__init__(verbose)
         self.degree_class = degree_class
 
-    def get_metric(self, experiment, input, adj):
+    def get_metric(self, experiment, inputs, adj):
         raise NotImplementedError()
 
     def display(self, in_state, ax=None, fill=None, **plot_kwargs):
@@ -50,27 +53,38 @@ class JSDGeneralizationMetrics(Metrics):
 
         if self.verbose:
             num_iter = int(
-                d * np.sum([binom(k + d - 1, d - 1) for k in self.degree_class])
+                d
+                * np.sum(
+                    [
+                        binom(k + d - 1, d - 1)
+                        if binom(k + d - 1, d - 1) < max_num_sample
+                        else max_num_sample
+                        for k in self.degree_class
+                    ]
+                )
             )
             p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
 
         for k in self.degree_class:
             adj = np.zeros((N, N))
-            adj[1 : k + 1, :] = 1
-            adj[:, 1 : k + 1] = 1
-            for s in all_combinations(k, len(state_label)):
+            adj[1 : k + 1, 0] = 1
+            adj[0, 1 : k + 1] = 1
+            all_comb = all_combinations(k, len(state_label))
+            if len(all_comb) > max_num_sample:
+                all_comb = sample(all_comb, max_num_sample)
+            for s in all_comb:
                 neighbors_states = np.concatenate(
                     [i * np.ones(l) for i, l in enumerate(s)]
                 )
-                input = np.zeros(max(self.degree_class) + 1)
-                input[1 : k + 1] = neighbors_states
+                inputs = np.zeros(max(self.degree_class) + 1)
+                inputs[1 : k + 1] = neighbors_states
 
                 for in_s, in_l in state_label.items():
-                    input[0] = in_l
-                    dynamics_prediction = experiment.dynamics_model.predict(input, adj)[
-                        0
-                    ]
-                    prediction = self.get_metric(experiment, input, adj)
+                    inputs[0] = in_l
+                    dynamics_prediction = experiment.dynamics_model.predict(
+                        inputs, adj
+                    )[0]
+                    prediction = self.get_metric(experiment, inputs, adj)
                     summaries[(in_l, *s)] = (
                         jensenshannon(dynamics_prediction, prediction),
                     )
@@ -91,14 +105,14 @@ class ModelJSDGenMetrics(JSDGeneralizationMetrics):
     def __init__(self, degree_class, verbose=1):
         super(ModelJSDGenMetrics, self).__init__(degree_class, verbose)
 
-    def get_metric(self, experiment, input, adj):
-        return experiment.model.predict(input, adj)[0]
+    def get_metric(self, experiment, inputs, adj):
+        return experiment.model.predict(inputs, adj)[0]
 
 
 class BaseJSDGenMetrics(JSDGeneralizationMetrics):
     def __init__(self, degree_class, verbose=1):
         super(BaseJSDGenMetrics, self).__init__(degree_class, verbose)
 
-    def get_metric(self, experiment, input, adj):
+    def get_metric(self, experiment, inputs, adj):
         d = len(experiment.dynamics_model.state_label)
         return np.ones(d) / d

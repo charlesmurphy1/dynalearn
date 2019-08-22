@@ -1,9 +1,12 @@
 from .base_metrics import Metrics
 import matplotlib.pyplot as plt
 import numpy as np
+from random import sample
 from scipy.special import binom
 from scipy.spatial.distance import jensenshannon
 import tqdm
+
+max_num_sample = 1000
 
 
 def all_combinations(k, d):
@@ -59,18 +62,30 @@ class LTPGeneralizationMetrics(Metrics):
 
         if self.verbose:
             num_iter = int(
-                d * np.sum([binom(k + d - 1, d - 1) for k in self.degree_class])
+                d
+                * np.sum(
+                    [
+                        binom(k + d - 1, d - 1)
+                        if binom(k + d - 1, d - 1) < max_num_sample
+                        else max_num_sample
+                        for k in self.degree_class
+                    ]
+                )
             )
             p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
 
         for k in self.degree_class:
             adj = np.zeros((N, N))
-            adj[1 : k + 1, :] = 1
-            adj[:, 1 : k + 1] = 1
-            for s in all_combinations(k, len(state_label)):
+            adj[1 : k + 1, 0] = 1
+            adj[0, 1 : k + 1] = 1
+            all_comb = all_combinations(k, len(state_label))
+            if len(all_comb) > max_num_sample:
+                all_comb = sample(all_comb, max_num_sample)
+            for s in all_comb:
                 neighbors_states = np.concatenate(
                     [i * np.ones(l) for i, l in enumerate(s)]
                 )
+
                 inputs = np.zeros(max(self.degree_class) + 1)
                 inputs[1 : k + 1] = neighbors_states
                 for in_s, in_l in state_label.items():
@@ -94,13 +109,13 @@ class DynamicsLTPGenMetrics(LTPGeneralizationMetrics):
     def __init__(self, degree_class, aggregator=None, verbose=1):
         super(DynamicsLTPGenMetrics, self).__init__(degree_class, aggregator, verbose)
 
-    def get_metric(self, experiment, input, adj):
-        return experiment.dynamics_model.predict(input, adj)[0]
+    def get_metric(self, experiment, inputs, adj):
+        return experiment.dynamics_model.predict(inputs, adj)[0]
 
 
 class ModelLTPGenMetrics(LTPGeneralizationMetrics):
     def __init__(self, degree_class, aggregator=None, verbose=1):
         super(ModelLTPGenMetrics, self).__init__(degree_class, aggregator, verbose)
 
-    def get_metric(self, experiment, input, adj):
-        return experiment.model.predict(input, adj)[0]
+    def get_metric(self, experiment, inputs, adj):
+        return experiment.model.predict(inputs, adj)[0]

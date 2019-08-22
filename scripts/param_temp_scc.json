@@ -12,13 +12,9 @@
         "name": "DYNAMICS",
         "params":
         {
-            "infection_prob": 0.04,
-            "recovery_prob": 0.08,
             "infection_prob-2": [0.04, 0.03],
             "recovery_prob-2": [0.08, 0.1],
             "coupling": 2.5,
-            "mu": 0.5,
-            "beta": 10,
             "init_param": "None"
         }
     },
@@ -27,10 +23,10 @@
         "name": "LocalStatePredictor",
         "params":
         {
-            "in_features": [32, 32],
-            "attn_features": [32],
-            "out_features": [32, 32],
-            "n_heads": [2],
+            "in_features": [64, 64],
+            "attn_features": [64],
+            "out_features": [64, 64],
+            "n_heads": [4],
             "in_activation": "relu",
             "attn_activation": "relu",
             "out_activation": "relu",

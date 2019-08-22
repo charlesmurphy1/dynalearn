@@ -2,8 +2,8 @@
 # ---------------------------------------------------------------------
 # Dynalearn submission script.
 # ---------------------------------------------------------------------
-#SBATCH --job-name=dynalearn_script
-#SBATCH --account=def-aallard
+#SBATCH --job-name=loss-analysis
+#SBATCH --account=def-murphy9
 #SBATCH --time=12:00:00
 #SBATCH --gres=gpu:1
 #SBATCH --mem=4000M
@@ -12,7 +12,7 @@
 echo ""
 echo "Current working directory: \`pwd\`"
 echo "Starting run at: \`date\`"
-echo "Submitted by launch_dynamics_learning.sh"
+echo "Submitted by launch_loss.sh"
 # ---------------------------------------------------------------------
 echo ""
 echo "Job Name: \$SLURM_JOB_NAME"
@@ -27,16 +27,14 @@ calc(){ awk "BEGIN { print "$*" }"; }
 making_dir_if_exist () {
     if [[ ! -e ${1} ]]; then
         echo "Making file ${1}."
-        mkdir -p ${1}
+        mkdir -p ${1}rm
     fi
 }
 
-dynamics="st-sis"
-network="ba"
+dynamics="__DYNAMICS__"
+network="__NETWORK__"
 num_nodes=1000
-# density=0.004
-density=2
-num_sample=10000
+num_sample=50000
 
 # Prepare simulation
 if [ "$HOSTNAME" == "Hector" ] || [ "$HOSTNAME" == "Bernard-Jr" ];
@@ -63,6 +61,9 @@ elif [[ ${dynamics} = "st-sir" ]]; then
 elif [[ ${dynamics} = "st-sis" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/st-sis"
     making_dir_if_exist ${PATH_TO_EXP}
+elif [[ ${dynamics} = "sis-sis" ]]; then
+    PATH_TO_EXP="${PATH_TO_EXP}/sis-sis"
+    making_dir_if_exist ${PATH_TO_EXP}
 else
     echo "Wrong dynamics type"
     exit 1
@@ -71,19 +72,22 @@ fi
 if [[ ${network} = "ser" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/sparse-erdos-renyi"
     making_dir_if_exist ${PATH_TO_EXP}
+    density=0.004
 elif [[ ${network} = "der" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/dense-erdos-renyi"
     making_dir_if_exist ${PATH_TO_EXP}
+    density=0.004
 elif [[ ${network} = "ba" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/barabasi-albert"
     making_dir_if_exist ${PATH_TO_EXP}
+    density=2
 else
     echo "Wrong network type"
     exit 1
 fi
 
 making_dir_if_exist "${PATH_TO_EXP}/${FILENAME}"
-cp "$PATH_TO_SCRIPT/parameters_template.json" "${PATH_TO_EXP}/${FILENAME}/parameters.json"
+cp "${PATH_TO_SCRIPT}/__PARAM_PATH__" "${PATH_TO_EXP}/${FILENAME}/parameters.json"
 
 if [[ ${network} = "ser" ]]; then
     sed -i 's,NETWORK,'"ERGraph"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
@@ -106,13 +110,15 @@ else
 fi
 
 if [[ ${dynamics} = "sir" ]]; then
-    sed -i 's,DYNAMICS,'"SIRDynamics"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+    sed -i 's,DYNAMICS,'"SIR"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 elif [[ ${dynamics} = "sis" ]]; then
-    sed -i 's,DYNAMICS,'"SISDynamics"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+    sed -i 's,DYNAMICS,'"SIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 elif [[ ${dynamics} = "st-sir" ]]; then
-    sed -i 's,DYNAMICS,'"SoftThresholdSIRDynamics"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+    sed -i 's,DYNAMICS,'"SoftThresholdSIR"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 elif [[ ${dynamics} = "st-sis" ]]; then
-    sed -i 's,DYNAMICS,'"SoftThresholdSISDynamics"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+    sed -i 's,DYNAMICS,'"SoftThresholdSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+elif [[ ${dynamics} = "sis-sis" ]]; then
+    sed -i 's,DYNAMICS,'"CooperativeContagionSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 else
     echo "Wrong dynamics type"
     exit 1

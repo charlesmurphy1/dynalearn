@@ -23,6 +23,7 @@ with open(args.path, "r") as f:
     params = json.load(f)
 
 num_nodes = [10, 100, 1000]
+sampling_bias = [0, 0.25, 0.5, 0.75, 1.0]
 avgk = 4
 
 print("-------------------")
@@ -30,6 +31,7 @@ print("Building experiment")
 print("-------------------")
 data_filename = os.path.join(params["path"], params["name"] + ".h5")
 h5file = h5py.File(data_filename, "w")
+params["sampler"]["params"]["sampling_bias"] = 0.0
 for n in num_nodes:
     params["graph"]["params"]["N"] = n
     params["graph"]["params"]["density"] = avgk / n
@@ -42,6 +44,20 @@ for n in num_nodes:
         )
     )
 
+    experiment.generate_data(1, 1000, 2)
+    experiment.compute_metrics()
+    experiment.save_metrics(h5file)
+
+for b in sampling_bias:
+    params["sampler"]["params"]["sampling_bias"] = b
+    experiment = dl.utilities.get_experiment(params)
+    metrics = {"LossMetrics-b" + str(b): dl.utilities.LossMetrics(num_points=10000)}
+    experiment.metrics = metrics
+    experiment.load_weights(
+        os.path.join(
+            params["path"], params["name"] + "_" + params["path_to_best"] + ".h5"
+        )
+    )
     experiment.generate_data(1, 1000, 2)
     experiment.compute_metrics()
     experiment.save_metrics(h5file)

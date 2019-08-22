@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 from tensorflow.keras.layers import (
     Input,
     LeakyReLU,
@@ -19,82 +20,75 @@ class LocalStatePredictor(DynamicsPredictor):
         self,
         num_nodes,
         num_states,
-        n_hidden,
+        in_features,
+        attn_features,
+        out_features,
         n_heads,
+        in_activation="tanh",
+        attn_activation="relu",
+        out_activation="relu",
         weight_decay=1e-4,
-        dropout=0.6,
-        bn_momentum=0.99,
-        bn_epsilon=0.0001,
         seed=None,
         **kwargs
     ):
 
         super(LocalStatePredictor, self).__init__(num_nodes, num_states, **kwargs)
 
-        if type(n_hidden) is int:
-            n_hidden = [n_hidden]
-        if type(n_heads) is int:
-            n_heads = [n_heads] * len(n_hidden)
-        elif len(n_heads) != len(n_hidden):
-            raise ValueError
-
-        self.n_hidden = n_hidden
+        self.in_features = in_features
+        self.attn_features = attn_features
+        self.out_features = out_features
         self.n_heads = n_heads
+        self.in_activation = in_activation
+        self.attn_activation = attn_activation
+        self.out_activation = out_activation
         self.weight_decay = weight_decay
-        self.dropout = dropout
-        self.bn_momentum = bn_momentum
-        self.bn_epsilon = bn_epsilon
         self.seed = seed
 
-        # self.params["n_in_layer"] = self.n_in_layer
-        # self.params["n_between_layers"] = self.n_between_layers
-        # self.params["n_out_layer"] = self.n_out_layer
-        self.params["n_hidden"] = self.n_hidden
+        self.params["in_features"] = self.in_features
+        self.params["attn_features"] = self.attn_features
+        self.params["out_features"] = self.out_features
         self.params["n_heads"] = self.n_heads
+        self.params["in_activation"] = self.in_activation
+        self.params["attn_activation"] = self.attn_activation
+        self.params["out_activation"] = self.out_activation
         self.params["weight_decay"] = self.weight_decay
-        self.params["dropout"] = self.dropout
-        self.params["bn_momentum"] = self.bn_momentum
-        self.params["bn_epsilon"] = self.bn_epsilon
 
     def _prepare_model(self):
         inputs = Input(shape=(1,))
         adj = Input(shape=(self.num_nodes,))
 
         x = Dense(
-            self.n_hidden[0],
-            activation="tanh",
+            self.in_features[0],
+            activation="linear",
             kernel_initializer=glorot_uniform(self.seed),
         )(inputs)
-
-        x = Dense(
-            self.n_hidden[0],
-            activation="tanh",
-            kernel_initializer=glorot_uniform(self.seed),
-        )(x)
-
-        for i in range(len(self.n_hidden)):
+        x = Activation(self.in_activation)(x)
+        for i in range(1, len(self.in_features)):
+            x = Dense(
+                self.in_features[i],
+                activation=self.in_activation,
+                kernel_initializer=glorot_uniform(self.seed),
+            )(x)
+        for i in range(len(self.attn_features)):
             attn = GraphAttention(
-                self.n_hidden[i],
+                self.attn_features[i],
                 attn_heads=self.n_heads[i],
                 attn_heads_reduction="concat",
                 kernel_initializer=glorot_uniform(self.seed),
                 attn_kernel_initializer=glorot_uniform(self.seed),
-                dropout_rate=self.dropout,
+                dropout_rate=0,
                 activation="linear",
                 kernel_regularizer=l2(self.weight_decay),
             )
             x, attn_coeff = attn([x, adj])
+            x = Activation(self.attn_activation)(x)
 
-            x = BatchNormalization(momentum=self.bn_momentum, epsilon=self.bn_epsilon)(
-                x
-            )
-            x = Activation("relu")(x)
-
-        x = Dense(
-            self.n_hidden[-1],
-            activation="relu",
-            kernel_initializer=glorot_uniform(self.seed),
-        )(x)
+        for i in range(len(self.out_features)):
+            x = Dense(
+                self.out_features[i],
+                activation=self.out_activation,
+                kernel_initializer=glorot_uniform(self.seed),
+            )(x)
 
         outputs = Dense(
             self.num_states,

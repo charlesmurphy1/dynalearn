@@ -145,13 +145,11 @@ class Experiment:
         h5group = h5file["history"]
         for name, value in self.history.items():
             h5group.create_dataset(name, data=value, fillvalue=np.nan)
-        h5file.close()
 
     def load_history(self, h5file):
         if "history" in h5file:
             for k, v in h5file["history"].items():
                 self.history[k] = list(v[...])
-        h5file.close()
 
     def save_data(self, h5file, overwrite=True):
         graph_name = type(self.graph_model).__name__
@@ -308,8 +306,6 @@ class Experiment:
                     g_name + "/test_set/graph_weights", data=graph_weights
                 )
 
-        h5file.close()
-
     def load_data(self, h5file):
         if "data" in h5file:
             for k, v in h5file["data"].items():
@@ -366,4 +362,3 @@ class Experiment:
                         i: weights for i, weights in enumerate(state_weights)
                     }
                     self.test_generator.sampler.graph_weights[k] = graph_weights
-        h5file.close()

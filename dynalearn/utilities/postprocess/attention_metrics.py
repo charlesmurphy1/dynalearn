@@ -5,6 +5,8 @@ import numpy as np
 from scipy.stats import iqr, gaussian_kde
 import tqdm
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.colors import LogNorm
 
 # from seaborn import distplot
 
@@ -27,7 +29,18 @@ class AttentionMetrics(Metrics):
 
         return attn_layers
 
-    def display(
+    def display(self, layer, state_label, ax=None, **kwargs):
+        if ax is None:
+            ax = plt.gca()
+        d = len(state_label)
+        mean_attn = np.zeros((d, d))
+        for i in range(len(state_label)):
+            for j in range(len(state_label)):
+                mean_attn[j, i] = np.mean(self.data[f"layer{layer}/{i}_{j}"])
+        ax.imshow(mean_attn, extent=[0, d, 0, d], origin="lower", **kwargs)
+        return ax
+
+    def display_dist(
         self,
         layer,
         node_state,
@@ -95,7 +108,7 @@ class AttentionMetrics(Metrics):
         attention_layers = self._get_all_attn_layers(experiment)
 
         if self.verbose:
-            num_iter = len(attention_layers) * np.sum([n[g] for g in graphs])
+            num_iter = int(len(attention_layers) * np.sum([n[g] for g in graphs]))
             p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
 
         for l, layer in enumerate(attention_layers):
