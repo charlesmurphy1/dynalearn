@@ -36,11 +36,12 @@ def poisson_distribution(avgk, kmin=1, kmax=20, tol=None):
     if tol is None:
         k = np.arange(kmin, kmax + 1)
         p_k = f(k)
+        p_k /= np.sum(p_k)
         return DiscreteDistribution((k, p_k))
     else:
         k = []
         p_k = []
-        k0 = 0
+        k0 = 1
         while len(k) < 1 or dist > tol:
             dist = f(k0)
             if dist > tol:
@@ -49,4 +50,5 @@ def poisson_distribution(avgk, kmin=1, kmax=20, tol=None):
             k0 += 1
         k = np.array(k)
         p_k = np.array(p_k)
+        p_k /= np.sum(p_k)
         return DiscreteDistribution((k, p_k))

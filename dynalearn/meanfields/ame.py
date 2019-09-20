@@ -7,13 +7,12 @@ from .utilities import config_k_l_grid
 
 
 class AME(BaseMeanField):
-    def __init__(self, s_dim, p_k, max_iter=100, tol=1e-3, verbose=1):
+    def __init__(self, s_dim, p_k, tol=1e-3, verbose=1):
         self.s_dim = s_dim
         self.p_k = p_k
         self.k_min = self.p_k.values.min()
         self.k_max = self.p_k.values.max()
         self.k_dim = self.k_max - self.k_min + 1
-        array_shape = (self.s_dim, self.k_dim, *[self.k_max + 1] * self.s_dim)
 
         self.k_grid, self.l_grid = config_k_l_grid(
             p_k.values, np.arange(self.k_max + 1), s_dim
@@ -22,71 +21,69 @@ class AME(BaseMeanField):
         self.l_grid = self.l_grid.astype("int")
 
         self.good_config = self.l_grid.sum(0) == self.k_grid
+        self.l_dim = self.good_config.sum()
         self.bad_config = (self.l_grid.sum(0) > self.k_grid) + (
             self.l_grid.sum(0) < self.k_grid
         )
-        super(AME, self).__init__(array_shape, max_iter, tol, verbose)
+        array_shape = (self.s_dim, self.k_dim, *[self.k_max + 1] * self.s_dim)
+        super(AME, self).__init__(array_shape, tol, verbose)
 
     def application(self, x):
         _x = x.reshape(self.array_shape)
 
-        # Computing q fields (mu, xi, xi')
-        q = self.__app_q(_x)
-
-        # Computing first term (mu, k, l), mu is fixed here
-        first_term = np.zeros(self.array_shape)
-        for i in range(self.s_dim):
-            first_term += self.ltp[i] * _x[i]
-
-        second_term = np.zeros(self.array_shape)
-        for i, j in product(range(self.s_dim), range(self.s_dim)):
-            if i == j:
-                continue
-            second_term -= (_x.T * q[:, i, j]).T * self.l_grid[i]
-
-        third_term = np.zeros(self.array_shape)
-        for i, j in product(range(self.s_dim), range(self.s_dim)):
-            y = _x.copy()
-            y = np.roll(y, 1, 2 + i)
-            y = np.roll(y, -1, 2 + j)
-            y[:, self.l_grid[i] == 0] = 0
-            if i == j:
-                continue
-            third_term += (y.T * q[:, j, i]).T * (self.l_grid[j] + 1)
-
-        new_x = first_term + second_term + third_term
-
-        # normalizing new_x
+        _q = self.app_q(_x)
+        new_x = self.app_x(_x, _q)
         new_x = self.normalize_state(new_x)
 
         return new_x.reshape(-1)
 
-    def __app_q(self, x):
-        # Computing numerator (mu, xi, xi')
-        x1 = np.zeros([self.s_dim] * 3)
+    def app_x(self, x, q):
+        # Computing first term (mu, k, l), mu is fixed here
+        _ltp = self.ltp[:, :, self.good_config]
+        _x = x[:, self.good_config]
+        _l = self.l_grid[:, self.good_config]
+        _k = self.k_grid[self.good_config]
+        first_term = np.zeros(_x.shape)
         for i in range(self.s_dim):
-            l = self.l_grid[i]
-            term = np.zeros(self.ltp.shape)
-            for j, k in product(range(self.s_dim), range(self.s_dim)):
-                term[j, k] = l * x[j] * self.ltp[j, k]
-            for j in range(self.s_dim):
-                term = term.sum(-1)
-            x1[i] = term @ self.p_k.weights
+            first_term += _ltp[i] * _x[i]
 
-        # Computing numerator (mu, xi)
-        x2 = np.zeros([self.s_dim] * 2)
-        for i in range(self.s_dim):
-            l = self.l_grid[i]
-            term = x * l
-            for j in range(self.s_dim):
-                term = term.sum(-1)
-            x2[i] = term @ self.p_k.weights
-        q = (x1.T / x2.T).T
+        second_term = np.zeros(_x.shape)
+        for i, j in product(range(self.s_dim), range(self.s_dim)):
+            if i == j:
+                continue
+            second_term += (_x.T * q[:, i, j]).T * _l[i]
 
-        # normalizing q
-        z = q.sum(-1)
-        q = (q.T / z.T).T
-        return q
+        third_term = np.zeros(_x.shape)
+        for i, j in product(range(self.s_dim), range(self.s_dim)):
+            if i == j:
+                continue
+            term = (_x.T * q[:, j, i]).T * _l[j]
+            _term = np.zeros(self.array_shape)
+            _term[:, self.good_config] = term
+            _term = np.roll(_term, 1, 2 + i)
+            _term = np.roll(_term, -1, 2 + j)
+            _term[:, self.l_grid[i] == 0] = 0
+            third_term += _term[:, self.good_config]
+
+        new_x = first_term - second_term + third_term
+        _new_x = np.zeros(self.array_shape)
+        _new_x[:, self.good_config] = new_x
+        return _new_x
+
+    def app_q(self, x):
+        num = np.zeros((self.s_dim, self.s_dim, self.s_dim))
+        den = np.zeros((self.s_dim, self.s_dim, self.s_dim))
+        for i, j, k in product(range(self.s_dim), range(self.s_dim), range(self.s_dim)):
+            num[i, j, k] = (
+                self.__marginalize_on_l(self.l_grid[i] * x[j] * self.ltp[j, k])
+                @ self.p_k.weights
+            )
+            den[i, j, k] = (
+                self.__marginalize_on_l(self.l_grid[i] * x[j]) @ self.p_k.weights
+            )
+
+        new_q = num / den
+        return new_q
 
     def to_compartment(self, graph, state):
         x = np.zeros(self.array_shape)
@@ -99,7 +96,7 @@ class AME(BaseMeanField):
             k_ind = np.where(self.p_k.values == l.sum())[0]
             if len(k_ind) > 0:
                 x[(s, k_ind[0], *l)] += 1
-        x = self.normalize_state(x, clip=False)
+        x = self.normalize_state(x, overclip=False)
         return x.reshape(-1)
 
     def to_avg(self, x):
@@ -109,12 +106,12 @@ class AME(BaseMeanField):
             y = y.sum(-1)
         return y @ self.p_k.weights
 
-    def normalize_state(self, x, clip=True):
+    def normalize_state(self, x, overclip=True):
         _x = x.copy()
-        if clip:
+        _x[_x <= 0] = 1e-15
+        _x[:, self.bad_config] = 0
+        if overclip:
             _x[_x >= 1] = 1 - 1e-15
-            _x[_x <= 0] = 1e-15
-            _x[:, self.bad_config] = 0
         z = _x.sum(0)
         for i in range(self.s_dim):
             z = z.sum(-1)
@@ -122,3 +119,16 @@ class AME(BaseMeanField):
         for i in range(self.s_dim):
             normed_x[i] = (_x[i].T / z).T
         return normed_x
+
+    def __marginalize_on_l(self, x):
+        _x = x.copy()
+        _x.T[self.bad_config.T] = 0
+        for i in range(self.s_dim):
+            _x = _x.sum(-1)
+        return _x
+
+    def abs_state(self, s):
+        x = np.zeros(self.array_shape)
+        ind = self.l_grid[s] == self.k_grid
+        x[s, ind] = 1
+        return self.normalize_state(x).reshape(-1)

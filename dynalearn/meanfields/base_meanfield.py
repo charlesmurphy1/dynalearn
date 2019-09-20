@@ -1,17 +1,22 @@
 import numpy as np
-from scipy.optimize import root, approx_fprime
+
+from scipy.optimize import approx_fprime
+from .fixed_point import RecurrenceFPF
+from .utilities import power_method
 import tqdm
 
 
 class BaseMeanField:
-    def __init__(self, array_shape, max_iter=100, tol=1e-3, verbose=1):
+    def __init__(self, array_shape, tol=1e-3, verbose=1):
         self.array_shape = array_shape
-        self.max_iter = max_iter
         self.tol = tol
         self.verbose = verbose
 
         self.fixed_points = []
+        self.stability = []
         self.ltp = self.compute_ltp()  # m x i x j
+        if self.verbose:
+            print(f"System size: {np.prod(self.array_shape)}")
 
     def random_state(self):
         x = np.random.rand(*self.array_shape)
@@ -25,26 +30,30 @@ class BaseMeanField:
         return x.reshape(-1)
 
     def add_fixed_points(self, x):
+        isclose = False
         if len(self.fixed_points) == 0:
             self.fixed_points.append(x)
-        elif (
-            np.sum(
-                np.prod(np.isclose(np.array(self.fixed_points), x, atol=self.tol), -1)
+            return
+
+        for fp in self.fixed_points:
+            if self.isclose(fp, x):
+                return
+        self.fixed_points.append(x)
+
+    def compute_fixed_points(self, fp_finder=None, num_seeds=1, x0=None, epsilon=1e-6):
+        if fp_finder is None:
+            fp_finder = RecurrenceFPF(
+                tol=self.tol, max_iter=10000, verbose=self.verbose
             )
-            == 0
-        ):
-            self.fixed_points.append(x)
-
-    def compute_fixed_points(self, num_seeds=1, check_abs_states=True):
-        def f_to_solve(x):
-            y = self.application(x) - x
-            return y
-
         if self.verbose:
             pb = tqdm.tqdm(range(num_seeds), "Finding fixed points")
         for i in range(num_seeds):
-            x0 = self.random_state()
-            sol = root(f_to_solve, x0)
+            if x0 is None:
+                _x0 = self.random_state()
+            else:
+                _x0 = x0 + epsilon * np.random.randn(*x0.shape)
+                _x0 = self.normalize_state(_x0.reshape(self.array_shape)).reshape(-1)
+            sol = fp_finder(self.application, _x0)
             if sol.success:
                 self.add_fixed_points(sol.x)
             if self.verbose:
@@ -52,18 +61,27 @@ class BaseMeanField:
         if self.verbose:
             pb.close()
 
-        if check_abs_states:
-            for i in range(self.s_dim):
-                abs_state = self.abs_state(i)
-                sol = root(f_to_solve, abs_state)
-                if sol.success:
-                    self.add_fixed_points(sol.x)
+    def compute_stability(self, epsilon=1e-6):
+        for fp in self.fixed_points:
+            jac = self.approx_jacobian(x, epsilon=epsilon)
+            w, v = power_method(jac, self.tol, max_iter=1000)
+            self.stability.append(np.abs(w))
 
-    def approx_jaccobian(self, x, epsilon=1e-6):
+    def isclose(self, x, y):
+        dist = np.sum(np.abs(x - y))
+        return dist < 1e-2
+
+    def approx_jacobian(self, x, epsilon=1e-6):
         jac = np.zeros((x.shape[0], x.shape[0]))
+        if self.verbose:
+            pb = tqdm.tqdm(range(x.shape[0]), "Computing Jacobian matrix")
         for i in range(x.shape[0]):
             f = lambda xx: self.application(xx)[i]
             jac[i] = approx_fprime(x, f, epsilon)
+            if self.verbose:
+                pb.update()
+        if self.verbose:
+            pb.close()
         return jac
 
     def compute_ltp(self):

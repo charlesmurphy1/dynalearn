@@ -50,9 +50,9 @@ class SimpleContagionAggregator(Aggregator):
         return sorted_val, all_val
 
 
-class CooperativeContagionAggregator(Aggregator):
+class InteractingContagionAggregator(Aggregator):
     def __init__(self, agent):
-        super(CooperativeContagionAggregator, self).__init__()
+        super(InteractingContagionAggregator, self).__init__()
         self.agent = agent
 
     def aggregate_summaries(self, summaries):

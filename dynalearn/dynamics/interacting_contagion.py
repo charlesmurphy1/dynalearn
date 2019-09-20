@@ -3,9 +3,9 @@ import networkx as nx
 import numpy as np
 
 
-class CooperativeContagionSIS(DoubleEpidemics):
+class SISSIS(DoubleEpidemics):
     def __init__(self, infection_prob, recovery_prob, coupling, init_state=None):
-        super(CooperativeContagionSIS, self).__init__(
+        super(SISSIS, self).__init__(
             {"SS": 0, "IS": 1, "SI": 2, "II": 3}, init_state
         )
         self.infection_prob = infection_prob

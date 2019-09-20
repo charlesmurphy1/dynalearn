@@ -118,7 +118,7 @@ elif [[ ${dynamics} = "st-sir" ]]; then
 elif [[ ${dynamics} = "st-sis" ]]; then
     sed -i 's,DYNAMICS,'"SoftThresholdSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 elif [[ ${dynamics} = "sis-sis" ]]; then
-    sed -i 's,DYNAMICS,'"CooperativeContagionSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+    sed -i 's,DYNAMICS,'"SISSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 else
     echo "Wrong dynamics type"
     exit 1

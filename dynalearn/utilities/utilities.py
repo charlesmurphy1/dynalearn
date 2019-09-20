@@ -165,8 +165,8 @@ def make_figures(params, experiment):
     if not os.path.exists(os.path.join(params["path"], "figures")):
         os.mkdir(os.path.join(params["path"], "figures"))
 
-    if params["dynamics"]["name"] == "CooperativeContagionSIS":
-        agg = dl.utilities.CooperativeContagionAggregator(0)
+    if params["dynamics"]["name"] == "SISSIS":
+        agg = dl.utilities.InteractingContagionAggregator(0)
         make_ltp_metrics_fig(
             experiment,
             params,
@@ -815,10 +815,10 @@ def get_dynamics(params):
             params["dynamics"]["params"]["recovery_prob"],
             params["dynamics"]["params"]["init_param"],
         )
-    elif "CooperativeContagionSIS" == params["dynamics"]["name"]:
+    elif "SISSIS" == params["dynamics"]["name"]:
         if params["dynamics"]["params"]["init_param"] == "None":
             params["dynamics"]["params"]["init_param"] = None
-        return dl.dynamics.CooperativeContagionSIS(
+        return dl.dynamics.SISSIS(
             params["dynamics"]["params"]["infection_prob-2"],
             params["dynamics"]["params"]["recovery_prob-2"],
             params["dynamics"]["params"]["coupling"],
