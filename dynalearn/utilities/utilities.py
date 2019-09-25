@@ -858,11 +858,11 @@ def get_meanfield(params, p_k_distribution):
     elif "SISSIS" == params["dynamics"]["name"]:
         if params["dynamics"]["params"]["init_param"] == "None":
             params["dynamics"]["params"]["init_param"] = None
-        return dl.dynamics.SISSIS(
+        return dl.meanfields.SISSIS_MF(
+            p_k_distribution,
             params["dynamics"]["params"]["infection_prob-2"],
             params["dynamics"]["params"]["recovery_prob-2"],
             params["dynamics"]["params"]["coupling"],
-            params["dynamics"]["params"]["init_param"],
         )
     else:
         raise ValueError("wrong string name for dynamics.")

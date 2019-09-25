@@ -6,7 +6,7 @@ from scipy.special import binom
 from scipy.spatial.distance import jensenshannon
 import tqdm
 
-max_num_sample = 1000
+max_num_sample = 1000000
 
 
 def all_combinations(k, d):

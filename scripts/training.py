@@ -22,32 +22,32 @@ with open(args.path, "r") as f:
     print(args.path)
     params = json.load(f)
 
-degree_class = np.unique(np.linspace(1, 100, 25).astype("int"))
+degree_class = np.unique(np.linspace(1, 100, 10).astype("int"))
 m_aggregator = dl.utilities.get_aggregator(params)
 m_aggregator.operation = "mean"
 c_aggregator = dl.utilities.get_aggregator(params)
 c_aggregator.operation = "sum"
 metrics = {
-    "DynamicsLTPMetrics": dl.utilities.DynamicsLTPMetrics(
-        aggregator=m_aggregator, num_points=1000
-    ),
-    "ModelLTPMetrics": dl.utilities.ModelLTPMetrics(
-        aggregator=m_aggregator, num_points=1000
-    ),
-    "EstimatorLTPMetrics": dl.utilities.EstimatorLTPMetrics(
-        aggregator=m_aggregator, num_points=10000
-    ),
+    # "DynamicsLTPMetrics": dl.utilities.DynamicsLTPMetrics(
+    #     aggregator=m_aggregator, num_points=1000
+    # ),
+    # "ModelLTPMetrics": dl.utilities.ModelLTPMetrics(
+    #     aggregator=m_aggregator, num_points=1000
+    # ),
+    # "EstimatorLTPMetrics": dl.utilities.EstimatorLTPMetrics(
+    #     aggregator=m_aggregator, num_points=10000
+    # ),
     "DynamicsLTPGenMetrics": dl.utilities.DynamicsLTPGenMetrics(
         degree_class, aggregator=m_aggregator
     ),
     "ModelLTPGenMetrics": dl.utilities.ModelLTPGenMetrics(
         degree_class, aggregator=m_aggregator
     ),
-    "AttentionMetrics": dl.utilities.AttentionMetrics(num_points=100),
-    "LossMetrics": dl.utilities.LossMetrics(num_points=1000),
-    "CountMetrics": dl.utilities.CountMetrics(
-        aggregator=c_aggregator, num_points=50000
-    ),
+    # "AttentionMetrics": dl.utilities.AttentionMetrics(num_points=100),
+    # "LossMetrics": dl.utilities.LossMetrics(num_points=1000),
+    # "CountMetrics": dl.utilities.CountMetrics(
+    #     aggregator=c_aggregator, num_points=50000
+    # ),
 }
 
 print("-------------------")
@@ -69,5 +69,5 @@ experiment.load_data(h5file)
 
 experiment.metrics = metrics
 dl.utilities.analyze_model(params, experiment)
-experiment.load_metrics(h5file)
-experiment = dl.utilities.make_figures(params, experiment)
+# experiment.load_metrics(h5file)
+# experiment = dl.utilities.make_figures(params, experiment)

@@ -10,7 +10,7 @@ np.seterr(divide="ignore", invalid="ignore")
 
 
 class PA(BaseMeanField):
-    def __init__(self, s_dim, p_k, tol=1e-3, verbose=1):
+    def __init__(self, s_dim, p_k, tol=1e-3, verbose=1, dtype="float"):
         self.s_dim = s_dim
         self.p_k = p_k
         self.k_min = self.p_k.values.min()

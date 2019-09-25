@@ -4,6 +4,7 @@ from .pa import *
 from .mf import *
 from .distribution import *
 from .simple_contagion import *
+from .complex_contagion import *
 from .interacting_contagion import *
 from .learned_model import *
 from .fixed_point import *

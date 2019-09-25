@@ -36,7 +36,7 @@ class SoftThresholdSIS_AME(AME):
 
 class SoftThresholdSIS_PA(PA):
     def __init__(
-        self, p_k, infection_prob, recovery_prob, tol=1e-3, verbose=1, dtype="float"
+        self, p_k, mu, beta, recovery_prob, tol=1e-3, verbose=1, dtype="float"
     ):
         self.mu = mu
         self.beta = beta
@@ -57,7 +57,7 @@ class SoftThresholdSIS_PA(PA):
 
 class SoftThresholdSIS_MF(MF):
     def __init__(
-        self, p_k, infection_prob, recovery_prob, tol=1e-3, verbose=1, dtype="float"
+        self, p_k, mu, beta, recovery_prob, tol=1e-3, verbose=1, dtype="float"
     ):
         self.mu = mu
         self.beta = beta
@@ -78,7 +78,7 @@ class SoftThresholdSIS_MF(MF):
 
 class SoftThresholdSIR_AME(AME):
     def __init__(
-        self, p_k, infection_prob, recovery_prob, tol=1e-3, verbose=1, dtype="float"
+        self, p_k, mu, beta, recovery_prob, tol=1e-3, verbose=1, dtype="float"
     ):
         self.mu = mu
         self.beta = beta
@@ -104,7 +104,7 @@ class SoftThresholdSIR_AME(AME):
 
 class SoftThresholdSIR_PA(PA):
     def __init__(
-        self, p_k, infection_prob, recovery_prob, tol=1e-3, verbose=1, dtype="float"
+        self, p_k, mu, beta, recovery_prob, tol=1e-3, verbose=1, dtype="float"
     ):
         self.mu = mu
         self.beta = beta
@@ -130,7 +130,7 @@ class SoftThresholdSIR_PA(PA):
 
 class SoftThresholdSIR_MF(MF):
     def __init__(
-        self, p_k, infection_prob, recovery_prob, tol=1e-3, verbose=1, dtype="float"
+        self, p_k, mu, beta, recovery_prob, tol=1e-3, verbose=1, dtype="float"
     ):
         self.mu = mu
         self.beta = beta
