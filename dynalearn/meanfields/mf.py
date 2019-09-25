@@ -32,6 +32,7 @@ class MF(BaseMeanField):
         _x = x.reshape(self.array_shape)
         _phi = self.app_phi(_x)
         new_x = self.app_x(_x, _phi)
+        new_x = self.clip(new_x)
         new_x = self.normalize_state(new_x)
         return new_x.reshape(-1)
 
@@ -50,11 +51,13 @@ class MF(BaseMeanField):
             @ self.p_k.weights
             / (self.p_k.values @ self.p_k.weights)
         )
+        new_phi = self.clip(new_phi)
+        new_phi /= new_phi.sum()
         return new_phi
 
-    def multinomial(self, q):
+    def multinomial(self, phi):
         log_m_k = gammaln(self.k_grid + 1) + np.sum(
-            (self.l_grid.T * np.log(q)).T - gammaln(self.l_grid + 1), 0
+            (self.l_grid.T * np.log(phi)).T - gammaln(self.l_grid + 1), 0
         )
         m_k = np.exp(log_m_k)
         m_k[self.bad_config] = 0
@@ -69,7 +72,7 @@ class MF(BaseMeanField):
             k_ind = np.where(self.p_k.values == k)[0]
             if len(k_ind) > 0:
                 x[s, k_ind[0]] += 1
-        x = self.normalize_state(x, clip=False)
+        x = self.normalize_state(x)
         return x.reshape(-1)
 
     def to_avg(self, x):
@@ -77,11 +80,8 @@ class MF(BaseMeanField):
         _x = _x @ self.p_k.weights
         return _x.reshape(-1)
 
-    def normalize_state(self, x, clip=True):
+    def normalize_state(self, x):
         _x = x.copy()
-        if clip:
-            _x[_x >= 1] = 1 - 1e-15
-            _x[_x <= 0] = 1e-15
         z = _x.sum(0)
         normed_x = _x / z
         return normed_x

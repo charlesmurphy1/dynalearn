@@ -828,6 +828,46 @@ def get_dynamics(params):
         raise ValueError("wrong string name for dynamics.")
 
 
+def get_meanfield(params, p_k_distribution):
+    if "SIS" == params["dynamics"]["name"]:
+        return dl.meanfields.SIS_MF(
+            p_k_distribution,
+            params["dynamics"]["params"]["infection_prob"],
+            params["dynamics"]["params"]["recovery_prob"],
+        )
+    elif "SIR" == params["dynamics"]["name"]:
+        return dl.meanfields.SIR_MF(
+            p_k_distribution,
+            params["dynamics"]["params"]["infection_prob"],
+            params["dynamics"]["params"]["recovery_prob"],
+        )
+    elif "SoftThresholdSIS" == params["dynamics"]["name"]:
+        return dl.meanfields.SoftThresholdSIS_MF(
+            p_k_distribution,
+            params["dynamics"]["params"]["mu"],
+            params["dynamics"]["params"]["beta"],
+            params["dynamics"]["params"]["recovery_prob"],
+        )
+    elif "SoftThresholdSIR" == params["dynamics"]["name"]:
+        return dl.meanfields.SoftThresholdSIR_MF(
+            p_k_distribution,
+            params["dynamics"]["params"]["mu"],
+            params["dynamics"]["params"]["beta"],
+            params["dynamics"]["params"]["recovery_prob"],
+        )
+    elif "SISSIS" == params["dynamics"]["name"]:
+        if params["dynamics"]["params"]["init_param"] == "None":
+            params["dynamics"]["params"]["init_param"] = None
+        return dl.dynamics.SISSIS(
+            params["dynamics"]["params"]["infection_prob-2"],
+            params["dynamics"]["params"]["recovery_prob-2"],
+            params["dynamics"]["params"]["coupling"],
+            params["dynamics"]["params"]["init_param"],
+        )
+    else:
+        raise ValueError("wrong string name for dynamics.")
+
+
 def get_aggregator(params):
     print(params["dynamics"]["name"])
     if "SIS" == params["dynamics"]["name"]:

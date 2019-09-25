@@ -2,15 +2,16 @@ import numpy as np
 
 from scipy.optimize import approx_fprime
 from .fixed_point import RecurrenceFPF
-from .utilities import power_method
+from .utilities import power_method, EPSILON
 import tqdm
 
 
 class BaseMeanField:
-    def __init__(self, array_shape, tol=1e-3, verbose=1):
+    def __init__(self, array_shape, tol=1e-3, verbose=1, dtype="float"):
         self.array_shape = array_shape
         self.tol = tol
         self.verbose = verbose
+        self.dtype = dtype
 
         self.fixed_points = []
         self.stability = []
@@ -19,12 +20,12 @@ class BaseMeanField:
             print(f"System size: {np.prod(self.array_shape)}")
 
     def random_state(self):
-        x = np.random.rand(*self.array_shape)
+        x = np.random.rand(*self.array_shape).astype(self.dtype)
         x = self.normalize_state(x)
         return x.reshape(-1)
 
     def abs_state(self, s):
-        x = np.zeros(self.array_shape)
+        x = np.zeros(self.array_shape).astype(self.dtype)
         x[s] = 1
         x = self.normalize_state(x)
         return x.reshape(-1)
@@ -54,8 +55,9 @@ class BaseMeanField:
                 _x0 = x0 + epsilon * np.random.randn(*x0.shape)
                 _x0 = self.normalize_state(_x0.reshape(self.array_shape)).reshape(-1)
             sol = fp_finder(self.application, _x0)
-            if sol.success:
-                self.add_fixed_points(sol.x)
+            # if sol.success:
+            #     self.add_fixed_points(sol.x)
+            self.add_fixed_points(sol.x)
             if self.verbose:
                 pb.update()
         if self.verbose:
@@ -63,16 +65,21 @@ class BaseMeanField:
 
     def compute_stability(self, epsilon=1e-6):
         for fp in self.fixed_points:
-            jac = self.approx_jacobian(x, epsilon=epsilon)
-            w, v = power_method(jac, self.tol, max_iter=1000)
-            self.stability.append(np.abs(w))
+            jac = self.approx_jacobian(fp, epsilon=epsilon)
+            w = np.linalg.eigvals(jac)
+            self.stability.append(np.max(np.abs(w)))
 
     def isclose(self, x, y):
         dist = np.sum(np.abs(x - y))
         return dist < 1e-2
 
+    def clip(self, x):
+        x[x <= 0] = EPSILON
+        x[x >= 1] = 1 - EPSILON
+        return x
+
     def approx_jacobian(self, x, epsilon=1e-6):
-        jac = np.zeros((x.shape[0], x.shape[0]))
+        jac = np.zeros((x.shape[0], x.shape[0])).astype(self.dtype)
         if self.verbose:
             pb = tqdm.tqdm(range(x.shape[0]), "Computing Jacobian matrix")
         for i in range(x.shape[0]):
@@ -83,6 +90,33 @@ class BaseMeanField:
         if self.verbose:
             pb.close()
         return jac
+
+    def save(self, name, h5file, overwrite=True):
+        if len(self.fixed_points) == 0:
+            return
+
+        path = name + "/fixed_points"
+        data = np.array(self.fixed_points)
+        if path in h5file:
+            if overwrite:
+                del h5file[path]
+                h5file.create_dataset(path, data=data)
+        else:
+            h5file.create_dataset(path, data=data)
+
+        path = name + "/stability"
+        data = np.array(self.stability)
+        if path in h5file:
+            if overwrite:
+                del h5file[path]
+                h5file.create_dataset(path, data=data)
+        else:
+            h5file.create_dataset(path, data=data)
+
+    def load(self, name, h5file):
+        if name in h5file:
+            self.fixed_points = [fp for fp in h5file[name + "/fixed_points"][...]]
+            self.stability = [s for s in h5file[name + "/stability"][...]]
 
     def compute_ltp(self):
         raise NotImplementedError()

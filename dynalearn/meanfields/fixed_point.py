@@ -22,6 +22,9 @@ class FixedPointFinder(object):
     def __init__(self, verbose):
         self.verbose = verbose
 
+    def dist(self, x, y):
+        return np.sqrt(((x - y) ** 2).sum())
+
     def __call__(self, f_to_solve, **kwargs):
         raise NotImplementedError()
 
@@ -38,18 +41,15 @@ class RecurrenceFPF(FixedPointFinder):
         success = True
         while diff > self.tol:
             _x = f(x0)
-            diff = self.__dist(x0, _x)
-            x0 = _x
+            diff = self.dist(x0, _x)
+            x0 = _x * 1
             nfev += 1
             if nfev > self.max_iter:
                 success = False
                 if self.verbose:
                     print(f"No further progress after {nfev} evaluations.")
                 break
-        return FinderResult(x0, f(x0), success, nfev)
-
-    def __dist(self, x, y):
-        return np.sqrt(((x - y) ** 2).sum())
+        return FinderResult(x0, x0 - f(x0), success, nfev)
 
 
 class ApproxNewtonFPF(FixedPointFinder):
@@ -60,9 +60,5 @@ class ApproxNewtonFPF(FixedPointFinder):
 
     def __call__(self, f, x0):
         f_to_solve = lambda x: f(x) - x
-
-        # sol = newton(f, x0, tol=self.tol, maxiter=self.max_iter, full_output=True)
-        sol = root(f, x0, options={"fatol": self.tol, "nfev": self.max_iter})
-
-        # return FinderResult(sol.root, f_to_solve(sol.root), sol.converged, np.nan)
+        sol = root(f, x0)
         return FinderResult(sol.x, f_to_solve(sol.x), sol.success, sol.nfev)

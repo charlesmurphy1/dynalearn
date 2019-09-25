@@ -1,6 +1,6 @@
 import numpy as np
 
-EPSILON = 1e-15
+EPSILON = 1e-10
 
 
 def config_k_l_grid(k_arr, l_arr, s_dim):
@@ -31,7 +31,6 @@ def power_method(A, tol=1e-5, max_iter=100):
     diff = np.inf
     it = 0
     while diff > tol:
-        print(it)
         x = np.dot(A, x0)
         x = x / np.linalg.norm(x)
         diff = np.linalg.norm(x - x0)
