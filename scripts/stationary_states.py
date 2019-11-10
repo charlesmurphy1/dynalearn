@@ -31,47 +31,91 @@ with open(args.path, "r") as f:
     print(args.path)
     params = json.load(f)
 experiment = dl.utilities.get_experiment(params)
+experiment.load_weights(
+    os.path.join(params["path"], params["name"] + "_" + params["path_to_best"] + ".h5")
+)
 num_states = int(experiment.model.num_states)
-N = 2000
-T = 1000
+N = 10000
+# T = 10000
+num_samples = 100
 burn = 100
-tol = 1e-3
+reshuffle = 0.1
+tol = 1e-2
 if os.path.exists(params["path"] + "/mf_erg.h5"):
     h5file = h5py.File(params["path"] + "/mf_erg.h5", "r+")
 else:
     h5file = h5py.File(params["path"] + "/mf_erg.h5", "w")
-# h5file = h5py.File(params["path"] + "/mf_erg.h5", "w")
-
+experiment.model.num_nodes = N
 avgk = np.linspace(0.1, 10, 20)
-if "k_values" in h5file:
-    del h5file["k_values"]
-h5file.create_dataset("k_values", data=avgk)
+if "sim_k" in h5file:
+    del h5file["sim_k"]
+h5file.create_dataset("sim_k", data=avgk)
 
 for k in avgk:
-    print(f"avgk = {k}")
-    g = nx.gnp_random_graph(N, k / (N - 1))
-    experiment.dynamics_model.graph = g
-    samples = []
+    print(f"avgk={k}")
+
+    true_samples = []
+    model_samples = []
     it = 0
-    avg_x0 = get_avg(experiment.dynamics_model.states, num_states)
-    pb = tqdm.tqdm(range(T), "Generating data: ")
-    for i in range(T):
+
+    pb = tqdm.tqdm(range(num_samples), "Gathering samples (true): ")
+    experiment.dynamics_model.graph = nx.gnp_random_graph(N, k / (N - 1))
+    x0 = experiment.dynamics_model.states
+    avg_x0 = get_avg(x0, num_states)
+    while len(true_samples) < num_samples:
         x = experiment.dynamics_model.update()
         avg_x = get_avg(x, num_states)
         it += 1
         dist = np.sqrt(((avg_x - avg_x0) ** 2).sum())
         avg_x0 = avg_x * 1
         if dist < tol and it > burn:
-            samples.append(avg_x)
+            true_samples.append(avg_x)
+            if (
+                np.random.rand() < reshuffle
+                or not experiment.dynamics_model.continue_simu
+            ):
+                experiment.dynamics_model.graph = nx.gnp_random_graph(N, k / (N - 1))
             it = 0
-
-        pb.update()
+            pb.update()
     pb.close()
-    avg = np.array(samples).mean(0)
-    var = np.array(samples).var(0)
-    if f"k = {k}/sim_avg" in h5file:
-        del h5file[f"k = {k}/sim_avg"]
-        del h5file[f"k = {k}/sim_var"]
-    h5file.create_dataset(f"k = {k}/sim_avg", data=avg)
-    h5file.create_dataset(f"k = {k}/sim_var", data=var)
+
+    pb = tqdm.tqdm(range(num_samples), "Gathering samples (model): ")
+    adj = nx.to_numpy_array(nx.gnp_random_graph(N, k / (N - 1)))
+    x = experiment.dynamics_model.initialize_states()
+    avg_x0 = get_avg(x, num_states)
+    while len(model_samples) < num_samples:
+        x = experiment.model.update(x, adj)
+        avg_x = get_avg(x, num_states)
+        it += 1
+        dist = np.sqrt(((avg_x - avg_x0) ** 2).sum())
+        avg_x0 = avg_x * 1
+        if dist < tol and it > burn:
+            model_samples.append(avg_x)
+            if np.random.rand() < reshuffle:
+                adj = nx.to_numpy_array(nx.gnp_random_graph(N, k / (N - 1)))
+                x = experiment.dynamics_model.initialize_states()
+            it = 0
+            pb.update()
+    pb.close()
+    print(len(true_samples), len(model_samples))
+    true_avg = np.array(true_samples).mean(0)
+    if np.any(np.isnan(true_avg)):
+        print(true_samples)
+    true_var = np.array(true_samples).var(0)
+    if f"k={k}/sim_true_avg" in h5file:
+        del h5file[f"k={k}/sim_true_avg"]
+        del h5file[f"k={k}/sim_true_var"]
+    h5file.create_dataset(f"k={k}/sim_true_avg", data=true_avg)
+    h5file.create_dataset(f"k={k}/sim_true_var", data=true_var)
+
+    model_avg = np.array(model_samples).mean(0)
+    if np.any(np.isnan(model_avg)):
+        print(model_samples)
+    model_var = np.array(model_samples).var(0)
+    if f"k={k}/sim_model_avg" in h5file:
+        del h5file[f"k={k}/sim_model_avg"]
+        del h5file[f"k={k}/sim_model_var"]
+    h5file.create_dataset(f"k={k}/sim_model_avg", data=model_avg)
+    h5file.create_dataset(f"k={k}/sim_model_var", data=model_var)
+    print(true_avg, model_avg)
 h5file.close()

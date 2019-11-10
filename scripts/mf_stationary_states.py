@@ -29,18 +29,18 @@ experiment.load_weights(
     os.path.join(params["path"], params["name"] + "_" + params["path_to_best"] + ".h5")
 )
 
-if os.path.isfile(params["path"] + "/mf_erg.h5"):
+if os.path.exists(params["path"] + "/mf_erg.h5"):
     h5file = h5py.File(params["path"] + "/mf_erg.h5", "r+")
 else:
     h5file = h5py.File(params["path"] + "/mf_erg.h5", "w")
-avgk = np.linspace(0.1, 10, 20)
-if "k_values" in h5file:
-    del h5file["k_values"]
-h5file.create_dataset("k_values", data=avgk)
+avgk = np.concatenate((np.linspace(0.1, 3, 50), np.linspace(3.1, 10, 20)))
+if "mf_k" in h5file:
+    del h5file["mf_k"]
+h5file.create_dataset("mf_k", data=avgk)
 
 for k in avgk:
-    print(f"avgk = {k}")
-    p_k = dl.meanfields.poisson_distribution(k, num_k=5)
+    print(f"avgk={k}")
+    p_k = dl.meanfields.poisson_distribution(k, num_k=7)
     true_mf = dl.utilities.get_meanfield(params, p_k)
     learned_mf = dl.meanfields.LearnedModelMF(
         p_k, experiment.model, tol=1e-5, verbose=1

@@ -11,7 +11,7 @@ else
     PATH_TO_SCRIPT="$HOME/packages/dynalearn/scripts"
 fi
 
-dynamics=("sis" "sir")
+dynamics=("sis")
 networks=("ser" "ba")
 temp=0
 
