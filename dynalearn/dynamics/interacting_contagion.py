@@ -5,9 +5,7 @@ import numpy as np
 
 class SISSIS(DoubleEpidemics):
     def __init__(self, infection_prob, recovery_prob, coupling, init_state=None):
-        super(SISSIS, self).__init__(
-            {"SS": 0, "IS": 1, "SI": 2, "II": 3}, init_state
-        )
+        super(SISSIS, self).__init__({"SS": 0, "IS": 1, "SI": 2, "II": 3}, init_state)
         self.infection_prob = infection_prob
         self.recovery_prob = recovery_prob
         self.coupling = coupling
@@ -99,7 +97,7 @@ class SISSIS(DoubleEpidemics):
 
         return state_prob
 
-    def infection(self, states, state_degrees):
+    def infection(self, states, neighbor_states):
 
         alpha = self.infection_prob
         beta = self.recovery_prob
@@ -110,27 +108,27 @@ class SISSIS(DoubleEpidemics):
         # Node SS
         inf0[states == 0] = (
             1
-            - (1 - alpha[0]) ** state_degrees["IS"][states == 0]
-            * (1 - c * alpha[0]) ** state_degrees["II"][states == 0]
+            - (1 - alpha[0]) ** neighbor_states["IS"][states == 0]
+            * (1 - c * alpha[0]) ** neighbor_states["II"][states == 0]
         )
         inf1[states == 0] = (
             1
-            - (1 - alpha[1]) ** state_degrees["SI"][states == 0]
-            * (1 - c * alpha[1]) ** state_degrees["II"][states == 0]
+            - (1 - alpha[1]) ** neighbor_states["SI"][states == 0]
+            * (1 - c * alpha[1]) ** neighbor_states["II"][states == 0]
         )
 
         # Node IS
         inf1[states == 1] = 1 - (1 - c * alpha[1]) ** (
-            state_degrees["SI"][states == 1] + state_degrees["II"][states == 1]
+            neighbor_states["SI"][states == 1] + neighbor_states["II"][states == 1]
         )
 
         # Node SI
         inf0[states == 2] = 1 - (1 - c * alpha[0]) ** (
-            state_degrees["IS"][states == 2] + state_degrees["II"][states == 2]
+            neighbor_states["IS"][states == 2] + neighbor_states["II"][states == 2]
         )
         return inf0, inf1
 
-    def recovery(self, states, state_degrees):
+    def recovery(self, states, neighbor_states):
         alpha = self.infection_prob
         beta = self.recovery_prob
         c = self.coupling

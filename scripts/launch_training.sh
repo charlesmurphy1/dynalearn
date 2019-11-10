@@ -34,12 +34,11 @@ making_dir_if_exist () {
 dynamics="__DYNAMICS__"
 network="__NETWORK__"
 num_nodes=1000
-num_sample=10000
 
 # Prepare simulation
 if [ "$HOSTNAME" == "Hector" ] || [ "$HOSTNAME" == "Bernard-Jr" ];
 then
-    PATH_TO_EXP="$HOME/Documents/ulaval/doctorat/projects/dynalearn/data/training"
+    PATH_TO_EXP="$HOME/Documents/ulaval/doctorat/projects/dynalearn/data/training_no_enrichment"
     making_dir_if_exist ${PATH_TO_EXP}
     PATH_TO_SCRIPT="$HOME/Documents/ulaval/doctorat/projects/dynalearn/scripts"
 else
@@ -47,36 +46,50 @@ else
     PATH_TO_EXP="$HOME/scratch/dynalearn/data"
     PATH_TO_SCRIPT="$HOME/packages/dynalearn/scripts"
 fi
-FILENAME="n${num_nodes}_d${num_sample}"
 
 if [[ ${dynamics} = "sir" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/sir"
     making_dir_if_exist ${PATH_TO_EXP}
+    num_sample=25000
 elif [[ ${dynamics} = "sis" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/sis"
     making_dir_if_exist ${PATH_TO_EXP}
+    num_sample=10000
 elif [[ ${dynamics} = "st-sir" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/st-sir"
     making_dir_if_exist ${PATH_TO_EXP}
+    num_sample=25000
 elif [[ ${dynamics} = "st-sis" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/st-sis"
     making_dir_if_exist ${PATH_TO_EXP}
+    num_sample=10000
+elif [[ ${dynamics} = "nl-sir" ]]; then
+    PATH_TO_EXP="${PATH_TO_EXP}/nl-sir"
+    making_dir_if_exist ${PATH_TO_EXP}
+    num_sample=25000
+elif [[ ${dynamics} = "nl-sis" ]]; then
+    PATH_TO_EXP="${PATH_TO_EXP}/nl-sis"
+    making_dir_if_exist ${PATH_TO_EXP}
+    num_sample=10000
 elif [[ ${dynamics} = "sis-sis" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/sis-sis"
     making_dir_if_exist ${PATH_TO_EXP}
+    num_sample=50000
 else
     echo "Wrong dynamics type"
     exit 1
 fi
 
+FILENAME="n${num_nodes}_d${num_sample}"
+
 if [[ ${network} = "ser" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/sparse-erdos-renyi"
     making_dir_if_exist ${PATH_TO_EXP}
-    density=0.04
+    density=0.004
 elif [[ ${network} = "der" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/dense-erdos-renyi"
     making_dir_if_exist ${PATH_TO_EXP}
-    density=0.004
+    density=0.5
 elif [[ ${network} = "ba" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/barabasi-albert"
     making_dir_if_exist ${PATH_TO_EXP}
@@ -117,6 +130,10 @@ elif [[ ${dynamics} = "st-sir" ]]; then
     sed -i 's,DYNAMICS,'"SoftThresholdSIR"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 elif [[ ${dynamics} = "st-sis" ]]; then
     sed -i 's,DYNAMICS,'"SoftThresholdSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+elif [[ ${dynamics} = "nl-sir" ]]; then
+    sed -i 's,DYNAMICS,'"NonLinearSIR"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+elif [[ ${dynamics} = "nl-sis" ]]; then
+    sed -i 's,DYNAMICS,'"NonLinearSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 elif [[ ${dynamics} = "sis-sis" ]]; then
     sed -i 's,DYNAMICS,'"SISSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 else
