@@ -6,7 +6,7 @@ class Aggregator(object):
         super(Aggregator, self).__init__()
 
     def __call__(
-        self, in_state, summaries, mean, var=None, out_state=None, operation="mean"
+        self, summaries, values, in_state=None, out_state=None, operation="mean"
     ):
 
         x, all_x = self.aggregate_summaries(summaries)
@@ -14,25 +14,22 @@ class Aggregator(object):
         err = np.zeros(x.shape)
 
         if operation == "mean":
-            operation_on_mean = np.nanmean
-            operation_on_var = lambda var: np.nanmean(var) / var[~np.isnan(var)].size
+            op_val = np.nanmean
+            op_err = np.nanvar
         elif operation == "sum":
-            operation_on_mean = np.nansum
-            operation_on_var = np.nansum
+            op_val = np.nansum
+            op_err = lambda x: 0
         for i, xx in enumerate(x):
             if in_state is None:
                 index = all_x == xx
             else:
                 index = (all_x == xx) * (summaries[:, 0] == in_state)
             if out_state is None:
-                y[i] = operation_on_mean(mean[index])
+                y[i] = op_val(values[index])
+                err[i] = op_err(values[index])
             else:
-                y[i] = operation_on_mean(mean[index, out_state])
-            if var is not None:
-                if out_state is None:
-                    err[i] = np.sqrt(operation_on_var(var[index]))
-                else:
-                    err[i] = np.sqrt(operation_on_var(var[index, out_state]))
+                y[i] = op_val(values[index, out_state])
+                err[i] = op_err(values[index, out_state])
         return x, y, err
 
     def aggregate_summaries(self, summaries):

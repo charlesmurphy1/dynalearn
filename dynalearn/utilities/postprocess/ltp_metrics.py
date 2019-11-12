@@ -31,10 +31,9 @@ class LTPMetrics(Metrics):
         if "ltp_mean/" + dataset not in self.data or self.aggregator is None:
             return ax
         x, y, err = self.aggregator(
-            in_state,
             self.data["summaries"],
-            self.data["ltp_mean/" + dataset],
-            var=self.data["ltp_var/" + dataset],
+            self.data["ltp/" + dataset],
+            in_state=in_state,
             out_state=out_state,
             operation="mean",
         )
@@ -164,19 +163,9 @@ class LTPMetrics(Metrics):
 
         self.data["summaries"] = np.array([[*s] for s in summaries])
         for k in ["train", "val", "test"]:
-            self.data["ltp_mean/" + k] = np.array(
+            self.data["ltp/" + k] = np.array(
                 [
                     np.mean(
-                        summaries[tuple(s)][k][: counter[tuple(s)][k], :], axis=0
-                    ).squeeze()
-                    if k in summaries[tuple(s)]
-                    else [np.nan] * d
-                    for s in self.data["summaries"]
-                ]
-            )
-            self.data["ltp_var/" + k] = np.array(
-                [
-                    np.var(
                         summaries[tuple(s)][k][: counter[tuple(s)][k], :], axis=0
                     ).squeeze()
                     if k in summaries[tuple(s)]
@@ -192,7 +181,7 @@ class LTPMetrics(Metrics):
             )
 
     def entropy(self, dataset):
-        ltp = self.data["ltp_mean/" + dataset]
+        ltp = self.data["ltp/" + dataset]
         counts = self.data["counts/" + dataset]
         ent = np.zeros(ltp.shape[0])
         for i, l in enumerate(ltp):

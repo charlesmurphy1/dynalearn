@@ -32,9 +32,9 @@ class CountMetrics(Metrics):
             offset = 0
         if not for_degree:
             x, y, err = self.aggregator(
-                in_state,
                 self.data["summaries"],
                 self.data["counts/" + dataset],
+                in_state=in_state,
                 operation="sum",
             )
             bar_width = np.nanmean(abs(x[1:] - np.roll(x, 1)[1:]))

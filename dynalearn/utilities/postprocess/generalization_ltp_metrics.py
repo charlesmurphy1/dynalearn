@@ -33,10 +33,9 @@ class LTPGeneralizationMetrics(Metrics):
             return ax
 
         x, y, err = self.aggregator(
-            in_state,
             self.data["summaries"],
             self.data["ltp"],
-            var=None,
+            in_state=in_state,
             out_state=out_state,
             operation="mean",
         )
