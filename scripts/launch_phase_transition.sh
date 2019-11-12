@@ -34,7 +34,7 @@ making_dir_if_exist () {
 dynamics="__DYNAMICS__"
 network="__NETWORK__"
 num_nodes=1000
-num_sample=50000
+num_sample=10000
 
 # Prepare simulation
 if [ "$HOSTNAME" == "Hector" ] || [ "$HOSTNAME" == "Bernard-Jr" ];
@@ -47,7 +47,6 @@ else
     PATH_TO_EXP="$HOME/scratch/dynalearn/data"
     PATH_TO_SCRIPT="$HOME/packages/dynalearn/scripts"
 fi
-FILENAME="n${num_nodes}_d${num_sample}"
 
 if [[ ${dynamics} = "sir" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/sir"
@@ -64,10 +63,14 @@ elif [[ ${dynamics} = "st-sis" ]]; then
 elif [[ ${dynamics} = "sis-sis" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/sis-sis"
     making_dir_if_exist ${PATH_TO_EXP}
+    num_sample=50000
 else
     echo "Wrong dynamics type"
     exit 1
 fi
+
+FILENAME="n${num_nodes}_d${num_sample}"
+
 
 if [[ ${network} = "ser" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/sparse-erdos-renyi"
@@ -118,7 +121,7 @@ elif [[ ${dynamics} = "st-sir" ]]; then
 elif [[ ${dynamics} = "st-sis" ]]; then
     sed -i 's,DYNAMICS,'"SoftThresholdSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 elif [[ ${dynamics} = "sis-sis" ]]; then
-    sed -i 's,DYNAMICS,'"SISSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
+    sed -i 's,DYNAMICS,'"CooperativeContagionSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 else
     echo "Wrong dynamics type"
     exit 1

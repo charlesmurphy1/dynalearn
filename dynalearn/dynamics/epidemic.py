@@ -109,3 +109,4 @@ class DoubleEpidemics(Epidemics):
 
         self.continue_simu = True
         self.states = states
+        return states

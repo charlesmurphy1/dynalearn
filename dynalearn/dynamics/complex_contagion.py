@@ -118,3 +118,33 @@ class SoftThresholdSIR(ComplexContagionSIR):
         self.params["mu"] = mu
         self.params["beta"] = beta
         self.params["recovery_prob"] = recovery_prob
+
+
+def nonlinear_activation(state_degree, tau, alpha):
+    act_prob = (1 - (1 - tau)**state_degree["I"])**alpha
+    act_prob[degree == 0] = 0
+    return act_prob
+
+
+class NonLinearSIS(ComplexContagionSIS):
+    def __init__(self, infection_prob, recovery_prob, alpha, init_state=None):
+
+        act_f = lambda l: nonlinear_activation(l, infection_prob, alpha)
+        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
+
+        super(NonLinearSIS, self).__init__(act_f, deact_f, init_state)
+        self.params["infection_prob"] = infection_prob
+        self.params["recovery_prob"] = recovery_prob
+        self.params["alpha"] = alpha
+
+
+class NonLinearSIR(ComplexContagionSIR):
+    def __init__(self, infection_prob, recovery_prob, alpha, init_state=None):
+
+        act_f = lambda l: nonlinear_activation(l, infection_prob, alpha)
+        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
+
+        super(NonLinearSIR, self).__init__(act_f, deact_f, init_state)
+        self.params["infection_prob"] = infection_prob
+        self.params["recovery_prob"] = recovery_prob
+        self.params["alpha"] = alpha

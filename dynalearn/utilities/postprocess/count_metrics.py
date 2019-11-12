@@ -37,6 +37,13 @@ class CountMetrics(Metrics):
                 in_state=in_state,
                 operation="sum",
             )
+            _x, _y, _err = self.aggregator(
+                None,
+                self.data["summaries"],
+                self.data["counts/" + dataset],
+                operation="sum",
+            )
+            y /= np.sum(_y)
             bar_width = np.nanmean(abs(x[1:] - np.roll(x, 1)[1:]))
         else:
             x = np.unique(np.sort(np.sum(self.data["summaries"][:, 1:], axis=-1)))
@@ -50,20 +57,15 @@ class CountMetrics(Metrics):
                         self.data["summaries"][:, 0] == in_state
                     )
                 y[i] = np.sum(self.data["counts/" + dataset][index])
+            y /= np.sum(y)
             bar_width = np.nanmin(abs(x[1:] - np.roll(x, 1)[1:]))
         if in_state is not None:
             bar_width /= self.data["summaries"].shape[1]
 
         if line:
-            ax.plot(x, y / np.sum(y), color=color, **kwargs)
+            ax.plot(x, y, color=color, **kwargs)
             bar_alpha = 0.3
-        ax.bar(
-            x + offset * bar_width,
-            y / np.sum(y),
-            bar_width,
-            color=color,
-            alpha=bar_alpha,
-        )
+        ax.bar(x + offset * bar_width, y, bar_width, color=color, alpha=bar_alpha)
         return ax
 
     def summarize(

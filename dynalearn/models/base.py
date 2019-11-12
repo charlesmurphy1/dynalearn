@@ -1,4 +1,5 @@
 import tensorflow as tf
+import torch as pt
 import numpy as np
 
 
@@ -49,3 +50,8 @@ class DynamicsPredictor:
 
     def predict(self, inputs, adj):
         return self.model.predict([inputs, adj], steps=1)
+
+    def update(self, inputs, adj):
+        p = self.predict(inputs, adj)
+        dist = pt.distributions.Categorical(pt.tensor(p))
+        return np.array(dist.sample())
