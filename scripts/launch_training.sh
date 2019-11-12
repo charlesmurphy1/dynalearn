@@ -34,21 +34,14 @@ making_dir_if_exist () {
 dynamics="__DYNAMICS__"
 network="__NETWORK__"
 num_nodes=1000
-<<<<<<< HEAD
 num_sample=10000
 PATH_TO_DATA="/media/$USER/LaCie/dynalearn-data/data"
 # PATH_TO_DATA = "$HOME/Documents/ulaval/doctorat/projects/dynalearn/data"
-=======
->>>>>>> f5ccc52820312eb0efe43e349cd5f462509e2c2e
 
 # Prepare simulation
 if [ "$HOSTNAME" == "Hector" ] || [ "$HOSTNAME" == "Bernard-Jr" ];
 then
-<<<<<<< HEAD
     PATH_TO_EXP="$PATH_TO_DATA/training"
-=======
-    PATH_TO_EXP="$HOME/Documents/ulaval/doctorat/projects/dynalearn/data/training_no_enrichment"
->>>>>>> f5ccc52820312eb0efe43e349cd5f462509e2c2e
     making_dir_if_exist ${PATH_TO_EXP}
     PATH_TO_SCRIPT="$HOME/Documents/ulaval/doctorat/projects/dynalearn/scripts"
 else
