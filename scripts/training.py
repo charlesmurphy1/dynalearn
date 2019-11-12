@@ -28,21 +28,21 @@ m_aggregator.operation = "mean"
 c_aggregator = dl.utilities.get_aggregator(params)
 c_aggregator.operation = "sum"
 metrics = {
-    # "DynamicsLTPMetrics": dl.utilities.DynamicsLTPMetrics(
-    #     aggregator=m_aggregator, num_points=1000
-    # ),
-    # "ModelLTPMetrics": dl.utilities.ModelLTPMetrics(
-    #     aggregator=m_aggregator, num_points=1000
-    # ),
-    # "EstimatorLTPMetrics": dl.utilities.EstimatorLTPMetrics(
-    #     aggregator=m_aggregator, num_points=10000
-    # ),
-    "DynamicsLTPGenMetrics": dl.utilities.DynamicsLTPGenMetrics(
-        degree_class, aggregator=m_aggregator
+    "DynamicsLTPMetrics": dl.utilities.DynamicsLTPMetrics(
+        aggregator=m_aggregator, num_points=1000
     ),
-    "ModelLTPGenMetrics": dl.utilities.ModelLTPGenMetrics(
-        degree_class, aggregator=m_aggregator
+    "ModelLTPMetrics": dl.utilities.ModelLTPMetrics(
+        aggregator=m_aggregator, num_points=1000
     ),
+    "EstimatorLTPMetrics": dl.utilities.EstimatorLTPMetrics(
+        aggregator=m_aggregator, num_points=10000
+    ),
+    # "DynamicsLTPGenMetrics": dl.utilities.DynamicsLTPGenMetrics(
+    #     degree_class, aggregator=m_aggregator
+    # ),
+    # "ModelLTPGenMetrics": dl.utilities.ModelLTPGenMetrics(
+    #     degree_class, aggregator=m_aggregator
+    # ),
     # "AttentionMetrics": dl.utilities.AttentionMetrics(num_points=100),
     # "LossMetrics": dl.utilities.LossMetrics(num_points=1000),
     # "CountMetrics": dl.utilities.CountMetrics(
