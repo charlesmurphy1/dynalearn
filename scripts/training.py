@@ -30,8 +30,6 @@ c_aggregator.operation = "sum"
 metrics = {
     "DynamicsLTPMetrics": dl.utilities.DynamicsLTPMetrics(
         aggregator=m_aggregator, num_points=1000
-<<<<<<< HEAD
-=======
     ),
     "ModelLTPMetrics": dl.utilities.ModelLTPMetrics(
         aggregator=m_aggregator, num_points=1000
@@ -41,33 +39,15 @@ metrics = {
     ),
     "DynamicsLTPGenMetrics": dl.utilities.DynamicsLTPGenMetrics(
         degree_class, aggregator=m_aggregator
->>>>>>> f5ccc52820312eb0efe43e349cd5f462509e2c2e
     ),
     "ModelLTPMetrics": dl.utilities.ModelLTPMetrics(
         aggregator=m_aggregator, num_points=1000
     ),
-<<<<<<< HEAD
-    "EstimatorLTPMetrics": dl.utilities.EstimatorLTPMetrics(
-        aggregator=m_aggregator, num_points=10000
-    ),
-    # "DynamicsLTPGenMetrics": dl.utilities.DynamicsLTPGenMetrics(
-    #     degree_class, aggregator=m_aggregator
-    # ),
-    # "ModelLTPGenMetrics": dl.utilities.ModelLTPGenMetrics(
-    #     degree_class, aggregator=m_aggregator
-    # ),
-    # "AttentionMetrics": dl.utilities.AttentionMetrics(num_points=100),
-    # "LossMetrics": dl.utilities.LossMetrics(num_points=1000),
-    # "CountMetrics": dl.utilities.CountMetrics(
-    #     aggregator=c_aggregator, num_points=50000
-    # ),
-=======
     "AttentionMetrics": dl.utilities.AttentionMetrics(num_points=100),
     "LossMetrics": dl.utilities.LossMetrics(num_points=1000),
     "CountMetrics": dl.utilities.CountMetrics(
         aggregator=c_aggregator, num_points=50000
     ),
->>>>>>> f5ccc52820312eb0efe43e349cd5f462509e2c2e
 }
 
 print("-------------------")
