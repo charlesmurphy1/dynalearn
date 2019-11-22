@@ -16,6 +16,18 @@ class LTPMetrics(Metrics):
     def get_metric(self, adj, inputs, targets):
         raise NotImplementedError()
 
+    def aggregate(self, in_state=None, out_state=None, dataset="train"):
+        if self.aggregate is None:
+            return
+        x, y, err = self.aggregator(
+            self.data["summaries"],
+            self.data["ltp/" + dataset],
+            in_state=in_state,
+            out_state=out_state,
+            operation="mean",
+        )
+        return x, y, err
+
     def display(
         self,
         in_state,
@@ -28,7 +40,7 @@ class LTPMetrics(Metrics):
     ):
         if ax is None:
             ax = plt.gca()
-        if "ltp_mean/" + dataset not in self.data or self.aggregator is None:
+        if "ltp/" + dataset not in self.data or self.aggregator is None:
             return ax
         x, y, err = self.aggregator(
             self.data["summaries"],

@@ -834,7 +834,10 @@ def get_dynamics(params):
             params["dynamics"]["params"]["alpha"],
             params["dynamics"]["params"]["init_param"],
         )
-    elif "SISSIS" == params["dynamics"]["name"]:
+    elif (
+        "SISSIS" == params["dynamics"]["name"]
+        or "CooperativeContagionSIS" == params["dynamics"]["name"]
+    ):
         if params["dynamics"]["params"]["init_param"] == "None":
             params["dynamics"]["params"]["init_param"] = None
         return dl.dynamics.SISSIS(
@@ -891,7 +894,10 @@ def get_meanfield(params, p_k_distribution):
             params["dynamics"]["params"]["alpha"],
             params["dynamics"]["params"]["recovery_prob"],
         )
-    elif "SISSIS" == params["dynamics"]["name"]:
+    elif (
+        "SISSIS" == params["dynamics"]["name"]
+        or "CooperativeContagionSIS" == params["dynamics"]["name"]
+    ):
         if params["dynamics"]["params"]["init_param"] == "None":
             params["dynamics"]["params"]["init_param"] = None
         return dl.meanfields.SISSIS_MF(
@@ -918,7 +924,10 @@ def get_aggregator(params):
         return dl.utilities.SimpleContagionAggregator()
     elif "NonLinearSIR" == params["dynamics"]["name"]:
         return dl.utilities.SimpleContagionAggregator()
-    elif "SISSIS" == params["dynamics"]["name"]:
+    elif (
+        "SISSIS" == params["dynamics"]["name"]
+        or "CooperativeContagionSIS" == params["dynamics"]["name"]
+    ):
         return dl.utilities.InteractingContagionAggregator(0)
     else:
         raise ValueError("wrong string name for aggregator.")
