@@ -24,6 +24,18 @@ class LTPGeneralizationMetrics(Metrics):
     def get_metric(self, experiment, input, adj):
         raise NotImplementedError()
 
+    def aggregate(self, in_state=None, out_state=None, dataset="train"):
+        if self.aggregate is None:
+            return
+        x, y, err = self.aggregator(
+            self.data["summaries"],
+            self.data["ltp/" + dataset],
+            in_state=in_state,
+            out_state=out_state,
+            operation="mean",
+        )
+        return x, y, err
+
     def display(
         self, in_state, out_state, num_points=None, ax=None, fill=None, **plot_kwargs
     ):

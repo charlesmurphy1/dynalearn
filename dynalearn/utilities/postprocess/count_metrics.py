@@ -13,6 +13,37 @@ class CountMetrics(Metrics):
         self.aggregator = aggregator
         self.num_points = num_points
 
+    def aggregate(self, in_state=None, for_degree=False, dataset="train"):
+        if not for_degree:
+            x, y, _ = self.aggregator(
+                self.data["summaries"],
+                self.data["counts/" + dataset],
+                in_state=in_state,
+                operation="sum",
+            )
+            _, z, _ = self.aggregator(
+                None,
+                self.data["summaries"],
+                self.data["counts/" + dataset],
+                operation="sum",
+            )
+            y /= np.sum(z)
+        else:
+            x = np.unique(np.sort(np.sum(self.data["summaries"][:, 1:], axis=-1)))
+            x = x[x > 0]
+            y = np.zeros(x.shape)
+            for i, xx in enumerate(x):
+                if in_state is None:
+                    index = np.sum(self.data["summaries"][:, 1:], axis=-1) == xx
+                else:
+                    index = (np.sum(self.data["summaries"][:, 1:], axis=-1) == xx) * (
+                        self.data["summaries"][:, 0] == in_state
+                    )
+                y[i] = np.sum(self.data["counts/" + dataset][index])
+            y /= np.sum(y)
+
+        return x, y
+
     def display(
         self,
         in_state,
