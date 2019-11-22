@@ -30,6 +30,9 @@ class Aggregator(object):
             else:
                 y[i] = op_val(values[index, out_state])
                 err[i] = op_err(values[index, out_state])
+        x = x[~np.isnan(y)]
+        err = err[~np.isnan(y)]
+        y = y[~np.isnan(y)]
         return x, y, err
 
     def aggregate_summaries(self, summaries):

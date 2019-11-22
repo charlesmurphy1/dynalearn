@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.distance import jensenshannon
 from scipy.stats import gaussian_kde
+from scipy.special import binom
 import tqdm
 
 
@@ -191,3 +192,13 @@ class CountMetrics(Metrics):
             )
             entropy /= entropy_uni
         return entropy
+
+    def max_entropy(self, dataset):
+        degrees = np.unique(np.sort(np.sum(self.data["summaries"][:, 1:], axis=-1)))
+        degrees = degrees[degrees > 0]
+        num_states = self.data["summaries"][0, 1:].shape[0]
+        ans = 0
+        for k in degrees:
+            ans += num_states * binom(num_states + k - 1, k)
+        max_entropy = np.log(ans)
+        return max_entropy

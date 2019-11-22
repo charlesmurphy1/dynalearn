@@ -45,6 +45,8 @@ class LTPMetrics(Metrics):
         if fill is not None:
             ax.fill_between(x, y - err, y + err, color=fill, alpha=0.3)
         ax.plot(x, y, **plot_kwargs)
+        # ax.set_xlim([np.min(x), np.max(x)])
+        # ax.set_ylim([np.min(y), np.max(y)])
         return ax
 
     def summarize(
