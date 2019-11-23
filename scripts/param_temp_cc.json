@@ -45,7 +45,7 @@
             "batch_size": -1,
             "num_graphs": 1,
             "num_sample": NUM_SAMPLE,
-            "T": 100000,
+            "T": 2,
             "val_fraction": 0.01,
             "max_null_iter": 1,
             "with_truth": 0

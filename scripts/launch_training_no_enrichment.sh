@@ -34,13 +34,14 @@ making_dir_if_exist () {
 dynamics="__DYNAMICS__"
 network="__NETWORK__"
 num_nodes=1000
+num_sample=10000
 PATH_TO_DATA="/media/$USER/LaCie/dynalearn-data/data"
 # PATH_TO_DATA = "$HOME/Documents/ulaval/doctorat/projects/dynalearn/data"
 
 # Prepare simulation
 if [ "$HOSTNAME" == "Hector" ] || [ "$HOSTNAME" == "Bernard-Jr" ];
 then
-    PATH_TO_EXP="$PATH_TO_DATA/training"
+    PATH_TO_EXP="$PATH_TO_DATA/training_no_enrichment"
     making_dir_if_exist ${PATH_TO_EXP}
     PATH_TO_SCRIPT="$HOME/Documents/ulaval/doctorat/projects/dynalearn/scripts"
 else
@@ -149,7 +150,8 @@ sed -i 's,EXP_NAME,'"${network}_${dynamics}_${FILENAME}"',g'     ${PATH_TO_EXP}/
 sed -i 's,PATH_TO_BEST_MODEL,'"best_weights"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 sed -i 's,PATH_TO_LAST_MODEL,'"weights"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 
-python ${PATH_TO_SCRIPT}/training.py -p ${PATH_TO_EXP}/${FILENAME}/parameters.json
+# python ${PATH_TO_SCRIPT}/training.py -p ${PATH_TO_EXP}/${FILENAME}/parameters.json
+python ${PATH_TO_SCRIPT}/dataset_variety.py -p ${PATH_TO_EXP}/${FILENAME}/parameters.json
 
 # ---------------------------------------------------------------------
 echo "Job finished with exit code \$? at: \`date\`"
