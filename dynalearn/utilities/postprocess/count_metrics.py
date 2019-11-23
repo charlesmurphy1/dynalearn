@@ -233,3 +233,7 @@ class CountMetrics(Metrics):
             ans += num_states * binom(num_states + k - 1, k)
         max_entropy = np.log(ans)
         return max_entropy
+
+    def effective_samplesize(self, dataset):
+        w = self.data["counts/" + dataset]
+        return np.sum(w) ** 2 / np.sum(w ** 2)
