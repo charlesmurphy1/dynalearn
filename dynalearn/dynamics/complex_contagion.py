@@ -121,8 +121,7 @@ class SoftThresholdSIR(ComplexContagionSIR):
 
 
 def nonlinear_activation(state_degree, tau, alpha):
-    act_prob = (1 - (1 - tau)**state_degree["I"])**alpha
-    act_prob[degree == 0] = 0
+    act_prob = (1 - (1 - tau) ** state_degree["I"]) ** alpha
     return act_prob
 
 
@@ -148,3 +147,35 @@ class NonLinearSIR(ComplexContagionSIR):
         self.params["infection_prob"] = infection_prob
         self.params["recovery_prob"] = recovery_prob
         self.params["alpha"] = alpha
+
+
+def sine_activation(state_degree, tau, epsilon, period):
+    l = state_degree["I"]
+    act_prob = (1 - (1 - tau) ** l) * (1 - epsilon * (np.sin(np.pi * l / period)) ** 2)
+    return act_prob
+
+
+class SineSIS(ComplexContagionSIS):
+    def __init__(self, infection_prob, recovery_prob, epsilon, period, init_state=None):
+
+        act_f = lambda l: sine_activation(l, infection_prob, epsilon, period)
+        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
+
+        super(SineSIS, self).__init__(act_f, deact_f, init_state)
+        self.params["infection_prob"] = infection_prob
+        self.params["recovery_prob"] = recovery_prob
+        self.params["epsilon"] = epsilon
+        self.params["period"] = period
+
+
+class SineSIR(ComplexContagionSIR):
+    def __init__(self, infection_prob, recovery_prob, epsilon, period, init_state=None):
+
+        act_f = lambda l: sine_activation(l, infection_prob, epsilon, period)
+        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
+
+        super(SineSIR, self).__init__(act_f, deact_f, init_state)
+        self.params["infection_prob"] = infection_prob
+        self.params["recovery_prob"] = recovery_prob
+        self.params["epsilon"] = epsilon
+        self.params["period"] = period
