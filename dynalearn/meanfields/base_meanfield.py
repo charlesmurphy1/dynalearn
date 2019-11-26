@@ -63,11 +63,16 @@ class BaseMeanField:
         if self.verbose:
             pb.close()
 
-    def compute_stability(self, epsilon=1e-6):
-        for fp in self.fixed_points:
+    def compute_stability(self, fp=None, epsilon=1e-6):
+        if fp is not None:
             jac = self.approx_jacobian(fp, epsilon=epsilon)
             w = np.linalg.eigvals(jac)
-            self.stability.append(np.max(np.abs(w)))
+            return np.max(np.abs(w))
+        else:
+            for fp in self.fixed_points:
+                jac = self.approx_jacobian(fp, epsilon=epsilon)
+                w = np.linalg.eigvals(jac)
+                self.stability.append(np.max(np.abs(w)))
 
     def isclose(self, x, y):
         dist = np.sum(np.abs(x - y))
