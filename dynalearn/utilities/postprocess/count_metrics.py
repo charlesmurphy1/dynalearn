@@ -70,10 +70,7 @@ class CountMetrics(Metrics):
                 operation="sum",
             )
             _x, _y, _err = self.aggregator(
-                None,
-                self.data["summaries"],
-                self.data["counts/" + dataset],
-                operation="sum",
+                self.data["summaries"], self.data["counts/" + dataset], operation="sum"
             )
             y /= np.sum(_y)
             bar_width = np.nanmean(abs(x[1:] - np.roll(x, 1)[1:]))

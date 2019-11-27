@@ -121,8 +121,8 @@ class SoftThresholdSIR(ComplexContagionSIR):
 
 
 def nonlinear_activation(state_degree, tau, alpha):
-    act_prob = (1 - (1 - tau)**state_degree["I"])**alpha
-    act_prob[degree == 0] = 0
+    act_prob = (1 - (1 - tau) ** state_degree["I"]) ** alpha
+    # act_prob[degree == 0] = 0
     return act_prob
 
 

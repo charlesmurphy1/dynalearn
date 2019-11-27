@@ -14,7 +14,7 @@
         {
             "infection_prob-2": [0.04, 0.03],
             "recovery_prob-2": [0.08, 0.1],
-            "coupling": 2.5,
+            "coupling": 5,
             "init_param": "None"
         }
     },

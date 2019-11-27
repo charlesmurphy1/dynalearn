@@ -29,7 +29,7 @@ c_aggregator.operation = "sum"
 print("-------------------")
 print("Building experiment")
 print("-------------------")
-T = 1000
+T = 10000
 num_samples = 10
 params["generator"]["params"]["num_sample"] = T
 ts = np.logspace(0, np.log10(params["generator"]["params"]["num_sample"]), 10).astype(
@@ -45,7 +45,7 @@ for _ts in ts:
     pbar = tqdm.tqdm(range(num_samples), f"Generating datasets: ts = {_ts}")
     neff = np.zeros(num_samples)
     entropy = np.zeros(num_samples)
-    max_entropy = np.zeros(num_samples)
+    normed_entropy = np.zeros(num_samples)
     for i in range(num_samples):
         metrics = {
             "CountMetrics": dl.utilities.CountMetrics(
@@ -53,6 +53,7 @@ for _ts in ts:
             )
         }
         params["generator"]["params"]["T"] = _ts
+        params["np_seed"] = i
         experiment = dl.utilities.get_experiment(params)
         experiment.verbose = 0
         experiment.generator.verbose = 0
@@ -70,14 +71,18 @@ for _ts in ts:
         experiment.compute_metrics()
         neff[i] = experiment.metrics["CountMetrics"].effective_samplesize("train")
         entropy[i] = experiment.metrics["CountMetrics"].entropy("train")
+        max_entropy = experiment.metrics["CountMetrics"].max_entropy("train")
+        normed_entropy[i] = entropy[i] / max_entropy
         # max_entropy[i] = experiment.metrics["CountMetrics"].max_entropy()
         pbar.update()
     if f"ts = {_ts}/neff" in h5file:
         del h5file[f"ts = {_ts}/neff"]
         del h5file[f"ts = {_ts}/entropy"]
+        del h5file[f"ts = {_ts}/normed_entropy"]
 
     h5file.create_dataset(f"ts = {_ts}/neff", data=neff)
     h5file.create_dataset(f"ts = {_ts}/entropy", data=entropy)
+    h5file.create_dataset(f"ts = {_ts}/normed_entropy", data=normed_entropy)
     # h5file.create_dataset(f"ts = {_ts}/max_entropy", data=neff)
     # dl.utilities.analyze_model(params, experiment)
 h5file.close()
