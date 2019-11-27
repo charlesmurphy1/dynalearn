@@ -57,7 +57,49 @@ plt.rc("text", usetex=True)
 plt.rc("font", family="serif")
 
 
-def train_model(params, experiment):
+def generate_data(params, experiment, h5file, overwrite=False):
+    # data_filename = os.path.join(params["path"], params["name"] + ".h5")
+    # h5file = h5py.File(data_filename)
+
+    if ("data" in h5file and overwrite) or "data" not in h5file:
+        print("----------------")
+        print("Building dataset")
+        print("----------------")
+        experiment.generate_data(
+            params["generator"]["params"]["num_graphs"],
+            params["generator"]["params"]["num_sample"],
+            params["generator"]["params"]["T"],
+            val_fraction=params["generator"]["params"]["val_fraction"],
+            val_bias=params["sampler"]["params"]["validation_bias"],
+        )
+        counts_metrics = dl.utilities.CountMetrics()
+        counts_metrics.compute(experiment)
+        print("Train dataset entropy: " + str(counts_metrics.entropy("train")))
+        if experiment.val_generator is not None:
+            print("Val. dataset entropy: " + str(counts_metrics.entropy("val")))
+        if experiment.test_generator is not None:
+            print("Test dataset entropy: " + str(counts_metrics.entropy("test")))
+
+        if experiment.val_generator is not None:
+            print("JSD train-val: " + str(counts_metrics.jensenshannon("train", "val")))
+            if experiment.test_generator is not None:
+                print(
+                    "JSD train-test: "
+                    + str(counts_metrics.jensenshannon("train", "test"))
+                )
+                print(
+                    "JSD val-test: " + str(counts_metrics.jensenshannon("val", "test"))
+                )
+
+        experiment.save_data(h5file)
+    else:
+        experiment.load_data(h5file)
+
+
+def train_model(params, experiment, h5file, overwrite=False):
+    # data_filename = os.path.join(params["path"], params["name"] + ".h5")
+    # h5file = h5py.File(data_filename)
+
     experiment.model.model.summary()
     schedule = get_schedule(params["training"]["schedule"])
     metrics = [dl.utilities.metrics.model_entropy]
@@ -74,92 +116,60 @@ def train_model(params, experiment):
             verbose=1,
         ),
     ]
-    data_filename = os.path.join(params["path"], params["name"] + ".h5")
-    h5file = h5py.File(data_filename)
-
-    print("----------------")
-    print("Building dataset")
-    print("----------------")
-    experiment.generate_data(
-        params["generator"]["params"]["num_graphs"],
-        params["generator"]["params"]["num_sample"],
-        params["generator"]["params"]["T"],
-        val_fraction=params["generator"]["params"]["val_fraction"],
-        val_bias=params["sampler"]["params"]["validation_bias"],
-    )
-    counts_metrics = dl.utilities.CountMetrics()
-    counts_metrics.compute(experiment)
-    print("Train dataset entropy: " + str(counts_metrics.entropy("train")))
-    if experiment.val_generator is not None:
-        print("Val. dataset entropy: " + str(counts_metrics.entropy("val")))
-    if experiment.test_generator is not None:
-        print("Test dataset entropy: " + str(counts_metrics.entropy("test")))
-
-    if experiment.val_generator is not None:
-        print("JSD train-val: " + str(counts_metrics.jensenshannon("train", "val")))
-        if experiment.test_generator is not None:
-            print(
-                "JSD train-test: " + str(counts_metrics.jensenshannon("train", "test"))
+    if ("history" in h5file and overwrite) or "history" not in h5file:
+        print("------------")
+        print("Pre-Training")
+        print("------------")
+        if params["training"]["pretrain_epochs"] > 0:
+            experiment.train_model(
+                params["training"]["pretrain_epochs"],
+                params["training"]["steps_per_epoch"],
+                validation_steps=params["training"]["validation_steps"],
+                learning_rate=params["training"]["learning_rate"],
             )
-            print("JSD val-test: " + str(counts_metrics.jensenshannon("val", "test")))
+        print("--------")
+        print("Training")
+        print("--------")
+        if params["training"]["epochs"] > 0:
+            experiment.train_model(
+                params["training"]["epochs"],
+                params["training"]["steps_per_epoch"],
+                validation_steps=params["training"]["steps_per_epoch"],
+                metrics=metrics,
+                callbacks=callbacks,
+                learning_rate=params["training"]["learning_rate"],
+            )
 
-    experiment.save_data(h5file)
-
-    agg = get_aggregator(params)
-    num = params["generator"]["params"]["num_sample"]
-    if num > 10000:
-        num = 10000
-    estimator_metrics = dl.utilities.EstimatorLTPMetrics(aggregator=agg, num_points=num)
-    estimator_metrics.compute(experiment)
-    print("Train estimated entropy: " + str(estimator_metrics.entropy("train")))
-    if experiment.val_generator is not None:
-        print("Val. estimated entropy: " + str(estimator_metrics.entropy("val")))
-    if experiment.test_generator is not None:
-        print("Test estimated entropy: " + str(estimator_metrics.entropy("test")))
-
-    print("------------")
-    print("Pre-Training")
-    print("------------")
-    if params["training"]["pretrain_epochs"] > 0:
-        experiment.train_model(
-            params["training"]["pretrain_epochs"],
-            params["training"]["steps_per_epoch"],
-            validation_steps=params["training"]["validation_steps"],
-            learning_rate=params["training"]["learning_rate"],
+        print("-----------")
+        print("Saving data")
+        print("-----------")
+        experiment.save_weights(
+            os.path.join(params["path"], params["name"] + "_weights.h5")
         )
-    print("--------")
-    print("Training")
-    print("--------")
-    if params["training"]["epochs"] > 0:
-        experiment.train_model(
-            params["training"]["epochs"],
-            params["training"]["steps_per_epoch"],
-            validation_steps=params["training"]["steps_per_epoch"],
-            metrics=metrics,
-            callbacks=callbacks,
-            learning_rate=params["training"]["learning_rate"],
+        experiment.save_history(h5file)
+    else:
+        experiment.load_history(h5file)
+        experiment.load_history(h5file)
+    experiment.load_weights(
+        os.path.join(
+            params["path"], params["name"] + "_" + params["path_to_best"] + ".h5"
         )
-
-    print("-----------")
-    print("Saving data")
-    print("-----------")
-    experiment.save_weights(
-        os.path.join(params["path"], params["name"] + "_weights.h5")
     )
-    experiment.save_history(h5file)
-    return experiment
+    # return experiment
 
 
-def analyze_model(params, experiment):
-    print("-----------------")
-    print("Computing metrics")
-    print("-----------------")
-    data_filename = os.path.join(params["path"], params["name"] + ".h5")
-    h5file = h5py.File(data_filename)
-    experiment.compute_metrics()
-    experiment.save_metrics(h5file)
-    experiment.save_history(h5file)
-    return experiment
+def analyze_model(params, experiment, h5file, overwrite=False):
+    # data_filename = os.path.join(params["path"], params["name"] + ".h5")
+    # h5file = h5py.File(data_filename)
+    if ("data" in h5file and overwrite) or "data" not in h5file:
+        print("-----------------")
+        print("Computing metrics")
+        print("-----------------")
+        experiment.compute_metrics()
+        experiment.save_metrics(h5file)
+    else:
+        experiment.load_metrics(h5file)
+    make_figures(params, experiment)
 
 
 def make_figures(params, experiment):
@@ -834,6 +844,42 @@ def get_dynamics(params):
             params["dynamics"]["params"]["alpha"],
             params["dynamics"]["params"]["init_param"],
         )
+    elif "SineSIS" == params["dynamics"]["name"]:
+        if params["dynamics"]["params"]["init_param"] == "None":
+            params["dynamics"]["params"]["init_param"] = None
+        return dl.dynamics.SineSIS(
+            params["dynamics"]["params"]["infection_prob"],
+            params["dynamics"]["params"]["recovery_prob"],
+            params["dynamics"]["params"]["epsilon"],
+            params["dynamics"]["params"]["period"],
+            params["dynamics"]["params"]["init_param"],
+        )
+    elif "SineSIR" == params["dynamics"]["name"]:
+        if params["dynamics"]["params"]["init_param"] == "None":
+            params["dynamics"]["params"]["init_param"] = None
+        return dl.dynamics.SineSIR(
+            params["dynamics"]["params"]["infection_prob"],
+            params["dynamics"]["params"]["recovery_prob"],
+            params["dynamics"]["params"]["epsilon"],
+            params["dynamics"]["params"]["period"],
+            params["dynamics"]["params"]["init_param"],
+        )
+    elif "PlanckSIS" == params["dynamics"]["name"]:
+        if params["dynamics"]["params"]["init_param"] == "None":
+            params["dynamics"]["params"]["init_param"] = None
+        return dl.dynamics.PlanckSIS(
+            params["dynamics"]["params"]["recovery_prob"],
+            params["dynamics"]["params"]["temperature"],
+            params["dynamics"]["params"]["init_param"],
+        )
+    elif "PlanckSIR" == params["dynamics"]["name"]:
+        if params["dynamics"]["params"]["init_param"] == "None":
+            params["dynamics"]["params"]["init_param"] = None
+        return dl.dynamics.PlanckSIR(
+            params["dynamics"]["params"]["recovery_prob"],
+            params["dynamics"]["params"]["temperature"],
+            params["dynamics"]["params"]["init_param"],
+        )
     elif (
         "SISSIS" == params["dynamics"]["name"]
         or "CooperativeContagionSIS" == params["dynamics"]["name"]
@@ -923,6 +969,14 @@ def get_aggregator(params):
     elif "NonLinearSIS" == params["dynamics"]["name"]:
         return dl.utilities.SimpleContagionAggregator()
     elif "NonLinearSIR" == params["dynamics"]["name"]:
+        return dl.utilities.SimpleContagionAggregator()
+    elif "SineSIS" == params["dynamics"]["name"]:
+        return dl.utilities.SimpleContagionAggregator()
+    elif "SineSIR" == params["dynamics"]["name"]:
+        return dl.utilities.SimpleContagionAggregator()
+    elif "PlanckSIS" == params["dynamics"]["name"]:
+        return dl.utilities.SimpleContagionAggregator()
+    elif "PlanckSIR" == params["dynamics"]["name"]:
         return dl.utilities.SimpleContagionAggregator()
     elif (
         "SISSIS" == params["dynamics"]["name"]
