@@ -12,7 +12,7 @@ else
 fi
 
 dynamics=("sis-sis")
-networks=("ba" "ser")
+networks=("ser")
 temp=0
 
 for net in ${networks[*]}; do

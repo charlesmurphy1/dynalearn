@@ -7,25 +7,27 @@
             "DENSITYLABEL": DENSITY
         }
     },
- "dynamics":
-    {
-        "name": "DYNAMICS",
-        "params":
-        {
-            "infection_prob": 0.04,
-            "recovery_prob": 0.08,
-            "init_param": "None"
-        }
-    },
+    "dynamics":
+       {
+           "name": "SineSIR",
+           "params":
+           {
+               "infection_prob": 0.04,
+               "recovery_prob": 0.08,
+               "epsilon": 0.1,
+               "period": 3.5,
+               "init_param": "None"
+           }
+       },
  "model":
     {
         "name": "LocalStatePredictor",
         "params":
         {
-            "in_features": [32],
+            "in_features": [64],
             "attn_features": [32],
-            "out_features": [32],
-            "n_heads": [1],
+            "out_features": [64],
+            "n_heads": [2],
             "in_activation": "relu",
             "attn_activation": "relu",
             "out_activation": "relu",
@@ -51,8 +53,8 @@
         "name": "StateBiasedSampler",
         "params":
         {
-            "sampling_bias": 1,
-            "validation_bias": 1,
+            "sampling_bias": 0.6,
+            "validation_bias": 0.8,
             "replace":1,
             "resample":1000,
             "sample_from_weights":0
