@@ -9,6 +9,28 @@ import tqdm
 import sys
 
 
+def absorbing_state(mf):
+    x = np.zeros(mf.array_shape).astype(mf.dtype)
+    x[0] = 1
+    x = mf.normalize_state(x)
+    return x.reshape(-1)
+
+
+def epidemic_state(mf):
+    x = np.zeros(mf.array_shape).astype(mf.dtype)
+    x[0] = 1
+    x = 1 - x
+    x = mf.normalize_state(x)
+    return x.reshape(-1)
+
+
+def generic_state(mf, s):
+    x = np.zeros(mf.array_shape).astype(mf.dtype)
+    x[s] = 1
+    x = mf.normalize_state(x)
+    return x.reshape(-1)
+
+
 prs = ap.ArgumentParser(
     description="Get local transition probability \
                                      figure from path to parameters."
@@ -37,25 +59,34 @@ avgk = np.concatenate((np.linspace(0.1, 3, 50), np.linspace(3.1, 10, 20)))
 if "mf_k" in h5file:
     del h5file["mf_k"]
 h5file.create_dataset("mf_k", data=avgk)
+compute_stability = True
 
 for k in avgk:
     print(f"avgk={k}")
     p_k = dl.meanfields.poisson_distribution(k, num_k=7)
     true_mf = dl.utilities.get_meanfield(params, p_k)
-    learned_mf = dl.meanfields.LearnedModelMF(
-        p_k, experiment.model, tol=1e-5, verbose=1
-    )
+    gnn_mf = dl.meanfields.LearnedModelMF(p_k, experiment.model, tol=1e-5, verbose=1)
 
-    true_mf.compute_fixed_points()
-    true_mf.compute_fixed_points(x0=true_mf.abs_state(0), epsilon=1e-15)
-    true_mf.add_fixed_points(true_mf.abs_state(0))
-    true_mf.compute_stability()
-    true_mf.save(f"k={k}/true_mf", h5file)
+    true_low_fp = true_mf.search_fixed_points(x0=absorbing_state(true_mf))
+    true_high_fp = true_mf.search_fixed_points(x0=epidemic_state(true_mf))
+    gnn_low_fp = gnn_mf.search_fixed_points(x0=absorbing_state(gnn_mf))
+    gnn_high_fp = gnn_mf.search_fixed_points(x0=epidemic_state(gnn_mf))
+    if compute_stability:
+        true_abs_stability = true_mf.stability(true_mf.abs_state(0))
+        gnn_abs_stability = gnn_mf.stability(gnn_mf.abs_state(0))
+    else:
+        true_abs_stability = 1.1
+        gnn_abs_stability = 1.1
 
-    learned_mf.compute_fixed_points()
-    learned_mf.compute_fixed_points(x0=learned_mf.abs_state(0), epsilon=1e-15)
-    learned_mf.add_fixed_points(learned_mf.abs_state(0))
-    learned_mf.compute_stability()
-    learned_mf.save(f"k={k}/learned_mf", h5file)
+    if true_abs_stability > 1.1 and gnn_abs_stability > 1.1:
+        compute_stability = False
+
+    h5file.create_dataset(f"k = {k}/true/low_fp", data=true_low_fp)
+    h5file.create_dataset(f"k = {k}/true/high_fp", data=true_high_fp)
+    h5file.create_dataset(f"k = {k}/true/abs_stability", data=true_abs_stability)
+
+    h5file.create_dataset(f"k = {k}/gnn/low_fp", data=gnn_low_fp)
+    h5file.create_dataset(f"k = {k}/gnn/high_fp", data=gnn_high_fp)
+    h5file.create_dataset(f"k = {k}/gnn/abs_stability", data=gnn_abs_stability)
 
 h5file.close()

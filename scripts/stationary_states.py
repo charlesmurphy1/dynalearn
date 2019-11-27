@@ -36,7 +36,6 @@ experiment.load_weights(
 )
 num_states = int(experiment.model.num_states)
 N = 10000
-# T = 10000
 num_samples = 100
 burn = 100
 reshuffle = 0.1

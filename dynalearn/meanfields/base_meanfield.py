@@ -24,12 +24,6 @@ class BaseMeanField:
         x = self.normalize_state(x)
         return x.reshape(-1)
 
-    def abs_state(self, s):
-        x = np.zeros(self.array_shape).astype(self.dtype)
-        x[s] = 1
-        x = self.normalize_state(x)
-        return x.reshape(-1)
-
     def add_fixed_points(self, x):
         isclose = False
         if len(self.fixed_points) == 0:
@@ -40,6 +34,21 @@ class BaseMeanField:
             if self.isclose(fp, x):
                 return
         self.fixed_points.append(x)
+
+    def search_fixed_point(self, x0=None, fp_finder=None):
+        if x0 is None:
+            _x0 = self.random_state()
+        else:
+            _x0 = self.normalize_state(_x0.reshape(self.array_shape)).reshape(-1)
+        sol = fp_finder(self.application, _x0)
+        if not sol.success:
+            print("Converge warning: Still returning final result.")
+        return sol.x
+
+    def stability(self, fp, epsilon=1e-6):
+        jac = self.approx_jacobian(fp, epsilon=epsilon)
+        w = np.linalg.eigvals(jac)
+        return np.max(np.abs(w))
 
     def compute_fixed_points(self, fp_finder=None, num_seeds=1, x0=None, epsilon=1e-6):
         if fp_finder is None:
@@ -55,24 +64,22 @@ class BaseMeanField:
                 _x0 = x0 + epsilon * np.random.randn(*x0.shape)
                 _x0 = self.normalize_state(_x0.reshape(self.array_shape)).reshape(-1)
             sol = fp_finder(self.application, _x0)
-            # if sol.success:
-            #     self.add_fixed_points(sol.x)
             self.add_fixed_points(sol.x)
             if self.verbose:
                 pb.update()
         if self.verbose:
             pb.close()
 
-    def compute_stability(self, fp=None, epsilon=1e-6):
-        if fp is not None:
-            jac = self.approx_jacobian(fp, epsilon=epsilon)
-            w = np.linalg.eigvals(jac)
-            return np.max(np.abs(w))
-        else:
-            for fp in self.fixed_points:
-                jac = self.approx_jacobian(fp, epsilon=epsilon)
-                w = np.linalg.eigvals(jac)
-                self.stability.append(np.max(np.abs(w)))
+    # def compute_stability(self, fp=None, epsilon=1e-6):
+    #     if fp is not None:
+    #         jac = self.approx_jacobian(fp, epsilon=epsilon)
+    #         w = np.linalg.eigvals(jac)
+    #         return np.max(np.abs(w))
+    #     else:
+    #         for fp in self.fixed_points:
+    #             jac = self.approx_jacobian(fp, epsilon=epsilon)
+    #             w = np.linalg.eigvals(jac)
+    #             self.stability.append(np.max(np.abs(w)))
 
     def isclose(self, x, y):
         dist = np.sum(np.abs(x - y))
@@ -96,32 +103,32 @@ class BaseMeanField:
             pb.close()
         return jac
 
-    def save(self, name, h5file, overwrite=True):
-        if len(self.fixed_points) == 0:
-            return
-
-        path = name + "/fixed_points"
-        data = np.array(self.fixed_points)
-        if path in h5file:
-            if overwrite:
-                del h5file[path]
-                h5file.create_dataset(path, data=data)
-        else:
-            h5file.create_dataset(path, data=data)
-
-        path = name + "/stability"
-        data = np.array(self.stability)
-        if path in h5file:
-            if overwrite:
-                del h5file[path]
-                h5file.create_dataset(path, data=data)
-        else:
-            h5file.create_dataset(path, data=data)
-
-    def load(self, name, h5file):
-        if name in h5file:
-            self.fixed_points = [fp for fp in h5file[name + "/fixed_points"][...]]
-            self.stability = [s for s in h5file[name + "/stability"][...]]
+    # def save(self, name, h5file, overwrite=True):
+    #     if len(self.fixed_points) == 0:
+    #         return
+    #
+    #     path = name + "/fixed_points"
+    #     data = np.array(self.fixed_points)
+    #     if path in h5file:
+    #         if overwrite:
+    #             del h5file[path]
+    #             h5file.create_dataset(path, data=data)
+    #     else:
+    #         h5file.create_dataset(path, data=data)
+    #
+    #     path = name + "/stability"
+    #     data = np.array(self.stability)
+    #     if path in h5file:
+    #         if overwrite:
+    #             del h5file[path]
+    #             h5file.create_dataset(path, data=data)
+    #     else:
+    #         h5file.create_dataset(path, data=data)
+    #
+    # def load(self, name, h5file):
+    #     if name in h5file:
+    #         self.fixed_points = [fp for fp in h5file[name + "/fixed_points"][...]]
+    #         self.stability = [s for s in h5file[name + "/stability"][...]]
 
     def compute_ltp(self):
         raise NotImplementedError()

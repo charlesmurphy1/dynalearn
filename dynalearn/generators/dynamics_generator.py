@@ -14,7 +14,7 @@ class DynamicsGenerator:
         sampler,
         batch_size=-1,
         with_truth=False,
-        verbose=1,
+        verbose=0,
     ):
         self.graph_model = graph_model
         self.dynamics_model = dynamics_model
