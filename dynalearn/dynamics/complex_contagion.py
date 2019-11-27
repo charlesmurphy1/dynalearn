@@ -1,6 +1,7 @@
 from dynalearn.dynamics import *
 import networkx as nx
 import numpy as np
+from scipy.special import lambertw
 
 
 class ComplexContagionSIS(SingleEpidemics):
@@ -122,10 +123,6 @@ class SoftThresholdSIR(ComplexContagionSIR):
 
 def nonlinear_activation(state_degree, tau, alpha):
     act_prob = (1 - (1 - tau) ** state_degree["I"]) ** alpha
-<<<<<<< HEAD
-    # act_prob[degree == 0] = 0
-=======
->>>>>>> b7632c3c96780be1ef51b9a5630086a0439af0de
     return act_prob
 
 
@@ -183,3 +180,33 @@ class SineSIR(ComplexContagionSIR):
         self.params["recovery_prob"] = recovery_prob
         self.params["epsilon"] = epsilon
         self.params["period"] = period
+
+
+def planck_activation(state_degree, temperature):
+    l = state_degree["I"]
+    gamma = (lambertw(-3 * np.exp(-3)) + 3).real
+    Z = gamma ** 3 * temperature ** 3 / (np.exp(gamma) - 1)
+    act_prob = l ** 3 / (np.exp(l / temperature) - 1) / Z
+    return act_prob
+
+
+class PlanckSIS(ComplexContagionSIS):
+    def __init__(self, recovery_prob, temperature, init_state=None):
+
+        act_f = lambda l: planck_activation(l, temperature)
+        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
+
+        super(PlanckSIS, self).__init__(act_f, deact_f, init_state)
+        self.params["recovery_prob"] = recovery_prob
+        self.params["temperature"] = temperature
+
+
+class PlanckSIR(ComplexContagionSIR):
+    def __init__(self, recovery_prob, temperature, init_state=None):
+
+        act_f = lambda l: planck_activation(l, temperature)
+        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
+
+        super(PlanckSIR, self).__init__(act_f, deact_f, init_state)
+        self.params["recovery_prob"] = recovery_prob
+        self.params["temperature"] = temperature
