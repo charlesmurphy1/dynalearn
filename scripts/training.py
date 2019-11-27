@@ -54,6 +54,9 @@ metrics = {
     ),
 }
 experiment.metrics = metrics
+experiment.verbose = 1
+experiment.generator.verbose = 1
+experiment.generator.sampler.verbose = 0
 
 h5file = h5py.File(os.path.join(params["path"], params["name"] + ".h5"))
 dl.utilities.generate_data(params, experiment, h5file, overwrite=True)
