@@ -35,7 +35,7 @@ experiment.load_weights(
     os.path.join(params["path"], params["name"] + "_" + params["path_to_best"] + ".h5")
 )
 num_states = int(experiment.model.num_states)
-N = 10000
+N = 2000
 num_samples = 100
 burn = 100
 reshuffle = 0.1

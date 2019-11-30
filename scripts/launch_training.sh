@@ -91,7 +91,7 @@ elif [[ ${dynamics} = "pl-sis" ]]; then
 elif [[ ${dynamics} = "sis-sis" ]]; then
     PATH_TO_EXP="${PATH_TO_EXP}/sis-sis"
     making_dir_if_exist ${PATH_TO_EXP}
-    num_sample=50000
+    num_sample=10000
 else
     echo "Wrong dynamics type"
     exit 1

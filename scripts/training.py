@@ -59,7 +59,7 @@ experiment.generator.verbose = 1
 experiment.generator.sampler.verbose = 0
 
 h5file = h5py.File(os.path.join(params["path"], params["name"] + ".h5"))
-dl.utilities.generate_data(params, experiment, h5file, overwrite=True)
-dl.utilities.train_model(params, experiment, h5file, overwrite=True)
-dl.utilities.analyze_model(params, experiment, h5file, overwrite=True)
+dl.utilities.generate_data(params, experiment, h5file, overwrite=False)
+dl.utilities.train_model(params, experiment, h5file, overwrite=False)
+dl.utilities.analyze_model(params, experiment, h5file, overwrite=False)
 h5file.close()
