@@ -8,16 +8,18 @@ import numpy as np
 import tqdm
 import sys
 
+epsilon = 1e-3
+
 
 def absorbing_state(mf):
-    x = np.zeros(mf.array_shape).astype(mf.dtype)
+    x = np.ones(mf.array_shape).astype(mf.dtype) * epsilon
     x[0] = 1
     x = mf.normalize_state(x)
     return x.reshape(-1)
 
 
 def epidemic_state(mf):
-    x = np.zeros(mf.array_shape).astype(mf.dtype)
+    x = np.ones(mf.array_shape).astype(mf.dtype) * epsilon
     x[0] = 1
     x = 1 - x
     x = mf.normalize_state(x)
@@ -25,7 +27,7 @@ def epidemic_state(mf):
 
 
 def generic_state(mf, s):
-    x = np.zeros(mf.array_shape).astype(mf.dtype)
+    x = np.ones(mf.array_shape).astype(mf.dtype) * epsilon
     x[s] = 1
     x = mf.normalize_state(x)
     return x.reshape(-1)
