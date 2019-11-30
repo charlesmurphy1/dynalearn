@@ -118,7 +118,7 @@ class NonLinearSIR_MF(ComplexSIRMF):
 
 
 class PlanckSIS_MF(ComplexSISMF):
-    def __init__(self, p_k, tau, gamma, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, p_k, temperature, gamma, tol=1e-3, verbose=1, dtype="float"):
         self.params = {"temperature": temperature, "gamma": gamma}
         activation = lambda l, k: planck_activation(l, k, self.params)
         deactivation = lambda l, k: constant_deactivation(l, k, self.params)
@@ -128,7 +128,7 @@ class PlanckSIS_MF(ComplexSISMF):
 
 
 class PlanckSIR_MF(ComplexSIRMF):
-    def __init__(self, p_k, tau, gamma, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, p_k, temperature, gamma, tol=1e-3, verbose=1, dtype="float"):
         self.params = {"temperature": temperature, "gamma": gamma}
         activation = lambda l, k: planck_activation(l, k, self.params)
         deactivation = lambda l, k: constant_deactivation(l, k, self.params)

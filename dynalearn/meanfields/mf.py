@@ -12,21 +12,7 @@ class MF(BaseMeanField):
     def __init__(self, s_dim, p_k, tol=1e-3, verbose=1, dtype="float"):
         self.s_dim = s_dim
         self.p_k = p_k
-        self.k_min = self.p_k.values.min()
-        self.k_max = self.p_k.values.max()
-        self.k_dim = self.k_max - self.k_min + 1
-        array_shape = (self.s_dim, self.k_dim)
-
-        self.k_grid, self.l_grid = config_k_l_grid(
-            p_k.values, np.arange(self.k_max + 1), s_dim
-        )
-        self.good_config = self.l_grid.sum(0) == self.k_grid
-        self.bad_config = (self.l_grid.sum(0) > self.k_grid) + (
-            self.l_grid.sum(0) < self.k_grid
-        )
-        self.k_grid[self.bad_config] = 0
-        self.l_grid[:, self.bad_config] = 0
-        super(MF, self).__init__(array_shape, tol=tol, verbose=verbose)
+        super(MF, self).__init__(self.array_shape, tol=tol, verbose=verbose)
 
     def application(self, x):
         _x = x.reshape(self.array_shape)
@@ -85,3 +71,27 @@ class MF(BaseMeanField):
         z = _x.sum(0)
         normed_x = _x / z
         return normed_x
+
+    @property
+    def p_k(self):
+        return self._p_k
+
+    @p_k.setter
+    def p_k(self, p_k):
+        self._p_k = p_k
+        self.k_min = self.p_k.values.min()
+        self.k_max = self.p_k.values.max()
+        self.k_dim = self.k_max - self.k_min + 1
+        self.array_shape = (self.s_dim, self.k_dim)
+
+        self.k_grid, self.l_grid = config_k_l_grid(
+            p_k.values, np.arange(self.k_max + 1), self.s_dim
+        )
+        self.good_config = self.l_grid.sum(0) == self.k_grid
+        self.bad_config = (self.l_grid.sum(0) > self.k_grid) + (
+            self.l_grid.sum(0) < self.k_grid
+        )
+        self.k_grid[self.bad_config] = 0
+        self.l_grid[:, self.bad_config] = 0
+
+        self.ltp = self.compute_ltp()

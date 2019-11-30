@@ -13,14 +13,22 @@ epsilon = 1e-3
 
 def absorbing_state(mf):
     x = np.ones(mf.array_shape).astype(mf.dtype) * epsilon
+<<<<<<< HEAD
     x[0] = 1 - epsilon
+=======
+    x[0] = 1
+>>>>>>> 807f077f7c0103c3f6b4bcc70ef4f9f06193cabd
     x = mf.normalize_state(x)
     return x.reshape(-1)
 
 
 def epidemic_state(mf):
     x = np.ones(mf.array_shape).astype(mf.dtype) * epsilon
+<<<<<<< HEAD
     x[0] = 1 - epsilon
+=======
+    x[0] = 1
+>>>>>>> 807f077f7c0103c3f6b4bcc70ef4f9f06193cabd
     x = 1 - x
     x = mf.normalize_state(x)
     return x.reshape(-1)
@@ -28,7 +36,11 @@ def epidemic_state(mf):
 
 def generic_state(mf, s):
     x = np.ones(mf.array_shape).astype(mf.dtype) * epsilon
+<<<<<<< HEAD
     x[s] = 1 - epsilon
+=======
+    x[s] = 1
+>>>>>>> 807f077f7c0103c3f6b4bcc70ef4f9f06193cabd
     x = mf.normalize_state(x)
     return x.reshape(-1)
 

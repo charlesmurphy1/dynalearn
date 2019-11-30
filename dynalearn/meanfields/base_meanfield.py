@@ -15,7 +15,11 @@ class BaseMeanField:
 
         # self.fixed_points = []
         # self.stability = []
+<<<<<<< HEAD
         self.ltp = self.compute_ltp()  # m x i x j
+=======
+        # self.ltp = self.compute_ltp()  # m x i x j
+>>>>>>> 807f077f7c0103c3f6b4bcc70ef4f9f06193cabd
         if self.verbose:
             print(f"System size: {np.prod(self.array_shape)}")
 
