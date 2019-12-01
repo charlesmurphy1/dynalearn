@@ -7,6 +7,7 @@ import tqdm
 class BiasedSampler(RandomSampler):
     def __init__(
         self,
+        name,
         sampling_bias=0,
         replace=False,
         verbose=1,
@@ -14,7 +15,7 @@ class BiasedSampler(RandomSampler):
         resample=-1,
     ):
         super(BiasedSampler, self).__init__(
-            replace, verbose, sample_from_weights, resample
+            name, replace, verbose, sample_from_weights, resample
         )
         self.params["sampling_bias"] = sampling_bias
 
