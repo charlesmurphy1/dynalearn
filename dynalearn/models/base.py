@@ -9,7 +9,6 @@ class DynamicsPredictor:
         self._num_nodes = num_nodes
         self._num_states = num_states
         self.params = {}
-        # print(tf.get_seed(None))
 
     @property
     def model(self):
