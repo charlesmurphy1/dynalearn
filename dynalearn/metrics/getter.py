@@ -1,4 +1,4 @@
-from dynalearn.metrics import *
+import dynalearn as dl
 
 
 def get_aggregator(dynamics):

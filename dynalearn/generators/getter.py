@@ -1,14 +1,13 @@
-from dynalearn.generators import *
-from dynalearn.generators.samplers import get_sampler
+import dynalearn as dl
 
 
 def get(params_dict, graph_model, dynamics_model):
     name = params_dict["name"]
     params = params_dict["params"]
-    sampler = get_sampler(dynamics_model, params_dict["sampler"])
+    sampler = dl.generators.samplers.get(params_dict["sampler"], dynamics_model)
 
     if name == "DynamicsGenerator":
-        return DynamicsGenerator(
+        return dl.generators.DynamicsGenerator(
             graph_model,
             dynamics_model,
             sampler,

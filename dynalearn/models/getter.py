@@ -1,11 +1,11 @@
-from dynalearn.models import *
+import dynalearn as dl
 
 
 def get(param_dict, graph, dynamics):
-    name = params["name"]
-    params = params["params"]
+    name = param_dict["name"]
+    params = param_dict["params"]
     if name == "LocalStatePredictor":
-        return LocalStatePredictor(
+        return dl.models.LocalStatePredictor(
             graph.num_nodes,
             len(dynamics.state_label),
             params["in_features"],

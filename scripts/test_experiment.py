@@ -1,22 +1,24 @@
-{
-    "name": "EXP_NAME",
+import dynalearn as dl
+
+param_dict = {
+    "name": "test_experiment",
     "graph":
     {
-        "name": "NETWORK",
+        "name": "BAGraph",
         "params":
         {
-            "N": NUM_NODES,
-            "DENSITYLABEL": DENSITY
+            "N": 1000,
+            "M": 2
         }
     },
     "dynamics":
     {
-        "name": "PlanckSIR",
+        "name": "SIS",
         "params":
         {
+            "infection_prob": 0.04,
             "recovery_prob": 0.08,
-            "temperature": 6,
-            "init_param": "None"
+            "init_state": "None"
         }
     },
     "model":
@@ -24,10 +26,10 @@
         "name": "LocalStatePredictor",
         "params":
         {
-            "in_features": [64],
+            "in_features": [32],
             "attn_features": [32],
-            "out_features": [64],
-            "n_heads": [2],
+            "out_features": [32],
+            "n_heads": [1],
             "in_activation": "relu",
             "attn_activation": "relu",
             "out_activation": "relu",
@@ -42,7 +44,7 @@
         {
             "batch_size": -1,
             "num_graphs": 1,
-            "num_sample": NUM_SAMPLE,
+            "num_sample": 100,
             "resampling_time": 2,
             "val_fraction": 0.01,
             "max_null_iter": 1,
@@ -54,7 +56,7 @@
             "params":
             {
                 "sampling_bias": 0.6,
-                "validation_bias": 0.8,
+                "val_bias": 0.8,
                 "replace":1,
                 "resample":1000,
                 "sample_from_weights":0
@@ -65,15 +67,19 @@
     {
         "optimizer": "Adam",
         "initial_lr": 0.0005,
-        "loss": "noisy_crossentropy",
-        "target_noise": 0,
+        "loss": "categorical_crossentropy",
         "schedule": {"epoch":10, "factor":2},
-        "epochs": 20,
+        "epochs": 5,
         "np_seed": 1,
     },
     "metrics": [],
-    "path_to_data": "PATH_TO_DATA",
-    "path_to_metrics": "PATH_TO_METRICS",
-    "path_to_best": "PATH_TO_BEST_MODEL",
-    "path_to_last": "PATH_TO_LAST_MODEL"
+    "path_to_experiment": "./data/ba-sis/",
+    "filename_data": "data.h5",
+    "filename_metrics": "metrics.h5",
+    "filename_model": "model.h5",
+    "filename_bestmodel": "bestmodel.h5",
 }
+
+experiment = dl.Experiment(param_dict, verbose=1)
+experiment.generate_data()
+experiment.train_model()

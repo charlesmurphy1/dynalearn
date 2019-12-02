@@ -35,7 +35,7 @@ class DynamicsGenerator:
         self.verbose = verbose
 
     def __len__(self):
-        return np.sum([self.sampler.num_samples[n] for n in self.graphs])
+        return np.sum([self.samplers[self.mode].num_samples[n] for n in self.graphs])
 
     def __iter__(self):
         return self

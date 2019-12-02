@@ -119,7 +119,7 @@ class StarLTPMetrics(Metrics):
         experiment.model.num_nodes = prev_N
 
 
-class TrueStarLTPMetrics(LTPGeneralizationMetrics):
+class TrueStarLTPMetrics(StarLTPMetrics):
     def __init__(self, degree_class=None, aggregator=None, verbose=1):
         super(TrueStarLTPMetrics, self).__init__(degree_class, aggregator, verbose)
 
@@ -127,7 +127,7 @@ class TrueStarLTPMetrics(LTPGeneralizationMetrics):
         return experiment.dynamics_model.predict(inputs, adj)[0]
 
 
-class GNNStarLTPMetrics(LTPGeneralizationMetrics):
+class GNNStarLTPMetrics(StarLTPMetrics):
     def __init__(self, degree_class, aggregator=None, verbose=1):
         super(GNNStarLTPMetrics, self).__init__(degree_class, aggregator, verbose)
 

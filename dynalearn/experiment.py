@@ -4,15 +4,15 @@ import numpy as np
 import os
 import tensorflow as tf
 import tensorflow.keras as ks
+import tensorflow.keras.backend as K
 
 
-from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import categorical_crossentropy
 
 
 class Experiment:
-    def __init__(self, param_dict):
+    def __init__(self, param_dict, verbose=1):
         self.param_dict = param_dict
         self.graph_model = dl.graphs.get(param_dict["graph"])
         self.dynamics_model = dl.dynamics.get(param_dict["dynamics"])
@@ -24,23 +24,30 @@ class Experiment:
         )
         self.metrics = dl.metrics.get(param_dict["metrics"], self.dynamics_model)
 
-        self.configure(param_dict["config"])
+        self.path_to_experiment = param_dict["path_to_experiment"]
+        self.filename_data = param_dict["filename_data"]
+        self.filename_metrics = param_dict["filename_metrics"]
+        self.filename_model = param_dict["filename_model"]
+        self.filename_bestmodel = param_dict["filename_bestmodel"]
 
-        self.path_to_data = param_dict["path_to_data"]
-        self.path_to_metrics = param_dict["path_to_metrics"]
-        self.path_to_model = param_dict["path_to_model"]
-        self.path_to_best = param_dict["path_to_best"]
+        self.verbose = verbose
+        self.history = dict()
+
+        self.configure(param_dict["config"])
 
         return
 
     def configure(self, params):
         np.random.seed(params["np_seed"])
-
+        self.epoch = 0
+        self.epochs = params["epochs"]
         self.optimizer = ks.optimizers.get(params["optimizer"])
         self.optimizer.lr = K.variable(params["initial_lr"])
 
         if params["loss"] == "noisy_crossentropy":
-            self.loss = get_noisy_crossentropy(noise=params["target_noise"])
+            self.loss = dl.utilities.get_noisy_crossentropy(
+                noise=params["target_noise"]
+            )
         else:
             self.loss = ks.losses.get(params["loss"])
 
@@ -49,7 +56,7 @@ class Experiment:
                 dl.utilities.get_schedule(params["schedule"]), verbose=1
             ),
             ks.callbacks.ModelCheckpoint(
-                os.path.join(self.path_to_best),
+                os.path.join(self.path_to_experiment, self.filename_bestmodel),
                 save_best_only=True,
                 monitor="val_loss",
                 mode="min",
@@ -68,16 +75,16 @@ class Experiment:
         for i in range(num_graphs):
             self.generator.generate(num_sample, resampling_time)
 
-        if "val_fraction" in self.param_dict["generate"]["params"]:
+        if "val_fraction" in self.param_dict["generator"]["params"]:
             val_fraction = self.param_dict["generator"]["params"]["val_fraction"]
-            val_bias = self.param_dict["generator"]["params"]["val_bias"]
+            val_bias = self.param_dict["generator"]["sampler"]["params"]["val_bias"]
             if self.verbose:
                 print("Partitioning generator for validation")
             self.generator.partition_sampler("val", val_fraction, val_bias)
 
-        if "test_fraction" in self.param_dict["generate"]["params"]:
+        if "test_fraction" in self.param_dict["generator"]["params"]:
             test_fraction = self.param_dict["generator"]["params"]["test_fraction"]
-            test_bias = self.param_dict["generator"]["params"]["test_bias"]
+            test_bias = self.param_dict["generator"]["sampler"]["params"]["test_bias"]
             if self.verbose:
                 print("Partitioning generator for test")
             self.generator.partition_sampler("test", test_fraction, test_bias)
@@ -102,7 +109,7 @@ class Experiment:
             self.generator,
             validation_data=val_generator,
             steps_per_epoch=self.param_dict["generator"]["params"]["num_sample"],
-            validation_steps=val_steps,
+            validation_steps=self.param_dict["generator"]["params"]["num_sample"],
             initial_epoch=i_epoch,
             epochs=f_epoch,
             verbose=self.verbose,
@@ -124,13 +131,17 @@ class Experiment:
             m.compute(self)
 
     def save_model(self):
-        self.model.model.save_weights(self.path_to_model)
+        self.model.model.save_weights(
+            os.path.join(self.path_to_experiment, self.filename_model)
+        )
 
     def load_model(self):
-        self.model.model.load_weights(self.path_to_model)
+        self.model.model.load_weights(
+            os.path.join(self.path_to_experiment, self.filename_model)
+        )
 
     def save_metrics(self, overwrite=False):
-        h5file = h5py.File(self.path_to_metrics)
+        h5file = h5py.File(os.path.join(self.path_to_experiment, self.filename_metrics))
         _save_metrics = True
         _save_history = True
 
@@ -158,7 +169,7 @@ class Experiment:
                 h5group.create_dataset(k, data=v, fillvalue=np.nan)
 
     def load_metrics(self):
-        h5file = h5py.File(self.path_to_metrics)
+        h5file = h5py.File(os.path.join(self.path_to_experiment, self.filename_metrics))
         _load_metrics = True
         _load_history = True
 
@@ -174,10 +185,33 @@ class Experiment:
             self.history[k] = list(v[...])
 
     def save_data(self, overwrite=False):
-        h5file = h5py.File(self.path_to_data)
+        h5file = h5py.File(os.path.join(self.path_to_experiment, self.filename_data))
         self.generator.save(h5file, overwrite)
         h5file.close()
 
     def load_data(self):
-        h5file = h5py.File(self.path_to_data)
+        h5file = h5py.File(os.path.join(self.path_to_experiment, self.filename_data))
         self.generator.load(h5file)
+
+    @property
+    def verbose(self):
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, verbose):
+        self._verbose = verbose
+        self.generator.verbose = verbose
+        for s in self.generator.samplers:
+            self.generator.samplers[s].verbose = verbose
+        for m in self.metrics:
+            m.verbose = verbose
+
+    @property
+    def path_to_experiment(self):
+        return self._path_to_experiment
+
+    @path_to_experiment.setter
+    def path_to_experiment(self, path_to_experiment):
+        self._path_to_experiment = path_to_experiment
+        if not os.path.exists(path_to_experiment):
+            os.makedirs(path_to_experiment)

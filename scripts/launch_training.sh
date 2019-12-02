@@ -139,29 +139,6 @@ else
     exit 1
 fi
 
-# if [[ ${dynamics} = "sir" ]]; then
-#     sed -i 's,DYNAMICS,'"SIR"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
-# elif [[ ${dynamics} = "sis" ]]; then
-#     sed -i 's,DYNAMICS,'"SIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
-# elif [[ ${dynamics} = "st-sir" ]]; then
-#     sed -i 's,DYNAMICS,'"SoftThresholdSIR"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
-# elif [[ ${dynamics} = "st-sis" ]]; then
-#     sed -i 's,DYNAMICS,'"SoftThresholdSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
-# elif [[ ${dynamics} = "nl-sir" ]]; then
-#     sed -i 's,DYNAMICS,'"NonLinearSIR"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
-# elif [[ ${dynamics} = "nl-sis" ]]; then
-#     sed -i 's,DYNAMICS,'"NonLinearSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
-# elif [[ ${dynamics} = "sine-sir" ]]; then
-#     sed -i 's,DYNAMICS,'"SineSIR"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
-# elif [[ ${dynamics} = "sine-sis" ]]; then
-#     sed -i 's,DYNAMICS,'"SineSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
-# elif [[ ${dynamics} = "sis-sis" ]]; then
-#     sed -i 's,DYNAMICS,'"SISSIS"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
-# else
-#     echo "Wrong dynamics type"
-#     exit 1
-# fi
-
 sed -i 's,NUM_SAMPLE,'"${num_sample}"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 sed -i 's,PATH_TO_EXP,'"${PATH_TO_EXP}/${FILENAME}"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
 sed -i 's,EXP_NAME,'"${network}_${dynamics}_${FILENAME}"',g'     ${PATH_TO_EXP}/${FILENAME}/parameters.json
