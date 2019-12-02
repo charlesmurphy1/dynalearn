@@ -116,14 +116,15 @@ class LTPMetrics(Metrics):
         targets = experiment.generator.targets
         state_label = experiment.dynamics_model.state_label
 
-        train_nodeset = experiment.generator.sampler.avail_node_set
+        train_nodeset = experiment.generator.samplers["train"].avail_node_set
 
-        if experiment.val_generator is not None:
-            val_nodeset = experiment.val_generator.sampler.avail_node_set
+        if "val" in experiment.generator.samplers:
+            val_nodeset = experiment.generator.samplers["val"].avail_node_set
         else:
             val_nodeset = None
-        if experiment.test_generator is not None:
-            test_nodeset = experiment.test_generator.sampler.avail_node_set
+
+        if "test" in experiment.generator.samplers:
+            test_nodeset = experiment.generator.samplers["test"].avail_node_set
         else:
             test_nodeset = None
 
@@ -207,11 +208,11 @@ class LTPMetrics(Metrics):
         return np.nansum(ent * counts) / np.sum(counts)
 
 
-class DynamicsLTPMetrics(LTPMetrics):
+class TrueLTPMetrics(LTPMetrics):
     def __init__(
         self, aggregator=None, num_points=1000, max_num_sample=1000, verbose=1
     ):
-        super(DynamicsLTPMetrics, self).__init__(
+        super(TrueLTPMetrics, self).__init__(
             aggregator, num_points, max_num_sample, verbose
         )
 
@@ -219,11 +220,11 @@ class DynamicsLTPMetrics(LTPMetrics):
         return experiment.dynamics_model.predict(input, adj)
 
 
-class ModelLTPMetrics(LTPMetrics):
+class GNNLTPMetrics(LTPMetrics):
     def __init__(
         self, aggregator=None, num_points=1000, max_num_sample=1000, verbose=1
     ):
-        super(ModelLTPMetrics, self).__init__(
+        super(GNNLTPMetrics, self).__init__(
             aggregator, num_points, max_num_sample, verbose
         )
 
@@ -231,11 +232,11 @@ class ModelLTPMetrics(LTPMetrics):
         return experiment.model.predict(input, adj)
 
 
-class EstimatorLTPMetrics(LTPMetrics):
+class MLELTPMetrics(LTPMetrics):
     def __init__(
         self, aggregator=None, num_points=1000, max_num_sample=1000, verbose=1
     ):
-        super(EstimatorLTPMetrics, self).__init__(
+        super(MLELTPMetrics, self).__init__(
             aggregator, num_points, max_num_sample, verbose
         )
 

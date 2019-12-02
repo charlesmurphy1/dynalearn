@@ -2,7 +2,7 @@ import numpy as np
 
 
 class Sampler(object):
-    def __init__(self, name, verbose=1, sample_from_weights=True, resample=-1):
+    def __init__(self, name, verbose=0, sample_from_weights=True, resample=-1):
         self.name = name
         self.verbose = verbose
         self.sample_from_weights = sample_from_weights
@@ -37,19 +37,19 @@ class Sampler(object):
         return g_index, s_index, n_index
 
     def update(self, graphs, inputs):
-        for i in graphs:
-            adj = graphs[i]
-            self.num_samples[i] = inputs[i].shape[0]
-            self.num_nodes[i] = inputs[i].shape[1]
-            self.node_set[i] = dict()
-            self.avail_node_set[i] = dict()
+        for g in graphs:
+            adj = graphs[g]
+            self.num_samples[g] = inputs[g].shape[0]
+            self.num_nodes[g] = inputs[g].shape[1]
+            self.node_set[g] = dict()
+            self.avail_node_set[g] = dict()
 
-            for j in range(self.num_samples[i]):
-                self.node_set[i][j] = np.arange(self.num_nodes[i]).astype("int")
-                self.avail_node_set[i][j] = np.arange(self.num_nodes[i]).astype("int")
+            for j in range(self.num_samples[g]):
+                self.node_set[g][j] = np.arange(self.num_nodes[g]).astype("int")
+                self.avail_node_set[g][j] = np.arange(self.num_nodes[g]).astype("int")
 
-            self.state_set[i] = list(range(self.num_samples[i]))
-            self.avail_state_set[i] = list(range(self.num_samples[i]))
+            self.state_set[g] = list(range(self.num_samples[g]))
+            self.avail_state_set[g] = list(range(self.num_samples[g]))
 
         self.graph_set = list(graphs.keys())
         self.avail_graph_set = list(graphs.keys())
@@ -133,17 +133,17 @@ class Sampler(object):
         self.state_weights = dict()
         self.graph_weights = dict()
 
-        for n in graphs:
-            self.node_weights[n] = dict()
-            self.state_weights[n] = dict()
+        for g in graphs:
+            self.node_weights[g] = dict()
+            self.state_weights[g] = dict()
 
-            for i, s in enumerate(inputs[n]):
-                self.node_weights[n][i] = np.zeros(self.num_nodes[n])
-                self.node_weights[n][i][self.avail_node_set[n][i]] = 1
-                self.state_weights[n][i] = np.sum(self.node_weights[n][i])
+            for t, s in enumerate(inputs[g]):
+                self.node_weights[g][t] = np.zeros(self.num_nodes[g])
+                self.node_weights[g][t][self.avail_node_set[g][t]] = 1
+                self.state_weights[g][t] = np.sum(self.node_weights[g][t])
 
-            self.graph_weights[n] = np.sum(
-                [self.state_weights[n][int(i)] for i in self.avail_state_set[n]]
+            self.graph_weights[g] = np.sum(
+                [self.state_weights[g][int(t)] for t in self.avail_state_set[g]]
             )
 
     def save(self, h5file, overwrite=False):
@@ -154,29 +154,28 @@ class Sampler(object):
                 return
         h5file.create_group("sampler/" + self.name)
         h5group = h5file["sampler/" + self.name]
-        for g_name in self.graph_set:
-            num_samples = self.node_weights[g_name][0].shape[0]
+        for g in self.graph_set:
             avail_node_set = np.array(
                 [
                     np.where(
-                        self.node_weights[g_name][i] > 0,
-                        np.ones(self.node_weights[g_name][i].shape),
-                        np.zeros(self.node_weights[g_name][i].shape),
+                        self.node_weights[g][t] > 0,
+                        np.ones(self.node_weights[g][t].shape),
+                        np.zeros(self.node_weights[g][t].shape),
                     )
-                    for i in range(inputs.shape[0])
+                    for t in range(self.num_samples[g])
                 ]
             )
             node_weights = np.array(
-                [self.node_weights[g_name][i] for i in range(inputs.shape[0])]
+                [self.node_weights[g][t] for t in range(self.num_samples[g])]
             )
             state_weights = np.array(
-                [self.state_weights[g_name][i] for i in range(inputs.shape[0])]
+                [self.state_weights[g][t] for t in range(self.num_samples[g])]
             )
-            graph_weights = self.graph_weights[g_name]
-            h5group.create_dataset(g_name + "/avail_node_set", data=avail_node_set)
-            h5group.create_dataset(g_name + "/node_weights", data=node_weights)
-            h5group.create_dataset(g_name + "/state_weights", data=state_weights)
-            h5group.create_dataset(g_name + "/graph_weights", data=graph_weights)
+            graph_weights = self.graph_weights[g]
+            h5group.create_dataset(g + "/avail_node_set", data=avail_node_set)
+            h5group.create_dataset(g + "/node_weights", data=node_weights)
+            h5group.create_dataset(g + "/state_weights", data=state_weights)
+            h5group.create_dataset(g + "/graph_weights", data=graph_weights)
 
     def load_sampler(self, h5file):
         if "sampler/" + self.name in h5file:

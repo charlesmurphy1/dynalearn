@@ -1,5 +1,6 @@
 import copy
 import dynalearn as dl
+import h5py
 import numpy as np
 import os
 import tensorflow as tf
@@ -36,6 +37,33 @@ class Experiment:
         self.configure(param_dict["config"])
 
         return
+
+    def run(self):
+        if self.verbose:
+            print("\n---Generating data---")
+        self.generate_data()
+
+        if self.verbose:
+            print("\n---Training model---")
+        self.train_model()
+
+        if self.verbose:
+            print("\n---Computing metrics---")
+        self.compute_metrics()
+
+        if self.verbose:
+            print("\n---Saving all---")
+        self.save(True)
+
+    def save(self, overwrite=False):
+        self.save_data(overwrite)
+        self.save_model(overwrite)
+        self.save_metrics(overwrite)
+
+    def load(self):
+        self.load_data()
+        self.load_model()
+        self.load_metrics()
 
     def configure(self, params):
         np.random.seed(params["np_seed"])
@@ -130,7 +158,7 @@ class Experiment:
         for k, m in self.metrics.items():
             m.compute(self)
 
-    def save_model(self):
+    def save_model(self, overwrite=False):
         self.model.model.save_weights(
             os.path.join(self.path_to_experiment, self.filename_model)
         )
@@ -164,9 +192,11 @@ class Experiment:
                 v.save(k, h5group)
 
         if _save_history:
+            h5file.create_group("history")
             h5group = h5file["history"]
             for k, v in self.history.items():
                 h5group.create_dataset(k, data=v, fillvalue=np.nan)
+        h5file.close()
 
     def load_metrics(self):
         h5file = h5py.File(os.path.join(self.path_to_experiment, self.filename_metrics))
@@ -183,6 +213,7 @@ class Experiment:
 
         for k, v in h5file["history"].items():
             self.history[k] = list(v[...])
+        h5file.close()
 
     def save_data(self, overwrite=False):
         h5file = h5py.File(os.path.join(self.path_to_experiment, self.filename_data))
@@ -192,6 +223,7 @@ class Experiment:
     def load_data(self):
         h5file = h5py.File(os.path.join(self.path_to_experiment, self.filename_data))
         self.generator.load(h5file)
+        h5file.close()
 
     @property
     def verbose(self):
@@ -201,10 +233,10 @@ class Experiment:
     def verbose(self, verbose):
         self._verbose = verbose
         self.generator.verbose = verbose
-        for s in self.generator.samplers:
-            self.generator.samplers[s].verbose = verbose
+        # for s in self.generator.samplers:
+        #     self.generator.samplers[s].verbose = verbose
         for m in self.metrics:
-            m.verbose = verbose
+            self.metrics[m].verbose = verbose
 
     @property
     def path_to_experiment(self):

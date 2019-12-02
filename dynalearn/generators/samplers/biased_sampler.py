@@ -10,7 +10,7 @@ class BiasedSampler(RandomSampler):
         name,
         sampling_bias=0,
         replace=False,
-        verbose=1,
+        verbose=0,
         sample_from_weights=True,
         resample=-1,
     ):
@@ -83,7 +83,7 @@ class DegreeBiasedSampler(BiasedSampler):
         name,
         sampling_bias=0,
         replace=False,
-        verbose=1,
+        verbose=0,
         sample_from_weights=True,
         resample=-1,
     ):
@@ -102,7 +102,7 @@ class StateBiasedSampler(BiasedSampler):
         dynamics,
         sampling_bias=0,
         replace=False,
-        verbose=1,
+        verbose=0,
         sample_from_weights=True,
         resample=-1,
     ):

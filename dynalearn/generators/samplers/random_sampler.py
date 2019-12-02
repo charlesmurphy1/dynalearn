@@ -4,7 +4,7 @@ import numpy as np
 
 class RandomSampler(Sampler):
     def __init__(
-        self, name, replace=False, verbose=1, sample_from_weights=True, resample=-1
+        self, name, replace=False, verbose=0, sample_from_weights=True, resample=-1
     ):
         super(RandomSampler, self).__init__(
             name, verbose, sample_from_weights, resample

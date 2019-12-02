@@ -7,9 +7,9 @@ from scipy.special import binom
 import tqdm
 
 
-class StatiticsMetrics(Metrics):
+class StatisticsMetrics(Metrics):
     def __init__(self, aggregator=None, num_points=None, verbose=1):
-        super(StatiticsMetrics, self).__init__(verbose)
+        super(StatisticsMetrics, self).__init__(verbose)
         self.aggregator = aggregator
         if num_points is None:
             self.num_points = np.inf
@@ -135,14 +135,15 @@ class StatiticsMetrics(Metrics):
         graphs = experiment.generator.graphs
         inputs = experiment.generator.inputs
         state_label = experiment.dynamics_model.state_label
-        train_nodeset = experiment.generator.sampler.avail_node_set
+        train_nodeset = experiment.generator.samplers["train"].avail_node_set
 
-        if experiment.val_generator is not None:
-            val_nodeset = experiment.val_generator.sampler.avail_node_set
+        if "val" in experiment.generator.samplers:
+            val_nodeset = experiment.generator.samplers["val"].avail_node_set
         else:
             val_nodeset = None
-        if experiment.test_generator is not None:
-            test_nodeset = experiment.test_generator.sampler.avail_node_set
+
+        if "test" in experiment.generator.samplers:
+            test_nodeset = experiment.generator.samplers["test"].avail_node_set
         else:
             test_nodeset = None
 

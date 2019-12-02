@@ -3,7 +3,7 @@ import numpy as np
 
 
 class SequentialSampler(Sampler):
-    def __init__(self, name, verbose=1, sample_from_weights=True, resample=-1):
+    def __init__(self, name, verbose=0, sample_from_weights=True, resample=-1):
         super(SequentialSampler, self).__init__(
             name, verbose, sample_from_weights, resample
         )

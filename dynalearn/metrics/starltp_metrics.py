@@ -128,7 +128,7 @@ class TrueStarLTPMetrics(StarLTPMetrics):
 
 
 class GNNStarLTPMetrics(StarLTPMetrics):
-    def __init__(self, degree_class, aggregator=None, verbose=1):
+    def __init__(self, degree_class=None, aggregator=None, verbose=1):
         super(GNNStarLTPMetrics, self).__init__(degree_class, aggregator, verbose)
 
     def get_metric(self, experiment, inputs, adj):
