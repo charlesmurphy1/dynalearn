@@ -29,57 +29,6 @@ class AttentionMetrics(Metrics):
 
         return attn_layers
 
-    def display(self, layer, state_label, ax=None, **kwargs):
-        if ax is None:
-            ax = plt.gca()
-        d = len(state_label)
-        mean_attn = np.zeros((d, d))
-        for i in range(len(state_label)):
-            for j in range(len(state_label)):
-                mean_attn[j, i] = np.mean(self.data[f"layer{layer}/{i}_{j}"])
-        ax.imshow(mean_attn, extent=[0, d, 0, d], origin="lower", **kwargs)
-        return ax
-
-    def display_dist(
-        self,
-        layer,
-        node_state,
-        neighbor_state,
-        ax=None,
-        color=None,
-        width=None,
-        kde=False,
-        rug=False,
-        hist=False,
-        box=True,
-    ):
-        if ax is None:
-            ax = plt.gca()
-        samples = self.data[f"layer{layer}/{node_state}_{neighbor_state}"]
-        if width is None:
-            if iqr(samples) > 0:
-                width = 2 * iqr(samples) / samples.shape[0] ** (1.0 / 3)
-            else:
-                width = 1e-2
-        if hist:
-            bins = np.arange(np.min(samples), np.max(samples), width)
-            histo, bins = np.histogram(samples, bins=bins, density=True)
-            x_hist = 0.5 * (bins[1:] + bins[:-1])
-            ax.bar(x_hist, histo, width=width, color=color)
-
-        if rug:
-            ax.plot(samples, [0.01] * len(samples), "|", color="k")
-
-        if kde:
-            kernel = gaussian_kde(samples)
-            x_kde = np.arange(-width, 1 + width, width)
-            ax.plot(x_kde, kernel.pdf(x_kde), color=color)
-
-        if box:
-            ax.boxplot(samples, vert=False)
-
-        return ax
-
     def summarize(self, summaries, prediction, state_label, adj, inputs):
         infected_deg = np.array(
             [np.matmul(adj, inputs == state_label[s]) for s in state_label]

@@ -27,42 +27,32 @@ class StarLTPMetrics(Metrics):
     def get_metric(self, experiment, input, adj):
         raise NotImplementedError()
 
-    def aggregate(self, in_state=None, out_state=None, dataset="train"):
+    def aggregate(self, data=None, in_state=None, out_state=None, for_degree=False):
         if self.aggregate is None:
             return
+
+        if data is None:
+            data = self.data["ltp"]
+
         x, y, err = self.aggregator(
             self.data["summaries"],
-            self.data["ltp/" + dataset],
+            data,
             in_state=in_state,
             out_state=out_state,
+            for_degree=for_degree,
             operation="mean",
         )
         return x, y, err
 
-    def display(
-        self, in_state, out_state, num_points=None, ax=None, fill=None, **plot_kwargs
-    ):
-        if ax is None:
-            ax = plt.gca()
-        if "ltp" not in self.data or self.aggregator is None:
-            return ax
-
-        x, y, err = self.aggregator(
-            self.data["summaries"],
-            self.data["ltp"],
-            in_state=in_state,
-            out_state=out_state,
-            operation="mean",
-        )
-        if num_points is not None and len(x) > num_points:
-            w = round(len(x) / num_points)
-            x = x[::w]
-            y = y[::w]
-            err = err[::w]
-        if fill is not None:
-            ax.fill_between(x, y - err, y + err, color=fill, alpha=0.3)
-        ax.plot(x, y, **plot_kwargs)
-        return ax
+    def compare(self, name, metrics, in_state=None, out_state=None, func=None):
+        ans = np.zeros(self.data["summaries"].shape[0])
+        for i, s in enumerate(self.data["summaries"]):
+            index = np.where(np.prod(metrics.data["summaries"] == s, axis=-1) == 1)[0]
+            if len(index) > 0:
+                ans[i] = func(self.data["ltp"][i], metrics.data[name][index])
+            else:
+                ans[i] = np.nan
+        return ans
 
     def compute(self, experiment):
 

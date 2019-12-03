@@ -16,61 +16,6 @@ class LossMetrics(Metrics):
         y_pred = np.clip(y_pred, 1e-8, 1.0 - 1e-8)
         return -np.sum(y_true * np.log(y_pred), axis=-1)
 
-    def display(
-        self,
-        loss_name,
-        dataset,
-        xmin=None,
-        xmax=None,
-        width=None,
-        ax=None,
-        color=None,
-        hist_alpha=0.3,
-        kde_linewidth=2,
-        kde_linestyle="-",
-        rug_pos=0,
-        hist=True,
-        kde=True,
-        rug=False,
-    ):
-        if ax is None:
-            ax = plt.gca()
-
-        samples = self.data[f"{dataset}/{loss_name}"]
-        if xmin is None:
-            xmin = np.min(samples)
-        if xmax is None:
-            xmax = np.max(samples)
-        if width is None:
-            if iqr(samples) > 1e-3:
-                width = 2 * iqr(samples) / samples.shape[0] ** (1.0 / 3)
-            else:
-                width = 1e-3
-        if hist:
-            bins = np.arange(xmin, xmax, width)
-            histo, bins = np.histogram(samples, bins=bins, density=True)
-            x_hist = 0.5 * (bins[1:] + bins[:-1])
-            ax.bar(x_hist, histo, width=width * 0.9, color=color, alpha=0.3)
-
-        if kde:
-            kernel = gaussian_kde(samples)
-            x_kde = np.linspace(xmin, xmax, 1000)
-            ax.plot(
-                x_kde,
-                kernel.pdf(x_kde),
-                color=color,
-                marker="None",
-                linestyle=kde_linestyle,
-                linewidth=kde_linewidth,
-            )
-
-        if rug:
-            y_min, y_max = ax.get_ylim()
-            rug_pos *= y_max - y_min
-            ax.plot(samples, [rug_pos] * len(samples), "|", color=color)
-
-        return ax
-
     def compute(self, experiment):
         model = experiment.model
         graphs = experiment.generator.graphs

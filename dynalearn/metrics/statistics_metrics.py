@@ -16,89 +16,18 @@ class StatisticsMetrics(Metrics):
         else:
             self.num_points = num_points
 
-    def aggregate(self, in_state=None, for_degree=False, dataset="train"):
-        if not for_degree:
-            x, y, _ = self.aggregator(
-                self.data["summaries"],
-                self.data["counts/" + dataset],
-                in_state=in_state,
-                operation="sum",
-            )
-            _, z, _ = self.aggregator(
-                None,
-                self.data["summaries"],
-                self.data["counts/" + dataset],
-                operation="sum",
-            )
-            y /= np.sum(z)
-        else:
-            x = np.unique(np.sort(np.sum(self.data["summaries"][:, 1:], axis=-1)))
-            x = x[x > 0]
-            y = np.zeros(x.shape)
-            for i, xx in enumerate(x):
-                if in_state is None:
-                    index = np.sum(self.data["summaries"][:, 1:], axis=-1) == xx
-                else:
-                    index = (np.sum(self.data["summaries"][:, 1:], axis=-1) == xx) * (
-                        self.data["summaries"][:, 0] == in_state
-                    )
-                y[i] = np.sum(self.data["counts/" + dataset][index])
-            y /= np.sum(y)
-
-        return x, y
-
-    def display(
-        self,
-        in_state,
-        dataset,
-        for_degree=False,
-        ax=None,
-        line=False,
-        color="k",
-        **kwargs
+    def aggregate(
+        self, in_state=None, out_state=None, for_degree=False, dataset="train"
     ):
-        if ax is None:
-            ax = plt.gca()
-        if "counts/" + dataset not in self.data or self.aggregator is None:
-            return ax
-        offset = in_state
-        bar_alpha = 1
-        if offset is None:
-            offset = 0
-        if not for_degree:
-            x, y, err = self.aggregator(
-                self.data["summaries"],
-                self.data["counts/" + dataset],
-                in_state=in_state,
-                operation="sum",
-            )
-            _x, _y, _err = self.aggregator(
-                self.data["summaries"], self.data["counts/" + dataset], operation="sum"
-            )
-            y /= np.sum(_y)
-            bar_width = np.nanmean(abs(x[1:] - np.roll(x, 1)[1:]))
-        else:
-            x = np.unique(np.sort(np.sum(self.data["summaries"][:, 1:], axis=-1)))
-            x = x[x > 0]
-            y = np.zeros(x.shape)
-            for i, xx in enumerate(x):
-                if in_state is None:
-                    index = np.sum(self.data["summaries"][:, 1:], axis=-1) == xx
-                else:
-                    index = (np.sum(self.data["summaries"][:, 1:], axis=-1) == xx) * (
-                        self.data["summaries"][:, 0] == in_state
-                    )
-                y[i] = np.sum(self.data["counts/" + dataset][index])
-            y /= np.sum(y)
-            bar_width = np.nanmin(abs(x[1:] - np.roll(x, 1)[1:]))
-        if in_state is not None:
-            bar_width /= self.data["summaries"].shape[1]
-
-        if line:
-            ax.plot(x, y, color=color, **kwargs)
-            bar_alpha = 0.3
-        ax.bar(x + offset * bar_width, y, bar_width, color=color, alpha=bar_alpha)
-        return ax
+        x, y, _ = self.aggregator(
+            self.data["summaries"],
+            self.data["counts/" + dataset],
+            in_state=in_state,
+            out_state=out_state,
+            for_degree=for_degree,
+            operation="sum",
+        )
+        return x, y
 
     def summarize(
         self,

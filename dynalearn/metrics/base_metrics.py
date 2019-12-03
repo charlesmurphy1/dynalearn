@@ -12,9 +12,6 @@ class Metrics:
     def compute(self, experiment, **kwargs):
         raise NotImplementedError()
 
-    def display(self, *args, **kwargs):
-        raise NotImplementedError()
-
     def save(self, name, h5file, overwrite=True):
         for k, v in self.data.items():
             path = name + "/" + str(k)
