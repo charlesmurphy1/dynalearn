@@ -1,99 +1,151 @@
 import copy
 import dynalearn as dl
+import h5py
 import numpy as np
 import os
 import tensorflow as tf
+import tensorflow.keras as ks
+import tensorflow.keras.backend as K
 
 
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import categorical_crossentropy
-import tensorflow.keras.backend as K
 
 
 class Experiment:
-    def __init__(
-        self,
-        name,
-        model,
-        generator,
-        loss=categorical_crossentropy,
-        optimizer=Adam,
-        numpy_seed=1,
-        tensorflow_seed=2,
-        verbose=1,
-    ):
+    def __init__(self, param_dict, verbose=1):
+        self.param_dict = param_dict
+        self.graph_model = dl.graphs.get(param_dict["graph"])
+        self.dynamics_model = dl.dynamics.get(param_dict["dynamics"])
+        self.model = dl.models.get(
+            param_dict["model"], self.graph_model, self.dynamics_model
+        )
+        self.generator = dl.generators.get(
+            param_dict["generator"], self.graph_model, self.dynamics_model
+        )
+        self.metrics = dl.metrics.get(param_dict["metrics"], self.dynamics_model)
 
-        self.name = name
-        self.history = {}
-        self.epoch = 0
+        self.name = param_dict["name"]
+        self.path_to_dir = param_dict["path_to_dir"]
+        self.filename_data = param_dict["filename_data"]
+        self.filename_metrics = param_dict["filename_metrics"]
+        self.filename_model = param_dict["filename_model"]
+        self.filename_bestmodel = param_dict["filename_bestmodel"]
 
-        self.model = model
-        self.generator = generator
-        self.val_generator = None
-        self.test_generator = None
-        self.graph_model = self.generator.graph_model
-        self.dynamics_model = self.generator.dynamics_model
-        self.metrics = {}
-
-        self.loss = loss
-        self.optimizer = optimizer
-        self.np_seed = numpy_seed
-        self.tf_seed = tensorflow_seed
         self.verbose = verbose
+        self.history = dict()
 
-    def generate_data(
-        self,
-        num_graphs,
-        num_sample,
-        T,
-        val_fraction=None,
-        test_fraction=None,
-        val_bias=0,
-        test_bias=0,
-        **kwargs
-    ):
+        self.configure(param_dict["config"])
+
+        return
+
+    def run(self):
+        if self.verbose:
+            print("\n---Generating data---")
+        self.generate_data()
+
+        if self.verbose:
+            print("\n---Training model---")
+        self.train_model()
+
+        if self.verbose:
+            print("\n---Computing metrics---")
+        self.compute_metrics()
+
+        if self.verbose:
+            print("\n---Saving all---")
+        self.save(True)
+
+    def save(self, overwrite=False):
+        self.save_data(overwrite)
+        self.save_model(overwrite)
+        self.save_metrics(overwrite)
+
+    def load(self):
+        self.load_data()
+        self.load_model()
+        self.load_metrics()
+
+    def configure(self, params):
+        np.random.seed(params["np_seed"])
+        self.epoch = 0
+        self.epochs = params["epochs"]
+        self.optimizer = ks.optimizers.get(params["optimizer"])
+        self.optimizer.lr = K.variable(params["initial_lr"])
+
+        if params["loss"] == "noisy_crossentropy":
+            self.loss = dl.utilities.get_noisy_crossentropy(
+                noise=params["target_noise"]
+            )
+        else:
+            self.loss = ks.losses.get(params["loss"])
+
+        self.callbacks = [
+            ks.callbacks.LearningRateScheduler(
+                dl.utilities.get_schedule(params["schedule"]), verbose=1
+            ),
+            ks.callbacks.ModelCheckpoint(
+                os.path.join(self.path_to_dir, self.name, self.filename_bestmodel),
+                save_best_only=True,
+                monitor="val_loss",
+                mode="min",
+                period=1,
+                verbose=1,
+            ),
+        ]
+
+        self.training_metrics = [dl.utilities.metrics.model_entropy]
+
+        if not os.path.exists(os.path.join(self.path_to_dir, self.name)):
+            os.makedirs(os.path.join(self.path_to_dir, self.name))
+
+    def generate_data(self):
+        num_graphs = self.param_dict["generator"]["params"]["num_graphs"]
+        num_sample = self.param_dict["generator"]["params"]["num_sample"]
+        resampling_time = self.param_dict["generator"]["params"]["resampling_time"]
+
         for i in range(num_graphs):
-            self.generator.generate(num_sample, T, **kwargs)
+            self.generator.generate(num_sample, resampling_time)
 
-        if val_fraction is not None:
+        if "val_fraction" in self.param_dict["generator"]["params"]:
+            val_fraction = self.param_dict["generator"]["params"]["val_fraction"]
+            val_bias = self.param_dict["generator"]["sampler"]["params"]["val_bias"]
             if self.verbose:
                 print("Partitioning generator for validation")
-            self.val_generator = self.generator.parition_generator(
-                val_fraction, val_bias
-            )
+            self.generator.partition_sampler("val", val_fraction, val_bias)
 
-        if test_fraction is not None:
+        if "test_fraction" in self.param_dict["generator"]["params"]:
+            test_fraction = self.param_dict["generator"]["params"]["test_fraction"]
+            test_bias = self.param_dict["generator"]["sampler"]["params"]["test_bias"]
             if self.verbose:
                 print("Partitioning generator for test")
-            self.test_generator = self.generator.parition_generator(
-                test_fraction, test_bias
-            )
+            self.generator.partition_sampler("test", test_fraction, test_bias)
 
-    def train_model(
-        self,
-        epochs,
-        steps_per_epoch,
-        validation_steps=0,
-        metrics=[],
-        callbacks=[],
-        learning_rate=1e-3,
-    ):
-        if self.val_generator is None:
-            validation_steps = None
+    def train_model(self, epochs=None):
+
+        if epochs is None:
+            epochs = self.epochs
+
         i_epoch = self.epoch
         f_epoch = self.epoch + epochs
 
-        self.optimizer.lr = K.variable(learning_rate)
-        self.model.model.compile(self.optimizer, self.loss, metrics)
+        self.model.model.compile(self.optimizer, self.loss, self.training_metrics)
+
+        if "val" in self.generator.samplers:
+            val_generator = copy.deepcopy(self.generator)
+            val_generator.mode = "val"
+        else:
+            val_generator = None
+
         history = self.model.model.fit_generator(
             self.generator,
-            validation_data=self.val_generator,
-            steps_per_epoch=steps_per_epoch,
-            validation_steps=validation_steps,
+            validation_data=val_generator,
+            steps_per_epoch=self.param_dict["generator"]["params"]["num_sample"],
+            validation_steps=self.param_dict["generator"]["params"]["num_sample"],
             initial_epoch=i_epoch,
             epochs=f_epoch,
             verbose=self.verbose,
-            callbacks=callbacks,
+            callbacks=self.callbacks,
         )
 
         for k in history.history:
@@ -106,259 +158,104 @@ class Experiment:
 
         self.epoch += epochs
 
-        return history
-
     def compute_metrics(self):
         for k, m in self.metrics.items():
             m.compute(self)
-        return
 
-    def save_weights(self, filepath, overwrite=True):
-        self.model.model.save_weights(filepath)
+    def save_model(self, overwrite=False):
+        self.model.model.save_weights(
+            os.path.join(self.path_to_dir, self.name, self.filename_model)
+        )
 
-    def load_weights(self, filepath):
-        self.model.model.load_weights(filepath)
-        return 0
+    def load_model(self):
+        self.model.model.load_weights(
+            os.path.join(self.path_to_dir, self.name, self.filename_model)
+        )
 
-    def save_metrics(self, h5file, overwrite=True):
-        if not "metrics" in h5file:
-            h5file.create_group("metrics")
-        h5group = h5file["metrics"]
-        for k, m in self.metrics.items():
-            m.save(k, h5group)
-        return
+    def save_metrics(self, overwrite=False):
+        h5file = h5py.File(
+            os.path.join(self.path_to_dir, self.name, self.filename_metrics)
+        )
+        _save_metrics = True
+        _save_history = True
 
-    def load_metrics(self, h5file):
         if "metrics" in h5file:
-            for k, m in self.metrics.items():
-                m.load(k, h5file["metrics"])
+            if not overwrite:
+                _save_metrics = False
+            else:
+                del h5file["metrics"]
 
-        return
-
-    def save_history(self, h5file, overwrite=True):
         if "history" in h5file:
             if not overwrite:
-                return
+                _save_history = False
             else:
                 del h5file["history"]
-        h5file.create_group("history")
-        h5group = h5file["history"]
-        for name, value in self.history.items():
-            h5group.create_dataset(name, data=value, fillvalue=np.nan)
 
-    def load_history(self, h5file):
-        if "history" in h5file:
-            for k, v in h5file["history"].items():
-                self.history[k] = list(v[...])
+        if _save_metrics:
+            h5file.create_group("metrics")
+            h5group = h5file["metrics"]
+            for k, v in self.metrics.items():
+                v.save(k, h5group)
 
-    def save_data(self, h5file, overwrite=True):
-        graph_name = type(self.graph_model).__name__
-        graph_params = self.graph_model.params
+        if _save_history:
+            h5file.create_group("history")
+            h5group = h5file["history"]
+            for k, v in self.history.items():
+                h5group.create_dataset(k, data=v, fillvalue=np.nan)
+        h5file.close()
 
-        dynamics_name = type(self.dynamics_model).__name__
-        dynamics_params = self.dynamics_model.params
+    def load_metrics(self):
+        h5file = h5py.File(
+            os.path.join(self.path_to_dir, self.name, self.filename_metrics)
+        )
+        _load_metrics = True
+        _load_history = True
 
-        if "data" in h5file:
-            if overwrite:
-                del h5file["data"]
-            else:
-                h5file.close()
-                return
-        h5file.create_group("data")
-        h5group = h5file["data"]
+        if "metrics" not in h5file:
+            _load_metrics = False
+        if "history" not in h5file:
+            _load_history = False
 
-        for g_name in self.generator.graphs:
-            adj = self.generator.graphs[g_name]
-            inputs = self.generator.inputs[g_name]
-            targets = self.generator.targets[g_name]
-            gt_targets = self.generator.gt_targets[g_name]
-            if g_name in h5file:
-                if overwrite:
-                    del h5file[g_name]
-                else:
-                    continue
-            h5group.create_dataset(g_name + "/adj_matrix", data=adj)
-            h5group.create_dataset(g_name + "/inputs", data=inputs)
-            h5group.create_dataset(g_name + "/targets", data=targets)
-            h5group.create_dataset(g_name + "/gt_targets", data=gt_targets)
+        for k, v in self.metrics.items():
+            v.load(k, h5file["metrics"])
 
-            # Training set
-            avail_node_set = np.array(
-                [
-                    np.where(
-                        self.generator.sampler.node_weights[g_name][i] > 0,
-                        np.ones(self.generator.sampler.node_weights[g_name][i].shape),
-                        np.zeros(self.generator.sampler.node_weights[g_name][i].shape),
-                    )
-                    for i in range(inputs.shape[0])
-                ]
-            )
-            node_weights = np.array(
-                [
-                    self.generator.sampler.node_weights[g_name][i]
-                    for i in range(inputs.shape[0])
-                ]
-            )
-            state_weights = np.array(
-                [
-                    self.generator.sampler.state_weights[g_name][i]
-                    for i in range(inputs.shape[0])
-                ]
-            )
-            graph_weights = self.generator.sampler.graph_weights[g_name]
-            h5group.create_dataset(
-                g_name + "/training_set/avail_node_set", data=avail_node_set
-            )
-            h5group.create_dataset(
-                g_name + "/training_set/node_weights", data=node_weights
-            )
-            h5group.create_dataset(
-                g_name + "/training_set/state_weights", data=state_weights
-            )
-            h5group.create_dataset(
-                g_name + "/training_set/graph_weights", data=graph_weights
-            )
+        for k, v in h5file["history"].items():
+            self.history[k] = list(v[...])
+        h5file.close()
 
-            if self.val_generator is not None:
-                # Validation set
-                avail_node_set = np.array(
-                    [
-                        np.where(
-                            self.val_generator.sampler.node_weights[g_name][i] > 0,
-                            np.ones(
-                                self.val_generator.sampler.node_weights[g_name][i].shape
-                            ),
-                            np.zeros(
-                                self.val_generator.sampler.node_weights[g_name][i].shape
-                            ),
-                        )
-                        for i in range(inputs.shape[0])
-                    ]
-                )
-                node_weights = np.array(
-                    [
-                        self.val_generator.sampler.node_weights[g_name][i]
-                        for i in range(inputs.shape[0])
-                    ]
-                )
-                state_weights = np.array(
-                    [
-                        self.val_generator.sampler.state_weights[g_name][i]
-                        for i in range(inputs.shape[0])
-                    ]
-                )
-                graph_weights = self.val_generator.sampler.graph_weights[g_name]
-                h5group.create_dataset(
-                    g_name + "/validation_set/avail_node_set", data=avail_node_set
-                )
-                h5group.create_dataset(
-                    g_name + "/validation_set/node_weights", data=node_weights
-                )
-                h5group.create_dataset(
-                    g_name + "/validation_set/state_weights", data=state_weights
-                )
-                h5group.create_dataset(
-                    g_name + "/validation_set/graph_weights", data=graph_weights
-                )
-            if self.test_generator is not None:
-                # Training set
-                avail_node_set = np.array(
-                    [
-                        np.where(
-                            self.test_generator.sampler.node_weights[g_name][i] > 0,
-                            np.ones(
-                                self.test_generator.sampler.node_weights[g_name][
-                                    i
-                                ].shape
-                            ),
-                            np.zeros(
-                                self.test_generator.sampler.node_weights[g_name][
-                                    i
-                                ].shape
-                            ),
-                        )
-                        for i in range(inputs.shape[0])
-                    ]
-                )
-                node_weights = np.array(
-                    [
-                        self.test_generator.sampler.node_weights[g_name][i]
-                        for i in range(inputs.shape[0])
-                    ]
-                )
-                state_weights = np.array(
-                    [
-                        self.test_generator.sampler.state_weights[g_name][i]
-                        for i in range(inputs.shape[0])
-                    ]
-                )
-                graph_weights = self.test_generator.sampler.graph_weights[g_name]
-                h5group.create_dataset(
-                    g_name + "/test_set/avail_node_set", data=avail_node_set
-                )
-                h5group.create_dataset(
-                    g_name + "/test_set/node_weights", data=node_weights
-                )
-                h5group.create_dataset(
-                    g_name + "/test_set/state_weights", data=state_weights
-                )
-                h5group.create_dataset(
-                    g_name + "/test_set/graph_weights", data=graph_weights
-                )
+    def save_data(self, overwrite=False):
+        h5file = h5py.File(
+            os.path.join(self.path_to_dir, self.name, self.filename_data)
+        )
+        self.generator.save(h5file, overwrite)
+        h5file.close()
 
-    def load_data(self, h5file):
-        if "data" in h5file:
-            for k, v in h5file["data"].items():
-                self.generator.graphs[k] = v["adj_matrix"][...]
-                self.generator.inputs[k] = v["inputs"][...]
-                self.generator.targets[k] = v["targets"][...]
-                self.generator.gt_targets[k] = v["gt_targets"][...]
+    def load_data(self):
+        h5file = h5py.File(
+            os.path.join(self.path_to_dir, self.name, self.filename_data)
+        )
+        self.generator.load(h5file)
+        h5file.close()
 
-                avail_node_set = v["training_set/avail_node_set"][...]
-                node_weights = v["training_set/node_weights"][...]
-                state_weights = v["training_set/state_weights"][...]
-                graph_weights = v["training_set/graph_weights"][...]
-                self.generator.sampler.avail_node_set[k] = {
-                    i: np.argwhere(nodes) for i, nodes in enumerate(avail_node_set)
-                }
-                self.generator.sampler.node_weights[k] = {
-                    i: weights for i, weights in enumerate(node_weights)
-                }
-                self.generator.sampler.state_weights[k] = {
-                    i: weights for i, weights in enumerate(state_weights)
-                }
-                self.generator.sampler.graph_weights[k] = graph_weights
+    @property
+    def verbose(self):
+        return self._verbose
 
-                if "validation_set" in v:
-                    self.val_generator = copy.deepcopy(self.generator)
-                    avail_node_set = v["validation_set/avail_node_set"][...]
-                    node_weights = v["validation_set/node_weights"][...]
-                    state_weights = v["validation_set/state_weights"][...]
-                    graph_weights = v["validation_set/graph_weights"][...]
-                    self.val_generator.sampler.avail_node_set[k] = {
-                        i: np.argwhere(nodes) for i, nodes in enumerate(avail_node_set)
-                    }
-                    self.val_generator.sampler.node_weights[k] = {
-                        i: weights for i, weights in enumerate(node_weights)
-                    }
-                    self.val_generator.sampler.state_weights[k] = {
-                        i: weights for i, weights in enumerate(state_weights)
-                    }
-                    self.val_generator.sampler.graph_weights[k] = graph_weights
+    @verbose.setter
+    def verbose(self, verbose):
+        self._verbose = verbose
+        self.generator.verbose = verbose
+        # for s in self.generator.samplers:
+        #     self.generator.samplers[s].verbose = verbose
+        for m in self.metrics:
+            self.metrics[m].verbose = verbose
 
-                if "test_set" in v:
-                    self.test_generator = copy.deepcopy(self.generator)
-                    avail_node_set = v["test_set/avail_node_set"][...]
-                    node_weights = v["test_set/node_weights"][...]
-                    state_weights = v["test_set/state_weights"][...]
-                    graph_weights = v["test_set/graph_weights"][...]
-                    self.test_generator.sampler.avail_node_set[k] = {
-                        i: np.argwhere(nodes) for i, nodes in enumerate(avail_node_set)
-                    }
-                    self.test_generator.sampler.node_weights[k] = {
-                        i: weights for i, weights in enumerate(node_weights)
-                    }
-                    self.test_generator.sampler.state_weights[k] = {
-                        i: weights for i, weights in enumerate(state_weights)
-                    }
-                    self.test_generator.sampler.graph_weights[k] = graph_weights
+    @property
+    def path_to_dir(self):
+        return self._path_to_dir
+
+    @path_to_dir.setter
+    def path_to_dir(self, path_to_dir):
+        self._path_to_dir = path_to_dir
+        if not os.path.exists(path_to_dir):
+            os.makedirs(path_to_dir)

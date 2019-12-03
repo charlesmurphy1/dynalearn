@@ -1,6 +1,7 @@
 
 # Data extension
 *.pt
+*.h5
 *.txt
 
 # Figure format

@@ -7,14 +7,15 @@ import tqdm
 class BiasedSampler(RandomSampler):
     def __init__(
         self,
+        name,
         sampling_bias=0,
         replace=False,
-        verbose=1,
+        verbose=0,
         sample_from_weights=True,
         resample=-1,
     ):
         super(BiasedSampler, self).__init__(
-            replace, verbose, sample_from_weights, resample
+            name, replace, verbose, sample_from_weights, resample
         )
         self.params["sampling_bias"] = sampling_bias
 
@@ -79,14 +80,15 @@ class BiasedSampler(RandomSampler):
 class DegreeBiasedSampler(BiasedSampler):
     def __init__(
         self,
+        name,
         sampling_bias=0,
         replace=False,
-        verbose=1,
+        verbose=0,
         sample_from_weights=True,
         resample=-1,
     ):
         super(DegreeBiasedSampler, self).__init__(
-            sampling_bias, replace, verbose, sample_from_weights, resample
+            name, sampling_bias, replace, verbose, sample_from_weights, resample
         )
 
     def summarize(self, adj, state):
@@ -96,15 +98,16 @@ class DegreeBiasedSampler(BiasedSampler):
 class StateBiasedSampler(BiasedSampler):
     def __init__(
         self,
+        name,
         dynamics,
         sampling_bias=0,
         replace=False,
-        verbose=1,
+        verbose=0,
         sample_from_weights=True,
         resample=-1,
     ):
         super(StateBiasedSampler, self).__init__(
-            sampling_bias, replace, verbose, sample_from_weights, resample
+            name, sampling_bias, replace, verbose, sample_from_weights, resample
         )
         self.dynamics_states = list(dynamics.state_label.values())
 

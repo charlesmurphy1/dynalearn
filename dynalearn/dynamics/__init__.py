@@ -1,3 +1,4 @@
+from .getter import *
 from .dynamics import *
 from .epidemic import *
 from .simple_contagion import *

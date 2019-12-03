@@ -20,9 +20,11 @@ class DynamicsGenerator:
         self.dynamics_model = dynamics_model
         self.num_states = dynamics_model.num_states
         if sampler is None:
-            self._sampler = dl.generators.RandomSampler()
+            self._samplers = {"train": dl.generators.RandomSampler("train")}
         else:
-            self._sampler = sampler
+            sampler.name = "train"
+            self._samplers = {"train": sampler}
+        self.mode = "train"
         self.batch_size = batch_size
         self.graphs = dict()
         self.inputs = dict()
@@ -33,13 +35,13 @@ class DynamicsGenerator:
         self.verbose = verbose
 
     def __len__(self):
-        return np.sum([self.sampler.num_samples[n] for n in self.graphs])
+        return np.sum([self.samplers[self.mode].num_samples[n] for n in self.graphs])
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        g_index, s_index, n_mask = self.sampler(self.batch_size)
+        g_index, s_index, n_mask = self.samplers[self.mode](self.batch_size)
         inputs = self.inputs[g_index][s_index, :]
         adj = self.graphs[g_index]
         if self.with_truth:
@@ -49,7 +51,7 @@ class DynamicsGenerator:
         weights = n_mask
         return [inputs, adj], targets, weights
 
-    def generate(self, num_sample, T, max_null_iter=100, shuffle=True):
+    def generate(self, num_sample, resampling_time, max_null_iter=100, shuffle=True):
 
         sample = 0
         name, graph = self.graph_model.generate()
@@ -68,7 +70,7 @@ class DynamicsGenerator:
         while sample < num_sample:
             self.dynamics_model.initialize_states()
             null_iteration = 0
-            for t in range(T):
+            for t in range(resampling_time):
                 t0 = time.time()
                 x, y, z = self._update_states()
 
@@ -103,7 +105,7 @@ class DynamicsGenerator:
         self.inputs[name] = inputs[index, :]
         self.targets[name] = targets[index, :]
         self.gt_targets[name] = gt_targets[index, :]
-        self.sampler.update(self.graphs, self.inputs)
+        self.samplers[self.mode].update(self.graphs, self.inputs)
 
     def _update_states(self):
         inputs = self.dynamics_model.states
@@ -117,31 +119,83 @@ class DynamicsGenerator:
         ans[np.arange(arr.shape[0]), arr.astype("int")] = 1
         return ans
 
-    def parition_generator(self, fraction, bias=1):
-        gen_partition = copy.deepcopy(self)
-        for i in self.graphs:
-            num_nodes = self.graphs[i].shape[0]
-            size = int(np.ceil(fraction * num_nodes))
-            nodesubset = dict()
-            for j in range(self.inputs[i].shape[0]):
-                nodesubset = self.sampler.sample_nodes(i, j, size, bias).astype("int")
-                gen_partition.sampler.avail_node_set[i][j] = nodesubset
-                self.sampler.avail_node_set[i][j] = np.setdiff1d(
-                    self.sampler.avail_node_set[i][j], nodesubset
-                )
+    def partition_sampler(self, name, fraction=None, bias=1):
+        self.samplers[name] = copy.deepcopy(self.samplers[self.mode])
+        self.samplers[name].name = name
 
-        self.sampler.update_weights(self.graphs, self.inputs)
-        gen_partition.sampler.update_weights(self.graphs, self.inputs)
-        gen_partition.batch_size = -1
-        return gen_partition
+        if fraction is not None:
+            for i in self.graphs:
+                num_nodes = self.graphs[i].shape[0]
+                size = int(np.ceil(fraction * num_nodes))
+                for j in range(self.inputs[i].shape[0]):
+                    nodesubset = (
+                        self.samplers[self.mode]
+                        .sample_nodes(i, j, size, bias)
+                        .astype("int")
+                    )
+                    self.samplers[name].avail_node_set[i][j] = nodesubset
+                    self.samplers[self.mode].avail_node_set[i][j] = np.setdiff1d(
+                        self.samplers[self.mode].avail_node_set[i][j], nodesubset
+                    )
+
+            self.samplers[self.mode].update_weights(self.graphs, self.inputs)
+            self.samplers[name].update_weights(self.graphs, self.inputs)
 
     @property
-    def sampler(self):
-        return self._sampler
+    def samplers(self):
+        return self._samplers
 
-    @sampler.setter
-    def sampler(self, sampler):
-        avail_node_set = self._sampler.avail_node_set
-        self._sampler = sampler
-        self._sampler.update(self.graphs, self.inputs)
-        self._sampler.avail_node_set = avail_node_set
+    @samplers.setter
+    def samplers(self, samplers):
+        for k, v in samplers.items():
+            avail_node_set = self._samplers[k].avail_node_set
+            self._samplers[k] = v
+            self._samplers[k].update(self.graphs, self.inputs)
+            self._samplers[k].avail_node_set = avail_node_set
+
+    def save(self, h5file, overwrite=False):
+        graph_name = type(self.graph_model).__name__
+        graph_params = self.graph_model.params
+
+        dynamics_name = type(self.dynamics_model).__name__
+        dynamics_params = self.dynamics_model.params
+
+        if "data" in h5file:
+            if overwrite:
+                del h5file["data"]
+            else:
+                return
+        h5file.create_group("data")
+        h5group = h5file["data"]
+
+        for g_name in self.graphs:
+            adj = self.graphs[g_name]
+            inputs = self.inputs[g_name]
+            targets = self.targets[g_name]
+            gt_targets = self.gt_targets[g_name]
+            if g_name in h5file:
+                if overwrite:
+                    del h5file[g_name]
+                else:
+                    continue
+            h5group.create_dataset(g_name + "/adj_matrix", data=adj)
+            h5group.create_dataset(g_name + "/inputs", data=inputs)
+            h5group.create_dataset(g_name + "/targets", data=targets)
+            h5group.create_dataset(g_name + "/gt_targets", data=gt_targets)
+
+        for k in self.samplers:
+            self.samplers[k].save(h5file, overwrite)
+
+    def load(self, h5file):
+        if "data" in h5file:
+            for k, v in h5file["data"].items():
+                self.graphs[k] = v["adj_matrix"][...]
+                self.inputs[k] = v["inputs"][...]
+                self.targets[k] = v["targets"][...]
+                self.gt_targets[k] = v["gt_targets"][...]
+
+        if "sampler" in h5file:
+            for k in h5file["sampler"]:
+                if k not in self.samplers:
+                    self.partition_sampler(k)
+                self.samplers[k].load(h5file)
