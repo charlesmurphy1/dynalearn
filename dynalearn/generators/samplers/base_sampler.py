@@ -28,13 +28,13 @@ class Sampler(object):
     def __call__(self, batch_size):
 
         g_index = self.get_graph()
-        s_index = self.get_state(g_index)
-        n_index = self.get_nodes(g_index, s_index, batch_size)
+        t_index = self.get_state(g_index)
+        n_index = self.get_nodes(g_index, t_index, batch_size)
         self.iteration += 1
         if self.iteration == self.resample:
             self.reset_set()
 
-        return g_index, s_index, n_index
+        return g_index, t_index, n_index
 
     def update(self, graphs, inputs):
         for g in graphs:
@@ -44,9 +44,9 @@ class Sampler(object):
             self.node_set[g] = dict()
             self.avail_node_set[g] = dict()
 
-            for j in range(self.num_samples[g]):
-                self.node_set[g][j] = np.arange(self.num_nodes[g]).astype("int")
-                self.avail_node_set[g][j] = np.arange(self.num_nodes[g]).astype("int")
+            for t in range(self.num_samples[g]):
+                self.node_set[g][t] = np.arange(self.num_nodes[g]).astype("int")
+                self.avail_node_set[g][t] = np.arange(self.num_nodes[g]).astype("int")
 
             self.state_set[g] = list(range(self.num_samples[g]))
             self.avail_state_set[g] = list(range(self.num_samples[g]))
@@ -177,20 +177,35 @@ class Sampler(object):
             h5group.create_dataset(g + "/state_weights", data=state_weights)
             h5group.create_dataset(g + "/graph_weights", data=graph_weights)
 
-    def load_sampler(self, h5file):
+    def load(self, h5file):
         if "sampler/" + self.name in h5file:
             for k, v in h5file["sampler/" + self.name].items():
                 avail_node_set = v["avail_node_set"][...]
                 node_weights = v["node_weights"][...]
                 state_weights = v["state_weights"][...]
                 graph_weights = v["graph_weights"][...]
+
+                self.num_samples[k] = node_weights.shape[0]
+                self.num_nodes[k] = node_weights.shape[1]
+
+                if k not in self.graph_set or k not in self.avail_graph_set:
+                    self.graph_set.append(k)
+                    self.avail_graph_set.append(k)
+                self.graph_weights[k] = graph_weights
+
+                self.state_set[k] = list(range(self.num_samples[k]))
+                self.avail_state_set[k] = list(range(self.num_samples[k]))
+                self.state_weights[k] = {
+                    i: weights for i, weights in enumerate(state_weights)
+                }
+
+                self.node_set[k] = {
+                    t: np.arange(self.num_nodes[k]).astype("int")
+                    for t in range(self.num_samples[k])
+                }
                 self.avail_node_set[k] = {
-                    i: np.argwhere(nodes) for i, nodes in enumerate(avail_node_set)
+                    t: np.argwhere(nodes) for t, nodes in enumerate(avail_node_set)
                 }
                 self.node_weights[k] = {
                     i: weights for i, weights in enumerate(node_weights)
                 }
-                self.state_weights[k] = {
-                    i: weights for i, weights in enumerate(state_weights)
-                }
-                self.graph_weights[k] = graph_weights

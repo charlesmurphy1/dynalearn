@@ -121,6 +121,8 @@ class DynamicsGenerator:
 
     def partition_sampler(self, name, fraction=None, bias=1):
         self.samplers[name] = copy.deepcopy(self.samplers[self.mode])
+        self.samplers[name].name = name
+
         if fraction is not None:
             for i in self.graphs:
                 num_nodes = self.graphs[i].shape[0]
@@ -196,4 +198,4 @@ class DynamicsGenerator:
             for k in h5file["sampler"]:
                 if k not in self.samplers:
                     self.partition_sampler(k)
-                self.sampler[k].load(h5file)
+                self.samplers[k].load(h5file)

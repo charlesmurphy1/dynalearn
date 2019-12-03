@@ -25,7 +25,8 @@ class Experiment:
         )
         self.metrics = dl.metrics.get(param_dict["metrics"], self.dynamics_model)
 
-        self.path_to_experiment = param_dict["path_to_experiment"]
+        self.name = param_dict["name"]
+        self.path_to_dir = param_dict["path_to_dir"]
         self.filename_data = param_dict["filename_data"]
         self.filename_metrics = param_dict["filename_metrics"]
         self.filename_model = param_dict["filename_model"]
@@ -84,7 +85,7 @@ class Experiment:
                 dl.utilities.get_schedule(params["schedule"]), verbose=1
             ),
             ks.callbacks.ModelCheckpoint(
-                os.path.join(self.path_to_experiment, self.filename_bestmodel),
+                os.path.join(self.path_to_dir, self.name, self.filename_bestmodel),
                 save_best_only=True,
                 monitor="val_loss",
                 mode="min",
@@ -94,6 +95,9 @@ class Experiment:
         ]
 
         self.training_metrics = [dl.utilities.metrics.model_entropy]
+
+        if not os.path.exists(os.path.join(self.path_to_dir, self.name)):
+            os.makedirs(os.path.join(self.path_to_dir, self.name))
 
     def generate_data(self):
         num_graphs = self.param_dict["generator"]["params"]["num_graphs"]
@@ -160,16 +164,18 @@ class Experiment:
 
     def save_model(self, overwrite=False):
         self.model.model.save_weights(
-            os.path.join(self.path_to_experiment, self.filename_model)
+            os.path.join(self.path_to_dir, self.name, self.filename_model)
         )
 
     def load_model(self):
         self.model.model.load_weights(
-            os.path.join(self.path_to_experiment, self.filename_model)
+            os.path.join(self.path_to_dir, self.name, self.filename_model)
         )
 
     def save_metrics(self, overwrite=False):
-        h5file = h5py.File(os.path.join(self.path_to_experiment, self.filename_metrics))
+        h5file = h5py.File(
+            os.path.join(self.path_to_dir, self.name, self.filename_metrics)
+        )
         _save_metrics = True
         _save_history = True
 
@@ -199,7 +205,9 @@ class Experiment:
         h5file.close()
 
     def load_metrics(self):
-        h5file = h5py.File(os.path.join(self.path_to_experiment, self.filename_metrics))
+        h5file = h5py.File(
+            os.path.join(self.path_to_dir, self.name, self.filename_metrics)
+        )
         _load_metrics = True
         _load_history = True
 
@@ -216,12 +224,16 @@ class Experiment:
         h5file.close()
 
     def save_data(self, overwrite=False):
-        h5file = h5py.File(os.path.join(self.path_to_experiment, self.filename_data))
+        h5file = h5py.File(
+            os.path.join(self.path_to_dir, self.name, self.filename_data)
+        )
         self.generator.save(h5file, overwrite)
         h5file.close()
 
     def load_data(self):
-        h5file = h5py.File(os.path.join(self.path_to_experiment, self.filename_data))
+        h5file = h5py.File(
+            os.path.join(self.path_to_dir, self.name, self.filename_data)
+        )
         self.generator.load(h5file)
         h5file.close()
 
@@ -239,11 +251,11 @@ class Experiment:
             self.metrics[m].verbose = verbose
 
     @property
-    def path_to_experiment(self):
-        return self._path_to_experiment
+    def path_to_dir(self):
+        return self._path_to_dir
 
-    @path_to_experiment.setter
-    def path_to_experiment(self, path_to_experiment):
-        self._path_to_experiment = path_to_experiment
-        if not os.path.exists(path_to_experiment):
-            os.makedirs(path_to_experiment)
+    @path_to_dir.setter
+    def path_to_dir(self, path_to_dir):
+        self._path_to_dir = path_to_dir
+        if not os.path.exists(path_to_dir):
+            os.makedirs(path_to_dir)
