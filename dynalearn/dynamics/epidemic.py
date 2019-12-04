@@ -16,14 +16,10 @@ from dynalearn.dynamics import *
 
 
 class Epidemics(Dynamics):
-    def __init__(self, state_label, init_state):
-        super(Epidemics, self).__init__(len(state_label))
+    def __init__(self, param_dict, state_label):
+        super(Epidemics, self).__init__(param_dict, len(state_label))
         self.state_label = state_label
         self.inv_state_label = {state_label[i]: i for i in state_label}
-        self.init_state = init_state
-
-        for name, value in self.state_label.items():
-            self.params["state_" + name] = value
 
     def state_degree(self, states, adj=None):
         if adj is None:
@@ -53,16 +49,16 @@ class Epidemics(Dynamics):
 
 
 class SingleEpidemics(Epidemics):
-    def __init__(self, state_label, init_state):
+    def __init__(self, param_dict, state_label):
 
         if "S" not in state_label or "I" not in state_label:
             raise ValueError("state_label must contain states 'S' and 'I'.")
-        super(SingleEpidemics, self).__init__(state_label, init_state)
+        super(SingleEpidemics, self).__init__(param_dict, state_label)
 
     def initialize_states(self):
         N = self.graph.number_of_nodes()
-        if self.init_state is not None:
-            init_n_infected = ceil(N * self.init_state)
+        if self.param_dict["init"] is not None:
+            init_n_infected = ceil(N * self.param_dict["init"])
         else:
             init_n_infected = np.random.choice(range(N))
         nodeset = np.array(list(self.graph.nodes()))
@@ -78,7 +74,7 @@ class SingleEpidemics(Epidemics):
 
 
 class DoubleEpidemics(Epidemics):
-    def __init__(self, state_label, init_state):
+    def __init__(self, param_dict, state_label):
         if (
             "SS" not in state_label
             or "SI" not in state_label
@@ -86,12 +82,12 @@ class DoubleEpidemics(Epidemics):
             or "II" not in state_label
         ):
             raise ValueError("state_label must contain states 'S' and 'I'.")
-        super(DoubleEpidemics, self).__init__(state_label, init_state)
+        super(DoubleEpidemics, self).__init__(param_dict, state_label)
 
     def initialize_states(self):
         N = self.graph.number_of_nodes()
-        if self.init_state is not None:
-            init_n_infected = ceil(N * self.init_state)
+        if self.param_dict["init"] is not None:
+            init_n_infected = ceil(N * self.param_dict["init"])
         else:
             init_n_infected = np.random.choice(range(N))
 

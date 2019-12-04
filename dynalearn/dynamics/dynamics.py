@@ -6,7 +6,7 @@ Created by Charles Murphy on 26-06-18.
 Copyright © 2018 Charles Murphy. All rights reserved.
 Quebec, Canada
 
-Defines the class DynamicalNetwork which generate network on which a dynamical 
+Defines the class DynamicalNetwork which generate network on which a dynamical
 process occurs.
 
 """
@@ -17,8 +17,8 @@ import pickle
 import os
 
 
-class Dynamics():
-	"""
+class Dynamics:
+    """
 		Base class for dynamical network.
 
 		**Parameters**
@@ -29,82 +29,79 @@ class Dynamics():
 			Name of file for saving activity states. If ``None``, it does not save the states.
 
 		full_data_mode : Bool : (default = ``False``)
-			
+
 
 	"""
-	def __init__(self, num_states):
-		"""
+
+    def __init__(self, param_dict, num_states):
+        """
 		Initializes a Dynamics object.
 
 		"""
-		self._num_states = num_states
-		self._graph = None
-		self._degree = None
-		self.params = dict()
 
-	
-	def initialize_states(self):
-		"""
+        self.param_dict = param_dict
+        self._num_states = num_states
+        self._graph = None
+        self._degree = None
+        self.params = dict()
+
+    def initialize_states(self):
+        """
 		Initializes the nodes activity states. (virtual) (private)
 
 		"""
-		raise NotImplementedError("self.initialize_states() has not been impletemented")
+        raise NotImplementedError("self.initialize_states() has not been impletemented")
 
-
-	def predict(self, states):
-		"""
+    def predict(self, states):
+        """
 		Computes the next activity states probability distribution. (virtual) (private)
 
 		"""
-		raise NotImplementedError("self.transition() has not been impletemented")
+        raise NotImplementedError("self.transition() has not been impletemented")
 
-	def transition(self):
-		"""
+    def transition(self):
+        """
 		Computes the next activity states. (virtual) (private)
 
 		"""
-		raise NotImplementedError("self.transition() has not been impletemented")
+        raise NotImplementedError("self.transition() has not been impletemented")
 
-
-	def get_avg_state(self):
-		"""
+    def get_avg_state(self):
+        """
 		Get the average states. (virtual)
 
 		**Returns**
 		avg_state : Activity
 
 		"""
-		raise NotImplementedError("self.get_avg_states has not been implemented.")
+        raise NotImplementedError("self.get_avg_states has not been implemented.")
 
+    @property
+    def graph(self):
+        if self._graph is None:
+            raise ValueError("No graph has been parsed to the dynamics.")
+        else:
+            return self._graph
 
-	@property
-	def graph(self):
-		if self._graph is None:
-			raise ValueError('No graph has been parsed to the dynamics.')
-		else:
-			return self._graph
+    @property
+    def degree(self):
+        if self._degree is None:
+            raise ValueError("No graph has been parsed to the dynamics.")
+        else:
+            return self._degree
 
-	@property
-	def degree(self):
-		if self._degree is None:
-			raise ValueError('No graph has been parsed to the dynamics.')
-		else:
-			return self._degree
+    @graph.setter
+    def graph(self, graph):
+        self._graph = graph
+        self._degree = np.sum(nx.to_numpy_array(graph), axis=1)
+        self.initialize_states()
 
-	@graph.setter
-	def graph(self, graph):
-		self._graph = graph
-		self._degree = np.sum(nx.to_numpy_array(graph), axis=1)
-		self.initialize_states()
+    @property
+    def num_states(self):
+        return self._num_states
 
-
-	@property
-	def num_states(self):
-		return self._num_states
-
-
-	def update(self, step=1):
-		"""
+    def update(self, step=1):
+        """
 		Update the next activity states.
 
 		**Parameters**
@@ -115,10 +112,10 @@ class Dynamics():
 			If ``True``, it saves the update.
 
 		"""
-		for t in range(self.t[-1] + 1, self.t[-1] + 1 + step):
+        for t in range(self.t[-1] + 1, self.t[-1] + 1 + step):
 
-			forward_states = self.transition()
-			self.states = forward_states.copy()
-		self.t.append(t)
+            forward_states = self.transition()
+            self.states = forward_states.copy()
+        self.t.append(t)
 
-		return self.states
+        return self.states

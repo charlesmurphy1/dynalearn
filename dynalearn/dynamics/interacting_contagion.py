@@ -4,9 +4,9 @@ import numpy as np
 
 
 class SISSIS(DoubleEpidemics):
-    def __init__(self, infection_prob, recovery_prob, coupling, init_state=None):
-        super(SISSIS, self).__init__({"SS": 0, "IS": 1, "SI": 2, "II": 3}, init_state)
-        self.infection_prob = infection_prob
+    def __init__(self, param_dict):
+        super(SISSIS, self).__init__(param_dict, {"SS": 0, "IS": 1, "SI": 2, "II": 3})
+        self.param_dict["infection"] = param_dict["infection"]
         self.recovery_prob = recovery_prob
         self.coupling = coupling
 
@@ -99,40 +99,37 @@ class SISSIS(DoubleEpidemics):
 
     def infection(self, states, neighbor_states):
 
-        alpha = self.infection_prob
-        beta = self.recovery_prob
-        c = self.coupling
+        alpha1 = self.param_dict["infection1"]
+        alpha2 = self.param_dict["infection2"]
+        c = self.param_dict["coupling"]
         inf0 = np.zeros(states.shape)
         inf1 = np.zeros(states.shape)
 
         # Node SS
         inf0[states == 0] = (
             1
-            - (1 - alpha[0]) ** neighbor_states["IS"][states == 0]
-            * (1 - c * alpha[0]) ** neighbor_states["II"][states == 0]
+            - (1 - alpha1) ** neighbor_states["IS"][states == 0]
+            * (1 - c * alpha1) ** neighbor_states["II"][states == 0]
         )
         inf1[states == 0] = (
             1
-            - (1 - alpha[1]) ** neighbor_states["SI"][states == 0]
-            * (1 - c * alpha[1]) ** neighbor_states["II"][states == 0]
+            - (1 - alpha2) ** neighbor_states["SI"][states == 0]
+            * (1 - c * alpha2) ** neighbor_states["II"][states == 0]
         )
 
         # Node IS
-        inf1[states == 1] = 1 - (1 - c * alpha[1]) ** (
+        inf1[states == 1] = 1 - (1 - c * alpha2) ** (
             neighbor_states["SI"][states == 1] + neighbor_states["II"][states == 1]
         )
 
         # Node SI
-        inf0[states == 2] = 1 - (1 - c * alpha[0]) ** (
+        inf0[states == 2] = 1 - (1 - c * alpha1) ** (
             neighbor_states["IS"][states == 2] + neighbor_states["II"][states == 2]
         )
         return inf0, inf1
 
     def recovery(self, states, neighbor_states):
-        alpha = self.infection_prob
-        beta = self.recovery_prob
-        c = self.coupling
-        rec0 = np.ones(states.shape) * beta[0]
-        rec1 = np.ones(states.shape) * beta[1]
+        rec0 = np.ones(states.shape) * self.param_dict["recovery1"]
+        rec1 = np.ones(states.shape) * self.param_dict["recovery2"]
 
         return rec0, rec1

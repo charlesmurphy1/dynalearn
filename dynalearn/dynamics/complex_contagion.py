@@ -5,8 +5,8 @@ from scipy.special import lambertw
 
 
 class ComplexContagionSIS(SingleEpidemics):
-    def __init__(self, activation_f, deactivation_f, init_state=None):
-        super(ComplexContagionSIS, self).__init__({"S": 0, "I": 1}, init_state)
+    def __init__(self, param_dict, activation_f, deactivation_f):
+        super(ComplexContagionSIS, self).__init__(param_dict, {"S": 0, "I": 1})
         self.act_f = activation_f
         self.deact_f = deactivation_f
 
@@ -41,8 +41,8 @@ class ComplexContagionSIS(SingleEpidemics):
 
 
 class ComplexContagionSIR(SingleEpidemics):
-    def __init__(self, activation_f, deactivation_f, init_state=None):
-        super(ComplexContagionSIR, self).__init__({"S": 0, "I": 1, "R": 2}, init_state)
+    def __init__(self, param_dict, activation_f, deactivation_f):
+        super(ComplexContagionSIR, self).__init__(param_dict, {"S": 0, "I": 1, "R": 2})
         self.act_f = activation_f
         self.deact_f = deactivation_f
 
@@ -98,27 +98,25 @@ def soft_threshold_activation(state_degree, mu, beta):
 
 
 class SoftThresholdSIS(ComplexContagionSIS):
-    def __init__(self, mu, beta, recovery_prob, init_state=None):
+    def __init__(self, param_dict):
 
-        act_f = lambda l: soft_threshold_activation(l, mu, beta)
-        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
+        act_f = lambda l: soft_threshold_activation(
+            l, param_dict["threshold"], param_dict["slope"]
+        )
+        deact_f = lambda l: param_dict["recovery"] * np.ones(l["S"].shape)
 
-        super(SoftThresholdSIS, self).__init__(act_f, deact_f, init_state)
-        self.params["mu"] = mu
-        self.params["beta"] = beta
-        self.params["recovery_prob"] = recovery_prob
+        super(SoftThresholdSIS, self).__init__(param_dict, act_f, deact_f)
 
 
 class SoftThresholdSIR(ComplexContagionSIR):
-    def __init__(self, mu, beta, recovery_prob, init_state=None):
+    def __init__(self, param_dict):
 
-        act_f = lambda l: soft_threshold_activation(l, mu, beta)
-        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
-        super(SoftThresholdSIR, self).__init__(act_f, deact_f, init_state)
+        act_f = lambda l: soft_threshold_activation(
+            l, param_dict["threshold"], param_dict["slope"]
+        )
+        deact_f = lambda l: param_dict["recovery"] * np.ones(l["S"].shape)
 
-        self.params["mu"] = mu
-        self.params["beta"] = beta
-        self.params["recovery_prob"] = recovery_prob
+        super(SoftThresholdSIR, self).__init__(param_dict, act_f, deact_f)
 
 
 def nonlinear_activation(state_degree, tau, alpha):
@@ -127,27 +125,25 @@ def nonlinear_activation(state_degree, tau, alpha):
 
 
 class NonLinearSIS(ComplexContagionSIS):
-    def __init__(self, infection_prob, recovery_prob, alpha, init_state=None):
+    def __init__(self, param_dict):
 
-        act_f = lambda l: nonlinear_activation(l, infection_prob, alpha)
-        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
+        act_f = lambda l: nonlinear_activation(
+            l, param_dict["infection"], param_dict["exponent"]
+        )
+        deact_f = lambda l: param_dict["recovery"] * np.ones(l["S"].shape)
 
-        super(NonLinearSIS, self).__init__(act_f, deact_f, init_state)
-        self.params["infection_prob"] = infection_prob
-        self.params["recovery_prob"] = recovery_prob
-        self.params["alpha"] = alpha
+        super(NonLinearSIS, self).__init__(param_dict, act_f, deact_f)
 
 
 class NonLinearSIR(ComplexContagionSIR):
-    def __init__(self, infection_prob, recovery_prob, alpha, init_state=None):
+    def __init__(self, param_dict):
 
-        act_f = lambda l: nonlinear_activation(l, infection_prob, alpha)
-        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
+        act_f = lambda l: nonlinear_activation(
+            l, param_dict["infection"], param_dict["exponent"]
+        )
+        deact_f = lambda l: param_dict["recovery"] * np.ones(l["S"].shape)
 
-        super(NonLinearSIR, self).__init__(act_f, deact_f, init_state)
-        self.params["infection_prob"] = infection_prob
-        self.params["recovery_prob"] = recovery_prob
-        self.params["alpha"] = alpha
+        super(NonLinearSIR, self).__init__(param_dict, act_f, deact_f)
 
 
 def sine_activation(state_degree, tau, epsilon, period):
@@ -157,29 +153,25 @@ def sine_activation(state_degree, tau, epsilon, period):
 
 
 class SineSIS(ComplexContagionSIS):
-    def __init__(self, infection_prob, recovery_prob, epsilon, period, init_state=None):
+    def __init__(self, param_dict):
 
-        act_f = lambda l: sine_activation(l, infection_prob, epsilon, period)
-        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
+        act_f = lambda l: sine_activation(
+            l, param_dict["infection"], param_dict["amplitude"], param_dict["period"]
+        )
+        deact_f = lambda l: param_dict["recovery"] * np.ones(l["S"].shape)
 
-        super(SineSIS, self).__init__(act_f, deact_f, init_state)
-        self.params["infection_prob"] = infection_prob
-        self.params["recovery_prob"] = recovery_prob
-        self.params["epsilon"] = epsilon
-        self.params["period"] = period
+        super(SineSIS, self).__init__(param_dict, act_f, deact_f)
 
 
 class SineSIR(ComplexContagionSIR):
-    def __init__(self, infection_prob, recovery_prob, epsilon, period, init_state=None):
+    def __init__(self, param_dict):
 
-        act_f = lambda l: sine_activation(l, infection_prob, epsilon, period)
-        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
+        act_f = lambda l: sine_activation(
+            l, param_dict["infection"], param_dict["amplitude"], param_dict["period"]
+        )
+        deact_f = lambda l: param_dict["recovery"] * np.ones(l["S"].shape)
 
-        super(SineSIR, self).__init__(act_f, deact_f, init_state)
-        self.params["infection_prob"] = infection_prob
-        self.params["recovery_prob"] = recovery_prob
-        self.params["epsilon"] = epsilon
-        self.params["period"] = period
+        super(SineSIR, self).__init__(param_dict, act_f, deact_f)
 
 
 def planck_activation(state_degree, temperature):
@@ -191,22 +183,18 @@ def planck_activation(state_degree, temperature):
 
 
 class PlanckSIS(ComplexContagionSIS):
-    def __init__(self, recovery_prob, temperature, init_state=None):
+    def __init__(self, param_dict):
 
-        act_f = lambda l: planck_activation(l, temperature)
-        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
+        act_f = lambda l: planck_activation(l, param_dict["temperature"])
+        deact_f = lambda l: param_dict["recovery"] * np.ones(l["S"].shape)
 
-        super(PlanckSIS, self).__init__(act_f, deact_f, init_state)
-        self.params["recovery_prob"] = recovery_prob
-        self.params["temperature"] = temperature
+        super(PlanckSIS, self).__init__(param_dict, act_f, deact_f)
 
 
 class PlanckSIR(ComplexContagionSIR):
-    def __init__(self, recovery_prob, temperature, init_state=None):
+    def __init__(self, param_dict):
 
-        act_f = lambda l: planck_activation(l, temperature)
-        deact_f = lambda l: recovery_prob * np.ones(l["S"].shape)
+        act_f = lambda l: planck_activation(l, param_dict["temperature"])
+        deact_f = lambda l: param_dict["recovery"] * np.ones(l["S"].shape)
 
-        super(PlanckSIR, self).__init__(act_f, deact_f, init_state)
-        self.params["recovery_prob"] = recovery_prob
-        self.params["temperature"] = temperature
+        super(PlanckSIR, self).__init__(param_dict, act_f, deact_f)

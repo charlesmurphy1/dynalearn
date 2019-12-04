@@ -22,15 +22,12 @@ class SIS(SingleEpidemics):
 
     """
 
-    def __init__(self, infection_prob, recovery_prob, init_state=None):
-        super(SIS, self).__init__({"S": 0, "I": 1}, init_state)
-
-        self.params["infection_prob"] = infection_prob
-        self.params["recovery_prob"] = recovery_prob
+    def __init__(self, param_dict):
+        super(SIS, self).__init__(param_dict, {"S": 0, "I": 1})
 
     def transition(self):
-        beta = self.params["infection_prob"]
-        alpha = self.params["recovery_prob"]
+        beta = self.param_dict["infection"]
+        alpha = self.param_dict["recovery"]
         inf_deg = self.state_degree(self.states)["I"]
         inf_prob = 1 - (1 - beta) ** inf_deg
         rec_prob = alpha
@@ -49,8 +46,8 @@ class SIS(SingleEpidemics):
         return new_states
 
     def predict(self, states, adj=None):
-        beta = self.params["infection_prob"]
-        alpha = self.params["recovery_prob"]
+        beta = self.param_dict["infection"]
+        alpha = self.param_dict["recovery"]
         inf_deg = self.state_degree(states, adj)["I"]
 
         state_prob = np.zeros((states.shape[0], self.num_states))
@@ -80,15 +77,12 @@ class SIR(SingleEpidemics):
 
     """
 
-    def __init__(self, infection_prob, recovery_prob, init_state=None):
-        super(SIR, self).__init__({"S": 0, "I": 1, "R": 2}, init_state)
-
-        self.params["infection_prob"] = infection_prob
-        self.params["recovery_prob"] = recovery_prob
+    def __init__(self, param_dict):
+        super(SIR, self).__init__(param_dict, {"S": 0, "I": 1, "R": 2})
 
     def transition(self):
-        beta = self.params["infection_prob"]
-        alpha = self.params["recovery_prob"]
+        beta = self.param_dict["infection"]
+        alpha = self.param_dict["recovery"]
         inf_deg = self.state_degree(self.states)["I"]
         inf_prob = 1 - (1 - beta) ** inf_deg
         rec_prob = alpha
@@ -106,8 +100,8 @@ class SIR(SingleEpidemics):
 
     def predict(self, states, adj=None):
 
-        beta = self.params["infection_prob"]
-        alpha = self.params["recovery_prob"]
+        beta = self.param_dict["infection"]
+        alpha = self.param_dict["recovery"]
         inf_deg = self.state_degree(states, adj)["I"]
 
         state_prob = np.zeros((states.shape[0], self.num_states))
