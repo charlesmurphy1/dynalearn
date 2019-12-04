@@ -10,17 +10,24 @@ def sigmoid(x):
 
 
 def constant_deactivation(l_grid, k_grid, params):
-    return params["gamma"] * np.ones(self.k_grid.shape)
+    return params["recovery"] * np.ones(self.k_grid.shape)
 
 
 def soft_threshold_activation(l_grid, k_grid, params):
     x = l_grid[1]
-    return sigmoid(params["beta"] * (x - params["mu"]))
+    return sigmoid(params["slope"] * (x - params["threshold"]))
 
 
 def nonlinear_activation(l_grid, k_grid, params):
     l = l_grid[1]
-    return (1 - (1 - params["tau"]) ** l) ** params["alpha"]
+    return (1 - (1 - params["infection"]) ** l) ** params["exponent"]
+
+
+def sine_activation(l_grid, k_grid, params):
+    l = l_grid[1]
+    return (1 - (1 - params["infection"]) ** l) * (
+        1 - params["amplitude"] * (np.sin(np.pi * l / params["period"])) ** 2
+    )
 
 
 def planck_activation(l_grid, k_grid, params):
@@ -32,12 +39,12 @@ def planck_activation(l_grid, k_grid, params):
 
 class ComplexSISMF(MF):
     def __init__(
-        self, p_k, activation, deactivation, tol=1e-3, verbose=1, dtype="float"
+        self, p_k, params, activation, deactivation, tol=1e-3, verbose=1, dtype="float"
     ):
         self.activation = activation
         self.deactivation = deactivation
         super(ComplexSISMF, self).__init__(
-            2, p_k, tol=tol, verbose=verbose, dtype=dtype
+            2, p_k, params, params, tol=tol, verbose=verbose, dtype=dtype
         )
 
     def compute_ltp(self,):
@@ -58,7 +65,7 @@ class ComplexSIRMF(MF):
         self.activation = activation
         self.deactivation = deactivation
         super(ComplexSIRMF, self).__init__(
-            3, p_k, tol=tol, verbose=verbose, dtype=dtype
+            3, p_k, params, tol=tol, verbose=verbose, dtype=dtype
         )
 
     def compute_ltp(self,):
@@ -78,60 +85,72 @@ class ComplexSIRMF(MF):
 
 
 class SoftThresholdSIS_MF(ComplexSISMF):
-    def __init__(self, p_k, mu, beta, gamma, tol=1e-3, verbose=1, dtype="float"):
-        self.params = {"mu": mu, "beta": beta, "gamma": gamma}
-        activation = lambda l, k: soft_threshold_activation(l, k, self.params)
-        deactivation = lambda l, k: constant_deactivation(l, k, self.params)
+    def __init__(self, p_k, params, tol=1e-3, verbose=1, dtype="float"):
+        activation = lambda l, k: soft_threshold_activation(l, k, params)
+        deactivation = lambda l, k: constant_deactivation(l, k, params)
         super(SoftThresholdSIS_MF, self).__init__(
-            p_k, activation, deactivation, tol=tol, verbose=verbose, dtype=dtype
+            p_k, activation, deactivation, params, tol=tol, verbose=verbose, dtype=dtype
         )
 
 
 class SoftThresholdSIR_MF(ComplexSIRMF):
-    def __init__(self, p_k, mu, beta, gamma, tol=1e-3, verbose=1, dtype="float"):
-        self.params = {"mu": mu, "beta": beta, "gamma": gamma}
-        activation = lambda l, k: soft_threshold_activation(l, k, self.params)
-        deactivation = lambda l, k: constant_deactivation(l, k, self.params)
+    def __init__(self, p_k, params, tol=1e-3, verbose=1, dtype="float"):
+        activation = lambda l, k: soft_threshold_activation(l, k, params)
+        deactivation = lambda l, k: constant_deactivation(l, k, params)
         super(SoftThresholdSIR_MF, self).__init__(
-            p_k, activation, deactivation, tol=tol, verbose=verbose, dtype=dtype
+            p_k, activation, deactivation, params, tol=tol, verbose=verbose, dtype=dtype
         )
 
 
 class NonLinearSIS_MF(ComplexSISMF):
-    def __init__(self, p_k, tau, gamma, alpha, tol=1e-3, verbose=1, dtype="float"):
-        self.params = {"tau": tau, "gamma": gamma, "alpha": alpha}
-        activation = lambda l, k: nonlinear_activation(l, k, self.params)
-        deactivation = lambda l, k: constant_deactivation(l, k, self.params)
+    def __init__(self, p_k, params, tol=1e-3, verbose=1, dtype="float"):
+        activation = lambda l, k: nonlinear_activation(l, k, params)
+        deactivation = lambda l, k: constant_deactivation(l, k, params)
         super(NonLinearSIS_MF, self).__init__(
-            p_k, activation, deactivation, tol=tol, verbose=verbose, dtype=dtype
+            p_k, activation, deactivation, params, tol=tol, verbose=verbose, dtype=dtype
         )
 
 
 class NonLinearSIR_MF(ComplexSIRMF):
-    def __init__(self, p_k, tau, gamma, alpha, tol=1e-3, verbose=1, dtype="float"):
-        self.params = {"tau": tau, "gamma": gamma, "alpha": alpha}
-        activation = lambda l, k: nonlinear_activation(l, k, self.params)
-        deactivation = lambda l, k: constant_deactivation(l, k, self.params)
+    def __init__(self, p_k, params, tol=1e-3, verbose=1, dtype="float"):
+        activation = lambda l, k: nonlinear_activation(l, k, params)
+        deactivation = lambda l, k: constant_deactivation(l, k, params)
         super(NonLinearSIR_MF, self).__init__(
-            p_k, activation, deactivation, tol=tol, verbose=verbose, dtype=dtype
+            p_k, activation, deactivation, params, tol=tol, verbose=verbose, dtype=dtype
+        )
+
+
+class SineSIS_MF(ComplexSISMF):
+    def __init__(self, p_k, params, tol=1e-3, verbose=1, dtype="float"):
+        activation = lambda l, k: sine_activation(l, k, params)
+        deactivation = lambda l, k: constant_deactivation(l, k, params)
+        super(SineSIS_MF, self).__init__(
+            p_k, activation, deactivation, params, tol=tol, verbose=verbose, dtype=dtype
+        )
+
+
+class SineSIR_MF(ComplexSIRMF):
+    def __init__(self, p_k, params, tol=1e-3, verbose=1, dtype="float"):
+        activation = lambda l, k: sine_activation(l, k, params)
+        deactivation = lambda l, k: constant_deactivation(l, k, params)
+        super(SineSIR_MF, self).__init__(
+            p_k, activation, deactivation, params, tol=tol, verbose=verbose, dtype=dtype
         )
 
 
 class PlanckSIS_MF(ComplexSISMF):
-    def __init__(self, p_k, temperature, gamma, tol=1e-3, verbose=1, dtype="float"):
-        self.params = {"temperature": temperature, "gamma": gamma}
-        activation = lambda l, k: planck_activation(l, k, self.params)
-        deactivation = lambda l, k: constant_deactivation(l, k, self.params)
+    def __init__(self, p_k, params, tol=1e-3, verbose=1, dtype="float"):
+        activation = lambda l, k: planck_activation(l, k, params)
+        deactivation = lambda l, k: constant_deactivation(l, k, params)
         super(PlanckSIS_MF, self).__init__(
-            p_k, activation, deactivation, tol=tol, verbose=verbose, dtype=dtype
+            p_k, activation, deactivation, params, tol=tol, verbose=verbose, dtype=dtype
         )
 
 
 class PlanckSIR_MF(ComplexSIRMF):
-    def __init__(self, p_k, temperature, gamma, tol=1e-3, verbose=1, dtype="float"):
-        self.params = {"temperature": temperature, "gamma": gamma}
-        activation = lambda l, k: planck_activation(l, k, self.params)
-        deactivation = lambda l, k: constant_deactivation(l, k, self.params)
+    def __init__(self, p_k, params, tol=1e-3, verbose=1, dtype="float"):
+        activation = lambda l, k: planck_activation(l, k, params)
+        deactivation = lambda l, k: constant_deactivation(l, k, params)
         super(PlanckSIR_MF, self).__init__(
-            p_k, activation, deactivation, tol=tol, verbose=verbose, dtype=dtype
+            p_k, activation, deactivation, params, tol=tol, verbose=verbose, dtype=dtype
         )

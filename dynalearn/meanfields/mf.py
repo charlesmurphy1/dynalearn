@@ -9,10 +9,15 @@ np.seterr(divide="ignore", invalid="ignore")
 
 
 class MF(BaseMeanField):
-    def __init__(self, s_dim, p_k, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, s_dim, params=None, tol=1e-3, verbose=1, dtype="float"):
         self.s_dim = s_dim
-        self.p_k = p_k
-        super(MF, self).__init__(self.array_shape, tol=tol, verbose=verbose)
+        self._p_k = None
+        super(MF, self).__init__(self.array_shape, params, tol=tol, verbose=verbose)
+
+    def homogeneous_state(self, state):
+        x = np.zeros(sefl.array_shape).astype(self.dtype)
+        x[state, :] = 1
+        return x
 
     def application(self, x):
         _x = x.reshape(self.array_shape)
@@ -74,6 +79,10 @@ class MF(BaseMeanField):
 
     @property
     def p_k(self):
+        if self._p_k is None:
+            raise NotImplementedError(
+                "No degree distribution has been given to the meanfield."
+            )
         return self._p_k
 
     @p_k.setter
