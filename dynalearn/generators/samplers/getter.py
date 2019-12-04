@@ -1,5 +1,12 @@
 import dynalearn as dl
 
+samplers = [
+    "SequentialSampler",
+    "RandomSampler",
+    "DegreeBiasedSampler",
+    "StateBiasedSampler",
+]
+
 
 def get(params_dict, dynamics):
     name = params_dict["name"]
@@ -37,4 +44,6 @@ def get(params_dict, dynamics):
             resample=params["resample"],
         )
     else:
-        raise ValueError("Wrong name of sampler.")
+        raise ValueError(
+            "Wrong name of sampler. Valid entries are: {0}".format(samplers)
+        )

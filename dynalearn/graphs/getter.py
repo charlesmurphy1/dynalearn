@@ -1,22 +1,26 @@
 import dynalearn as dl
 
 
+graph_models = {
+    "CycleGraph": dl.graphs.CycleGraph,
+    "CompleteGraph": dl.graphs.CompleteGraph,
+    "StarGraph": dl.graphs.StarGraph,
+    "EmptyGraph": dl.graphs.EmptyGraph,
+    "RegularGraph": dl.graphs.RegularGraph,
+    "BAGraph": dl.graphs.BAGraph,
+    "ERGraph": dl.graphs.ERGraph,
+}
+
+
 def get(params_dict):
     name = params_dict["name"]
     params = params_dict["params"]
-    if name == "CycleGraph":
-        return dl.graphs.CycleGraph(params["N"])
-    elif name == "CompleteGraph":
-        return dl.graphs.CompleteGraph(params["N"])
-    elif name == "StarGraph":
-        return dl.graphs.StarGraph(params["N"])
-    elif name == "EmptyGraph":
-        return dl.graphs.EmptyGraph(params["N"])
-    elif name == "RegularGraph":
-        return dl.graphs.RegularGraph(params["N"], params["degree"])
-    elif name == "BAGraph":
-        return dl.graphs.BAGraph(params["N"], params["M"])
-    elif name == "ERGraph":
-        return dl.graphs.ERGraph(params["N"], params["p"])
+
+    if name in graph_models:
+        return dynamics_models[name](params)
     else:
-        raise ValueError("Wrong name of graph.")
+        raise ValueError(
+            "Wrong name of graph. Valid entries are: {0}".format(
+                list(graph_models.keys())
+            )
+        )

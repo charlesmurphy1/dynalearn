@@ -1,5 +1,7 @@
 import dynalearn as dl
 
+generators = ["DynamicsGenerator"]
+
 
 def get(params_dict, graph_model, dynamics_model):
     name = params_dict["name"]
@@ -15,4 +17,6 @@ def get(params_dict, graph_model, dynamics_model):
             with_truth=params["with_truth"],
         )
     else:
-        raise ValueError("Wrong name of generator.")
+        raise ValueError(
+            "Wrong name of generator. Valid entries are: {0}".format(generators)
+        )
