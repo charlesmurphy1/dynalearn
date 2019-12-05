@@ -1,14 +1,15 @@
-import dynalearn as dl
+from .graph_generator import *
 
 
 graph_models = {
-    "CycleGraph": dl.graphs.CycleGraph,
-    "CompleteGraph": dl.graphs.CompleteGraph,
-    "StarGraph": dl.graphs.StarGraph,
-    "EmptyGraph": dl.graphs.EmptyGraph,
-    "RegularGraph": dl.graphs.RegularGraph,
-    "BAGraph": dl.graphs.BAGraph,
-    "ERGraph": dl.graphs.ERGraph,
+    "CycleGraph": CycleGraph,
+    "CompleteGraph": CompleteGraph,
+    "StarGraph": StarGraph,
+    "EmptyGraph": EmptyGraph,
+    "RegularGraph": RegularGraph,
+    "BAGraph": BAGraph,
+    "ERGraph": ERGraph,
+    "DegreeSequenceGraph": DegreeSequenceGraph,
 }
 
 
@@ -17,7 +18,7 @@ def get(params_dict):
     params = params_dict["params"]
 
     if name in graph_models:
-        return dynamics_models[name](params)
+        return graph_models[name](params)
     else:
         raise ValueError(
             "Wrong name of graph. Valid entries are: {0}".format(
