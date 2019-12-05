@@ -109,8 +109,7 @@ class DynamicsGenerator:
 
     def _update_states(self):
         inputs = self.dynamics_model.states
-        self.dynamics_model.update()
-        targets = self.dynamics_model.states
+        targets = self.dynamics_model.update()
         gt_targets = self.dynamics_model.predict(inputs)
         return inputs, targets, gt_targets
 
