@@ -15,9 +15,6 @@ class Aggregator(object):
         operation="mean",
     ):
 
-        y = np.zeros(x.shape)
-        err = np.zeros(x.shape)
-
         if operation == "mean":
             op_val = np.nanmean
             op_err = lambda xx: np.sqrt(np.nanvar(xx))
@@ -28,6 +25,8 @@ class Aggregator(object):
         if for_degree:
             x = np.unique(np.sort(np.sum(summaries[:, 1:], axis=-1)))
             x = x[x > 0]
+            y = np.zeros(x.shape)
+            err = np.zeros(x.shape)
             for i, xx in enumerate(x):
 
                 if in_state is None:
@@ -45,6 +44,8 @@ class Aggregator(object):
                     err[i] = op_err(values[index, out_state])
         else:
             x, all_x = self.aggregate_summaries(summaries)
+            y = np.zeros(x.shape)
+            err = np.zeros(x.shape)
             for i, xx in enumerate(x):
 
                 if in_state is None:
@@ -60,8 +61,8 @@ class Aggregator(object):
                     err[i] = op_err(values[index, out_state])
 
         x = x[~np.isnan(y)]
-        y = y[~np.isnan(y)]
         err = err[~np.isnan(y)]
+        y = y[~np.isnan(y)]
         return x, y, err
 
     def aggregate_summaries(self, summaries):

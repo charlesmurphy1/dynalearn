@@ -11,9 +11,7 @@ from matplotlib.colors import LogNorm
 
 
 class AttentionMetrics(Metrics):
-    def __init__(
-        self, aggregator=None, num_points=100, max_num_sample=10000, verbose=1
-    ):
+    def __init__(self, num_points=100, max_num_sample=10000, verbose=1):
         super(AttentionMetrics, self).__init__(verbose)
         self.num_points = num_points
         self.max_num_sample = max_num_sample

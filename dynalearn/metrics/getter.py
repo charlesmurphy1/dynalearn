@@ -1,27 +1,37 @@
-import dynalearn as dl
+from .aggregator import *
+from .base_metrics import *
+from .ltp_metrics import *
+from .starltp_metrics import *
+from .attention_metrics import *
+from .loss_metrics import *
+from .statistics_metrics import *
+from .meanfield_metrics import *
+from .stationarystate_metrics import *
 
 aggregators = {
-    "SIS": dl.metrics.SimpleContagionAggregator,
-    "SIR": dl.metrics.SimpleContagionAggregator,
-    "NonLinearSIS": dl.metrics.SimpleContagionAggregator,
-    "NonLinearSIR": dl.metrics.SimpleContagionAggregator,
-    "SineSIS": dl.metrics.SimpleContagionAggregator,
-    "SineSIR": dl.metrics.SimpleContagionAggregator,
-    "PlanckSIS": dl.metrics.SimpleContagionAggregator,
-    "PlanckSIR": dl.metrics.SimpleContagionAggregator,
-    "SoftThresholdSIS": dl.metrics.ComplexContagionAggregator,
-    "SoftThresholdSIR": dl.metrics.ComplexContagionAggregator,
-    "SISSIS": dl.metrics.InteractingContagionAggregator,
+    "SIS": SimpleContagionAggregator,
+    "SIR": SimpleContagionAggregator,
+    "NonLinearSIS": SimpleContagionAggregator,
+    "NonLinearSIR": SimpleContagionAggregator,
+    "SineSIS": SimpleContagionAggregator,
+    "SineSIR": SimpleContagionAggregator,
+    "PlanckSIS": SimpleContagionAggregator,
+    "PlanckSIR": SimpleContagionAggregator,
+    "SoftThresholdSIS": ComplexContagionAggregator,
+    "SoftThresholdSIR": ComplexContagionAggregator,
+    "SISSIS": InteractingContagionAggregator,
 }
 
 metrics_dict = {
-    "StatisticsMetrics": dl.metrics.StatisticsMetrics,
-    "TrueLTPMetrics": dl.metrics.TrueLTPMetrics,
-    "GNNLTPMetrics": dl.metrics.GNNLTPMetrics,
-    "MLELTPMetrics": dl.metrics.MLELTPMetrics,
-    "TrueStarLTPMetrics": dl.metrics.TrueStarLTPMetrics,
-    "GNNStarLTPMetrics": dl.metrics.GNNStarLTPMetrics,
-    "AttentionMetrics": dl.metrics.AttentionMetrics,
+    "StatisticsMetrics": (StatisticsMetrics, True),
+    "TrueLTPMetrics": (TrueLTPMetrics, True),
+    "GNNLTPMetrics": (GNNLTPMetrics, True),
+    "MLELTPMetrics": (MLELTPMetrics, True),
+    "TrueStarLTPMetrics": (TrueStarLTPMetrics, True),
+    "GNNStarLTPMetrics": (GNNStarLTPMetrics, True),
+    "AttentionMetrics": (AttentionMetrics, False),
+    "PoissonEpidemicsSSMetrics": (PoissonEpidemicsSSMetrics, False),
+    "PoissonEpidemicsMFMetrics": (PoissonEpidemicsMFMetrics, False),
 }
 
 
@@ -41,18 +51,12 @@ def get_aggregator(dynamics):
 def get(metrics_names, dynamics):
     aggregator = get_aggregator(dynamics)
     metrics = {}
-
-    if name in aggregators:
-        return aggregators[name]()
-    else:
-        raise ValueError(
-            "Wrong name of dynamics. Valid entries are: {0}".format(
-                list(aggregators.keys())
-            )
-        )
     for name in metrics_names:
-        if m in metrics_dict:
-            metrics[name] = metrics_dict[name](aggregator=aggregator)
+        if name in metrics_dict:
+            if metrics_dict[name][1]:
+                metrics[name] = metrics_dict[name][0](aggregator=aggregator)
+            else:
+                metrics[name] = metrics_dict[name][0]()
         else:
             raise ValueError(
                 "Wrong name of metrics. Valid entries are: {0}".format(
