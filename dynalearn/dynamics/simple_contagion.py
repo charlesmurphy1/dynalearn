@@ -1,4 +1,4 @@
-from dynalearn.dynamics import *
+from .epidemics import *
 import networkx as nx
 import numpy as np
 
@@ -22,13 +22,17 @@ class SIS(SingleEpidemics):
 
     """
 
-    def __init__(self, param_dict):
-        super(SIS, self).__init__(param_dict, {"S": 0, "I": 1})
+    def __init__(self, params):
+        super(SIS, self).__init__(params, {"S": 0, "I": 1})
 
-    def transition(self):
-        beta = self.param_dict["infection"]
-        alpha = self.param_dict["recovery"]
-        inf_deg = self.state_degree(self.states)["I"]
+    def update(self, states=None, adj=None):
+        if states is None:
+            states = self.states
+        if adj is None:
+            adj = nx.to_numpy_array(self.graph)
+        beta = self.params["infection"]
+        alpha = self.params["recovery"]
+        inf_deg = self.state_degree(self.states, adj)["I"]
         inf_prob = 1 - (1 - beta) ** inf_deg
         rec_prob = alpha
         new_states = self.states * 1
@@ -45,9 +49,13 @@ class SIS(SingleEpidemics):
 
         return new_states
 
-    def predict(self, states, adj=None):
-        beta = self.param_dict["infection"]
-        alpha = self.param_dict["recovery"]
+    def predict(self, states=None, adj=None):
+        if states is None:
+            states = self.states
+        if adj is None:
+            adj = nx.to_numpy_array(self.graph)
+        beta = self.params["infection"]
+        alpha = self.params["recovery"]
         inf_deg = self.state_degree(states, adj)["I"]
 
         state_prob = np.zeros((states.shape[0], self.num_states))
@@ -77,12 +85,16 @@ class SIR(SingleEpidemics):
 
     """
 
-    def __init__(self, param_dict):
-        super(SIR, self).__init__(param_dict, {"S": 0, "I": 1, "R": 2})
+    def __init__(self, params):
+        super(SIR, self).__init__(params, {"S": 0, "I": 1, "R": 2})
 
-    def transition(self):
-        beta = self.param_dict["infection"]
-        alpha = self.param_dict["recovery"]
+    def update(self, states=None, adj=None):
+        if states is None:
+            states = self.states
+        if adj is None:
+            adj = nx.to_numpy_array(self.graph)
+        beta = self.params["infection"]
+        alpha = self.params["recovery"]
         inf_deg = self.state_degree(self.states)["I"]
         inf_prob = 1 - (1 - beta) ** inf_deg
         rec_prob = alpha
@@ -96,12 +108,17 @@ class SIR(SingleEpidemics):
         ] = 2
         if np.sum(new_states == self.state_label["I"]) == 0:
             self.continue_simu = False
+        self.states = new_states * 1
         return new_states
 
-    def predict(self, states, adj=None):
+    def predict(self, states=None, adj=None):
+        if states is None:
+            states = self.states
+        if adj is None:
+            adj = nx.to_numpy_array(self.graph)
 
-        beta = self.param_dict["infection"]
-        alpha = self.param_dict["recovery"]
+        beta = self.params["infection"]
+        alpha = self.params["recovery"]
         inf_deg = self.state_degree(states, adj)["I"]
 
         state_prob = np.zeros((states.shape[0], self.num_states))

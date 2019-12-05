@@ -1,16 +1,21 @@
-import dynalearn as dl
+from .dynamics import *
+from .epidemics import *
+from .simple_contagion import *
+from .complex_contagion import *
+from .interacting_contagion import *
+
 
 dynamics_models = {
-    "SIS": dl.dynamics.SIS,
-    "SIR": dl.dynamics.SIR,
-    "SoftThresholdSIS": dl.dynamics.SoftThresholdSIS,
-    "SoftThresholdSIR": dl.dynamics.SoftThresholdSIR,
-    "NonLinearSIS": dl.dynamics.NonLinearSIS,
-    "NonLinearSIR": dl.dynamics.NonLinearSIR,
-    "SineSIS": dl.dynamics.SineSIS,
-    "SineSIR": dl.dynamics.SineSIR,
-    "PlanckSIS": dl.dynamics.PlanckSIS,
-    "PlanckSIR": dl.dynamics.PlanckSIR,
+    "SIS": SIS,
+    "SIR": SIR,
+    "SoftThresholdSIS": SoftThresholdSIS,
+    "SoftThresholdSIR": SoftThresholdSIR,
+    "NonLinearSIS": NonLinearSIS,
+    "NonLinearSIR": NonLinearSIR,
+    "SineSIS": SineSIS,
+    "SineSIR": SineSIR,
+    "PlanckSIS": PlanckSIS,
+    "PlanckSIR": PlanckSIR,
 }
 
 

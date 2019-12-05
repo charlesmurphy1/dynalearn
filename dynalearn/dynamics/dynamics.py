@@ -33,13 +33,11 @@ class Dynamics:
 
 	"""
 
-    def __init__(self, param_dict, num_states):
+    def __init__(self, num_states):
         """
 		Initializes a Dynamics object.
 
 		"""
-
-        self.param_dict = param_dict
         self._num_states = num_states
         self._graph = None
         self._degree = None
@@ -52,14 +50,14 @@ class Dynamics:
 		"""
         raise NotImplementedError("self.initialize_states() has not been impletemented")
 
-    def predict(self, states):
+    def predict(self, states=None, ajd=None):
         """
 		Computes the next activity states probability distribution. (virtual) (private)
 
 		"""
         raise NotImplementedError("self.transition() has not been impletemented")
 
-    def transition(self):
+    def update(self, states=None, ajd=None):
         """
 		Computes the next activity states. (virtual) (private)
 
@@ -99,23 +97,3 @@ class Dynamics:
     @property
     def num_states(self):
         return self._num_states
-
-    def update(self, step=1):
-        """
-		Update the next activity states.
-
-		**Parameters**
-		step : Integer : (default = ``None``)
-			Number of steps to perform for the update.
-
-		save : Bool : (default = ``False``)
-			If ``True``, it saves the update.
-
-		"""
-        for t in range(self.t[-1] + 1, self.t[-1] + 1 + step):
-
-            forward_states = self.transition()
-            self.states = forward_states.copy()
-        self.t.append(t)
-
-        return self.states

@@ -1,16 +1,20 @@
-from dynalearn.dynamics import *
+from .epidemics import *
 import networkx as nx
 import numpy as np
 
 
 class SISSIS(DoubleEpidemics):
-    def __init__(self, param_dict):
-        super(SISSIS, self).__init__(param_dict, {"SS": 0, "IS": 1, "SI": 2, "II": 3})
-        self.param_dict["infection"] = param_dict["infection"]
+    def __init__(self, params):
+        super(SISSIS, self).__init__(params, {"SS": 0, "IS": 1, "SI": 2, "II": 3})
+        self.params["infection"] = params["infection"]
         self.recovery_prob = recovery_prob
         self.coupling = coupling
 
-    def transition(self):
+    def update(self, states=None, adj=None):
+        if states is None:
+            states = self.states
+        if adj is None:
+            adj = nx.to_numpy_array(self.graph)
         state_deg = self.state_degree(self.states)
         inf_prob = self.infection(self.states, state_deg)
         rec_prob = self.recovery(self.states, state_deg)
@@ -64,7 +68,11 @@ class SISSIS(DoubleEpidemics):
 
         return new_states
 
-    def predict(self, states, adj=None):
+    def predict(self, states=None, adj=None):
+        if states is None:
+            states = self.states
+        if adj is None:
+            adj = nx.to_numpy_array(self.graph)
         state_deg = self.state_degree(states, adj)
         p0, p1 = self.infection(states, state_deg)
         q0, q1 = self.recovery(states, state_deg)
@@ -99,9 +107,9 @@ class SISSIS(DoubleEpidemics):
 
     def infection(self, states, neighbor_states):
 
-        alpha1 = self.param_dict["infection1"]
-        alpha2 = self.param_dict["infection2"]
-        c = self.param_dict["coupling"]
+        alpha1 = self.params["infection1"]
+        alpha2 = self.params["infection2"]
+        c = self.params["coupling"]
         inf0 = np.zeros(states.shape)
         inf1 = np.zeros(states.shape)
 
@@ -129,7 +137,7 @@ class SISSIS(DoubleEpidemics):
         return inf0, inf1
 
     def recovery(self, states, neighbor_states):
-        rec0 = np.ones(states.shape) * self.param_dict["recovery1"]
-        rec1 = np.ones(states.shape) * self.param_dict["recovery2"]
+        rec0 = np.ones(states.shape) * self.params["recovery1"]
+        rec1 = np.ones(states.shape) * self.params["recovery2"]
 
         return rec0, rec1
