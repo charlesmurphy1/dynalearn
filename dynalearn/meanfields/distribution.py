@@ -10,8 +10,8 @@ class DiscreteDistribution(object):
         self.weights = values[1]  # Size K
 
     def expect(self, func):
-        x = func(self.k)  # Size K x D
-        return self.p_k @ x
+        x = func(self.values)  # Size K x D
+        return self.weights @ x
 
     def mean(self):
         f = lambda k: k
@@ -23,6 +23,9 @@ class DiscreteDistribution(object):
 
     def std(self):
         return np.sqrt(self.var())
+
+    def sample(self, num_samples=1):
+        return np.random.choice(self.values, size=num_samples, p=self.weights)
 
 
 def kronecker_distribution(k):
@@ -39,8 +42,8 @@ def poisson_distribution(avgk, k=None, num_k=3, tol=None):
     if tol is None:
         mid_k = np.round(avgk)
         if mid_k < num_k:
-            down = 1
-            up = 2 * num_k + 2
+            down = 0
+            up = 2 * num_k + 1
         else:
             down = mid_k - num_k + 1
             up = mid_k + num_k + 2
@@ -51,7 +54,7 @@ def poisson_distribution(avgk, k=None, num_k=3, tol=None):
     else:
         k = []
         p_k = []
-        k0 = 1
+        k0 = 0
         while len(k) < 1 or dist > tol:
             dist = f(k0)
             if dist > tol:

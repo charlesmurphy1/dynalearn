@@ -1,26 +1,28 @@
-import dynalearn as dl
+from .simple_contagion import *
+from .complex_contagion import *
+from .interacting_contagion import *
+from .gnn import *
 
 
 meanfields = {
-    "SIS": dl.meanfields.SIS_MF,
-    "SIR": dl.meanfields.SIR_MF,
-    "SoftThresholdSIS": dl.meanfields.SoftThresholdSIS_MF,
-    "SoftThresholdSIR": dl.meanfields.SoftThresholdSIR_MF,
-    "NonLinearSIS": dl.meanfields.NonLinearSIS_MF,
-    "NonLinearSIR": dl.meanfields.NonLinearSIR_MF,
-    "SineSIS": dl.meanfields.SineSIS_MF,
-    "SineSIR": dl.meanfields.SineSIR_MF,
-    "PlanckSIS": dl.meanfields.PlanckSIS_MF,
-    "PlanckSIR": dl.meanfields.PlanckSIR_MF,
-    "SISSIS": dl.meanfields.SISSIS_MF,
+    "SIS": SIS_MF,
+    "SIR": SIR_MF,
+    "SoftThresholdSIS": SoftThresholdSIS_MF,
+    "SoftThresholdSIR": SoftThresholdSIR_MF,
+    "NonLinearSIS": NonLinearSIS_MF,
+    "NonLinearSIR": NonLinearSIR_MF,
+    "SineSIS": SineSIS_MF,
+    "SineSIR": SineSIR_MF,
+    "PlanckSIS": PlanckSIS_MF,
+    "PlanckSIR": PlanckSIR_MF,
+    "SISSIS": SISSIS_MF,
 }
 
 
-def get(params, dynamics):
+def get(dynamics, degree_dist):
     name = type(dynamics).__name__
-
     if name in meanfields:
-        return meanfields[name](params)
+        return meanfields[name](degree_dist, dynamics.params)
     else:
         raise ValueError(
             "Wrong name of meanfields. Valid entries are: {0}".format(

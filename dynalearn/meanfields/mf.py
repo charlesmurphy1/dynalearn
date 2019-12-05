@@ -9,15 +9,10 @@ np.seterr(divide="ignore", invalid="ignore")
 
 
 class MF(BaseMeanField):
-    def __init__(self, s_dim, params=None, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, s_dim, degree_dist, tol=1e-3, verbose=1, dtype="float"):
         self.s_dim = s_dim
-        self._p_k = None
-        super(MF, self).__init__(self.array_shape, params, tol=tol, verbose=verbose)
-
-    def homogeneous_state(self, state):
-        x = np.zeros(sefl.array_shape).astype(self.dtype)
-        x[state, :] = 1
-        return x
+        self.degree_dist = degree_dist
+        super(MF, self).__init__(self.array_shape, tol=tol, verbose=verbose)
 
     def application(self, x):
         _x = x.reshape(self.array_shape)
@@ -38,9 +33,9 @@ class MF(BaseMeanField):
 
     def app_phi(self, x):
         new_phi = (
-            (x * self.p_k.values)
-            @ self.p_k.weights
-            / (self.p_k.values @ self.p_k.weights)
+            (x * self.degree_dist.values)
+            @ self.degree_dist.weights
+            / (self.degree_dist.values @ self.degree_dist.weights)
         )
         new_phi = self.clip(new_phi)
         new_phi /= new_phi.sum()
@@ -60,7 +55,7 @@ class MF(BaseMeanField):
         for i, s in enumerate(state):
             s = s.astype("int")
             k = adj[i].sum()
-            k_ind = np.where(self.p_k.values == k)[0]
+            k_ind = np.where(self.degree_dist.values == k)[0]
             if len(k_ind) > 0:
                 x[s, k_ind[0]] += 1
         x = self.normalize_state(x)
@@ -68,7 +63,7 @@ class MF(BaseMeanField):
 
     def to_avg(self, x):
         _x = x.reshape(self.array_shape)
-        _x = _x @ self.p_k.weights
+        _x = _x @ self.degree_dist.weights
         return _x.reshape(-1)
 
     def normalize_state(self, x):
@@ -78,23 +73,23 @@ class MF(BaseMeanField):
         return normed_x
 
     @property
-    def p_k(self):
-        if self._p_k is None:
+    def degree_dist(self):
+        if self._degree_dist is None:
             raise NotImplementedError(
                 "No degree distribution has been given to the meanfield."
             )
-        return self._p_k
+        return self._degree_dist
 
-    @p_k.setter
-    def p_k(self, p_k):
-        self._p_k = p_k
-        self.k_min = self.p_k.values.min()
-        self.k_max = self.p_k.values.max()
+    @degree_dist.setter
+    def degree_dist(self, degree_dist):
+        self._degree_dist = degree_dist
+        self.k_min = self.degree_dist.values.min()
+        self.k_max = self.degree_dist.values.max()
         self.k_dim = self.k_max - self.k_min + 1
         self.array_shape = (self.s_dim, self.k_dim)
 
         self.k_grid, self.l_grid = config_k_l_grid(
-            p_k.values, np.arange(self.k_max + 1), self.s_dim
+            degree_dist.values, np.arange(self.k_max + 1), self.s_dim
         )
         self.good_config = self.l_grid.sum(0) == self.k_grid
         self.bad_config = (self.l_grid.sum(0) > self.k_grid) + (
@@ -102,5 +97,4 @@ class MF(BaseMeanField):
         )
         self.k_grid[self.bad_config] = 0
         self.l_grid[:, self.bad_config] = 0
-
         self.ltp = self.compute_ltp()

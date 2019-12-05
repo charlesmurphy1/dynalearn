@@ -1,15 +1,14 @@
 import numpy as np
 
 from scipy.optimize import approx_fprime
-from .fixed_point import RecurrenceFPF
+from .finder import RecurrenceFPF
 from .utilities import power_method, EPSILON
 import tqdm
 
 
 class BaseMeanField:
-    def __init__(self, array_shape, params=None, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, array_shape, tol=1e-3, verbose=0, dtype="float"):
         self.array_shape = array_shape
-        self.params = params
         self.tol = tol
         self.verbose = verbose
         self.dtype = dtype

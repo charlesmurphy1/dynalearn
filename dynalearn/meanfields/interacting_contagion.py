@@ -4,8 +4,9 @@ from .mf import *
 
 
 class SISSIS_MF(MF):
-    def __init__(self, p_k, params, tol=1e-3, verbose=1):
-        super(SISSIS_MF, self).__init__(4, p_k, params, tol=tol, verbose=verbose)
+    def __init__(self, degree_dist, params, tol=1e-3, verbose=1):
+        self.params = params
+        super(SISSIS_MF, self).__init__(4, degree_dist, tol=tol, verbose=verbose)
 
     def compute_ltp(self,):
         ltp = np.zeros((self.s_dim, self.s_dim, *self.k_grid.shape))

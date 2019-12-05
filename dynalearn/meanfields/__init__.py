@@ -1,3 +1,4 @@
+from .getter import *
 from .base_meanfield import *
 from .ame import *
 from .pa import *
@@ -6,6 +7,6 @@ from .distribution import *
 from .simple_contagion import *
 from .complex_contagion import *
 from .interacting_contagion import *
-from .learned_model import *
-from .fixed_point import *
+from .gnn import *
+from .finder import *
 from .utilities import *
