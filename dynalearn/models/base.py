@@ -4,11 +4,11 @@ import numpy as np
 
 
 class DynamicsPredictor:
-    def __init__(self, num_nodes, num_states):
+    def __init__(self, num_nodes, num_states, params=dict()):
         self._model = None
         self._num_nodes = num_nodes
         self._num_states = num_states
-        self.params = {}
+        self.params = params
 
     @property
     def model(self):

@@ -16,42 +16,21 @@ from .layers import GraphAttention
 
 
 class LocalStatePredictor(DynamicsPredictor):
-    def __init__(
-        self,
-        num_nodes,
-        num_states,
-        in_features,
-        attn_features,
-        out_features,
-        n_heads,
-        in_activation="tanh",
-        attn_activation="relu",
-        out_activation="relu",
-        weight_decay=1e-4,
-        seed=None,
-        **kwargs
-    ):
+    def __init__(self, num_nodes, num_states, params=None, seed=None, **kwargs):
 
-        super(LocalStatePredictor, self).__init__(num_nodes, num_states, **kwargs)
+        super(LocalStatePredictor, self).__init__(
+            num_nodes, num_states, params, **kwargs
+        )
 
-        self.in_features = in_features
-        self.attn_features = attn_features
-        self.out_features = out_features
-        self.n_heads = n_heads
-        self.in_activation = in_activation
-        self.attn_activation = attn_activation
-        self.out_activation = out_activation
-        self.weight_decay = weight_decay
+        self.in_features = params["in_features"]
+        self.attn_features = params["attn_features"]
+        self.out_features = params["out_features"]
+        self.n_heads = params["n_heads"]
+        self.in_activation = params["in_activation"]
+        self.attn_activation = params["attn_activation"]
+        self.out_activation = params["out_activation"]
+        self.weight_decay = params["weight_decay"]
         self.seed = seed
-
-        self.params["in_features"] = self.in_features
-        self.params["attn_features"] = self.attn_features
-        self.params["out_features"] = self.out_features
-        self.params["n_heads"] = self.n_heads
-        self.params["in_activation"] = self.in_activation
-        self.params["attn_activation"] = self.attn_activation
-        self.params["out_activation"] = self.out_activation
-        self.params["weight_decay"] = self.weight_decay
 
     def _prepare_model(self):
         inputs = Input(shape=(1,))
