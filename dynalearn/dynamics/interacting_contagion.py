@@ -12,7 +12,11 @@ class SISSIS(DoubleEpidemics):
             states = self.states
         if adj is None:
             adj = nx.to_numpy_array(self.graph)
+<<<<<<< HEAD
         state_deg = self.state_degree(states, adj)
+=======
+        state_deg = self.state_degree(states)
+>>>>>>> b5ca9ebce533b84cb599ec874c5157834491ad68
         inf_prob = self.infection(states, state_deg)
         rec_prob = self.recovery(states, state_deg)
         status_to_g0 = np.zeros(states.shape)
@@ -46,7 +50,7 @@ class SISSIS(DoubleEpidemics):
 
         if np.all(new_states == 0):
             continue_simu = False
-
+        self.states = new_states
         return new_states
 
     def predict(self, states=None, adj=None):

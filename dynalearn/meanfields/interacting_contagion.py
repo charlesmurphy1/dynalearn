@@ -4,7 +4,7 @@ from .mf import *
 
 
 class SISSIS_MF(MF):
-    def __init__(self, degree_dist, params, tol=1e-3, verbose=1):
+    def __init__(self, degree_dist, params, tol=1e-3, verbose=0):
         self.params = params
         super(SISSIS_MF, self).__init__(4, degree_dist, tol=tol, verbose=verbose)
 

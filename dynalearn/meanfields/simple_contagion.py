@@ -2,7 +2,7 @@ from .mf import *
 
 
 class SIS_MF(MF):
-    def __init__(self, degree_dist, params, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, degree_dist, params, tol=1e-3, verbose=0, dtype="float"):
         self.params = params
         super(SIS_MF, self).__init__(
             2, degree_dist, tol=tol, verbose=verbose, dtype=dtype
@@ -18,7 +18,7 @@ class SIS_MF(MF):
 
 
 class SIR_MF(MF):
-    def __init__(self, degree_dist, params, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, degree_dist, params, tol=1e-3, verbose=0, dtype="float"):
         self.params = params
         super(SIR_MF, self).__init__(
             3, degree_dist, tol=tol, verbose=verbose, dtype=dtype

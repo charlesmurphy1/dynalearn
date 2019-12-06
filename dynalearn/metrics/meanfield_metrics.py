@@ -13,7 +13,7 @@ class MeanfieldMetrics(Metrics):
         self._parameters = parameters
         self.p_range = p_range
         if p_range is None:
-            self.p_range = (0.1, 2)
+            self.p_range = (0.1, 5)
 
         self.fp_finder = fp_finder
         super(MeanfieldMetrics, self).__init__(verbose)
@@ -21,24 +21,38 @@ class MeanfieldMetrics(Metrics):
     def compute(self, experiment):
         mf = dl.meanfields.get(experiment.dynamics_model, self.degree_dist)
         gnn_mf = dl.meanfields.GNN_MF(experiment.model, self.degree_dist)
+
+        true_low_fp = np.zeros((self.parameters.shape[0], mf.s_dim))
+        true_high_fp = np.zeros((self.parameters.shape[0], mf.s_dim))
+        gnn_low_fp = np.zeros((self.parameters.shape[0], mf.s_dim))
+        gnn_high_fp = np.zeros((self.parameters.shape[0], mf.s_dim))
+
         if self.verbose:
-            p_bar = tqdm.tqdm(range(2 * len(self.parameters)), "Computing fixed points")
-        for p in self.parameters:
+            p_bar = tqdm.tqdm(
+                range(2 * len(self.parameters)), "Computing " + self.__class__.__name__
+            )
+        for i, p in enumerate(self.parameters):
             mf = self.change_param(mf, p)
             fp = self.compute_fixed_points(mf)
             if self.verbose:
                 p_bar.update()
-            self.data[f"p = {p}/true_fp"] = fp
+            true_low_fp[i] = fp[0]
+            true_high_fp[i] = fp[1]
 
-        for p in self.parameters:
+        for i, p in enumerate(self.parameters):
             gnn_mf = self.change_param(gnn_mf, p)
             fp = self.compute_fixed_points(gnn_mf)
             if self.verbose:
                 p_bar.update()
-            self.data[f"p = {p}/gnn_fp"] = fp
+            gnn_low_fp[i] = fp[0]
+            gnn_high_fp[i] = fp[1]
         if self.verbose:
             p_bar.close()
 
+        self.data[f"true_low_fp"] = true_low_fp
+        self.data[f"true_high_fp"] = true_high_fp
+        self.data[f"gnn_low_fp"] = gnn_low_fp
+        self.data[f"gnn_high_fp"] = gnn_high_fp
         self.data[f"true_thresholds"] = self.compute_thresholds(mf)
         self.data[f"gnn_thresholds"] = self.compute_thresholds(gnn_mf)
         self.data[f"parameters"] = self.parameters
@@ -93,15 +107,17 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
 
     def compute_fixed_points(self, mf):
 
-        fp = np.array([])
-
         abs_state = self.absorbing_state(mf)
-        low_fp = mf.search_fixed_point(x0=abs_state, fp_finder=self.fp_finder)
-        fp = np.append(fp, low_fp)
+        low_fp = mf.to_avg(
+            mf.search_fixed_point(x0=abs_state, fp_finder=self.fp_finder)
+        )
 
         epi_state = self.epidemic_state(mf)
-        high_fp = mf.search_fixed_point(x0=epi_state, fp_finder=self.fp_finder)
-        fp = np.append(fp, high_fp)
+        high_fp = mf.to_avg(
+            mf.search_fixed_point(x0=epi_state, fp_finder=self.fp_finder)
+        )
+
+        fp = np.array([low_fp, high_fp])
 
         return fp
 
@@ -130,10 +146,22 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
         if low_f(p_min) * low_f(p_max) < 0:
             low_threshold = bisect(low_f, p_min, p_max, xtol=self.tol)
             thresholds = np.append(thresholds, low_threshold)
+        else:
+            print(
+                "invalid values for low thresholds: {0}".format(
+                    [low_f(p_min), low_f(p_max)]
+                )
+            )
 
         if high_f(p_min) * high_f(p_max) < 0:
             high_threshold = bisect(high_f, p_min, p_max, xtol=self.tol)
             thresholds = np.append(thresholds, high_threshold)
+        else:
+            print(
+                "invalid values for high thresholds: {0}".format(
+                    [high_f(p_min), high_f(p_max)]
+                )
+            )
 
         return thresholds
 

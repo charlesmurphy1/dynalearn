@@ -11,9 +11,9 @@ class StationaryStateMetrics(Metrics):
         self,
         parameters=None,
         num_samples=100,
-        burn=10,
+        burn=100,
         reshuffle=0.1,
-        tol=1e-2,
+        tol=1e-3,
         verbose=1,
     ):
         self.parameters = parameters
@@ -37,6 +37,7 @@ class StationaryStateMetrics(Metrics):
 
     def compute_stationary_states(self, model, x0, pb=None):
         adj = nx.to_numpy_array(self.graph_model.generate()[1])
+        x = x0 * 1
         avg_x0 = self.avg(x0)
         samples = np.zeros((self.num_samples, self.dynamics_model.num_states))
         # samples = []
@@ -44,7 +45,7 @@ class StationaryStateMetrics(Metrics):
         ii = 0
         while ii < self.num_samples:
             it += 1
-            x = model.update(x0, adj)
+            x = model.update(x, adj)
             avg_x = self.avg(x)
             dist = np.sqrt(((avg_x - avg_x0) ** 2).sum())
             avg_x0 = avg_x * 1
@@ -57,7 +58,7 @@ class StationaryStateMetrics(Metrics):
                 if np.random.rand() < self.reshuffle:
                     adj = nx.to_numpy_array(self.graph_model.generate()[1])
 
-        return samples
+        return np.mean(samples, axis=0), np.std(samples, axis=0)
 
     def avg(self, x):
         avg_x = []
@@ -74,7 +75,10 @@ class StationaryStateMetrics(Metrics):
 
     @graph_model.setter
     def graph_model(self, graph_model):
-        self._graph_model = graph_model
+        name = type(graph_model).__name__
+        params = graph_model.params
+        param_dict = {"name": name, "params": params}
+        self._graph_model = dl.graphs.get(param_dict)
 
     @property
     def dynamics_model(self):
@@ -108,9 +112,9 @@ class EpidemicsSSMetrics(StationaryStateMetrics):
         parameters=None,
         epsilon=1e-3,
         num_samples=100,
-        burn=10,
+        burn=100,
         reshuffle=0.1,
-        tol=1e-2,
+        tol=1e-3,
         verbose=1,
     ):
         self.epsilon = epsilon
@@ -139,34 +143,70 @@ class EpidemicsSSMetrics(StationaryStateMetrics):
         if self.verbose:
             p_bar = tqdm.tqdm(
                 range(4 * len(self.parameters) * self.num_samples),
-                "Computing stationary states",
+                "Computing " + self.__class__.__name__,
             )
 
-        for p in self.parameters:
+        self.data["parameters"] = self.parameters
+
+        true_low_avg_ss = np.zeros(
+            (len(self.parameters), self.dynamics_model.num_states)
+        )
+        true_low_std_ss = np.zeros(
+            (len(self.parameters), self.dynamics_model.num_states)
+        )
+        true_high_avg_ss = np.zeros(
+            (len(self.parameters), self.dynamics_model.num_states)
+        )
+        true_high_std_ss = np.zeros(
+            (len(self.parameters), self.dynamics_model.num_states)
+        )
+
+        for i, p in enumerate(self.parameters):
             self.change_param(p)
-            low_ss = self.compute_stationary_states(
+            low = self.compute_stationary_states(
                 self.dynamics_model, self.absoring_state(), p_bar
             )
-            high_ss = self.compute_stationary_states(
+            high = self.compute_stationary_states(
                 self.dynamics_model, self.epidemic_state(), p_bar
             )
-            self.data[f"p = {p}/true_low_ss"] = low_ss
-            self.data[f"p = {p}/true_high_ss"] = high_ss
+            true_low_avg_ss[i], true_low_std_ss[i] = low[0], low[1]
+            true_high_avg_ss[i], true_high_std_ss[i] = high[0], high[1]
 
-        for p in self.parameters:
-            self.change_param(p)
-            low_ss = self.compute_stationary_states(
+        self.data["true_low_avg"] = true_low_avg_ss
+        self.data["true_low_std"] = true_low_std_ss
+        self.data["true_high_avg"] = true_high_avg_ss
+        self.data["true_high_std"] = true_high_std_ss
+
+        gnn_low_avg_ss = np.zeros(
+            (len(self.parameters), self.dynamics_model.num_states)
+        )
+        gnn_low_std_ss = np.zeros(
+            (len(self.parameters), self.dynamics_model.num_states)
+        )
+        gnn_high_avg_ss = np.zeros(
+            (len(self.parameters), self.dynamics_model.num_states)
+        )
+        gnn_high_std_ss = np.zeros(
+            (len(self.parameters), self.dynamics_model.num_states)
+        )
+        for i, pp in enumerate(self.parameters):
+            self.change_param(pp)
+            low = self.compute_stationary_states(
                 self.gnn_model, self.absoring_state(), p_bar
             )
-            high_ss = self.compute_stationary_states(
+            high = self.compute_stationary_states(
                 self.gnn_model, self.epidemic_state(), p_bar
             )
-            self.data[f"p = {p}/gnn_low_ss"] = low_ss
-            self.data[f"p = {p}/gnn_high_ss"] = high_ss
+            gnn_low_avg_ss[i], gnn_low_std_ss[i] = low[0], low[1]
+            gnn_high_avg_ss[i], gnn_high_std_ss[i] = high[0], high[1]
+
+        self.data["gnn_low_avg"] = gnn_low_avg_ss
+        self.data["gnn_low_std"] = gnn_low_std_ss
+        self.data["gnn_high_avg"] = gnn_high_avg_ss
+        self.data["gnn_high_std"] = gnn_high_std_ss
 
         if self.verbose:
             p_bar.close()
-        self.data[f"parameters"] = self.parameters
 
 
 class PoissonEpidemicsSSMetrics(EpidemicsSSMetrics):
@@ -176,10 +216,10 @@ class PoissonEpidemicsSSMetrics(EpidemicsSSMetrics):
         parameters=None,
         num_k=3,
         epsilon=1e-3,
-        num_samples=100,
-        burn=10,
+        num_samples=10,
+        burn=100,
         reshuffle=0.1,
-        tol=1e-2,
+        tol=1e-3,
         verbose=1,
     ):
         self.num_nodes = num_nodes

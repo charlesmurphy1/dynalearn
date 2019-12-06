@@ -27,10 +27,10 @@ class Experiment:
 
         self.name = param_dict["name"]
         self.path_to_dir = param_dict["path_to_dir"]
+        self.path_to_bestmodel = param_dict["path_to_bestmodel"]
         self.filename_data = param_dict["filename_data"]
         self.filename_metrics = param_dict["filename_metrics"]
         self.filename_model = param_dict["filename_model"]
-        self.filename_bestmodel = param_dict["filename_bestmodel"]
 
         self.verbose = verbose
         self.history = dict()
@@ -85,7 +85,7 @@ class Experiment:
                 dl.utilities.get_schedule(params["schedule"]), verbose=1
             ),
             ks.callbacks.ModelCheckpoint(
-                os.path.join(self.path_to_dir, self.name, self.filename_bestmodel),
+                os.path.join(self.path_to_bestmodel, self.name + ".h5"),
                 save_best_only=True,
                 monitor="val_loss",
                 mode="min",
@@ -98,6 +98,9 @@ class Experiment:
 
         if not os.path.exists(os.path.join(self.path_to_dir, self.name)):
             os.makedirs(os.path.join(self.path_to_dir, self.name))
+
+        if not os.path.exists(os.path.join(self.path_to_bestmodel)):
+            os.makedirs(os.path.join(self.path_to_bestmodel))
 
     def generate_data(self):
         num_graphs = self.param_dict["generator"]["params"]["num_graphs"]
@@ -167,10 +170,13 @@ class Experiment:
             os.path.join(self.path_to_dir, self.name, self.filename_model)
         )
 
-    def load_model(self):
-        self.model.model.load_weights(
-            os.path.join(self.path_to_dir, self.name, self.filename_model)
-        )
+    def load_model(self, best=True):
+        if best:
+            path = os.path.join(self.path_to_bestmodel, self.name + ".h5")
+        else:
+            path = os.path.join(self.path_to_dir, self.name, self.filename_model)
+        if os.path.exists(path):
+            self.model.model.load_weights(path)
 
     def save_metrics(self, overwrite=False):
         h5file = h5py.File(
@@ -205,9 +211,12 @@ class Experiment:
         h5file.close()
 
     def load_metrics(self):
-        h5file = h5py.File(
-            os.path.join(self.path_to_dir, self.name, self.filename_metrics)
-        )
+        path = os.path.join(self.path_to_dir, self.name, self.filename_metrics)
+        if os.path.exists(path):
+            h5file = h5py.File(path)
+        else:
+            return
+
         _load_metrics = True
         _load_history = True
 
@@ -231,9 +240,12 @@ class Experiment:
         h5file.close()
 
     def load_data(self):
-        h5file = h5py.File(
-            os.path.join(self.path_to_dir, self.name, self.filename_data)
-        )
+        path = os.path.join(self.path_to_dir, self.name, self.filename_data)
+        if os.path.exists(path):
+            h5file = h5py.File(path)
+        else:
+            return
+
         self.generator.load(h5file)
         h5file.close()
 
@@ -245,8 +257,6 @@ class Experiment:
     def verbose(self, verbose):
         self._verbose = verbose
         self.generator.verbose = verbose
-        # for s in self.generator.samplers:
-        #     self.generator.samplers[s].verbose = verbose
         for m in self.metrics:
             self.metrics[m].verbose = verbose
 
