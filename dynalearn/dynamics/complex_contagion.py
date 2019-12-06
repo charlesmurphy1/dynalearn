@@ -15,21 +15,18 @@ class ComplexContagionSIS(SingleEpidemics):
             states = self.states
         if adj is None:
             adj = nx.to_numpy_array(self.graph)
-        state_deg = self.state_degree(self.states)
+        state_deg = self.state_degree(states)
         inf_prob = self.act_f(state_deg)
         rec_prob = self.deact_f(state_deg)
-        new_states = self.states * 1
+        new_states = states * 1
 
-        new_states[
-            (self.states == 0) * (np.random.rand(*self.states.shape) < inf_prob)
-        ] = 1
-        new_states[
-            (self.states == 1) * (np.random.rand(*self.states.shape) < rec_prob)
-        ] = 0
+        new_states[(states == 0) * (np.random.rand(*states.shape) < inf_prob)] = 1
+        new_states[(states == 1) * (np.random.rand(*states.shape) < rec_prob)] = 0
 
         if np.sum(new_states) == 0:
             continue_simu = False
 
+        self.states = new_states
         return new_states
 
     def predict(self, states=None, adj=None):
@@ -59,19 +56,17 @@ class ComplexContagionSIR(SingleEpidemics):
             states = self.states
         if adj is None:
             adj = nx.to_numpy_array(self.graph)
-        inf_prob = self.act_f(self.state_degree(self.states))
-        rec_prob = self.deact_f(self.state_degree(self.states))
-        new_states = self.states * 1
+        inf_prob = self.act_f(self.state_degree(states))
+        rec_prob = self.deact_f(self.state_degree(states))
+        new_states = states * 1
 
-        new_states[
-            (self.states == 0) * (np.random.rand(*self.states.shape) < inf_prob)
-        ] = 1
-        new_states[
-            (self.states == 1) * (np.random.rand(*self.states.shape) < rec_prob)
-        ] = 2
+        new_states[(states == 0) * (np.random.rand(*states.shape) < inf_prob)] = 1
+        new_states[(states == 1) * (np.random.rand(*states.shape) < rec_prob)] = 2
 
         if np.sum(new_states) == 0:
             continue_simu = False
+
+        self.states = new_states
 
         return new_states
 

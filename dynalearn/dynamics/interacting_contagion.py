@@ -15,48 +15,32 @@ class SISSIS(DoubleEpidemics):
             states = self.states
         if adj is None:
             adj = nx.to_numpy_array(self.graph)
-        state_deg = self.state_degree(self.states)
-        inf_prob = self.infection(self.states, state_deg)
-        rec_prob = self.recovery(self.states, state_deg)
-        status_to_g0 = np.zeros(self.states.shape)
-        status_to_g1 = np.zeros(self.states.shape)
+        state_deg = self.state_degree(states)
+        inf_prob = self.infection(states, state_deg)
+        rec_prob = self.recovery(states, state_deg)
+        status_to_g0 = np.zeros(states.shape)
+        status_to_g1 = np.zeros(states.shape)
 
-        status_to_g0[(self.states == 1) + (self.states == 3)] = 1
-        status_to_g1[(self.states == 2) + (self.states == 3)] = 1
+        status_to_g0[(states == 1) + (states == 3)] = 1
+        status_to_g1[(states == 2) + (states == 3)] = 1
 
         # Events on node SS
-        status_to_g0[
-            (self.states == 0) * (np.random.rand(*self.states.shape) < inf_prob[0])
-        ] = 1
-        status_to_g1[
-            (self.states == 0) * (np.random.rand(*self.states.shape) < inf_prob[1])
-        ] = 1
+        status_to_g0[(states == 0) * (np.random.rand(*states.shape) < inf_prob[0])] = 1
+        status_to_g1[(states == 0) * (np.random.rand(*states.shape) < inf_prob[1])] = 1
 
         # Events on node IS
-        status_to_g0[
-            (self.states == 1) * (np.random.rand(*self.states.shape) < rec_prob[0])
-        ] = 0
-        status_to_g1[
-            (self.states == 1) * (np.random.rand(*self.states.shape) < inf_prob[1])
-        ] = 1
+        status_to_g0[(states == 1) * (np.random.rand(*states.shape) < rec_prob[0])] = 0
+        status_to_g1[(states == 1) * (np.random.rand(*states.shape) < inf_prob[1])] = 1
 
         # Events on node SI
-        status_to_g0[
-            (self.states == 2) * (np.random.rand(*self.states.shape) < inf_prob[0])
-        ] = 1
-        status_to_g1[
-            (self.states == 2) * (np.random.rand(*self.states.shape) < rec_prob[1])
-        ] = 0
+        status_to_g0[(states == 2) * (np.random.rand(*states.shape) < inf_prob[0])] = 1
+        status_to_g1[(states == 2) * (np.random.rand(*states.shape) < rec_prob[1])] = 0
 
         # Events on node II
-        status_to_g0[
-            (self.states == 3) * (np.random.rand(*self.states.shape) < rec_prob[0])
-        ] = 0
-        status_to_g1[
-            (self.states == 3) * (np.random.rand(*self.states.shape) < rec_prob[1])
-        ] = 0
+        status_to_g0[(states == 3) * (np.random.rand(*states.shape) < rec_prob[0])] = 0
+        status_to_g1[(states == 3) * (np.random.rand(*states.shape) < rec_prob[1])] = 0
 
-        new_states = np.zeros(self.states.shape)
+        new_states = np.zeros(states.shape)
 
         new_states[(status_to_g0 == 0) * (status_to_g1 == 0)] = 0
         new_states[(status_to_g0 == 1) * (status_to_g1 == 0)] = 1
@@ -65,7 +49,7 @@ class SISSIS(DoubleEpidemics):
 
         if np.all(new_states == 0):
             continue_simu = False
-
+        self.states = new_states
         return new_states
 
     def predict(self, states=None, adj=None):
