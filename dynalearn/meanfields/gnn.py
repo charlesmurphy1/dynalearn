@@ -12,7 +12,7 @@ def all_combinations(k, d):
 
 
 class GNN_MF(MF):
-    def __init__(self, model, degree_dist, tol=1e-3, verbose=1):
+    def __init__(self, model, degree_dist, tol=1e-3, verbose=0):
         self.model = model
         super(GNN_MF, self).__init__(
             self.model.num_states, degree_dist, tol=tol, verbose=verbose

@@ -39,7 +39,7 @@ def planck_activation(l_grid, k_grid, params):
 
 class ComplexSISMF(MF):
     def __init__(
-        self, activation, deactivation, degree_dist, tol=1e-3, verbose=1, dtype="float"
+        self, activation, deactivation, degree_dist, tol=1e-3, verbose=0, dtype="float"
     ):
         self.activation = activation
         self.deactivation = deactivation
@@ -60,7 +60,7 @@ class ComplexSISMF(MF):
 
 class ComplexSIRMF(MF):
     def __init__(
-        self, activation, deactivation, degree_dist, tol=1e-3, verbose=1, dtype="float"
+        self, activation, deactivation, degree_dist, tol=1e-3, verbose=0, dtype="float"
     ):
         self.activation = activation
         self.deactivation = deactivation
@@ -85,7 +85,7 @@ class ComplexSIRMF(MF):
 
 
 class SoftThresholdSIS_MF(ComplexSISMF):
-    def __init__(self, degree_dist, params, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, degree_dist, params, tol=1e-3, verbose=0, dtype="float"):
         self.params = params
         activation = lambda l, k: soft_threshold_activation(l, k, params)
         deactivation = lambda l, k: constant_deactivation(l, k, params)
@@ -96,7 +96,7 @@ class SoftThresholdSIS_MF(ComplexSISMF):
 
 
 class SoftThresholdSIR_MF(ComplexSIRMF):
-    def __init__(self, degree_dist, params, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, degree_dist, params, tol=1e-3, verbose=0, dtype="float"):
         self.params = params
         activation = lambda l, k: soft_threshold_activation(l, k, params)
         deactivation = lambda l, k: constant_deactivation(l, k, params)
@@ -107,7 +107,7 @@ class SoftThresholdSIR_MF(ComplexSIRMF):
 
 
 class NonLinearSIS_MF(ComplexSISMF):
-    def __init__(self, degree_dist, params, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, degree_dist, params, tol=1e-3, verbose=0, dtype="float"):
         self.params = params
         activation = lambda l, k: nonlinear_activation(l, k, params)
         deactivation = lambda l, k: constant_deactivation(l, k, params)
@@ -118,7 +118,7 @@ class NonLinearSIS_MF(ComplexSISMF):
 
 
 class NonLinearSIR_MF(ComplexSIRMF):
-    def __init__(self, degree_dist, params, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, degree_dist, params, tol=1e-3, verbose=0, dtype="float"):
         self.params = params
         activation = lambda l, k: nonlinear_activation(l, k, params)
         deactivation = lambda l, k: constant_deactivation(l, k, params)
@@ -129,7 +129,7 @@ class NonLinearSIR_MF(ComplexSIRMF):
 
 
 class SineSIS_MF(ComplexSISMF):
-    def __init__(self, degree_dist, params, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, degree_dist, params, tol=1e-3, verbose=0, dtype="float"):
         self.params = params
         activation = lambda l, k: sine_activation(l, k, params)
         deactivation = lambda l, k: constant_deactivation(l, k, params)
@@ -140,7 +140,7 @@ class SineSIS_MF(ComplexSISMF):
 
 
 class SineSIR_MF(ComplexSIRMF):
-    def __init__(self, degree_dist, params, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, degree_dist, params, tol=1e-3, verbose=0, dtype="float"):
         self.params = params
         activation = lambda l, k: sine_activation(l, k, params)
         deactivation = lambda l, k: constant_deactivation(l, k, params)
@@ -151,7 +151,7 @@ class SineSIR_MF(ComplexSIRMF):
 
 
 class PlanckSIS_MF(ComplexSISMF):
-    def __init__(self, degree_dist, params, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, degree_dist, params, tol=1e-3, verbose=0, dtype="float"):
         self.params = params
         activation = lambda l, k: planck_activation(l, k, params)
         deactivation = lambda l, k: constant_deactivation(l, k, params)
@@ -162,7 +162,7 @@ class PlanckSIS_MF(ComplexSISMF):
 
 
 class PlanckSIR_MF(ComplexSIRMF):
-    def __init__(self, degree_dist, params, tol=1e-3, verbose=1, dtype="float"):
+    def __init__(self, degree_dist, params, tol=1e-3, verbose=0, dtype="float"):
         self.params = params
         activation = lambda l, k: planck_activation(l, k, params)
         deactivation = lambda l, k: constant_deactivation(l, k, params)
