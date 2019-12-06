@@ -81,13 +81,12 @@ class SimpleContagionAggregator(Aggregator):
 
 
 class InteractingContagionAggregator(Aggregator):
-    def __init__(self, agent):
+    def __init__(self):
         super(InteractingContagionAggregator, self).__init__()
-        self.agent = agent
 
     def aggregate_summaries(self, summaries):
-        sorted_val = np.unique(np.sort(summaries[:, self.agent + 2] + summaries[:, -1]))
-        all_val = summaries[:, self.agent + 2] + summaries[:, -1]
+        sorted_val = np.unique(np.sort(np.sum(summaries[:, 1:], axis=-1)))
+        all_val = np.sum(summaries[:, 1:], axis=-1)
         return sorted_val, all_val
 
 

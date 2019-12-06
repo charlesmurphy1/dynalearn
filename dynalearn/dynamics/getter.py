@@ -16,6 +16,7 @@ dynamics_models = {
     "SineSIR": SineSIR,
     "PlanckSIS": PlanckSIS,
     "PlanckSIR": PlanckSIR,
+    "SISSIS": SISSIS,
 }
 
 
