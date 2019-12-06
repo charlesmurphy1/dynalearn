@@ -82,7 +82,7 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
     def __init__(
         self,
         degree_dist,
-        epsilon=1e-3,
+        epsilon=1e-2,
         tol=1e-3,
         parameters=None,
         p_range=None,
@@ -96,8 +96,9 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
         )
 
     def epidemic_state(self, mf):
-        x = np.ones(mf.array_shape) * (1 - self.epsilon)
-        x[0] = self.epsilon
+        x = np.ones(mf.array_shape).astype(mf.dtype) * self.epsilon
+        x[0] = 1 - self.epsilon
+        x = 1 - x
         return mf.normalize_state(x)
 
     def absorbing_state(self, mf):
@@ -170,7 +171,7 @@ class PoissonEpidemicsMFMetrics(EpidemicsMFMetrics):
     def __init__(
         self,
         num_k=3,
-        epsilon=1e-3,
+        epsilon=1e-2,
         tol=1e-3,
         parameters=None,
         p_range=None,

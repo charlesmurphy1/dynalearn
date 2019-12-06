@@ -9,7 +9,7 @@ np.seterr(divide="ignore", invalid="ignore")
 
 
 class MF(BaseMeanField):
-    def __init__(self, s_dim, degree_dist, tol=1e-3, verbose=0, dtype="float"):
+    def __init__(self, s_dim, degree_dist, tol=1e-5, verbose=0, dtype="float"):
         self.s_dim = s_dim
         self.degree_dist = degree_dist
         super(MF, self).__init__(self.array_shape, tol=tol, verbose=verbose)

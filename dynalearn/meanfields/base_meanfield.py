@@ -7,7 +7,7 @@ import tqdm
 
 
 class BaseMeanField:
-    def __init__(self, array_shape, tol=1e-3, verbose=0, dtype="float"):
+    def __init__(self, array_shape, tol=1e-5, verbose=0, dtype="float"):
         self.array_shape = array_shape
         self.tol = tol
         self.verbose = verbose
