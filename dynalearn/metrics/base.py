@@ -1,7 +1,8 @@
 import h5py
+from abc import ABC
 
 
-class Metrics:
+class Metrics(ABC):
     def __init__(self, verbose=1):
         self.data = dict()
         self.val_data = None
@@ -9,8 +10,9 @@ class Metrics:
         self.verbose = verbose
         return
 
+    @abstractmethod
     def compute(self, experiment, **kwargs):
-        raise NotImplementedError()
+        raise NotImplementedError("compute must be implemented.")
 
     def save(self, name, h5file, overwrite=True):
         for k, v in self.data.items():

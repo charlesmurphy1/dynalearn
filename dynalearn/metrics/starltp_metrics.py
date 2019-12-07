@@ -25,7 +25,7 @@ class StarLTPMetrics(Metrics):
         super(StarLTPMetrics, self).__init__(verbose)
 
     def get_metric(self, experiment, input, adj):
-        raise NotImplementedError()
+        raise NotImplementedError("get_metric must be implemented.")
 
     def aggregate(self, data=None, in_state=None, out_state=None, for_degree=False):
         if self.aggregate is None:

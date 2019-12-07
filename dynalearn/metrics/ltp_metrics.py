@@ -16,8 +16,9 @@ class LTPMetrics(Metrics):
             self.num_points = num_points
         super(LTPMetrics, self).__init__(verbose)
 
+    @abstractmethod
     def get_metric(self, adj, inputs, targets):
-        raise NotImplementedError()
+        raise NotImplementedError("get_metric must be implemented.")
 
     def aggregate(self, data=None, in_state=None, out_state=None, for_degree=False):
         if self.aggregate is None:
