@@ -1,4 +1,4 @@
-from .graph_generator import *
+from .graph import *
 
 
 graph_models = {
