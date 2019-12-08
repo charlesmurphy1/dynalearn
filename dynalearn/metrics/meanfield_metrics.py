@@ -7,10 +7,10 @@ from scipy.optimize import bisect
 
 class MeanfieldMetrics(Metrics):
     def __init__(
-        self, degree_dist, parameters=None, p_range=None, fp_finder=None, verbose=1
+        self, degree_dist, parameters, p_range=None, fp_finder=None, verbose=1
     ):
         self.degree_dist = degree_dist
-        self._parameters = parameters
+        self.parameters = parameters
         self.p_range = p_range
         if p_range is None:
             self.p_range = (0.1, 5)
@@ -58,33 +58,22 @@ class MeanfieldMetrics(Metrics):
         self.data[f"parameters"] = self.parameters
 
     def compute_fixed_points(self, mf):
-        raise NotImplemented()
+        raise NotImplementedError("compute_fixed_points must be implemented.")
 
     def compute_thresholds(self, mf):
-        raise NotImplemented()
+        raise NotImplementedError("compute_thresholds must be implemented.")
 
     def change_param(self, mf, value):
-        raise NotImplemented()
-
-    @property
-    def parameters(self,):
-        if self._parameters is None:
-            raise ValueError("No parameter have been given.")
-        else:
-            return self._parameters
-
-    @parameters.setter
-    def parameters(self, parameters):
-        self._parameters = parameters
+        raise NotImplementedError("change_param must be implemented.")
 
 
 class EpidemicsMFMetrics(MeanfieldMetrics):
     def __init__(
         self,
         degree_dist,
+        parameters,
         epsilon=1e-2,
         tol=1e-3,
-        parameters=None,
         p_range=None,
         fp_finder=None,
         verbose=1,

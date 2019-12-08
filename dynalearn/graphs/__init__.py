@@ -1,2 +1,2 @@
-from .graph_generator import *
+from .graph import *
 from .getter import *

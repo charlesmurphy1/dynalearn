@@ -29,11 +29,9 @@ class StationaryStateMetrics(Metrics):
 
         super(StationaryStateMetrics, self).__init__(verbose)
 
-    def compute(self, experiment):
-        raise NotImplemented()
-
+    @abstractmethod
     def change_param(self, p):
-        raise NotImplemented()
+        raise NotImplementedError("change_param must be implemented.")
 
     def compute_stationary_states(self, model, x0, pb=None):
         adj = nx.to_numpy_array(self.graph_model.generate()[1])
@@ -69,7 +67,7 @@ class StationaryStateMetrics(Metrics):
     @property
     def graph_model(self):
         if self._graph_model is None:
-            raise ValueError("No graph model is available")
+            raise ValueError("graph model is unavailable.")
         else:
             return self._graph_model
 
@@ -83,7 +81,7 @@ class StationaryStateMetrics(Metrics):
     @property
     def dynamics_model(self):
         if self._dynamics_model is None:
-            raise ValueError("No dynamics model is available")
+            raise ValueError("dynamics model is unavailable.")
         else:
             return self._dynamics_model
 
@@ -97,7 +95,7 @@ class StationaryStateMetrics(Metrics):
     @property
     def gnn_model(self):
         if self._gnn_model is None:
-            raise ValueError("No GNN model is available")
+            raise ValueError("GNN model is unavailable.")
         else:
             return self._gnn_model
 
@@ -214,7 +212,7 @@ class PoissonEpidemicsSSMetrics(EpidemicsSSMetrics):
         self,
         num_nodes=2000,
         parameters=None,
-        num_k=3,
+        num_k=5,
         epsilon=1e-3,
         num_samples=10,
         burn=100,

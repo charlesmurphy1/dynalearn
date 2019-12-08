@@ -1,7 +1,8 @@
 import numpy as np
+from abc import ABC
 
 
-class Aggregator(object):
+class Aggregator(ABC):
     def __init__(self):
         super(Aggregator, self).__init__()
 
@@ -66,7 +67,7 @@ class Aggregator(object):
         return x, y, err
 
     def aggregate_summaries(self, summaries):
-        raise NotImplementedError()
+        raise NotImplementedError("aggregate_summaries must be implemented.")
 
 
 class SimpleContagionAggregator(Aggregator):

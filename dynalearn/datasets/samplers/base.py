@@ -1,7 +1,8 @@
 import numpy as np
+from abc import ABC
 
 
-class Sampler(object):
+class Sampler(ABC):
     def __init__(self, name, verbose=0, sample_from_weights=True, resample=-1):
         self.name = name
         self.verbose = verbose
@@ -67,12 +68,6 @@ class Sampler(object):
             self.avail_graph_set.remove(g_index)
             if len(self.avail_graph_set) == 0:
                 self.reset_set()
-
-    def get_graph(self):
-        raise NotImplementedError()
-
-    def get_state(self, g_index):
-        raise NotImplementedError()
 
     def get_nodes(self, g_index, s_index, batch_size=-1):
         mask = np.zeros(self.num_nodes[g_index])
@@ -209,3 +204,11 @@ class Sampler(object):
                 self.node_weights[k] = {
                     i: weights for i, weights in enumerate(node_weights)
                 }
+
+    @abstractmethod
+    def get_graph(self):
+        raise NotImplementedError()
+
+    @abstractmethod
+    def get_state(self, g_index):
+        raise NotImplementedError()

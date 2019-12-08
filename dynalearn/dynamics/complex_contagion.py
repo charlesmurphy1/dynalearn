@@ -1,4 +1,4 @@
-from .epidemics import *
+from .base import *
 import networkx as nx
 import numpy as np
 from scipy.special import lambertw
