@@ -123,3 +123,12 @@ class GNNStarLTPMetrics(StarLTPMetrics):
 
     def get_metric(self, experiment, inputs, adj):
         return experiment.model.predict(inputs, adj)[0]
+
+
+class UniformStarLTPMetrics(StarLTPMetrics):
+    def __init__(self, config, verbose=1):
+        super(UniformStarLTPMetrics, self).__init__(config, verbose)
+
+    def get_metric(self, experiment, inputs, adj):
+        num_states = len(experiment.dynamics_model.state_label)
+        return np.ones(num_states) / num_states

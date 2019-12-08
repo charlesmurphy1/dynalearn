@@ -13,29 +13,67 @@ from tensorflow.keras.losses import categorical_crossentropy
 
 
 class Experiment:
-    def __init__(self, param_dict, verbose=1):
-        self.param_dict = param_dict
-        self.graph_model = dl.graphs.get(param_dict["graph"])
-        self.dynamics_model = dl.dynamics.get(param_dict["dynamics"])
-        self.model = dl.models.get(
-            param_dict["model"], self.graph_model, self.dynamics_model
+    def __init__(self, config, verbose=1):
+        self.__config = config
+        self.graph_model = dl.graphs.get(config["graph"])
+        self.dynamics_model = dl.dynamics.get(config["dynamics"])
+        self.model = dl.models.get(config["model"])
+        self.model.num_nodes = self.graph_model.num_nodes
+        self.generator = dl.datasets.get(
+            config["generator"], self.graph_model, self.dynamics_model
         )
-        self.generator = dl.generators.get(
-            param_dict["generator"], self.graph_model, self.dynamics_model
-        )
-        self.metrics = dl.metrics.get(param_dict["metrics"], self.dynamics_model)
+        self.metrics = dl.metrics.get(config["metrics"], self.dynamics_model)
 
-        self.name = param_dict["name"]
-        self.path_to_dir = param_dict["path_to_dir"]
-        self.path_to_bestmodel = param_dict["path_to_bestmodel"]
-        self.filename_data = param_dict["filename_data"]
-        self.filename_metrics = param_dict["filename_metrics"]
-        self.filename_model = param_dict["filename_model"]
+        self.name = config["name"]
+        self.path_to_dir = config["path_to_dir"]
+        self.path_to_bestmodel = config["path_to_bestmodel"]
+        if "filename_data" not in config:
+            self.filename_data = "data.h5"
+        else:
+            self.filename_data = config["filename_data"]
+
+        if "filename_metrics" not in config:
+            self.filename_metrics = "data.h5"
+        else:
+            self.filename_metrics = config["filename_metrics"]
+
+        if "filename_model" not in config:
+            self.filename_model = "data.h5"
+        else:
+            self.filename_model = config["filename_model"]
+
+        if "filename_history" not in config:
+            self.filename_history = "data.h5"
+        else:
+            self.filename_history = config["filename_history"]
+
+        self.num_graphs = config["training"].num_graphs
+        self.num_samples = config["training"].num_samples
+        self.epoch = 0
+        self.num_epochs = config["training"].num_epochs
+        self.optimizer = config["training"].optimizer
+
+        self.callbacks = config["training"].callbacks
+        self.callbacks.append(
+            ks.callbacks.ModelCheckpoint(
+                os.path.join(self.path_to_bestmodel, self.name + ".h5"),
+                save_best_only=True,
+                monitor="val_loss",
+                mode="min",
+                period=1,
+                verbose=1,
+            )
+        )
+        self.training_metrics = config["training"].training_metrics
+
+        if not os.path.exists(os.path.join(self.path_to_dir, self.name)):
+            os.makedirs(os.path.join(self.path_to_dir, self.name))
+
+        if not os.path.exists(os.path.join(self.path_to_bestmodel)):
+            os.makedirs(os.path.join(self.path_to_bestmodel))
 
         self.verbose = verbose
         self.history = dict()
-
-        self.configure(param_dict["config"])
 
         return
 
@@ -47,6 +85,7 @@ class Experiment:
         if self.verbose:
             print("\n---Training model---")
         self.train_model()
+        self.load_model(best=True)
 
         if self.verbose:
             print("\n---Computing metrics---")
@@ -60,66 +99,28 @@ class Experiment:
         self.save_data(overwrite)
         self.save_model(overwrite)
         self.save_metrics(overwrite)
+        self.save_history(overwrite)
 
     def load(self):
         self.load_data()
         self.load_model()
         self.load_metrics()
-
-    def configure(self, params):
-        np.random.seed(params["np_seed"])
-        self.epoch = 0
-        self.epochs = params["epochs"]
-        self.optimizer = ks.optimizers.get(params["optimizer"])
-        self.optimizer.lr = K.variable(params["initial_lr"])
-
-        if params["loss"] == "noisy_crossentropy":
-            self.loss = dl.utilities.get_noisy_crossentropy(
-                noise=params["target_noise"]
-            )
-        else:
-            self.loss = ks.losses.get(params["loss"])
-
-        self.callbacks = [
-            ks.callbacks.LearningRateScheduler(
-                dl.utilities.get_schedule(params["schedule"]), verbose=1
-            ),
-            ks.callbacks.ModelCheckpoint(
-                os.path.join(self.path_to_bestmodel, self.name + ".h5"),
-                save_best_only=True,
-                monitor="val_loss",
-                mode="min",
-                period=1,
-                verbose=1,
-            ),
-        ]
-
-        self.training_metrics = [dl.utilities.metrics.model_entropy]
-
-        if not os.path.exists(os.path.join(self.path_to_dir, self.name)):
-            os.makedirs(os.path.join(self.path_to_dir, self.name))
-
-        if not os.path.exists(os.path.join(self.path_to_bestmodel)):
-            os.makedirs(os.path.join(self.path_to_bestmodel))
+        self.load_history()
 
     def generate_data(self):
-        num_graphs = self.param_dict["generator"]["params"]["num_graphs"]
-        num_sample = self.param_dict["generator"]["params"]["num_sample"]
-        resampling_time = self.param_dict["generator"]["params"]["resampling_time"]
+        for i in range(self.__config["training"].num_graphs):
+            self.generator.generate(self.__config["training"].num_samples)
 
-        for i in range(num_graphs):
-            self.generator.generate(num_sample, resampling_time)
-
-        if "val_fraction" in self.param_dict["generator"]["params"]:
-            val_fraction = self.param_dict["generator"]["params"]["val_fraction"]
-            val_bias = self.param_dict["generator"]["sampler"]["params"]["val_bias"]
+        if self.__config["training"].val_fraction is not None:
+            val_fraction = self.__config["training"].val_fraction
+            val_bias = self.__config["training"].val_bias
             if self.verbose:
                 print("Partitioning generator for validation")
             self.generator.partition_sampler("val", val_fraction, val_bias)
 
-        if "test_fraction" in self.param_dict["generator"]["params"]:
-            test_fraction = self.param_dict["generator"]["params"]["test_fraction"]
-            test_bias = self.param_dict["generator"]["sampler"]["params"]["test_bias"]
+        if self.__config["training"].test_fraction is not None:
+            test_fraction = self.__config["training"].test_fraction
+            test_bias = self.__config["training"].test_bias
             if self.verbose:
                 print("Partitioning generator for test")
             self.generator.partition_sampler("test", test_fraction, test_bias)
@@ -127,12 +128,14 @@ class Experiment:
     def train_model(self, epochs=None):
 
         if epochs is None:
-            epochs = self.epochs
+            epochs = self.num_epochs
 
         i_epoch = self.epoch
         f_epoch = self.epoch + epochs
 
-        self.model.model.compile(self.optimizer, self.loss, self.training_metrics)
+        self.model.model.compile(
+            self.optimizer, self.model.loss_fct, self.training_metrics
+        )
 
         if "val" in self.generator.samplers:
             val_generator = copy.deepcopy(self.generator)
@@ -143,8 +146,8 @@ class Experiment:
         history = self.model.model.fit_generator(
             self.generator,
             validation_data=val_generator,
-            steps_per_epoch=self.param_dict["generator"]["params"]["num_sample"],
-            validation_steps=self.param_dict["generator"]["params"]["num_sample"],
+            steps_per_epoch=self.__config["training"].step_per_epoch,
+            validation_steps=self.__config["training"].step_per_epoch,
             initial_epoch=i_epoch,
             epochs=f_epoch,
             verbose=self.verbose,
@@ -178,60 +181,6 @@ class Experiment:
         if os.path.exists(path):
             self.model.model.load_weights(path)
 
-    def save_metrics(self, overwrite=False):
-        h5file = h5py.File(
-            os.path.join(self.path_to_dir, self.name, self.filename_metrics)
-        )
-        _save_metrics = True
-        _save_history = True
-
-        if "metrics" in h5file:
-            if not overwrite:
-                _save_metrics = False
-            else:
-                del h5file["metrics"]
-
-        if "history" in h5file:
-            if not overwrite:
-                _save_history = False
-            else:
-                del h5file["history"]
-
-        if _save_metrics:
-            h5file.create_group("metrics")
-            h5group = h5file["metrics"]
-            for k, v in self.metrics.items():
-                v.save(k, h5group)
-
-        if _save_history:
-            h5file.create_group("history")
-            h5group = h5file["history"]
-            for k, v in self.history.items():
-                h5group.create_dataset(k, data=v, fillvalue=np.nan)
-        h5file.close()
-
-    def load_metrics(self):
-        path = os.path.join(self.path_to_dir, self.name, self.filename_metrics)
-        if os.path.exists(path):
-            h5file = h5py.File(path)
-        else:
-            return
-
-        _load_metrics = True
-        _load_history = True
-
-        if "metrics" not in h5file:
-            _load_metrics = False
-        if "history" not in h5file:
-            _load_history = False
-
-        for k, v in self.metrics.items():
-            v.load(k, h5file["metrics"])
-
-        for k, v in h5file["history"].items():
-            self.history[k] = list(v[...])
-        h5file.close()
-
     def save_data(self, overwrite=False):
         h5file = h5py.File(
             os.path.join(self.path_to_dir, self.name, self.filename_data)
@@ -247,6 +196,47 @@ class Experiment:
             return
 
         self.generator.load(h5file)
+        h5file.close()
+
+    def save_history(self, overwrite=False):
+        path = os.path.join(self.path_to_dir, self.name, self.filename_history)
+        if os.path.exists(path) and not overwrite:
+            return
+        h5file = h5py.File(path, "w")
+        for k, v in self.history.items():
+            h5file.create_dataset(k, data=v, fillvalue=np.nan)
+
+    def load_history(self,):
+        path = os.path.join(self.path_to_dir, self.name, self.filename_history)
+        if os.path.exists(path):
+            h5file = h5py.File(path)
+        else:
+            return
+
+        for k, v in h5file.items():
+            self.history[k] = v[...]
+        h5file.close()
+
+    def save_metrics(self, overwrite=False):
+        path = os.path.join(self.path_to_dir, self.name, self.filename_metrics)
+        if os.path.exists(path) and not overwrite:
+            return
+
+        h5file = h5py.File(path, "w")
+        for k, v in self.metrics.items():
+            v.save(k, h5file)
+        h5file.close()
+
+    def load_metrics(self):
+        path = os.path.join(self.path_to_dir, self.name, self.filename_metrics)
+        if os.path.exists(path):
+            h5file = h5py.File(path)
+        else:
+            return
+
+        for k, v in self.metrics.items():
+            v.load(k, h5file["metrics"])
+
         h5file.close()
 
     @property

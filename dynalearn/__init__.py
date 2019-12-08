@@ -5,3 +5,4 @@ import dynalearn.metrics
 import dynalearn.models
 import dynalearn.utilities
 from .experiment import *
+from .config import *
