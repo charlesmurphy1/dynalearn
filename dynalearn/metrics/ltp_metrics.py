@@ -1,19 +1,16 @@
-from .base_metrics import Metrics
+from .base import Metrics
 import matplotlib.pyplot as plt
 import numpy as np
 import tqdm
+from abc import abstractmethod
 
 
 class LTPMetrics(Metrics):
-    def __init__(
-        self, aggregator=None, num_points=None, max_num_sample=1000, verbose=1
-    ):
-        self.aggregator = aggregator
-        self.max_num_sample = max_num_sample
-        if num_points is None:
-            self.num_points = np.inf
-        else:
-            self.num_points = num_points
+    def __init__(self, config, verbose=1):
+        self.__config = config
+        self.aggregator = config.aggregator
+        self.max_num_sample = config.max_num_sample
+        self.num_points = config.num_points
         super(LTPMetrics, self).__init__(verbose)
 
     @abstractmethod
@@ -192,36 +189,24 @@ class LTPMetrics(Metrics):
 
 
 class TrueLTPMetrics(LTPMetrics):
-    def __init__(
-        self, aggregator=None, num_points=1000, max_num_sample=1000, verbose=1
-    ):
-        super(TrueLTPMetrics, self).__init__(
-            aggregator, num_points, max_num_sample, verbose
-        )
+    def __init__(self, config, verbose=1):
+        super(TrueLTPMetrics, self).__init__(config, verbose)
 
     def get_metric(self, experiment, adj, input, target):
         return experiment.dynamics_model.predict(input, adj)
 
 
 class GNNLTPMetrics(LTPMetrics):
-    def __init__(
-        self, aggregator=None, num_points=1000, max_num_sample=1000, verbose=1
-    ):
-        super(GNNLTPMetrics, self).__init__(
-            aggregator, num_points, max_num_sample, verbose
-        )
+    def __init__(self, config, verbose=1):
+        super(GNNLTPMetrics, self).__init__(config, verbose)
 
     def get_metric(self, experiment, adj, input, target):
         return experiment.model.predict(input, adj)
 
 
 class MLELTPMetrics(LTPMetrics):
-    def __init__(
-        self, aggregator=None, num_points=1000, max_num_sample=1000, verbose=1
-    ):
-        super(MLELTPMetrics, self).__init__(
-            aggregator, num_points, max_num_sample, verbose
-        )
+    def __init__(self, config, verbose=1):
+        super(MLELTPMetrics, self).__init__(config, verbose)
 
     def get_metric(self, experiment, adj, input, target):
         one_hot_target = np.zeros(

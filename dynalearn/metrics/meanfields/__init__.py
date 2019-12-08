@@ -3,7 +3,6 @@ from .base_meanfield import *
 from .ame import *
 from .pa import *
 from .mf import *
-from .distribution import *
 from .simple_contagion import *
 from .complex_contagion import *
 from .interacting_contagion import *

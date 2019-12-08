@@ -1,27 +1,20 @@
-from .base_metrics import Metrics
+from .base import Metrics
 import dynalearn as dl
 import numpy as np
 import tqdm
 from scipy.optimize import bisect
 import networkx as nx
+from abc import abstractmethod
 
 
 class StationaryStateMetrics(Metrics):
-    def __init__(
-        self,
-        parameters=None,
-        num_samples=100,
-        burn=100,
-        reshuffle=0.1,
-        tol=1e-3,
-        verbose=1,
-    ):
-        self.parameters = parameters
-
-        self.num_samples = num_samples
-        self.burn = burn
-        self.reshuffle = reshuffle
-        self.tol = tol
+    def __init__(self, config, verbose=1):
+        self.__config = config
+        self.parameters = config.ss_parameters
+        self.num_samples = config.num_samples
+        self.burn = config.burn
+        self.reshuffle = config.reshuffle
+        self.tol = config.tol
 
         self._graph_model = None
         self._dynamics_model = None
@@ -43,7 +36,7 @@ class StationaryStateMetrics(Metrics):
         ii = 0
         while ii < self.num_samples:
             it += 1
-            x = model.update(x, adj)
+            x = model.sample(x, adj)
             avg_x = self.avg(x)
             dist = np.sqrt(((avg_x - avg_x0) ** 2).sum())
             avg_x0 = avg_x * 1
@@ -105,20 +98,9 @@ class StationaryStateMetrics(Metrics):
 
 
 class EpidemicsSSMetrics(StationaryStateMetrics):
-    def __init__(
-        self,
-        parameters=None,
-        epsilon=1e-3,
-        num_samples=100,
-        burn=100,
-        reshuffle=0.1,
-        tol=1e-3,
-        verbose=1,
-    ):
-        self.epsilon = epsilon
-        super(EpidemicsSSMetrics, self).__init__(
-            parameters, num_samples, burn, reshuffle, tol, verbose
-        )
+    def __init__(self, config, verbose=1):
+        self.epsilon = config.epsilon
+        super(EpidemicsSSMetrics, self).__init__(config, verbose)
 
     def epidemic_state(self):
         self.dynamics_model.params["init"] = 1 - self.epsilon
@@ -208,29 +190,14 @@ class EpidemicsSSMetrics(StationaryStateMetrics):
 
 
 class PoissonEpidemicsSSMetrics(EpidemicsSSMetrics):
-    def __init__(
-        self,
-        num_nodes=2000,
-        parameters=None,
-        num_k=5,
-        epsilon=1e-3,
-        num_samples=10,
-        burn=100,
-        reshuffle=0.1,
-        tol=1e-3,
-        verbose=1,
-    ):
-        self.num_nodes = num_nodes
-        self.num_k = num_k
-        if parameters is None:
-            parameters = np.linspace(0.1, 10, 10)
-        super(PoissonEpidemicsSSMetrics, self).__init__(
-            parameters, epsilon, num_samples, burn, reshuffle, tol, verbose
-        )
-        self.change_param(parameters[0])
+    def __init__(self, config, verbose=1):
+        self.num_nodes = config.num_nodes
+        self.num_k = config.num_k
+        super(PoissonEpidemicsSSMetrics, self).__init__(config, verbose)
+        self.change_param(config.ss_parameters[0])
 
     def change_param(self, avgk):
-        poisson_dist = dl.meanfields.poisson_distribution(avgk, num_k=self.num_k)
+        poisson_dist = dl.utilities.poisson_distribution(avgk, num_k=self.num_k)
         self.graph_model = dl.graphs.DegreeSequenceGraph(
             {"N": self.num_nodes, "degree_dist": poisson_dist}
         )

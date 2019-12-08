@@ -1,10 +1,11 @@
-from .base_metrics import Metrics
+from .base import Metrics
 import matplotlib.pyplot as plt
 import numpy as np
 from random import sample
 from scipy.special import binom
 from scipy.spatial.distance import jensenshannon
 import tqdm
+from abc import abstractmethod
 
 max_num_sample = 1000000
 
@@ -16,14 +17,13 @@ def all_combinations(k, d):
 
 
 class StarLTPMetrics(Metrics):
-    def __init__(self, degree_class=None, aggregator=None, verbose=1):
-        if degree_class is None:
-            self.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
-        else:
-            self.degree_class = degree_class
-        self.aggregator = aggregator
+    def __init__(self, config, verbose=1):
+        self.__config = config
+        self.degree_class = config.degree_class
+        self.aggregator = config.aggregator
         super(StarLTPMetrics, self).__init__(verbose)
 
+    @abstractmethod
     def get_metric(self, experiment, input, adj):
         raise NotImplementedError("get_metric must be implemented.")
 
@@ -49,7 +49,7 @@ class StarLTPMetrics(Metrics):
         for i, s in enumerate(self.data["summaries"]):
             index = np.where(np.prod(metrics.data["summaries"] == s, axis=-1) == 1)[0]
             if len(index) > 0:
-                ans[i] = func(self.data["ltp"][i], metrics.data[name][index])
+                ans[i] = func(self.data["ltp"][i], metrics.data[name][index[0]])
             else:
                 ans[i] = np.nan
         return ans
@@ -110,16 +110,16 @@ class StarLTPMetrics(Metrics):
 
 
 class TrueStarLTPMetrics(StarLTPMetrics):
-    def __init__(self, degree_class=None, aggregator=None, verbose=1):
-        super(TrueStarLTPMetrics, self).__init__(degree_class, aggregator, verbose)
+    def __init__(self, config, verbose=1):
+        super(TrueStarLTPMetrics, self).__init__(config, verbose)
 
     def get_metric(self, experiment, inputs, adj):
         return experiment.dynamics_model.predict(inputs, adj)[0]
 
 
 class GNNStarLTPMetrics(StarLTPMetrics):
-    def __init__(self, degree_class=None, aggregator=None, verbose=1):
-        super(GNNStarLTPMetrics, self).__init__(degree_class, aggregator, verbose)
+    def __init__(self, config, verbose=1):
+        super(GNNStarLTPMetrics, self).__init__(config, verbose)
 
     def get_metric(self, experiment, inputs, adj):
         return experiment.model.predict(inputs, adj)[0]

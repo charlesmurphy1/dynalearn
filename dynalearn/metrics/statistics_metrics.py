@@ -1,4 +1,4 @@
-from .base_metrics import Metrics
+from .base import Metrics
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.distance import jensenshannon
@@ -8,13 +8,11 @@ import tqdm
 
 
 class StatisticsMetrics(Metrics):
-    def __init__(self, aggregator=None, num_points=None, verbose=1):
+    def __init__(self, config, verbose=1):
         super(StatisticsMetrics, self).__init__(verbose)
-        self.aggregator = aggregator
-        if num_points is None:
-            self.num_points = np.inf
-        else:
-            self.num_points = num_points
+        self.__config = config
+        self.aggregator = config.aggregator
+        self.num_points = config.num_points
 
     def aggregate(
         self, in_state=None, out_state=None, for_degree=False, dataset="train"

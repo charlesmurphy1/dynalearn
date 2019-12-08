@@ -1,4 +1,4 @@
-from .base_metrics import Metrics
+from .base import Metrics
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import iqr, gaussian_kde
@@ -6,10 +6,11 @@ import tqdm
 
 
 class LossMetrics(Metrics):
-    def __init__(self, num_points=1000, max_num_sample=1000, verbose=1):
+    def __init__(self, config, verbose=1):
         super(LossMetrics, self).__init__(verbose)
-        self.num_points = num_points
-        self.max_num_sample = max_num_sample
+        self.__config = config
+        self.num_points = config.num_points
+        self.max_num_sample = config.max_num_sample
         self.datasets = []
 
     def loss(self, y_true, y_pred):
