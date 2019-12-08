@@ -1,15 +1,11 @@
-from .base_sampler import Sampler
+from .base import Sampler
 import numpy as np
 
 
 class RandomSampler(Sampler):
-    def __init__(
-        self, name, replace=False, verbose=0, sample_from_weights=True, resample=-1
-    ):
-        super(RandomSampler, self).__init__(
-            name, verbose, sample_from_weights, resample
-        )
-        self.replace = replace
+    def __init__(self, name, config, verbose=0):
+        self.replace = config.replace
+        super(RandomSampler, self).__init__(name, config, verbose)
 
     def get_graph(self):
         x = self.avail_graph_set

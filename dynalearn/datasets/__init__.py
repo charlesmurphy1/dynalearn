@@ -1,3 +1,4 @@
 from .generator import *
 from .getter import *
-import dynalearn.samplers
+from .config import *
+import dynalearn.datasets.samplers

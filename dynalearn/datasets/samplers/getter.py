@@ -10,38 +10,18 @@ samplers = [
 
 def get(params_dict, dynamics):
     name = params_dict["name"]
-    params = params_dict["params"]
+    config = params_dict["config"]
 
     if name == "SequentialSampler":
-        return dl.dynalearn.generators.samplers.SequentialSampler(
-            "train",
-            sample_from_weights=params["sample_from_weights"],
-            resample=params["resample"],
-        )
+        return dl.dynalearn.datasets.samplers.SequentialSampler("train", config)
     elif name == "RandomSampler":
-        return dl.dynalearn.generators.samplers.RandomSampler(
-            "train",
-            replace=params["replace"],
-            sample_from_weights=params["sample_from_weights"],
-            resample=params["resample"],
-        )
+        return dl.dynalearn.datasets.samplers.RandomSampler("train", config)
     elif name == "DegreeBiasedSampler":
-        return dl.dynalearn.generators.samplers.DegreeBiasedSampler(
-            "train",
-            sampling_bias=params["sampling_bias"],
-            replace=params["replace"],
-            sample_from_weights=params["sample_from_weights"],
-            resample=params["resample"],
-        )
+        return dl.dynalearn.datasets.samplers.DegreeBiasedSampler("train", config)
     elif name == "StateBiasedSampler":
 
-        return dl.dynalearn.generators.samplers.StateBiasedSampler(
-            "train",
-            dynamics,
-            sampling_bias=params["sampling_bias"],
-            replace=params["replace"],
-            sample_from_weights=params["sample_from_weights"],
-            resample=params["resample"],
+        return dl.dynalearn.datasets.samplers.StateBiasedSampler(
+            "train", dynamics, config
         )
     else:
         raise ValueError(

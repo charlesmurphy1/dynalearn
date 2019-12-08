@@ -1,13 +1,14 @@
 import numpy as np
-from abc import ABC
+from abc import ABC, abstractmethod
 
 
 class Sampler(ABC):
-    def __init__(self, name, verbose=0, sample_from_weights=True, resample=-1):
+    def __init__(self, name, config, verbose=0):
         self.name = name
-        self.verbose = verbose
-        self.sample_from_weights = sample_from_weights
-        self.resample = resample
+        self.__config = config
+
+        self.sample_from_weights = config.sample_from_weights
+        self.resample = config.resample
         self.iteration = 0
 
         self.params = dict()
@@ -25,6 +26,8 @@ class Sampler(ABC):
         self.node_set = dict()
         self.avail_node_set = dict()
         self.node_weights = dict()
+
+        self.verbose = verbose
 
     def __call__(self, batch_size):
 
