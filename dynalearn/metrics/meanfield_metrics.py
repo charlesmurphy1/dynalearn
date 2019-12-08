@@ -1,26 +1,23 @@
-from .base_metrics import Metrics
+from .base import Metrics
 import dynalearn as dl
 import numpy as np
 import tqdm
 from scipy.optimize import bisect
+from abc import abstractmethod
 
 
 class MeanfieldMetrics(Metrics):
-    def __init__(
-        self, degree_dist, parameters, p_range=None, fp_finder=None, verbose=1
-    ):
+    def __init__(self, degree_dist, config, verbose=1):
         self.degree_dist = degree_dist
-        self.parameters = parameters
-        self.p_range = p_range
-        if p_range is None:
-            self.p_range = (0.1, 5)
-
-        self.fp_finder = fp_finder
+        self.__config = config
+        self.parameters = config.mf_parameters
+        self.p_range = config.p_range
+        self.fp_finder = config.fp_finder
         super(MeanfieldMetrics, self).__init__(verbose)
 
     def compute(self, experiment):
-        mf = dl.meanfields.get(experiment.dynamics_model, self.degree_dist)
-        gnn_mf = dl.meanfields.GNN_MF(experiment.model, self.degree_dist)
+        mf = dl.metrics.meanfields.get(experiment.dynamics_model, self.degree_dist)
+        gnn_mf = dl.metrics.meanfields.GNN_MF(experiment.model, self.degree_dist)
 
         true_low_fp = np.zeros((self.parameters.shape[0], mf.s_dim))
         true_high_fp = np.zeros((self.parameters.shape[0], mf.s_dim))
@@ -57,32 +54,24 @@ class MeanfieldMetrics(Metrics):
         self.data[f"gnn_thresholds"] = self.compute_thresholds(gnn_mf)
         self.data[f"parameters"] = self.parameters
 
+    @abstractmethod
     def compute_fixed_points(self, mf):
         raise NotImplementedError("compute_fixed_points must be implemented.")
 
+    @abstractmethod
     def compute_thresholds(self, mf):
         raise NotImplementedError("compute_thresholds must be implemented.")
 
+    @abstractmethod
     def change_param(self, mf, value):
         raise NotImplementedError("change_param must be implemented.")
 
 
 class EpidemicsMFMetrics(MeanfieldMetrics):
-    def __init__(
-        self,
-        degree_dist,
-        parameters,
-        epsilon=1e-2,
-        tol=1e-3,
-        p_range=None,
-        fp_finder=None,
-        verbose=1,
-    ):
-        self.epsilon = epsilon
-        self.tol = tol
-        super(EpidemicsMFMetrics, self).__init__(
-            degree_dist, parameters, p_range, fp_finder, verbose
-        )
+    def __init__(self, degree_dist, config, verbose=1):
+        self.epsilon = config.epsilon
+        self.tol = config.tol
+        super(EpidemicsMFMetrics, self).__init__(degree_dist, config, verbose)
 
     def epidemic_state(self, mf):
         x = np.ones(mf.array_shape).astype(mf.dtype) * self.epsilon
@@ -157,30 +146,17 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
 
 
 class PoissonEpidemicsMFMetrics(EpidemicsMFMetrics):
-    def __init__(
-        self,
-        num_k=3,
-        epsilon=1e-2,
-        tol=1e-3,
-        parameters=None,
-        p_range=None,
-        fp_finder=None,
-        verbose=1,
-    ):
-        self.num_k = num_k
-        if parameters is None:
-            parameters = np.concatenate(
-                (np.linspace(0.1, 3, 50), np.linspace(3.1, 10, 20))
-            )
-        self.degree_dist = dl.meanfields.poisson_distribution(
-            parameters[0], num_k=self.num_k
+    def __init__(self, config, verbose=1):
+        self.num_k = config.num_k
+        self.degree_dist = dl.utilities.poisson_distribution(
+            config.mf_parameters[0], num_k=self.num_k
         )
         super(PoissonEpidemicsMFMetrics, self).__init__(
-            self.degree_dist, epsilon, tol, parameters, p_range, fp_finder, verbose
+            self.degree_dist, config, verbose
         )
 
     def change_param(self, mf, avgk):
-        _degree_dist = dl.meanfields.poisson_distribution(avgk, num_k=self.num_k)
+        _degree_dist = dl.utilities.poisson_distribution(avgk, num_k=self.num_k)
         mf.degree_dist = _degree_dist
         self.degree_dist = _degree_dist
         return mf

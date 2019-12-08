@@ -5,16 +5,12 @@ generators = ["DynamicsGenerator"]
 
 def get(params_dict, graph_model, dynamics_model):
     name = params_dict["name"]
-    params = params_dict["params"]
-    sampler = dl.generators.samplers.get(params_dict["sampler"], dynamics_model)
+    config = params_dict["config"]
+    sampler = dl.datasets.samplers.get(params_dict["sampler"], dynamics_model)
 
     if name == "DynamicsGenerator":
-        return dl.generators.DynamicsGenerator(
-            graph_model,
-            dynamics_model,
-            sampler,
-            batch_size=params["batch_size"],
-            with_truth=params["with_truth"],
+        return dl.datasets.DynamicsGenerator(
+            graph_model, dynamics_model, sampler, config
         )
     else:
         raise ValueError(

@@ -2,22 +2,13 @@ from .random_sampler import RandomSampler
 import numpy as np
 from time import time
 import tqdm
+from abc import abstractmethod
 
 
 class BiasedSampler(RandomSampler):
-    def __init__(
-        self,
-        name,
-        sampling_bias=0,
-        replace=False,
-        verbose=0,
-        sample_from_weights=True,
-        resample=-1,
-    ):
-        super(BiasedSampler, self).__init__(
-            name, replace, verbose, sample_from_weights, resample
-        )
-        self.params["sampling_bias"] = sampling_bias
+    def __init__(self, name, config, verbose=0):
+        self.sampling_bias = config.sampling_bias
+        super(BiasedSampler, self).__init__(name, config, verbose)
 
     def update_weights(self, graphs, inputs):
         if self.verbose:
@@ -59,9 +50,7 @@ class BiasedSampler(RandomSampler):
                 summaries = self.summarize(adj, s)
                 self.node_weights[n][i] = np.zeros(self.num_nodes[n])
                 for j, sum in zip(self.avail_node_set[n][i], summaries):
-                    self.node_weights[n][i][j] = counts[sum] ** (
-                        -self.params["sampling_bias"]
-                    )
+                    self.node_weights[n][i][j] = counts[sum] ** (-self.sampling_bias)
                 self.state_weights[n][i] = np.sum(self.node_weights[n][i])
                 t1 = time()
                 if self.verbose:
@@ -73,42 +62,22 @@ class BiasedSampler(RandomSampler):
                 [self.state_weights[n][i] for i in self.state_set[n]]
             )
 
+    @abstractmethod
     def summarize(self, adj, state):
         raise NotImplementedError()
 
 
 class DegreeBiasedSampler(BiasedSampler):
-    def __init__(
-        self,
-        name,
-        sampling_bias=0,
-        replace=False,
-        verbose=0,
-        sample_from_weights=True,
-        resample=-1,
-    ):
-        super(DegreeBiasedSampler, self).__init__(
-            name, sampling_bias, replace, verbose, sample_from_weights, resample
-        )
+    def __init__(self, name, config, verbose=0):
+        super(DegreeBiasedSampler, self).__init__(name, config, verbose)
 
     def summarize(self, adj, state):
         return np.sum(adj, axis=0)
 
 
 class StateBiasedSampler(BiasedSampler):
-    def __init__(
-        self,
-        name,
-        dynamics,
-        sampling_bias=0,
-        replace=False,
-        verbose=0,
-        sample_from_weights=True,
-        resample=-1,
-    ):
-        super(StateBiasedSampler, self).__init__(
-            name, sampling_bias, replace, verbose, sample_from_weights, resample
-        )
+    def __init__(self, name, dynamics, config, verbose=0):
+        super(StateBiasedSampler, self).__init__(name, config, verbose)
         self.dynamics_states = list(dynamics.state_label.values())
 
     def summarize(self, adj, state):

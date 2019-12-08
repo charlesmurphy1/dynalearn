@@ -1,14 +1,13 @@
 import tensorflow as tf
 import torch as pt
 import numpy as np
+from abc import ABC, abstractmethod
 
 
-class DynamicsPredictor:
-    def __init__(self, num_nodes, num_states, params=dict()):
+class GNNModel(ABC):
+    def __init__(self,):
         self._model = None
-        self._num_nodes = num_nodes
-        self._num_states = num_states
-        self.params = params
+        self._num_nodes = None
 
     @property
     def model(self):
@@ -16,13 +15,19 @@ class DynamicsPredictor:
             self._model = self._prepare_model()
         return self._model
 
+    @abstractmethod
     def _prepare_model(self):
-        raise NotImplemented("_prepare_model() must be implemented")
+        raise NotImplementedError("_prepare_model must be implemented.")
+
+    @staticmethod
+    @abstractmethod
+    def loss_fct(y_true, y_pred):
+        raise NotImplementedError("loss_fct must be implemented.")
 
     @property
     def num_nodes(self):
         if self._num_nodes is None:
-            raise ValueError("No graph has been given to the dynamics.")
+            raise ValueError("Number of nodes has not been set.")
         else:
             return self._num_nodes
 
@@ -37,20 +42,23 @@ class DynamicsPredictor:
             self._model.set_weights(weights)
 
     @property
-    def num_states(self):
-        if self._num_states is None:
-            raise ValueError("No graph has been given to the dynamics.")
-        else:
-            return self._num_states
+    def num_features(self):
+        return self._num_features
 
-    @num_states.setter
-    def num_states(self, num_states):
-        raise ValueError("num_states cannot be changed.")
+    @num_features.setter
+    def num_features(self, num_features):
+        raise ValueError("num_features cannot be changed.")
 
     def predict(self, inputs, adj):
+        n = adj.shape[0]
+        if n != self.num_nodes:
+            self.num_nodes = n
         return self.model.predict([inputs, adj], steps=1)
 
-    def update(self, inputs, adj):
+    def sample(self, inputs, adj):
+        n = adj.shape[0]
+        if n != self.num_nodes:
+            self.num_nodes = n
         p = self.predict(inputs, adj)
         dist = pt.distributions.Categorical(pt.tensor(p))
         return np.array(dist.sample())

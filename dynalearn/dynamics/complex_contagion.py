@@ -10,25 +10,6 @@ class ComplexContagionSIS(SingleEpidemics):
         self.act_f = activation_f
         self.deact_f = deactivation_f
 
-    def update(self, states=None, adj=None):
-        if states is None:
-            states = self.states
-        if adj is None:
-            adj = nx.to_numpy_array(self.graph)
-        state_deg = self.state_degree(states)
-        inf_prob = self.act_f(state_deg)
-        rec_prob = self.deact_f(state_deg)
-        new_states = states * 1
-
-        new_states[(states == 0) * (np.random.rand(*states.shape) < inf_prob)] = 1
-        new_states[(states == 1) * (np.random.rand(*states.shape) < rec_prob)] = 0
-
-        if np.sum(new_states) == 0:
-            continue_simu = False
-
-        self.states = new_states
-        return new_states
-
     def predict(self, states=None, adj=None):
         if states is None:
             states = self.states
@@ -50,25 +31,6 @@ class ComplexContagionSIR(SingleEpidemics):
         super(ComplexContagionSIR, self).__init__(params, {"S": 0, "I": 1, "R": 2})
         self.act_f = activation_f
         self.deact_f = deactivation_f
-
-    def update(self, states=None, adj=None):
-        if states is None:
-            states = self.states
-        if adj is None:
-            adj = nx.to_numpy_array(self.graph)
-        inf_prob = self.act_f(self.state_degree(states))
-        rec_prob = self.deact_f(self.state_degree(states))
-        new_states = states * 1
-
-        new_states[(states == 0) * (np.random.rand(*states.shape) < inf_prob)] = 1
-        new_states[(states == 1) * (np.random.rand(*states.shape) < rec_prob)] = 2
-
-        if np.sum(new_states) == 0:
-            continue_simu = False
-
-        self.states = new_states
-
-        return new_states
 
     def predict(self, states=None, adj=None):
         if states is None:

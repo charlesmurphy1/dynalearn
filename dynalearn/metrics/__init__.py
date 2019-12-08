@@ -9,5 +9,6 @@ from .loss_metrics import *
 from .statistics_metrics import *
 from .meanfield_metrics import *
 from .stationarystate_metrics import *
+from .config import *
 
 import dynalearn.metrics.meanfields

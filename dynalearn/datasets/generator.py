@@ -7,15 +7,7 @@ import copy
 
 
 class DynamicsGenerator:
-    def __init__(
-        self,
-        graph_model,
-        dynamics_model,
-        sampler,
-        batch_size=-1,
-        with_truth=False,
-        verbose=0,
-    ):
+    def __init__(self, graph_model, dynamics_model, sampler, config, verbose=0):
         self.graph_model = graph_model
         self.dynamics_model = dynamics_model
         self.num_states = dynamics_model.num_states
@@ -25,13 +17,18 @@ class DynamicsGenerator:
             sampler.name = "train"
             self._samplers = {"train": sampler}
         self.mode = "train"
-        self.batch_size = batch_size
+
+        self.batch_size = config.batch_size
+        self.resampling_time = config.resampling_time
+        self.max_null_iter = config.max_null_iter
+        self.shuffle = config.shuffle
+        self.with_truth = config.with_truth
+
         self.graphs = dict()
         self.inputs = dict()
         self.targets = dict()
         self.gt_targets = dict()
 
-        self.with_truth = with_truth
         self.verbose = verbose
 
     def __len__(self):
@@ -51,7 +48,7 @@ class DynamicsGenerator:
         weights = n_mask
         return [inputs, adj], targets, weights
 
-    def generate(self, num_sample, resampling_time, max_null_iter=100, shuffle=True):
+    def generate(self, num_sample):
 
         sample = 0
         name, graph = self.graph_model.generate()
@@ -70,7 +67,7 @@ class DynamicsGenerator:
         while sample < num_sample:
             self.dynamics_model.initialize_states()
             null_iteration = 0
-            for t in range(resampling_time):
+            for t in range(self.resampling_time):
                 t0 = time.time()
                 x, y, z = self._update_states()
 
@@ -90,13 +87,13 @@ class DynamicsGenerator:
                 if not self.dynamics_model.continue_simu:
                     null_iteration += 1
 
-                if sample == num_sample or null_iteration == max_null_iter:
+                if sample == num_sample or null_iteration == self.max_null_iter:
                     break
 
         if self.verbose:
             p_bar.close()
 
-        if shuffle:
+        if self.shuffle:
             index = np.random.permutation(num_sample)
         else:
             index = np.arange(num_sample)
@@ -109,7 +106,7 @@ class DynamicsGenerator:
 
     def _update_states(self):
         inputs = self.dynamics_model.states
-        targets = self.dynamics_model.update()
+        targets = self.dynamics_model.sample()
         gt_targets = self.dynamics_model.predict(inputs)
         return inputs, targets, gt_targets
 
