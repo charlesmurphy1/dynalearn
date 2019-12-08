@@ -7,48 +7,6 @@ class SISSIS(DoubleEpidemics):
     def __init__(self, params):
         super(SISSIS, self).__init__(params, {"SS": 0, "IS": 1, "SI": 2, "II": 3})
 
-    def update(self, states=None, adj=None):
-        if states is None:
-            states = self.states
-        if adj is None:
-            adj = nx.to_numpy_array(self.graph)
-        state_deg = self.state_degree(states, adj)
-        inf_prob = self.infection(states, state_deg)
-        rec_prob = self.recovery(states, state_deg)
-        status_to_g0 = np.zeros(states.shape)
-        status_to_g1 = np.zeros(states.shape)
-
-        status_to_g0[(states == 1) + (states == 3)] = 1
-        status_to_g1[(states == 2) + (states == 3)] = 1
-
-        # Events on node SS
-        status_to_g0[(states == 0) * (np.random.rand(*states.shape) < inf_prob[0])] = 1
-        status_to_g1[(states == 0) * (np.random.rand(*states.shape) < inf_prob[1])] = 1
-
-        # Events on node IS
-        status_to_g0[(states == 1) * (np.random.rand(*states.shape) < rec_prob[0])] = 0
-        status_to_g1[(states == 1) * (np.random.rand(*states.shape) < inf_prob[1])] = 1
-
-        # Events on node SI
-        status_to_g0[(states == 2) * (np.random.rand(*states.shape) < inf_prob[0])] = 1
-        status_to_g1[(states == 2) * (np.random.rand(*states.shape) < rec_prob[1])] = 0
-
-        # Events on node II
-        status_to_g0[(states == 3) * (np.random.rand(*states.shape) < rec_prob[0])] = 0
-        status_to_g1[(states == 3) * (np.random.rand(*states.shape) < rec_prob[1])] = 0
-
-        new_states = np.zeros(states.shape)
-
-        new_states[(status_to_g0 == 0) * (status_to_g1 == 0)] = 0
-        new_states[(status_to_g0 == 1) * (status_to_g1 == 0)] = 1
-        new_states[(status_to_g0 == 0) * (status_to_g1 == 1)] = 2
-        new_states[(status_to_g0 == 1) * (status_to_g1 == 1)] = 3
-
-        if np.all(new_states == 0):
-            continue_simu = False
-        self.states = new_states
-        return new_states
-
     def predict(self, states=None, adj=None):
         if states is None:
             states = states

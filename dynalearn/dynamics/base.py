@@ -14,8 +14,10 @@ process occurs.
 import networkx as nx
 import numpy as np
 import pickle
+import torch as pt
 import os
 from abc import ABC, abstractmethod
+from math import ceil
 
 
 class Dynamics(ABC):
@@ -60,12 +62,12 @@ class Dynamics(ABC):
         raise NotImplementedError("self.transition() has not been impletemented")
 
     @abstractmethod
-    def update(self, states=None, ajd=None):
+    def sample(self, states=None, ajd=None):
         """
 		Computes the next activity states. (virtual) (private)
 
 		"""
-        raise NotImplementedError("self.transition() has not been impletemented")
+        raise NotImplementedError("sample has not been impletemented")
 
     @abstractmethod
     def get_avg_state(self):
@@ -109,6 +111,11 @@ class Epidemics(Dynamics):
         self.params = params
         self.state_label = state_label
         self.inv_state_label = {state_label[i]: i for i in state_label}
+
+    def sample(self, states=None, ajd=None):
+        p = self.predict(states=states, adj=ajd)
+        dist = pt.distributions.Categorical(pt.tensor(p))
+        return np.array(dist.sample())
 
     def state_degree(self, states, adj):
         N = adj.shape[0]
