@@ -24,11 +24,6 @@ class TrainingConfig:
         cls.test_bias = 0.8
         cls.np_seed = 1
 
-        # cls.optimizer = get(cls.name_optimizer)
-        # cls.optimizer.lr = variable(cls.initial_lr)
-        # cls.callbacks = [LearningRateScheduler(get_schedule(cls.schedule), verbose=1)]
-        # cls.training_metrics = [model_entropy]
-
         return cls
 
     @classmethod
@@ -49,11 +44,6 @@ class TrainingConfig:
         cls.test_bias = 0.8
         cls.np_seed = 1
 
-        # cls.optimizer = get(cls.name_optimizer)
-        # cls.optimizer.lr = variable(cls.initial_lr)
-        # cls.callbacks = [LearningRateScheduler(get_schedule(cls.schedule), verbose=1)]
-        # cls.training_metrics = [model_entropy]
-
         return cls
 
     @classmethod
@@ -73,10 +63,5 @@ class TrainingConfig:
         cls.test_fraction = None
         cls.test_bias = 0.8
         cls.np_seed = 1
-
-        # cls.optimizer = get(cls.name_optimizer)
-        # cls.optimizer.lr = variable(cls.initial_lr)
-        # cls.callbacks = [LearningRateScheduler(get_schedule(cls.schedule), verbose=1)]
-        # cls.training_metrics = [model_entropy]
 
         return cls

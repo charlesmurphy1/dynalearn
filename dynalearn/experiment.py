@@ -84,7 +84,7 @@ class Experiment:
         self.verbose = verbose
         self.history = dict()
 
-        # np.random.seed(config.np_seed)
+        np.random.seed(config.np_seed)
 
         return
 
