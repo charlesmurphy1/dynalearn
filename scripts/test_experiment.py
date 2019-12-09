@@ -5,7 +5,7 @@ param_dict = {
     "graph": {"name": "BAGraph", "params": {"N": 1000, "M": 2}},
     "dynamics": {
         "name": "SIS",
-        "params": {"infection_prob": 0.04, "recovery_prob": 0.08, "init_state": "None"},
+        "params": {"infection": 0.04, "recovery": 0.08, "init": "None"},
     },
     "model": {
         "name": "LocalStatePredictor",
@@ -48,19 +48,21 @@ param_dict = {
         "initial_lr": 0.0005,
         "loss": "categorical_crossentropy",
         "schedule": {"epoch": 10, "factor": 2},
-        "epochs": 5,
+        "epochs": 1,
         "np_seed": 1,
     },
     "metrics": [
-        "AttentionMetrics",
-        "TrueLTPMetrics",
-        "GNNLTPMetrics",
-        "MLELTPMetrics",
-        "TrueStarLTPMetrics",
-        "GNNStarLTPMetrics",
-        "StatisticsMetrics",
+        # "AttentionMetrics",
+        # "TrueLTPMetrics",
+        # "GNNLTPMetrics",
+        # "MLELTPMetrics",
+        # "TrueStarLTPMetrics",
+        # "GNNStarLTPMetrics",
+        # "StatisticsMetrics",
+        "PoissonEpidemicsMFMetrics",
+        "PoissonEpidemicsSSMetrics",
     ],
-    "path_to_experiment": "./data/ba-sis/",
+    "path_to_dir": "./data/ba-sis/",
     "filename_data": "data.h5",
     "filename_metrics": "metrics.h5",
     "filename_model": "model.h5",
@@ -68,4 +70,4 @@ param_dict = {
 }
 
 experiment = dl.Experiment(param_dict, verbose=1)
-experiment.run()
+experiment.compute_metrics()
