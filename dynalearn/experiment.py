@@ -3,13 +3,14 @@ import dynalearn as dl
 import h5py
 import numpy as np
 import os
+import pickle
 import tensorflow as tf
 import tensorflow.keras as ks
 import tensorflow.keras.backend as K
 
-
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.losses import categorical_crossentropy
+from tensorflow.keras.optimizers import get
+from tensorflow.keras.callbacks import LearningRateScheduler
+from tensorflow.keras.backend import variable
 
 
 class Experiment:
@@ -27,23 +28,28 @@ class Experiment:
         self.name = config["name"]
         self.path_to_dir = config["path_to_dir"]
         self.path_to_bestmodel = config["path_to_bestmodel"]
+
+        if "filename_config" not in config:
+            self.filename_config = "config.pickle"
+        else:
+            self.filename_data = config["filename_data"]
         if "filename_data" not in config:
             self.filename_data = "data.h5"
         else:
             self.filename_data = config["filename_data"]
 
         if "filename_metrics" not in config:
-            self.filename_metrics = "data.h5"
+            self.filename_metrics = "metrics.h5"
         else:
             self.filename_metrics = config["filename_metrics"]
 
         if "filename_model" not in config:
-            self.filename_model = "data.h5"
+            self.filename_model = "model.h5"
         else:
             self.filename_model = config["filename_model"]
 
         if "filename_history" not in config:
-            self.filename_history = "data.h5"
+            self.filename_history = "history.h5"
         else:
             self.filename_history = config["filename_history"]
 
@@ -51,10 +57,13 @@ class Experiment:
         self.num_samples = config["training"].num_samples
         self.epoch = 0
         self.num_epochs = config["training"].num_epochs
-        self.optimizer = config["training"].optimizer
 
-        self.callbacks = config["training"].callbacks
-        self.callbacks.append(
+        self.optimizer = ks.optimizers.get(config["training"].name_optimizer)
+        self.optimizer.lr = variable(config["training"].initial_lr)
+        self.callbacks = [
+            LearningRateScheduler(
+                dl.utilities.get_schedule(config["training"].schedule), verbose=1
+            ),
             ks.callbacks.ModelCheckpoint(
                 os.path.join(self.path_to_bestmodel, self.name + ".h5"),
                 save_best_only=True,
@@ -62,9 +71,9 @@ class Experiment:
                 mode="min",
                 period=1,
                 verbose=1,
-            )
-        )
-        self.training_metrics = config["training"].training_metrics
+            ),
+        ]
+        self.training_metrics = [dl.utilities.metrics.model_entropy]
 
         if not os.path.exists(os.path.join(self.path_to_dir, self.name)):
             os.makedirs(os.path.join(self.path_to_dir, self.name))
@@ -75,7 +84,15 @@ class Experiment:
         self.verbose = verbose
         self.history = dict()
 
+        # np.random.seed(config.np_seed)
+
         return
+
+    @classmethod
+    def from_file(cls, path_to_config):
+        with open(path_to_config, "rb") as config_file:
+            config = pickle.load(config_file)
+        return cls(config)
 
     def run(self):
         if self.verbose:
@@ -96,16 +113,35 @@ class Experiment:
         self.save(True)
 
     def save(self, overwrite=False):
+        self.save_config(overwrite)
         self.save_data(overwrite)
         self.save_model(overwrite)
         self.save_metrics(overwrite)
         self.save_history(overwrite)
 
     def load(self):
+        self.load_config()
         self.load_data()
         self.load_model()
         self.load_metrics()
         self.load_history()
+
+    def save_config(self, overwrite=False):
+        path = os.path.join(self.path_to_dir, self.name, self.filename_config)
+        if os.path.exists(path) and not overwrite:
+            return
+
+        with open(path, "wb") as f:
+            pickle.dump(self.__config, f)
+
+    def load_config(self,):
+        path = os.path.join(self.path_to_dir, self.name, self.filename_config)
+
+        if not os.path.exists(path):
+            return
+
+        with open(path, "wb") as f:
+            self.__config = pickle.load(f)
 
     def generate_data(self):
         for i in range(self.__config["training"].num_graphs):

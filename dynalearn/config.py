@@ -3,7 +3,6 @@ from dynalearn.utilities.metrics import model_entropy
 from tensorflow.keras.optimizers import get
 from tensorflow.keras.callbacks import LearningRateScheduler
 from tensorflow.keras.backend import variable
-import numpy as np
 
 
 class TrainingConfig:
@@ -25,14 +24,14 @@ class TrainingConfig:
         cls.test_bias = 0.8
         cls.np_seed = 1
 
-        np.random.seed(cls.np_seed)
-        cls.optimizer = get(cls.name_optimizer)
-        cls.optimizer.lr = variable(cls.initial_lr)
-        cls.callbacks = [LearningRateScheduler(get_schedule(cls.schedule), verbose=1)]
-        cls.training_metrics = [model_entropy]
+        # cls.optimizer = get(cls.name_optimizer)
+        # cls.optimizer.lr = variable(cls.initial_lr)
+        # cls.callbacks = [LearningRateScheduler(get_schedule(cls.schedule), verbose=1)]
+        # cls.training_metrics = [model_entropy]
 
         return cls
 
+    @classmethod
     def test(cls):
 
         cls = cls()
@@ -50,11 +49,10 @@ class TrainingConfig:
         cls.test_bias = 0.8
         cls.np_seed = 1
 
-        np.random.seed(cls.np_seed)
-        cls.optimizer = get(cls.name_optimizer)
-        cls.optimizer.lr = variable(cls.initial_lr)
-        cls.callbacks = [LearningRateScheduler(get_schedule(cls.schedule), verbose=1)]
-        cls.training_metrics = [model_entropy]
+        # cls.optimizer = get(cls.name_optimizer)
+        # cls.optimizer.lr = variable(cls.initial_lr)
+        # cls.callbacks = [LearningRateScheduler(get_schedule(cls.schedule), verbose=1)]
+        # cls.training_metrics = [model_entropy]
 
         return cls
 
@@ -76,10 +74,9 @@ class TrainingConfig:
         cls.test_bias = 0.8
         cls.np_seed = 1
 
-        np.random.seed(cls.np_seed)
-        cls.optimizer = get(cls.name_optimizer)
-        cls.optimizer.lr = variable(cls.initial_lr)
-        cls.callbacks = [LearningRateScheduler(get_schedule(cls.schedule), verbose=1)]
-        cls.training_metrics = [model_entropy]
+        # cls.optimizer = get(cls.name_optimizer)
+        # cls.optimizer.lr = variable(cls.initial_lr)
+        # cls.callbacks = [LearningRateScheduler(get_schedule(cls.schedule), verbose=1)]
+        # cls.training_metrics = [model_entropy]
 
         return cls
