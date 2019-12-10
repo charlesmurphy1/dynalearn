@@ -117,13 +117,11 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
 
     def __continuous_threshold_criterion(self, mf, states, p):
         _mf = self.change_param(mf, p)
-        # abs_state = self.absorbing_state(mf).reshape(-1)
         val = _mf.stability(abs_state) - 1
         return val
 
     def __discontinuous_threshold_criterion(self, mf, states, p):
         _mf = self.change_param(mf, p)
-        # epi_state = self.epidemic_state(_mf).reshape(-1)
         fp = _mf.search_fixed_point(x0=states, fp_finder=self.fp_finder)
         s = _mf.to_avg(fp)[0]
         if s > 1 - 1e-2:
@@ -133,22 +131,6 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
         return val
 
     def compute_thresholds(self, mf):
-        # def low_f(p):
-        #     _mf = self.change_param(mf, p)
-        #     abs_state = self.absorbing_state(mf).reshape(-1)
-        #     val = _mf.stability(abs_state) - 1
-        #     return val
-        #
-        # def high_f(p):
-        #     _mf = self.change_param(mf, p)
-        #     epi_state = self.epidemic_state(_mf).reshape(-1)
-        #     fp = _mf.search_fixed_point(x0=epi_state, fp_finder=self.fp_finder)
-        #     s = _mf.to_avg(fp)[0]
-        #     if s > 1 - 1e-2:
-        #         val = -1
-        #     else:
-        #         val = 1
-        #     return val
         low_f = lambda p: self.criterion(mf, self.absorbing_state(mf).reshape(-1), p)
         high_f = lambda p: self.criterion(mf, self.epidemic_state(mf).reshape(-1), p)
 
@@ -191,6 +173,20 @@ class PoissonEpidemicsMFMetrics(EpidemicsMFMetrics):
 
     def change_param(self, mf, avgk):
         _degree_dist = dl.utilities.poisson_distribution(avgk, self.num_k)
+        mf.degree_dist = _degree_dist
+        self.degree_dist = _degree_dist
+        return mf
+
+
+class DegreeRegularEpidemicsMFMetrics(EpidemicsMFMetrics):
+    def __init__(self, config, verbose=1):
+        self.degree_dist = dl.utilities.kronecker_distribution(config.mf_parameters[0])
+        super(DegreeRegularEpidemicsMFMetrics, self).__init__(
+            self.degree_dist, config, verbose
+        )
+
+    def change_param(self, mf, avgk):
+        _degree_dist = dl.utilities.kronecker_distribution(avgk)
         mf.degree_dist = _degree_dist
         self.degree_dist = _degree_dist
         return mf

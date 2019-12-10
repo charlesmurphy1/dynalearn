@@ -85,7 +85,7 @@ class MF(BaseMeanField):
         self._degree_dist = degree_dist
         self.k_min = self.degree_dist.values.min()
         self.k_max = self.degree_dist.values.max()
-        self.k_dim = self.k_max - self.k_min + 1
+        self.k_dim = int(self.k_max - self.k_min + 1)
         self.array_shape = (self.s_dim, self.k_dim)
 
         self.k_grid, self.l_grid = config_k_l_grid(
