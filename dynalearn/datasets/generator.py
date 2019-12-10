@@ -1,21 +1,17 @@
-import dynalearn as dl
+from .samplers import RandomSampler
 import numpy as np
 import networkx as nx
 import time
 import tqdm
-import copy
 
 
 class DynamicsGenerator:
     def __init__(self, graph_model, dynamics_model, sampler, config, verbose=0):
+        self.__config = config
         self.graph_model = graph_model
         self.dynamics_model = dynamics_model
         self.num_states = dynamics_model.num_states
-        if sampler is None:
-            self._samplers = {"train": dl.generators.RandomSampler("train")}
-        else:
-            sampler.name = "train"
-            self._samplers = {"train": sampler}
+        self._samplers = {"train": sampler}
         self.mode = "train"
 
         self.batch_size = config.batch_size
@@ -32,13 +28,13 @@ class DynamicsGenerator:
         self.verbose = verbose
 
     def __len__(self):
-        return np.sum([self.samplers[self.mode].num_samples[n] for n in self.graphs])
+        return np.sum([self.main_sampler.num_samples[n] for n in self.graphs])
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        g_index, s_index, n_mask = self.samplers[self.mode](self.batch_size)
+        g_index, s_index, n_mask = self.main_sampler(self.batch_size)
         inputs = self.inputs[g_index][s_index, :]
         adj = self.graphs[g_index]
         if self.with_truth:
@@ -47,6 +43,21 @@ class DynamicsGenerator:
             targets = self.to_one_hot(self.targets[g_index][s_index, :])
         weights = n_mask
         return [inputs, adj], targets, weights
+
+    def copy(self):
+        generator_copy = self.__class__(
+            self.graph_model, self.dynamics_model, None, self.__config, self.verbose
+        )
+
+        for k, s in self._samplers.items():
+            generator_copy._samplers[k] = s.copy()
+
+        generator_copy.graphs = self.graphs
+        generator_copy.inputs = self.inputs
+        generator_copy.targets = self.targets
+        generator_copy.gt_targets = self.gt_targets
+
+        return generator_copy
 
     def generate(self, num_sample):
 
@@ -102,7 +113,7 @@ class DynamicsGenerator:
         self.inputs[name] = inputs[index, :]
         self.targets[name] = targets[index, :]
         self.gt_targets[name] = gt_targets[index, :]
-        self.samplers[self.mode].update(self.graphs, self.inputs)
+        self.main_sampler.update(self.graphs, self.inputs)
 
     def _update_states(self):
         inputs = self.dynamics_model.states
@@ -116,26 +127,24 @@ class DynamicsGenerator:
         return ans
 
     def partition_sampler(self, name, fraction=None, bias=1):
-        self.samplers[name] = copy.deepcopy(self.samplers[self.mode])
-        self.samplers[name].name = name
-
+        new_sampler = self.main_sampler.copy()
+        new_sampler.name = name
         if fraction is not None:
-            for i in self.graphs:
-                num_nodes = self.graphs[i].shape[0]
+            for g in self.graphs:
+                num_nodes = self.graphs[g].shape[0]
                 size = int(np.ceil(fraction * num_nodes))
-                for j in range(self.inputs[i].shape[0]):
-                    nodesubset = (
-                        self.samplers[self.mode]
-                        .sample_nodes(i, j, size, bias)
-                        .astype("int")
-                    )
-                    self.samplers[name].avail_node_set[i][j] = nodesubset
-                    self.samplers[self.mode].avail_node_set[i][j] = np.setdiff1d(
-                        self.samplers[self.mode].avail_node_set[i][j], nodesubset
+                for t in range(self.inputs[g].shape[0]):
+                    nodesubset = self.main_sampler.sample_nodes(
+                        g, t, size, bias
+                    ).astype("int")
+                    new_sampler.avail_node_set[g][t] = nodesubset
+                    self.main_sampler.avail_node_set[g][t] = np.setdiff1d(
+                        self.main_sampler.avail_node_set[g][t], nodesubset
                     )
 
-            self.samplers[self.mode].update_weights(self.graphs, self.inputs)
-            self.samplers[name].update_weights(self.graphs, self.inputs)
+            self.main_sampler.update_weights(self.graphs, self.inputs)
+            new_sampler.update_weights(self.graphs, self.inputs)
+        self.samplers[name] = new_sampler
 
     @property
     def samplers(self):
@@ -148,6 +157,10 @@ class DynamicsGenerator:
             self._samplers[k] = v
             self._samplers[k].update(self.graphs, self.inputs)
             self._samplers[k].avail_node_set = avail_node_set
+
+    @property
+    def main_sampler(self):
+        return self._samplers[self.mode]
 
     def save(self, h5file, overwrite=False):
         graph_name = type(self.graph_model).__name__

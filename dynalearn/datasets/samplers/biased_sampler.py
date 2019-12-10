@@ -7,59 +7,60 @@ from abc import abstractmethod
 
 class BiasedSampler(RandomSampler):
     def __init__(self, name, config, verbose=0):
-        self.sampling_bias = config.sampling_bias
         super(BiasedSampler, self).__init__(name, config, verbose)
+        self.sampling_bias = config.sampling_bias
 
     def update_weights(self, graphs, inputs):
-        if self.verbose:
-            nn = np.sum([inputs[n].shape[0] for n in graphs])
-            p_bar = tqdm.tqdm(range(nn))
+        total_num_samples = np.sum([inputs[g].shape[0] for g in graphs])
 
-        # Update counts
-        counts = dict()
-        for n in graphs:
-            adj = graphs[n]
-            for s in inputs[n]:
+        if self.verbose:
+            p_bar = tqdm.tqdm(range(total_num_samples))
+
+        # Update dist
+        dist = dict()
+        for g in graphs:
+            adj = graphs[g]
+            for s in inputs[g]:
                 t0 = time()
                 summaries = self.summarize(adj, s)
                 for sum in summaries:
-                    if sum in counts:
-                        counts[sum] += 1
+                    if sum in dist:
+                        dist[sum] += 1 / total_num_samples
                     else:
-                        counts[sum] = 1
+                        dist[sum] = 1 / total_num_samples
                 t1 = time()
                 if self.verbose:
                     p_bar.set_description(
-                        "Update counts - " + str(round(t1 - t0, 5)) + "s"
+                        "Update dist - " + str(round(t1 - t0, 5)) + "s"
                     )
                     p_bar.update()
+
         if self.verbose:
             p_bar.close()
-            nn = np.sum([inputs[n].shape[0] for n in graphs])
-            p_bar = tqdm.tqdm(range(nn))
+            p_bar = tqdm.tqdm(range(total_num_samples))
 
         self.node_weights = dict()
         self.state_weights = dict()
         self.graph_weights = dict()
-        for n in graphs:
-            adj = graphs[n]
-            self.node_weights[n] = dict()
-            self.state_weights[n] = dict()
-            for i, s in enumerate(inputs[n]):
+        for g in graphs:
+            adj = graphs[g]
+            self.node_weights[g] = dict()
+            self.state_weights[g] = dict()
+            for t, s in enumerate(inputs[g]):
                 t0 = time()
                 summaries = self.summarize(adj, s)
-                self.node_weights[n][i] = np.zeros(self.num_nodes[n])
-                for j, sum in zip(self.avail_node_set[n][i], summaries):
-                    self.node_weights[n][i][j] = counts[sum] ** (-self.sampling_bias)
-                self.state_weights[n][i] = np.sum(self.node_weights[n][i])
+                self.node_weights[g][t] = np.zeros(self.num_nodes[g])
+                for n, sum in zip(self.avail_node_set[g][t], summaries):
+                    self.node_weights[g][t][n] = dist[sum] ** (-1)
+                self.state_weights[g][t] = np.sum(self.node_weights[g][t])
                 t1 = time()
                 if self.verbose:
                     p_bar.set_description(
                         "Update weights - " + str(round(t1 - t0, 5)) + "s"
                     )
                     p_bar.update()
-            self.graph_weights[n] = np.sum(
-                [self.state_weights[n][i] for i in self.state_set[n]]
+            self.graph_weights[g] = np.sum(
+                [self.state_weights[g][t] for t in self.state_set[g]]
             )
 
     @abstractmethod
@@ -76,9 +77,9 @@ class DegreeBiasedSampler(BiasedSampler):
 
 
 class StateBiasedSampler(BiasedSampler):
-    def __init__(self, name, dynamics, config, verbose=0):
+    def __init__(self, name, config, verbose=0):
         super(StateBiasedSampler, self).__init__(name, config, verbose)
-        self.dynamics_states = list(dynamics.state_label.values())
+        self.dynamics_states = config.dynamics_states
 
     def summarize(self, adj, state):
         summaries_arr = np.zeros((state.shape[0], len(self.dynamics_states) + 1))

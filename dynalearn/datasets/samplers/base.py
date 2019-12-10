@@ -1,5 +1,6 @@
 import numpy as np
 from abc import ABC, abstractmethod
+import copy
 
 
 class Sampler(ABC):
@@ -10,8 +11,8 @@ class Sampler(ABC):
         self.sample_from_weights = config.sample_from_weights
         self.resample = config.resample
         self.iteration = 0
+        self.sampling_bias = 1
 
-        self.params = dict()
         self.num_nodes = dict()
         self.num_samples = dict()
 
@@ -40,6 +41,26 @@ class Sampler(ABC):
 
         return g_index, t_index, n_index
 
+    def copy(self):
+        sampler_copy = self.__class__(self.name, self.__config, verbose=self.verbose)
+
+        sampler_copy.num_nodes = self.num_nodes
+        sampler_copy.num_samples = self.num_samples
+
+        sampler_copy.graph_set = copy.deepcopy(self.graph_set)
+        sampler_copy.avail_graph_set = copy.deepcopy(self.avail_graph_set)
+        sampler_copy.graph_weights = copy.deepcopy(self.graph_weights)
+
+        sampler_copy.state_set = copy.deepcopy(self.state_set)
+        sampler_copy.avail_state_set = copy.deepcopy(self.avail_state_set)
+        sampler_copy.state_weights = copy.deepcopy(self.state_weights)
+
+        sampler_copy.node_set = copy.deepcopy(self.node_set)
+        sampler_copy.avail_node_set = copy.deepcopy(self.avail_node_set)
+        sampler_copy.node_weights = copy.deepcopy(self.node_weights)
+
+        return sampler_copy
+
     def update(self, graphs, inputs):
         for g in graphs:
             adj = graphs[g]
@@ -58,6 +79,7 @@ class Sampler(ABC):
         self.graph_set = list(graphs.keys())
         self.avail_graph_set = list(graphs.keys())
         self.update_weights(graphs, inputs)
+        # print(self.name, self.avail_node_set["BAGraph_0"][0])
 
         return
 
@@ -74,15 +96,17 @@ class Sampler(ABC):
 
     def get_nodes(self, g_index, s_index, batch_size=-1):
         mask = np.zeros(self.num_nodes[g_index])
+        p = self.node_weights[g_index][s_index] ** self.sampling_bias
+        if np.sum(p) > 0:
+            p /= np.sum(p)
+        else:
+            p = None
         if self.sample_from_weights:
             if batch_size == -1 or batch_size > len(
                 self.avail_node_set[g_index][s_index]
             ):
                 mask[self.avail_node_set[g_index][s_index]] = 1
-                return mask
             else:
-                p = self.node_weights[g_index][s_index]
-                p /= np.sum(p)
                 n_index = np.random.choice(
                     self.node_set[g_index][s_index], size=batch_size, p=p, replace=False
                 ).astype("int")
@@ -91,14 +115,9 @@ class Sampler(ABC):
             if batch_size == -1 or batch_size > len(
                 self.avail_node_set[g_index][s_index]
             ):
-                p = self.node_weights[g_index][s_index]
-                p /= np.sum(p)
                 p = p[self.avail_node_set[g_index][s_index]]
                 mask[self.avail_node_set[g_index][s_index]] = p * np.sum(p > 0)
-                return mask
             else:
-                p = self.node_weights[g_index][s_index]
-                p /= np.sum(p)
                 n_index = np.random.choice(
                     self.node_set[g_index][s_index], size=batch_size, p=p, replace=False
                 ).astype("int")
@@ -108,22 +127,15 @@ class Sampler(ABC):
 
     def sample_nodes(self, g_index, s_index, size=None, bias=1):
         mask = np.zeros(self.num_nodes[g_index])
-        if "sampling_bias" in self.params:
-            if self.params["sampling_bias"] > 0:
-                bias /= -self.params["sampling_bias"]
-            else:
-                bias = 0
-
         if size is None or size > len(self.avail_node_set[g_index][s_index]):
             mask[self.avail_node_set[g_index][s_index]] = 1
         else:
-            p = self.node_weights[g_index][s_index] ** (-bias)
+            p = self.node_weights[g_index][s_index] ** (bias)
             p /= np.sum(p)
             n_index = np.random.choice(
                 self.node_set[g_index][s_index], size=size, p=p, replace=False
             ).astype("int")
             mask[n_index] = 1
-
         return np.where(mask == 1)[0]
 
     def update_weights(self, graphs, inputs):

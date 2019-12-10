@@ -10,14 +10,20 @@ class RandomSampler(Sampler):
     def get_graph(self):
         x = self.avail_graph_set
         p = np.array([self.graph_weights[xx] for xx in x])
-        p /= np.sum(p)
+        if np.sum(p) > 0:
+            p /= np.sum(p)
+        else:
+            p = None
         g_index = np.random.choice(x, p=p)
         return g_index
 
     def get_state(self, g_index):
         x = self.avail_state_set[g_index]
         p = np.array([self.state_weights[g_index][xx] for xx in x])
-        p /= np.sum(p)
+        if np.sum(p) > 0:
+            p /= np.sum(p)
+        else:
+            p = None
         s_index = np.random.choice(x, p=p)
         if not self.replace:
             self.avail_state_set[g_index].remove(s_index)
