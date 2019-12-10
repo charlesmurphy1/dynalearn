@@ -9,7 +9,7 @@ class SISSIS(DoubleEpidemics):
 
     def predict(self, states=None, adj=None):
         if states is None:
-            states = states
+            states = self.states
         if adj is None:
             adj = nx.to_numpy_array(self.graph)
         state_deg = self.state_degree(states, adj)

@@ -18,9 +18,9 @@ dynamics_models = {
 }
 
 
-def get(params_dict):
-    name = params_dict["name"]
-    params = params_dict["params"]
+def get(config):
+    name = config["name"]
+    params = config["params"]
     if "init" not in params or params["init"] == "None":
         params["init"] = None
 

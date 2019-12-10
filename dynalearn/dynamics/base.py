@@ -179,14 +179,16 @@ class DoubleEpidemics(Epidemics):
 
     def initialize_states(self, graph=None):
         if graph is None:
-            N = self.graph.number_of_nodes()
+            graph = self.graph
+        N = graph.number_of_nodes()
         if self.params["init"] is not None:
             init_n_infected = ceil(N * self.params["init"])
         else:
             init_n_infected = np.random.choice(range(N))
+        N = graph.number_of_nodes()
 
         n_eff = int(np.round(N * (1 - np.sqrt(1 - init_n_infected / N))))
-        nodeset = np.array(list(self.graph.nodes()))
+        nodeset = np.array(list(graph.nodes()))
         ind1 = np.random.choice(nodeset, size=n_eff, replace=False)
         ind2 = np.random.choice(nodeset, size=n_eff, replace=False)
         ind3 = np.intersect1d(ind1, ind2)

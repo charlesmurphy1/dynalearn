@@ -151,6 +151,7 @@ def planck_activation(state_degree, temperature):
     gamma = (lambertw(-3 * np.exp(-3)) + 3).real
     Z = gamma ** 3 * temperature ** 3 / (np.exp(gamma) - 1)
     act_prob = l ** 3 / (np.exp(l / temperature) - 1) / Z
+    act_prob[l == 0] = 0
     return act_prob
 
 
