@@ -1,4 +1,3 @@
-import copy
 import dynalearn as dl
 import h5py
 import numpy as np
@@ -23,7 +22,7 @@ class Experiment:
         self.generator = dl.datasets.get(
             config["generator"], self.graph_model, self.dynamics_model
         )
-        self.metrics = dl.metrics.get(config["metrics"], self.dynamics_model)
+        self.metrics = dl.metrics.get(config["metrics"])
 
         self.name = config["name"]
         self.path_to_dir = config["path_to_dir"]
@@ -84,7 +83,7 @@ class Experiment:
         self.verbose = verbose
         self.history = dict()
 
-        np.random.seed(config.np_seed)
+        np.random.seed(config["training"].np_seed)
 
         return
 
@@ -94,23 +93,24 @@ class Experiment:
             config = pickle.load(config_file)
         return cls(config)
 
-    def run(self):
+    def run(self, overwrite=False):
+        self.save_config(overwrite)
         if self.verbose:
             print("\n---Generating data---")
         self.generate_data()
+        self.save_data(overwrite)
 
         if self.verbose:
             print("\n---Training model---")
         self.train_model()
+        self.save_history(overwrite)
+        self.save_model(overwrite)
         self.load_model(best=True)
 
         if self.verbose:
             print("\n---Computing metrics---")
         self.compute_metrics()
-
-        if self.verbose:
-            print("\n---Saving all---")
-        self.save(True)
+        self.save_metrics(overwrite)
 
     def save(self, overwrite=False):
         self.save_config(overwrite)
@@ -120,7 +120,7 @@ class Experiment:
         self.save_history(overwrite)
 
     def load(self):
-        self.load_config()
+        # self.load_config()
         self.load_data()
         self.load_model()
         self.load_metrics()
@@ -140,26 +140,31 @@ class Experiment:
         if not os.path.exists(path):
             return
 
-        with open(path, "wb") as f:
+        with open(path, "rb") as f:
             self.__config = pickle.load(f)
 
     def generate_data(self):
         for i in range(self.__config["training"].num_graphs):
             self.generator.generate(self.__config["training"].num_samples)
-
         if self.__config["training"].val_fraction is not None:
             val_fraction = self.__config["training"].val_fraction
             val_bias = self.__config["training"].val_bias
             if self.verbose:
                 print("Partitioning generator for validation")
-            self.generator.partition_sampler("val", val_fraction, val_bias)
+            self.generator.partition_sampler(
+                "val", fraction=val_fraction, bias=val_bias
+            )
 
         if self.__config["training"].test_fraction is not None:
             test_fraction = self.__config["training"].test_fraction
             test_bias = self.__config["training"].test_bias
             if self.verbose:
                 print("Partitioning generator for test")
-            self.generator.partition_sampler("test", test_fraction, test_bias)
+            self.generator.partition_sampler(
+                "test", fraction=test_fraction, bias=test_bias
+            )
+        # n1 = self.generator.samplers["val"].avail_node_set["BAGraph_0"][0]
+        # print(n1)
 
     def train_model(self, epochs=None):
 
@@ -174,7 +179,7 @@ class Experiment:
         )
 
         if "val" in self.generator.samplers:
-            val_generator = copy.deepcopy(self.generator)
+            val_generator = self.generator.copy()
             val_generator.mode = "val"
         else:
             val_generator = None
@@ -258,9 +263,9 @@ class Experiment:
         if os.path.exists(path) and not overwrite:
             return
 
-        h5file = h5py.File(path, "w")
+        h5file = h5py.File(path)
         for k, v in self.metrics.items():
-            v.save(k, h5file)
+            v.save(k, h5file, overwrite=overwrite)
         h5file.close()
 
     def load_metrics(self):
@@ -271,7 +276,7 @@ class Experiment:
             return
 
         for k, v in self.metrics.items():
-            v.load(k, h5file["metrics"])
+            v.load(k, h5file)
 
         h5file.close()
 

@@ -18,7 +18,7 @@ class TrainingConfig:
         cls.num_graphs = 1
         cls.num_samples = 10000
         cls.step_per_epoch = 1000
-        cls.val_fraction = 0.1
+        cls.val_fraction = 0.3
         cls.val_bias = 0.8
         cls.test_fraction = None
         cls.test_bias = 0.8
@@ -38,7 +38,7 @@ class TrainingConfig:
         cls.num_graphs = 1
         cls.num_samples = 100
         cls.step_per_epoch = 1000
-        cls.val_fraction = None
+        cls.val_fraction = 0.3
         cls.val_bias = 0.8
         cls.test_fraction = None
         cls.test_bias = 0.8
@@ -58,7 +58,7 @@ class TrainingConfig:
         cls.num_graphs = 1
         cls.num_samples = num_samples
         cls.step_per_epoch = 1000
-        cls.val_fraction = 0.1
+        cls.val_fraction = 0.3
         cls.val_bias = 0.8
         cls.test_fraction = None
         cls.test_bias = 0.8
