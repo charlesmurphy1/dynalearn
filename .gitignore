@@ -3,6 +3,7 @@
 *.pt
 *.h5
 *.txt
+*.pickle
 
 # Figure format
 *.pdf
