@@ -27,19 +27,19 @@ class SISSIS_MF(MF):
         ltp[0, 2] = p0 * q0 * (1 - p1 * q1)
         ltp[0, 3] = (1 - p0 * q0) * (1 - p1 * q1)
 
-        ltp[1, 0] = g0 * p1 * q1
-        ltp[1, 1] = (1 - g0) * p1 * q1
-        ltp[1, 2] = g0 * (1 - p1 * q1)
-        ltp[1, 3] = (1 - g0) * (1 - p1 * q1)
+        ltp[1, 0] = gamma1 * p1 * q1
+        ltp[1, 1] = (1 - gamma1) * p1 * q1
+        ltp[1, 2] = gamma1 * (1 - p1 * q1)
+        ltp[1, 3] = (1 - gamma1) * (1 - p1 * q1)
 
-        ltp[2, 0] = p0 * q0 * g1
-        ltp[2, 1] = (1 - p0 * q0) * g1
-        ltp[2, 2] = p0 * q0 * (1 - g1)
-        ltp[2, 3] = (1 - p0 * q0) * (1 - g1)
+        ltp[2, 0] = p0 * q0 * gamma2
+        ltp[2, 1] = (1 - p0 * q0) * gamma2
+        ltp[2, 2] = p0 * q0 * (1 - gamma2)
+        ltp[2, 3] = (1 - p0 * q0) * (1 - gamma2)
 
-        ltp[3, 0] = g0 * g1
-        ltp[3, 1] = (1 - g0) * g1
-        ltp[3, 2] = g0 * (1 - g1)
-        ltp[3, 3] = (1 - g0) * (1 - g1)
+        ltp[3, 0] = gamma1 * gamma2
+        ltp[3, 1] = (1 - gamma1) * gamma2
+        ltp[3, 2] = gamma1 * (1 - gamma2)
+        ltp[3, 3] = (1 - gamma1) * (1 - gamma2)
 
         return ltp

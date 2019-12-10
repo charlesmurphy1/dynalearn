@@ -37,6 +37,74 @@ class MetricsConfig:
         return cls
 
     @classmethod
+    def SISMetrics(cls):
+
+        cls = cls()
+
+        # ltp, attention and statistics metrics
+        cls.num_points = 1000
+        cls.mle_num_points = None
+        cls.att_num_points = 100
+        cls.max_num_sample = 1000
+        cls.aggregator = SimpleContagionAggregator()
+        cls.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
+
+        # meanfield metrics
+        cls.mf_parameters = np.concatenate(
+            (np.linspace(0.1, 3, 50), np.linspace(3.1, 10, 20))
+        )
+        cls.num_k = 5
+        cls.epsilon = 1e-2
+        cls.tol = 1e-3
+        cls.p_range = (0.1, 3)
+        cls.fp_finder = None
+        cls.discontinuous = False
+
+        # stationary states metrics
+        cls.num_nodes = 2000
+        cls.ss_parameters = np.linspace(0.1, 10, 10)
+        cls.num_samples = 10
+        cls.burn = 100
+        cls.reshuffle = 0.1
+        cls.tol = 1e-3
+
+        return cls
+
+    @classmethod
+    def PlanckSISMetrics(cls):
+
+        cls = cls()
+
+        # ltp, attention and statistics metrics
+        cls.num_points = 1000
+        cls.mle_num_points = None
+        cls.att_num_points = 100
+        cls.max_num_sample = 1000
+        cls.aggregator = SimpleContagionAggregator()
+        cls.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
+
+        # meanfield metrics
+        cls.mf_parameters = np.concatenate(
+            (np.linspace(0.1, 2, 10), np.linspace(2.1, 5, 50), np.linspace(5.1, 10, 20))
+        )
+        cls.num_k = 5
+        cls.epsilon = 5e-3
+        cls.tol = 1e-3
+        cls.p_range = (2, 5)
+        cls.fp_finder = None
+        cls.discontinuous = True
+
+        # stationary states metrics
+        cls.num_nodes = 2000
+        cls.ss_parameters = np.linspace(0.1, 10, 10)
+        cls.num_samples = 10
+        cls.burn = 100
+        cls.reshuffle = 0.1
+        cls.tol = 1e-3
+
+        return cls
+
+    @classmethod
     def SISSISMetrics(cls):
 
         cls = cls()
@@ -51,18 +119,19 @@ class MetricsConfig:
 
         # meanfield metrics
         cls.mf_parameters = np.concatenate(
-            np.linspace(0.1, 3, 50), np.linspace(3.1, 10, 20)
+            np.linspace(0.1, 2, 50), np.linspace(2.1, 5, 20)
         )
         cls.num_k = 5
         cls.epsilon = 1e-2
         cls.tol = 1e-3
-        cls.p_range = (0.1, 3)
+        cls.p_range = (0.1, 2)
         cls.fp_finder = None
+        cls.discontinuous = True
 
         # stationary states metrics
         cls.num_nodes = 2000
-        cls.ss_parameters = np.linspace(0.1, 10, 10)
-        cls.num_samples = 100
+        cls.ss_parameters = np.linspace(0.1, 5, 10)
+        cls.num_samples = 10
         cls.burn = 100
         cls.reshuffle = 0.1
         cls.tol = 1e-3
@@ -80,11 +149,11 @@ class MetricsConfig:
         cls.att_num_points = 100
         cls.max_num_sample = 1000
         cls.aggregator = SimpleContagionAggregator()
-        cls.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
+        cls.degree_class = np.unique(np.logspace(0, np.log10(50), 10).astype("int"))
 
         # meanfield metrics
         cls.mf_parameters = np.concatenate(
-            (np.linspace(0.1, 3, 30), np.linspace(3.1, 10, 10))
+            (np.linspace(0.1, 3, 20), np.linspace(3.1, 10, 10))
         )
         cls.num_k = 5
         cls.epsilon = 1e-2
@@ -95,9 +164,9 @@ class MetricsConfig:
         # stationary states metrics
         cls.num_nodes = 1000
         cls.ss_parameters = np.linspace(0.1, 10, 10)
-        cls.num_samples = 10
+        cls.num_samples = 1
         cls.burn = 100
         cls.reshuffle = 0.1
-        cls.tol = 1e-3
+        cls.tol = 5e-3
 
         return cls

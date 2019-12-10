@@ -109,7 +109,8 @@ class EpidemicsSSMetrics(StationaryStateMetrics):
 
     def absoring_state(self):
         self.dynamics_model.params["init"] = self.epsilon
-        g = self.graph_model.generate()[1]
+        name, g = self.graph_model.generate()
+        # print(name, type(g))
         return self.dynamics_model.initialize_states(g)
 
     def compute(self, experiment):
@@ -197,7 +198,7 @@ class PoissonEpidemicsSSMetrics(EpidemicsSSMetrics):
         self.change_param(config.ss_parameters[0])
 
     def change_param(self, avgk):
-        poisson_dist = dl.utilities.poisson_distribution(avgk, num_k=self.num_k)
+        poisson_dist = dl.utilities.poisson_distribution(avgk, self.num_k)
         self.graph_model = dl.graphs.DegreeSequenceGraph(
             {"N": self.num_nodes, "degree_dist": poisson_dist}
         )

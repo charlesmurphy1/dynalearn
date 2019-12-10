@@ -20,7 +20,7 @@ metrics_dict = {
 }
 
 
-def get(param_dict, dynamics):
+def get(param_dict):
     names = param_dict["name"]
     config = param_dict["config"]
     metrics = {}

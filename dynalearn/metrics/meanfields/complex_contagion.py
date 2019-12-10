@@ -10,7 +10,7 @@ def sigmoid(x):
 
 
 def constant_deactivation(l_grid, k_grid, params):
-    return params["recovery"] * np.ones(self.k_grid.shape)
+    return params["recovery"] * np.ones(k_grid.shape)
 
 
 def soft_threshold_activation(l_grid, k_grid, params):
@@ -34,7 +34,9 @@ def planck_activation(l_grid, k_grid, params):
     l = l_grid[1]
     gamma = (lambertw(-3 * np.exp(-3)) + 3).real
     Z = gamma ** 3 * params["temperature"] ** 3 / (np.exp(gamma) - 1)
-    return l ** 3 / (np.exp(l / params["temperature"]) - 1) / Z
+    ans = l ** 3 / (np.exp(l / params["temperature"]) - 1) / Z
+    ans[l == 0] = 0
+    return ans
 
 
 class ComplexSISMF(MF):
@@ -51,10 +53,10 @@ class ComplexSISMF(MF):
         ltp = np.zeros((self.s_dim, self.s_dim, *self.k_grid.shape))
         activation_prob = self.activation(self.l_grid, self.k_grid)
         deactivation_prob = self.deactivation(self.l_grid, self.k_grid)
-        ltp[0, 0] = 1 - activation
-        ltp[0, 1] = activation
-        ltp[1, 0] = deactivation
-        ltp[1, 1] = 1 - deactivation
+        ltp[0, 0] = 1 - activation_prob
+        ltp[0, 1] = activation_prob
+        ltp[1, 0] = deactivation_prob
+        ltp[1, 1] = 1 - deactivation_prob
         return ltp
 
 
