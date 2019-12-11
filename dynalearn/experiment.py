@@ -93,7 +93,7 @@ class Experiment:
             config = pickle.load(config_file)
         return cls(config)
 
-    def run(self, overwrite=False):
+    def run(self, overwrite=True):
         self.save_config(overwrite)
         if self.verbose:
             print("\n---Generating data---")

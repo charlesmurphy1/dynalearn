@@ -117,7 +117,7 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
 
     def __continuous_threshold_criterion(self, mf, states, p):
         _mf = self.change_param(mf, p)
-        val = _mf.stability(abs_state) - 1
+        val = _mf.stability(states) - 1
         return val
 
     def __discontinuous_threshold_criterion(self, mf, states, p):

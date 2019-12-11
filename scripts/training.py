@@ -53,7 +53,7 @@ graph_models = [
     {"name": "BAGraph", "params": {"N": 1000, "M": 2}},
 ]
 
-num_samples = [100]
+num_samples = [10000]
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -89,12 +89,12 @@ for dynamics, model, metric in zip(dynamics_models, model_configs, metric_config
                         "GNNStarLTPMetrics",
                         "UniformStarLTPMetrics",
                         "StatisticsMetrics",
-                        "PoissonEpidemicsMFMetrics",
-                        "PoissonEpidemicsSSMetrics",
+                        # "PoissonEpidemicsMFMetrics",
+                        # "PoissonEpidemicsSSMetrics",
                     ],
                     "config": metric,
                 },
-                "training": dl.TrainingConfig.test(),
+                "training": dl.TrainingConfig.changing_num_samples(n),
                 "path_to_dir": path_to_dir,
                 "path_to_bestmodel": path_to_models,
             }
