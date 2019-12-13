@@ -112,7 +112,7 @@ class Experiment:
         self.compute_metrics()
         self.save_metrics(overwrite)
 
-    def save(self, overwrite=False):
+    def save(self, overwrite=True):
         self.save_config(overwrite)
         self.save_data(overwrite)
         self.save_model(overwrite)
@@ -126,7 +126,7 @@ class Experiment:
         self.load_metrics()
         self.load_history()
 
-    def save_config(self, overwrite=False):
+    def save_config(self, overwrite=True):
         path = os.path.join(self.path_to_dir, self.name, self.filename_config)
         if os.path.exists(path) and not overwrite:
             return
@@ -209,7 +209,7 @@ class Experiment:
         for k, m in self.metrics.items():
             m.compute(self)
 
-    def save_model(self, overwrite=False):
+    def save_model(self, overwrite=True):
         self.model.model.save_weights(
             os.path.join(self.path_to_dir, self.name, self.filename_model)
         )
@@ -222,7 +222,7 @@ class Experiment:
         if os.path.exists(path):
             self.model.model.load_weights(path)
 
-    def save_data(self, overwrite=False):
+    def save_data(self, overwrite=True):
         h5file = h5py.File(
             os.path.join(self.path_to_dir, self.name, self.filename_data)
         )
@@ -239,7 +239,7 @@ class Experiment:
         self.generator.load(h5file)
         h5file.close()
 
-    def save_history(self, overwrite=False):
+    def save_history(self, overwrite=True):
         path = os.path.join(self.path_to_dir, self.name, self.filename_history)
         if os.path.exists(path) and not overwrite:
             return
@@ -258,7 +258,7 @@ class Experiment:
             self.history[k] = v[...]
         h5file.close()
 
-    def save_metrics(self, overwrite=False):
+    def save_metrics(self, overwrite=True):
         path = os.path.join(self.path_to_dir, self.name, self.filename_metrics)
         if os.path.exists(path) and not overwrite:
             return

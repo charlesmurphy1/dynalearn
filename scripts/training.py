@@ -49,8 +49,8 @@ metric_configs = [
     dl.metrics.MetricsConfig.SISSISMetrics(),
 ]
 graph_models = [
-    {"name": "ERGraph", "params": {"N": 1000, "density": 0.004}},
-    {"name": "BAGraph", "params": {"N": 1000, "M": 2}},
+    # {"name": "ERGraph", "params": {"N": 1000, "density": 0.004}},
+    {"name": "BAGraph", "params": {"N": 1000, "M": 2}}
 ]
 
 num_samples = [10000]
@@ -81,16 +81,16 @@ for dynamics, model, metric in zip(dynamics_models, model_configs, metric_config
                 },
                 "metrics": {
                     "name": [
-                        "AttentionMetrics",
-                        "TrueLTPMetrics",
-                        "GNNLTPMetrics",
-                        "MLELTPMetrics",
-                        "TrueStarLTPMetrics",
-                        "GNNStarLTPMetrics",
-                        "UniformStarLTPMetrics",
-                        "StatisticsMetrics",
-                        # "PoissonEpidemicsMFMetrics",
-                        # "PoissonEpidemicsSSMetrics",
+                        # "AttentionMetrics",
+                        # "TrueLTPMetrics",
+                        # "GNNLTPMetrics",
+                        # "MLELTPMetrics",
+                        # "TrueStarLTPMetrics",
+                        # "GNNStarLTPMetrics",
+                        # "UniformStarLTPMetrics",
+                        # "StatisticsMetrics",
+                        "PoissonEpidemicsMFMetrics",
+                        "PoissonEpidemicsSSMetrics",
                     ],
                     "config": metric,
                 },
@@ -100,4 +100,7 @@ for dynamics, model, metric in zip(dynamics_models, model_configs, metric_config
             }
 
             experiment = dl.Experiment(config)
-            experiment.run()
+            # experiment.run()
+            experiment.load()
+            experiment.compute_metrics()
+            experiment.save_metrics(overwrite=True)

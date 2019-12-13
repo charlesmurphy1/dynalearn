@@ -56,14 +56,14 @@ class MetricsConfig:
         cls.num_k = 5
         cls.epsilon = 1e-2
         cls.tol = 1e-3
-        cls.p_range = (0.1, 3)
+        cls.p_range = (0.1, 10)
         cls.fp_finder = None
         cls.discontinuous = False
 
         # stationary states metrics
         cls.num_nodes = 2000
         cls.ss_parameters = np.linspace(0.1, 10, 10)
-        cls.num_samples = 10
+        cls.num_samples = 100
         cls.burn = 100
         cls.reshuffle = 0.1
         cls.tol = 1e-3
@@ -90,14 +90,14 @@ class MetricsConfig:
         cls.num_k = 5
         cls.epsilon = 5e-3
         cls.tol = 1e-3
-        cls.p_range = (2, 5)
+        cls.p_range = (0.1, 10)
         cls.fp_finder = None
         cls.discontinuous = True
 
         # stationary states metrics
         cls.num_nodes = 2000
         cls.ss_parameters = np.linspace(0.1, 10, 10)
-        cls.num_samples = 10
+        cls.num_samples = 100
         cls.burn = 100
         cls.reshuffle = 0.1
         cls.tol = 1e-3
@@ -124,14 +124,14 @@ class MetricsConfig:
         cls.num_k = 5
         cls.epsilon = 1e-2
         cls.tol = 1e-3
-        cls.p_range = (0.1, 2)
+        cls.p_range = (0.1, 10)
         cls.fp_finder = None
         cls.discontinuous = True
 
         # stationary states metrics
         cls.num_nodes = 2000
         cls.ss_parameters = np.linspace(0.1, 5, 10)
-        cls.num_samples = 10
+        cls.num_samples = 100
         cls.burn = 100
         cls.reshuffle = 0.1
         cls.tol = 1e-3

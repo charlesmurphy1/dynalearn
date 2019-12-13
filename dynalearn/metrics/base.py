@@ -11,7 +11,7 @@ class Metrics(ABC):
         return
 
     @abstractmethod
-    def compute(self, experiment, **kwargs):
+    def compute(self, experiment):
         raise NotImplementedError("compute must be implemented.")
 
     def save(self, name, h5file, overwrite=True):
