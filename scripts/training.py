@@ -15,9 +15,17 @@ path_to_models = (
     + getpass.getuser()
     + "/Documents/ulaval/doctorat/projects/dynalearn/data/models/"
 )
+
 if os.path.exists("/media/" + getpass.getuser() + "/LaCie/"):
     path_to_dir = "/media/" + getpass.getuser() + "/LaCie/dynalearn-data/training/"
     path_to_models = "/media/" + getpass.getuser() + "/LaCie/dynalearn-data/models/"
+elif os.path.exists("/media/" + getpass.getuser() + "/charles-usb/"):
+    path_to_dir = (
+        "/media/" + getpass.getuser() + "/charles-usb/dynalearn-data/training/"
+    )
+    path_to_models = (
+        "/media/" + getpass.getuser() + "/charles-usb/dynalearn-data/models/"
+    )
 
 
 dynamics_models = [
@@ -81,14 +89,14 @@ for dynamics, model, metric in zip(dynamics_models, model_configs, metric_config
                 },
                 "metrics": {
                     "name": [
-                        # "AttentionMetrics",
-                        # "TrueLTPMetrics",
-                        # "GNNLTPMetrics",
-                        # "MLELTPMetrics",
-                        # "TrueStarLTPMetrics",
-                        # "GNNStarLTPMetrics",
-                        # "UniformStarLTPMetrics",
-                        # "StatisticsMetrics",
+                        "AttentionMetrics",
+                        "TrueLTPMetrics",
+                        "GNNLTPMetrics",
+                        "MLELTPMetrics",
+                        "TrueStarLTPMetrics",
+                        "GNNStarLTPMetrics",
+                        "UniformStarLTPMetrics",
+                        "StatisticsMetrics",
                         "PoissonEpidemicsMFMetrics",
                         "PoissonEpidemicsSSMetrics",
                     ],
@@ -100,7 +108,9 @@ for dynamics, model, metric in zip(dynamics_models, model_configs, metric_config
             }
 
             experiment = dl.Experiment(config)
+            experiment.save_config(overwrite=True)
+            experiment.load_metrics()
             # experiment.run()
-            experiment.load()
-            experiment.compute_metrics()
-            experiment.save_metrics(overwrite=True)
+            # experiment.load()
+            # experiment.compute_metrics()
+            # experiment.save_metrics(overwrite=True)

@@ -72,7 +72,9 @@ class Experiment:
                 verbose=1,
             ),
         ]
-        self.training_metrics = [dl.utilities.metrics.model_entropy]
+        self.training_metrics = [
+            dl.utilities.get_metrics(m) for m in cls.training_metrics
+        ]
 
         if not os.path.exists(os.path.join(self.path_to_dir, self.name)):
             os.makedirs(os.path.join(self.path_to_dir, self.name))
