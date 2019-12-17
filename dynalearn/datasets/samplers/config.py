@@ -3,13 +3,13 @@ import dynalearn.dynamics as dn
 
 class SamplerConfig:
     @classmethod
-    def BiasedSamplerDefault(cls, dynamics_config):
+    def BiasedSamplerDefault(cls, dynamics_config, bias=0.6):
 
         cls = cls()
 
         dynamics = dn.get(dynamics_config)
         cls.dynamics_states = list(dynamics.state_label.values())
-        cls.sampling_bias = 1.0
+        cls.sampling_bias = bias
         cls.replace = True
         cls.sample_from_weights = False
         cls.resample = 1000
