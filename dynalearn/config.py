@@ -1,5 +1,4 @@
 from dynalearn.utilities import get_schedule
-from dynalearn.utilities.metrics import model_entropy
 from tensorflow.keras.optimizers import get
 from tensorflow.keras.callbacks import LearningRateScheduler
 from tensorflow.keras.backend import variable
@@ -23,6 +22,7 @@ class TrainingConfig:
         cls.test_fraction = None
         cls.test_bias = 0.8
         cls.np_seed = 1
+        cls.training_metrics = ["model_entropy", "jensenshannon"]
 
         return cls
 
@@ -43,6 +43,7 @@ class TrainingConfig:
         cls.test_fraction = None
         cls.test_bias = 0.8
         cls.np_seed = 1
+        cls.training_metrics = ["model_entropy", "jensenshannon"]
 
         return cls
 
@@ -63,5 +64,6 @@ class TrainingConfig:
         cls.test_fraction = None
         cls.test_bias = 0.8
         cls.np_seed = 1
+        cls.training_metrics = ["model_entropy", "jensenshannon"]
 
         return cls

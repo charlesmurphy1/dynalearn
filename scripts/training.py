@@ -15,9 +15,17 @@ path_to_models = (
     + getpass.getuser()
     + "/Documents/ulaval/doctorat/projects/dynalearn/data/models/"
 )
+
 if os.path.exists("/media/" + getpass.getuser() + "/LaCie/"):
     path_to_dir = "/media/" + getpass.getuser() + "/LaCie/dynalearn-data/training/"
     path_to_models = "/media/" + getpass.getuser() + "/LaCie/dynalearn-data/models/"
+elif os.path.exists("/media/" + getpass.getuser() + "/charles-usb/"):
+    path_to_dir = (
+        "/media/" + getpass.getuser() + "/charles-usb/dynalearn-data/training/"
+    )
+    path_to_models = (
+        "/media/" + getpass.getuser() + "/charles-usb/dynalearn-data/models/"
+    )
 
 
 dynamics_models = [
@@ -104,4 +112,13 @@ for dynamics, model, metric, b in zip(
             }
 
             experiment = dl.Experiment(config)
+<<<<<<< HEAD
             experiment.run(overwrite=True)
+=======
+            experiment.save_config(overwrite=True)
+            experiment.load_metrics()
+            # experiment.run()
+            # experiment.load()
+            # experiment.compute_metrics()
+            # experiment.save_metrics(overwrite=True)
+>>>>>>> 1839bc7d4680330c301879139ac185a23c5205d1
