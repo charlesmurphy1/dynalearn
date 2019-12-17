@@ -57,17 +57,21 @@ metric_configs = [
     dl.metrics.MetricsConfig.SISSISMetrics(),
 ]
 graph_models = [
-    # {"name": "ERGraph", "params": {"N": 1000, "density": 0.004}},
-    {"name": "BAGraph", "params": {"N": 1000, "M": 2}}
+    {"name": "ERGraph", "params": {"N": 1000, "density": 0.004}},
+    {"name": "BAGraph", "params": {"N": 1000, "M": 2}},
 ]
 
-num_samples = [10000]
+num_samples = [100, 1000]
+bias = [0.6, 0.6, 0.8]
+# bias = [0.8]
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 session = tf.Session(config=config)
 
-for dynamics, model, metric in zip(dynamics_models, model_configs, metric_configs):
+for dynamics, model, metric, b in zip(
+    dynamics_models, model_configs, metric_configs, bias
+):
     for graph in graph_models:
         for n in num_samples:
             name = "{0}-{1}-{2}".format(dynamics["name"], graph["name"], n)
@@ -83,7 +87,7 @@ for dynamics, model, metric in zip(dynamics_models, model_configs, metric_config
                     "sampler": {
                         "name": "StateBiasedSampler",
                         "config": dl.datasets.samplers.SamplerConfig.BiasedSamplerDefault(
-                            dynamics
+                            dynamics, b
                         ),
                     },
                 },
@@ -98,7 +102,7 @@ for dynamics, model, metric in zip(dynamics_models, model_configs, metric_config
                         "UniformStarLTPMetrics",
                         "StatisticsMetrics",
                         "PoissonEpidemicsMFMetrics",
-                        "PoissonEpidemicsSSMetrics",
+                        # "PoissonEpidemicsSSMetrics",
                     ],
                     "config": metric,
                 },
@@ -108,9 +112,13 @@ for dynamics, model, metric in zip(dynamics_models, model_configs, metric_config
             }
 
             experiment = dl.Experiment(config)
+<<<<<<< HEAD
+            experiment.run(overwrite=True)
+=======
             experiment.save_config(overwrite=True)
             experiment.load_metrics()
             # experiment.run()
             # experiment.load()
             # experiment.compute_metrics()
             # experiment.save_metrics(overwrite=True)
+>>>>>>> 1839bc7d4680330c301879139ac185a23c5205d1
