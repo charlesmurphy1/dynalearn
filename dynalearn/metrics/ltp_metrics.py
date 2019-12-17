@@ -17,29 +17,37 @@ class LTPMetrics(Metrics):
     def get_metric(self, adj, inputs, targets):
         raise NotImplementedError("get_metric must be implemented.")
 
-    def aggregate(self, data=None, in_state=None, out_state=None, for_degree=False):
+    def aggregate(
+        self,
+        data=None,
+        in_state=None,
+        out_state=None,
+        for_degree=False,
+        err_operation="std",
+    ):
         if self.aggregate is None:
             return
 
         if data is None:
             data = self.data["ltp/train"]
 
-        x, y, err = self.aggregator(
+        x, y, err_low, err_high = self.aggregator(
             self.data["summaries"],
             data,
             in_state=in_state,
             out_state=out_state,
             for_degree=for_degree,
             operation="mean",
+            err_operation=err_operation,
         )
-        return x, y, err
+        return x, y, err_low, err_high
 
     def compare(self, name1, name2, metrics, in_state=None, out_state=None, func=None):
         ans = np.zeros(self.data["summaries"].shape[0])
         for i, s in enumerate(self.data["summaries"]):
             index = np.where(np.prod(metrics.data["summaries"] == s, axis=-1) == 1)[0]
             if len(index) > 0:
-                ans[i] = func(self.data[name1][i], metrics.data[name2][index])
+                ans[i] = func(self.data[name1][i], metrics.data[name2][index[0]])
             else:
                 ans[i] = np.nan
         return ans
