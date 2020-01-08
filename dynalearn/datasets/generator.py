@@ -20,10 +20,7 @@ class DynamicsGenerator:
         self.shuffle = config.shuffle
         self.with_truth = config.with_truth
 
-        self.graphs = dict()
-        self.inputs = dict()
-        self.targets = dict()
-        self.gt_targets = dict()
+        self.clear()
 
         self.verbose = verbose
 
@@ -59,6 +56,16 @@ class DynamicsGenerator:
 
         return generator_copy
 
+    def clear(self, clear_samples=True):
+        self.graphs = dict()
+        self.inputs = dict()
+        self.targets = dict()
+        self.gt_targets = dict()
+
+        if clear_samples:
+            for s in self.samplers:
+                self.samplers[s].clear()
+
     def generate(self, num_sample):
 
         sample = 0
@@ -80,7 +87,7 @@ class DynamicsGenerator:
             null_iteration = 0
             for t in range(self.resampling_time):
                 t0 = time.time()
-                x, y, z = self._update_states()
+                x, y, z = self.__update_states()
 
                 inputs[sample, :] = x
                 targets[sample, :] = y
@@ -115,7 +122,7 @@ class DynamicsGenerator:
         self.gt_targets[name] = gt_targets[index, :]
         self.main_sampler.update(self.graphs, self.inputs)
 
-    def _update_states(self):
+    def __update_states(self):
         inputs = self.dynamics_model.states
         targets = self.dynamics_model.sample()
         gt_targets = self.dynamics_model.predict(inputs)

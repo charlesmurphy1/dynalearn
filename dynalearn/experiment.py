@@ -73,7 +73,7 @@ class Experiment:
             ),
         ]
         self.training_metrics = [
-            dl.utilities.get_metrics(m) for m in cls.training_metrics
+            dl.utilities.get_metrics(m) for m in config["training"].training_metrics
         ]
 
         if not os.path.exists(os.path.join(self.path_to_dir, self.name)):
@@ -273,7 +273,7 @@ class Experiment:
     def load_metrics(self):
         path = os.path.join(self.path_to_dir, self.name, self.filename_metrics)
         if os.path.exists(path):
-            h5file = h5py.File(path)
+            h5file = h5py.File(path, "r")
         else:
             return
 

@@ -2,6 +2,12 @@ import numpy as np
 from abc import ABC
 
 
+def aggregate_std(x):
+    err = std(x)
+    err[np.isnan(err)] = 0
+    ret
+
+
 class Aggregator(ABC):
     def __init__(self):
         super(Aggregator, self).__init__()
@@ -14,20 +20,28 @@ class Aggregator(ABC):
         out_state=None,
         for_degree=False,
         operation="mean",
+        err_operation="std",
     ):
 
         if operation == "mean":
             op_val = np.nanmean
-            op_err = lambda xx: np.sqrt(np.nanvar(xx))
+            if err_operation == "std":
+                op_err = lambda xx: (
+                    np.nanmean(xx) - np.nanstd(xx),
+                    np.nanmean(xx) + np.nanstd(xx),
+                )
+            elif err_operation == "percentile":
+                op_err = lambda xx: (np.nanpercentile(xx, 16), np.nanpercentile(xx, 84))
         elif operation == "sum":
             op_val = np.nansum
-            op_err = lambda x: 0
+            op_err = lambda x: (0, 0)
 
         if for_degree:
             x = np.unique(np.sort(np.sum(summaries[:, 1:], axis=-1)))
             x = x[x > 0]
             y = np.zeros(x.shape)
-            err = np.zeros(x.shape)
+            err_low = np.zeros(x.shape)
+            err_high = np.zeros(x.shape)
             for i, xx in enumerate(x):
 
                 if in_state is None:
@@ -38,15 +52,18 @@ class Aggregator(ABC):
                     )
 
                 if out_state is None:
-                    y[i] = op_val(values[index])
-                    err[i] = op_err(values[index])
+                    val = values[index]
                 else:
-                    y[i] = op_val(values[index, out_state])
-                    err[i] = op_err(values[index, out_state])
+                    val = values[index, out_state]
+
+                if len(val) > 0:
+                    y[i] = op_val(val)
+                    err_low[i], err_high[i] = op_err(val)
         else:
             x, all_x = self.aggregate_summaries(summaries)
             y = np.zeros(x.shape)
-            err = np.zeros(x.shape)
+            err_low = np.zeros(x.shape)
+            err_high = np.zeros(x.shape)
             for i, xx in enumerate(x):
 
                 if in_state is None:
@@ -55,16 +72,19 @@ class Aggregator(ABC):
                     index = (all_x == xx) * (summaries[:, 0] == in_state)
 
                 if out_state is None:
-                    y[i] = op_val(values[index])
-                    err[i] = op_err(values[index])
+                    val = values[index]
                 else:
-                    y[i] = op_val(values[index, out_state])
-                    err[i] = op_err(values[index, out_state])
+                    val = values[index, out_state]
+
+                if len(val) > 0:
+                    y[i] = op_val(val)
+                    err_low[i], err_high[i] = op_err(val)
 
         x = x[~np.isnan(y)]
-        err = err[~np.isnan(y)]
+        err_low = err_low[~np.isnan(y)]
+        err_high = err_high[~np.isnan(y)]
         y = y[~np.isnan(y)]
-        return x, y, err
+        return x, y, err_low, err_high
 
     def aggregate_summaries(self, summaries):
         raise NotImplementedError("aggregate_summaries must be implemented.")

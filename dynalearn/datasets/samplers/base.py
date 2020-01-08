@@ -13,20 +13,7 @@ class Sampler(ABC):
         self.iteration = 0
         self.sampling_bias = 1
 
-        self.num_nodes = dict()
-        self.num_samples = dict()
-
-        self.graph_set = list()
-        self.avail_graph_set = list()
-        self.graph_weights = dict()
-
-        self.state_set = dict()
-        self.avail_state_set = dict()
-        self.state_weights = dict()
-
-        self.node_set = dict()
-        self.avail_node_set = dict()
-        self.node_weights = dict()
+        self.clear()
 
         self.verbose = verbose
 
@@ -60,6 +47,22 @@ class Sampler(ABC):
         sampler_copy.node_weights = copy.deepcopy(self.node_weights)
 
         return sampler_copy
+
+    def clear(self):
+        self.num_nodes = dict()
+        self.num_samples = dict()
+
+        self.graph_set = list()
+        self.avail_graph_set = list()
+        self.graph_weights = dict()
+
+        self.state_set = dict()
+        self.avail_state_set = dict()
+        self.state_weights = dict()
+
+        self.node_set = dict()
+        self.avail_node_set = dict()
+        self.node_weights = dict()
 
     def update(self, graphs, inputs):
         for g in graphs:

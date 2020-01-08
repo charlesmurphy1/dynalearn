@@ -17,7 +17,7 @@ class StatisticsMetrics(Metrics):
     def aggregate(
         self, in_state=None, out_state=None, for_degree=False, dataset="train"
     ):
-        x, y, _ = self.aggregator(
+        x, y, _, _ = self.aggregator(
             self.data["summaries"],
             self.data["counts/" + dataset],
             in_state=in_state,

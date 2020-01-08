@@ -27,24 +27,32 @@ class StarLTPMetrics(Metrics):
     def get_metric(self, experiment, input, adj):
         raise NotImplementedError("get_metric must be implemented.")
 
-    def aggregate(self, data=None, in_state=None, out_state=None, for_degree=False):
+    def aggregate(
+        self,
+        data=None,
+        in_state=None,
+        out_state=None,
+        for_degree=False,
+        err_operation="std",
+    ):
         if self.aggregate is None:
             return
 
         if data is None:
             data = self.data["ltp"]
 
-        x, y, err = self.aggregator(
+        x, y, err_low, err_high = self.aggregator(
             self.data["summaries"],
             data,
             in_state=in_state,
             out_state=out_state,
             for_degree=for_degree,
             operation="mean",
+            err_operation=err_operation,
         )
-        return x, y, err
+        return x, y, err_low, err_high
 
-    def compare(self, name, metrics, in_state=None, out_state=None, func=None):
+    def compare(self, name, metrics, func=None):
         ans = np.zeros(self.data["summaries"].shape[0])
         for i, s in enumerate(self.data["summaries"]):
             index = np.where(np.prod(metrics.data["summaries"] == s, axis=-1) == 1)[0]

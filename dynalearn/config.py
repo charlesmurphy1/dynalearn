@@ -64,6 +64,7 @@ class TrainingConfig:
         cls.test_fraction = None
         cls.test_bias = 0.8
         cls.np_seed = 1
-        cls.training_metrics = ["model_entropy", "jensenshannon"]
+        cls.training_metrics = ["model_entropy"]
+        # cls.training_metrics = ["model_entropy", "jensenshannon"]
 
         return cls
