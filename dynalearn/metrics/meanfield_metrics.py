@@ -26,43 +26,71 @@ class MeanfieldMetrics(Metrics):
 
         if self.verbose:
             print("Computing " + self.__class__.__name__)
-            p_bar = tqdm.tqdm(range(len(self.parameters)), "Fixed points: True model")
-        for i, p in enumerate(self.parameters):
-            mf = self.change_param(mf, p)
-            fp = self.compute_fixed_points(mf)
-            if self.verbose:
-                p_bar.update()
-            true_low_fp[i] = fp[0]
-            true_high_fp[i] = fp[1]
-
-        if self.verbose:
-            p_bar.close()
-            p_bar = tqdm.tqdm(range(len(self.parameters)), "Fixed points: GNN model")
-        for i, p in enumerate(self.parameters):
-            gnn_mf = self.change_param(gnn_mf, p)
-            fp = self.compute_fixed_points(gnn_mf)
-            if self.verbose:
-                p_bar.update()
-            gnn_low_fp[i] = fp[0]
-            gnn_high_fp[i] = fp[1]
-
-        self.data[f"true_low_fp"] = true_low_fp
-        self.data[f"true_high_fp"] = true_high_fp
-        self.data[f"gnn_low_fp"] = gnn_low_fp
-        self.data[f"gnn_high_fp"] = gnn_high_fp
-
-        if self.verbose:
-            p_bar.close()
             print("Thresholds: True model")
         self.data[f"true_thresholds"] = self.compute_thresholds(mf)
 
         if self.verbose:
             print("Thresholds: GNN model")
         self.data[f"gnn_thresholds"] = self.compute_thresholds(gnn_mf)
+
+        if self.verbose:
+            print("Computing " + self.__class__.__name__)
+            p_bar = tqdm.tqdm(range(len(self.parameters)), "Fixed points: True model")
+
+        low_state, high_state = None, None
+        for i, p in enumerate(self.parameters):
+            mf = self.change_param(mf, p)
+            fp = self.compute_fixed_points(
+                mf, low_state=low_state, high_state=high_state
+            )
+            if self.verbose:
+                p_bar.update()
+            true_low_fp[i] = fp[0]
+            true_high_fp[i] = fp[1]
+            low_state, high_state = self.propose_initial_state(
+                p, self.data[f"true_thresholds"], fp
+            )
+
+        if self.verbose:
+            p_bar.close()
+            p_bar = tqdm.tqdm(range(len(self.parameters)), "Fixed points: GNN model")
+
+        low_state, high_state = None, None
+        for i, p in enumerate(self.parameters):
+            gnn_mf = self.change_param(gnn_mf, p)
+            fp = self.compute_fixed_points(
+                gnn_mf, low_state=low_state, high_state=high_state
+            )
+
+            if self.verbose:
+                p_bar.update()
+            gnn_low_fp[i] = fp[0]
+            gnn_high_fp[i] = fp[1]
+            low_state, high_state = self.propose_initial_states(
+                p, self.data[f"gnn_thresholds"], fp
+            )
+        if self.verbose:
+            p_bar.close()
+
+        self.data[f"true_low_fp"] = true_low_fp
+        self.data[f"true_high_fp"] = true_high_fp
+        self.data[f"gnn_low_fp"] = gnn_low_fp
+        self.data[f"gnn_high_fp"] = gnn_high_fp
         self.data[f"parameters"] = self.parameters
 
         if self.verbose:
             p_bar.close()
+
+    def propose_initial_states(self, p, thresholds, previous_states):
+        if len(thresholds) == 0:
+            return None, None
+        elif len(thresholds) == 1:
+            return previous_states
+        elif len(thresholds) == 2:
+            if p < np.min(thresholds) or p > np.max(thresholds):
+                return previous_states
+            else:
+                return None, None
 
     @abstractmethod
     def compute_fixed_points(self, mf):
@@ -99,16 +127,18 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
         x[0] = 1 - self.epsilon
         return mf.normalize_state(x)
 
-    def compute_fixed_points(self, mf):
+    def compute_fixed_points(self, mf, low_state=None, high_state=None):
 
-        abs_state = self.absorbing_state(mf)
+        if low_state is None:
+            low_state = self.absorbing_state(mf)
         low_fp = mf.to_avg(
-            mf.search_fixed_point(x0=abs_state, fp_finder=self.fp_finder)
+            mf.search_fixed_point(x0=low_state, fp_finder=self.fp_finder)
         )
 
-        epi_state = self.epidemic_state(mf)
+        if high_state is None:
+            high_state = self.epidemic_state(mf)
         high_fp = mf.to_avg(
-            mf.search_fixed_point(x0=epi_state, fp_finder=self.fp_finder)
+            mf.search_fixed_point(x0=high_state, fp_finder=self.fp_finder)
         )
 
         fp = np.array([low_fp, high_fp])
