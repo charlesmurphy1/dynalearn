@@ -30,7 +30,8 @@ class MetricsConfig:
         cls.num_nodes = 2000
         cls.ss_parameters = np.linspace(0.1, 10, 10)
         cls.num_samples = 10
-        cls.burn = 100
+        cls.initial_burn = 1000
+        cls.burn = 10
         cls.reshuffle = 0.1
         cls.tol = 1e-3
 
@@ -62,9 +63,12 @@ class MetricsConfig:
 
         # stationary states metrics
         cls.num_nodes = 2000
-        cls.ss_parameters = np.linspace(0.1, 10, 10)
-        cls.num_samples = 10
-        cls.burn = 100
+        cls.ss_parameters = np.concatenate(
+            (np.linspace(0.1, 3, 30), np.linspace(3.1, 10, 15))
+        )
+        cls.num_samples = 100
+        cls.initial_burn = 1000
+        cls.burn = 10
         cls.reshuffle = 0.1
         cls.tol = 1e-3
 
@@ -96,9 +100,12 @@ class MetricsConfig:
 
         # stationary states metrics
         cls.num_nodes = 2000
-        cls.ss_parameters = np.linspace(0.1, 10, 10)
-        cls.num_samples = 10
-        cls.burn = 100
+        cls.ss_parameters = np.concatenate(
+            (np.linspace(0.1, 2, 10), np.linspace(2.1, 5, 30), np.linspace(5.1, 10, 15))
+        )
+        cls.num_samples = 100
+        cls.initial_burn = 1000
+        cls.burn = 10
         cls.reshuffle = 0.1
         cls.tol = 1e-3
 
@@ -130,9 +137,12 @@ class MetricsConfig:
 
         # stationary states metrics
         cls.num_nodes = 2000
-        cls.ss_parameters = np.linspace(0.1, 5, 10)
-        cls.num_samples = 10
-        cls.burn = 100
+        cls.ss_parameters = np.concatenate(
+            (np.linspace(0.1, 2, 25), np.linspace(2.1, 5, 15))
+        )
+        cls.num_samples = 100
+        cls.initial_burn = 1000
+        cls.burn = 10
         cls.reshuffle = 0.1
         cls.tol = 1e-3
 
@@ -165,7 +175,8 @@ class MetricsConfig:
         cls.num_nodes = 1000
         cls.ss_parameters = np.linspace(0.1, 10, 10)
         cls.num_samples = 1
-        cls.burn = 100
+        cls.initial_burn = 1000
+        cls.burn = 10
         cls.reshuffle = 0.1
         cls.tol = 5e-3
 

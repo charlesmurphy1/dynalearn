@@ -61,7 +61,7 @@ graph_models = [
     {"name": "BAGraph", "params": {"N": 1000, "M": 2}},
 ]
 
-num_samples = [100, 1000]
+num_samples = [10000]
 bias = [0.6, 0.6, 0.8]
 # bias = [0.8]
 
@@ -102,7 +102,7 @@ for dynamics, model, metric, b in zip(
                         "UniformStarLTPMetrics",
                         "StatisticsMetrics",
                         "PoissonEpidemicsMFMetrics",
-                        # "PoissonEpidemicsSSMetrics",
+                        "PoissonEpidemicsSSMetrics",
                     ],
                     "config": metric,
                 },
@@ -112,13 +112,9 @@ for dynamics, model, metric, b in zip(
             }
 
             experiment = dl.Experiment(config)
-<<<<<<< HEAD
-            experiment.run(overwrite=True)
-=======
             experiment.save_config(overwrite=True)
-            experiment.load_metrics()
+            # experiment.load_metrics()
             # experiment.run()
             # experiment.load()
             # experiment.compute_metrics()
             # experiment.save_metrics(overwrite=True)
->>>>>>> 1839bc7d4680330c301879139ac185a23c5205d1

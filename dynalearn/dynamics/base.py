@@ -143,7 +143,7 @@ class Epidemics(Dynamics):
 
 class SingleEpidemics(Epidemics):
     def __init__(self, params, state_label):
-
+        self.infected = set()
         if "S" not in state_label or "I" not in state_label:
             raise ValueError("state_label must contain states 'S' and 'I'.")
         super(SingleEpidemics, self).__init__(params, state_label)
@@ -162,12 +162,15 @@ class SingleEpidemics(Epidemics):
         states[ind] = self.state_label["I"]
 
         self.continue_simu = True
+        self.infected = set(ind)
         self.states = states
         return states
 
 
 class DoubleEpidemics(Epidemics):
     def __init__(self, params, state_label):
+        self.infected_1 = set()
+        self.infected_2 = set()
         if (
             "SS" not in state_label
             or "SI" not in state_label
@@ -198,5 +201,7 @@ class DoubleEpidemics(Epidemics):
         states[ind3] = self.state_label["II"]
 
         self.continue_simu = True
+        self.infected_1 = set(ind1)
+        self.infected_2 = set(ind2)
         self.states = states
         return states

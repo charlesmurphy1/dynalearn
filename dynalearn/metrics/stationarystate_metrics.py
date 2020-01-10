@@ -12,6 +12,7 @@ class StationaryStateMetrics(Metrics):
         self.__config = config
         self.parameters = config.ss_parameters
         self.num_samples = config.num_samples
+        self.initial_burn = config.initial_burn
         self.burn = config.burn
         self.reshuffle = config.reshuffle
         self.tol = config.tol
@@ -32,24 +33,28 @@ class StationaryStateMetrics(Metrics):
         avg_x0 = self.avg(x0)
         samples = np.zeros((self.num_samples, self.dynamics_model.num_states))
         # samples = []
-        it = 0
-        ii = 0
-        while ii < self.num_samples:
-            it += 1
-            x = model.sample(x, adj)
+        i = 0
+
+        x = self.burning(x, adj, self.initial_burn)
+        while i < self.num_samples:
             avg_x = self.avg(x)
-            dist = np.sqrt(((avg_x - avg_x0) ** 2).sum())
+            dist = np.sqrt(np.sum((avg_x - avg_x0) ** 2))
             avg_x0 = avg_x * 1
-            if dist < self.tol and it > self.burn:
-                samples[ii] = avg_x
-                ii += 1
+            if dist < self.tol:
+                samples[i] = avg_x
+                i += 1
                 if self.verbose and pb is not None:
                     pb.update()
-                it = 0
                 if np.random.rand() < self.reshuffle:
                     adj = nx.to_numpy_array(self.graph_model.generate()[1])
+            x = model.burning(x, adj, self.burn)
 
         return np.mean(samples, axis=0), np.std(samples, axis=0)
+
+    def burning(self, x, adj, burn=1):
+        for i in range(burn):
+            x = model.sample(x, adj)
+        return x
 
     def avg(self, x):
         avg_x = []

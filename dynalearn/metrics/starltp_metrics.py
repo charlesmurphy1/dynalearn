@@ -52,14 +52,20 @@ class StarLTPMetrics(Metrics):
         )
         return x, y, err_low, err_high
 
-    def compare(self, name, metrics, func=None):
-        ans = np.zeros(self.data["summaries"].shape[0])
+    def compare(self, name, metrics, func=None, verbose=False):
+        size = self.data["summaries"].shape[0]
+        if verbose:
+            pbar = tqdm.tqdm(range(size), f"Comparing using {func}")
+        ans = np.zeros(size)
+
+        if np.any(self.data["summaries"] != metrics.data["summaries"]):
+            ValueError("Summaries are not the same.")
         for i, s in enumerate(self.data["summaries"]):
-            index = np.where(np.prod(metrics.data["summaries"] == s, axis=-1) == 1)[0]
-            if len(index) > 0:
-                ans[i] = func(self.data["ltp"][i], metrics.data[name][index[0]])
-            else:
-                ans[i] = np.nan
+            ans[i] = func(self.data["ltp"][i], metrics.data[name][i])
+            if verbose:
+                pbar.update()
+        if verbose:
+            pbar.close()
         return ans
 
     def compute(self, experiment):
