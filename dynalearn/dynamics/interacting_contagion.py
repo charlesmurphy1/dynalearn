@@ -7,6 +7,65 @@ class SISSIS(DoubleEpidemics):
     def __init__(self, params):
         super(SISSIS, self).__init__(params, {"SS": 0, "IS": 1, "SI": 2, "II": 3})
 
+    def sample(self, states=None, adj=None):
+        if states is not None:
+            self.states = states
+            self.infected_1 = set(np.where(states == np.state_label["IS"])[0]) + set(
+                np.where(states == np.state_label["II"])[0]
+            )
+            self.infected_2 = set(np.where(states == np.state_label["SI"])[0]) + set(
+                np.where(states == np.state_label["II"])[0]
+            )
+
+        if adj is None:
+            g = self.graph
+        else:
+            g = nx.from_numpy_array(adj)
+
+        N = g.number_of_nodes()
+        new_infected_1 = self.new_infected_1
+        new_infected_2 = self.new_infected_2
+        new_states = states.copy()
+
+        for i in self.infected_1:
+            # Infection phase of disease 1
+            for j in g.neirhbors(i):
+                prob = self.params["infection1"]
+                if j in self.infected_2 or i in self.infected_2:
+                    prob *= self.params["coupling"]
+                if j not in self.infected_1 and np.random.rand() < prob:
+                    new_infected_1.add(j)
+
+            # Recovery phase of disease 1
+            if np.random.rand() < self.params["recovery1"]:
+                new_infected_1.remove(i)
+
+        for i in self.infected_2:
+            # Infection phase of disease 2
+            for j in g.neirhbors(i):
+                prob = self.params["infection2"]
+                if j in self.infected_1 or i in self.infected_1:
+                    prob *= self.params["coupling"]
+                if j not in self.infected_2 and np.random.rand() < prob:
+                    new_infected.add(j)
+
+            # Recovery phase of disease 2
+            if np.random.rand() < self.params["recovery2"]:
+                new_infected_2.remove(i)
+
+        self.states[set(range(N)) - new_infected_1 - new_infected_2] = self.state_label[
+            "SS"
+        ]
+        self.states[new_infected_1] = self.state_label["IS"]
+        self.states[new_infected_2] = self.state_label["SI"]
+        self.states[np.intersect1d(new_infected_1, new_infected_2)] = self.state_label[
+            "II"
+        ]
+        self.infected_1 = infected_1
+        self.infected_2 = infected_2
+
+        return self.states
+
     def predict(self, states=None, adj=None):
         if states is None:
             states = self.states
