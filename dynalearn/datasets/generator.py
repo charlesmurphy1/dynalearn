@@ -77,21 +77,22 @@ class DynamicsGenerator:
         targets = np.zeros([num_sample, N])
         gt_targets = np.zeros([num_sample, N, self.num_states])
 
-        self.dynamics_model.graph = graph
+        states = self.dynamics_model.initial_states(graph)
 
         if self.verbose:
             p_bar = tqdm.tqdm(range(num_sample), "Generating data")
 
         while sample < num_sample:
-            self.dynamics_model.initialize_states()
             null_iteration = 0
             for t in range(self.resampling_time):
                 t0 = time.time()
-                x, y, z = self.__update_states()
+                x, y, z = self.__update_states(states)
 
                 inputs[sample, :] = x
                 targets[sample, :] = y
                 gt_targets[sample] = z
+
+                states = y
 
                 t1 = time.time()
 
@@ -107,6 +108,7 @@ class DynamicsGenerator:
 
                 if sample == num_sample or null_iteration == self.max_null_iter:
                     break
+            self.dynamics_model.initial_states()
 
         if self.verbose:
             p_bar.close()
@@ -122,9 +124,9 @@ class DynamicsGenerator:
         self.gt_targets[name] = gt_targets[index, :]
         self.main_sampler.update(self.graphs, self.inputs)
 
-    def __update_states(self):
-        inputs = self.dynamics_model.states
-        targets = self.dynamics_model.sample()
+    def __update_states(self, states):
+        inputs = states
+        targets = self.dynamics_model.sample(states)
         gt_targets = self.dynamics_model.predict(inputs)
         return inputs, targets, gt_targets
 

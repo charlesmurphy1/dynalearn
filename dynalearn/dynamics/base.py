@@ -43,15 +43,16 @@ class Dynamics(ABC):
 		"""
         self._num_states = num_states
         self._graph = None
+        self._adj = None
         self._degree = None
 
     @abstractmethod
-    def initialize_states(self):
+    def initial_states(self):
         """
 		Initializes the nodes activity states. (virtual) (private)
 
 		"""
-        raise NotImplementedError("self.initialize_states() has not been impletemented")
+        raise NotImplementedError("self.initial_states() has not been impletemented")
 
     @abstractmethod
     def predict(self, states=None, ajd=None):
@@ -90,8 +91,23 @@ class Dynamics(ABC):
     @graph.setter
     def graph(self, graph):
         self._graph = graph
-        self._degree = np.sum(nx.to_numpy_array(graph), axis=1)
-        self.initialize_states()
+        self._adj = nx.to_numpy_array(graph)
+        self._degree = np.sum(self._adj, axis=1)
+        self.initial_states()
+
+    @property
+    def adj(self):
+        if self._adj is None:
+            raise ValueError("No graph has been parsed to the dynamics.")
+        else:
+            return self._adj
+
+    @adj.setter
+    def adj(self, adj):
+        self._adj = adj
+        self._graph = nx.from_numpy_array(adj)
+        self._degree = np.sum(adj, axis=1)
+        self.initial_states()
 
     @property
     def degree(self):
@@ -117,13 +133,13 @@ class Epidemics(Dynamics):
         dist = pt.distributions.Categorical(pt.tensor(p))
         return np.array(dist.sample())
 
-    def state_degree(self, states, adj):
-        N = adj.shape[0]
+    def state_degree(self, states):
+        N = self.adj.shape[0]
         if len(states.shape) < 2:
             states = states.reshape(1, N)
 
         state_l = {
-            s: np.matmul(states == self.state_label[s], adj).squeeze()
+            s: np.matmul(states == self.state_label[s], self.adj).squeeze()
             for s in self.state_label
         }
 
@@ -143,34 +159,30 @@ class Epidemics(Dynamics):
 
 class SingleEpidemics(Epidemics):
     def __init__(self, params, state_label):
-        self.infected = set()
         if "S" not in state_label or "I" not in state_label:
             raise ValueError("state_label must contain states 'S' and 'I'.")
         super(SingleEpidemics, self).__init__(params, state_label)
 
-    def initialize_states(self, graph=None):
-        if graph is None:
-            graph = self.graph
-        N = graph.number_of_nodes()
+    def initial_states(self, graph=None):
+        if graph is not None:
+            self.graph = graph
+
+        N = self.graph.number_of_nodes()
         if self.params["init"] is not None:
             init_n_infected = ceil(N * self.params["init"])
         else:
             init_n_infected = np.random.choice(range(N))
-        nodeset = np.array(list(graph.nodes()))
+        nodeset = np.array(list(self.graph.nodes()))
         ind = np.random.choice(nodeset, size=init_n_infected, replace=False)
         states = np.ones(N) * self.state_label["S"]
         states[ind] = self.state_label["I"]
 
         self.continue_simu = True
-        self.infected = set(ind)
-        self.states = states
         return states
 
 
 class DoubleEpidemics(Epidemics):
     def __init__(self, params, state_label):
-        self.infected_1 = set()
-        self.infected_2 = set()
         if (
             "SS" not in state_label
             or "SI" not in state_label
@@ -180,18 +192,19 @@ class DoubleEpidemics(Epidemics):
             raise ValueError("state_label must contain states 'S' and 'I'.")
         super(DoubleEpidemics, self).__init__(params, state_label)
 
-    def initialize_states(self, graph=None):
-        if graph is None:
-            graph = self.graph
-        N = graph.number_of_nodes()
+    def initial_states(self, graph=None):
+        if graph is not None:
+            self.graph = graph
+
+        N = self.graph.number_of_nodes()
         if self.params["init"] is not None:
             init_n_infected = ceil(N * self.params["init"])
         else:
             init_n_infected = np.random.choice(range(N))
-        N = graph.number_of_nodes()
+        N = self.graph.number_of_nodes()
 
         n_eff = int(np.round(N * (1 - np.sqrt(1 - init_n_infected / N))))
-        nodeset = np.array(list(graph.nodes()))
+        nodeset = np.array(list(self.graph.nodes()))
         ind1 = np.random.choice(nodeset, size=n_eff, replace=False)
         ind2 = np.random.choice(nodeset, size=n_eff, replace=False)
         ind3 = np.intersect1d(ind1, ind2)
@@ -201,7 +214,4 @@ class DoubleEpidemics(Epidemics):
         states[ind3] = self.state_label["II"]
 
         self.continue_simu = True
-        self.infected_1 = set(ind1)
-        self.infected_2 = set(ind2)
-        self.states = states
         return states

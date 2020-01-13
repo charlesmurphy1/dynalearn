@@ -7,71 +7,47 @@ class SISSIS(DoubleEpidemics):
     def __init__(self, params):
         super(SISSIS, self).__init__(params, {"SS": 0, "IS": 1, "SI": 2, "II": 3})
 
-    def sample(self, states=None, adj=None):
-        if states is not None:
-            self.states = states
-            self.infected_1 = set(np.where(states == np.state_label["IS"])[0]) + set(
-                np.where(states == np.state_label["II"])[0]
-            )
-            self.infected_2 = set(np.where(states == np.state_label["SI"])[0]) + set(
-                np.where(states == np.state_label["II"])[0]
-            )
+    def sample(self, states):
 
-        if adj is None:
-            g = self.graph
-        else:
-            g = nx.from_numpy_array(adj)
+        p0, p1 = self.infection(states)
+        q0, q1 = self.recovery(states)
 
-        N = g.number_of_nodes()
-        new_infected_1 = self.new_infected_1
-        new_infected_2 = self.new_infected_2
+        ind_ss = np.where(states == self.state_label["SS"])[0]
+        ind_is = np.where(states == self.state_label["IS"])[0]
+        ind_si = np.where(states == self.state_label["SI"])[0]
+        ind_ii = np.where(states == self.state_label["II"])[0]
+
+        N = self.graph.number_of_nodes()
         new_states = states.copy()
 
-        for i in self.infected_1:
-            # Infection phase of disease 1
-            for j in g.neirhbors(i):
-                prob = self.params["infection1"]
-                if j in self.infected_2 or i in self.infected_2:
-                    prob *= self.params["coupling"]
-                if j not in self.infected_1 and np.random.rand() < prob:
-                    new_infected_1.add(j)
+        cond0 = np.random.rand(len(ind_ss)) < p0[ind_ss]
+        cond1 = np.random.rand(len(ind_ss)) < p1[ind_ss]
+        new_states[ind_ss][np.where(cond0 * ~cond1)[0]] = self.state_label["IS"]
+        new_states[ind_ss][np.where(~cond0 * cond1)[0]] = self.state_label["SI"]
+        new_states[ind_ss][np.where(cond0 * cond1)[0]] = self.state_label["II"]
 
-            # Recovery phase of disease 1
-            if np.random.rand() < self.params["recovery1"]:
-                new_infected_1.remove(i)
+        cond1 = np.random.rand(len(ind_is)) < q0[ind_is]
+        cond0 = np.random.rand(len(ind_is)) < p1[ind_is]
+        new_states[ind_is][np.where(cond0 * ~cond1)[0]] = self.state_label["SS"]
+        new_states[ind_is][np.where(~cond0 * cond1)[0]] = self.state_label["II"]
+        new_states[ind_is][np.where(cond0 * cond1)[0]] = self.state_label["SI"]
 
-        for i in self.infected_2:
-            # Infection phase of disease 2
-            for j in g.neirhbors(i):
-                prob = self.params["infection2"]
-                if j in self.infected_1 or i in self.infected_1:
-                    prob *= self.params["coupling"]
-                if j not in self.infected_2 and np.random.rand() < prob:
-                    new_infected.add(j)
+        cond1 = np.random.rand(len(ind_si)) < q0[ind_si]
+        cond0 = np.random.rand(len(ind_si)) < p1[ind_si]
+        new_states[ind_si][np.where(cond0 * ~cond1)[0]] = self.state_label["SS"]
+        new_states[ind_si][np.where(~cond0 * cond1)[0]] = self.state_label["II"]
+        new_states[ind_si][np.where(cond0 * cond1)[0]] = self.state_label["SI"]
 
-            # Recovery phase of disease 2
-            if np.random.rand() < self.params["recovery2"]:
-                new_infected_2.remove(i)
+        cond1 = np.random.rand(len(ind_ii)) < q0[ind_ii]
+        cond0 = np.random.rand(len(ind_ii)) < q1[ind_ii]
+        new_states[ind_ii][np.where(cond0 * ~cond1)[0]] = self.state_label["SI"]
+        new_states[ind_ii][np.where(~cond0 * cond1)[0]] = self.state_label["IS"]
+        new_states[ind_ii][np.where(cond0 * cond1)[0]] = self.state_label["SS"]
 
-        self.states[set(range(N)) - new_infected_1 - new_infected_2] = self.state_label[
-            "SS"
-        ]
-        self.states[new_infected_1] = self.state_label["IS"]
-        self.states[new_infected_2] = self.state_label["SI"]
-        self.states[np.intersect1d(new_infected_1, new_infected_2)] = self.state_label[
-            "II"
-        ]
-        self.infected_1 = infected_1
-        self.infected_2 = infected_2
+        return new_states
 
-        return self.states
-
-    def predict(self, states=None, adj=None):
-        if states is None:
-            states = self.states
-        if adj is None:
-            adj = nx.to_numpy_array(self.graph)
-        state_deg = self.state_degree(states, adj)
+    def predict(self, states):
+        state_deg = self.state_degree(states)
         p0, p1 = self.infection(states, state_deg)
         q0, q1 = self.recovery(states, state_deg)
 
@@ -103,7 +79,8 @@ class SISSIS(DoubleEpidemics):
 
         return state_prob
 
-    def infection(self, states, neighbor_states):
+    def infection(self, states):
+        neighbor_states = self.state_degree(states)
 
         alpha1 = self.params["infection1"]
         alpha2 = self.params["infection2"]
@@ -134,7 +111,7 @@ class SISSIS(DoubleEpidemics):
         )
         return inf0, inf1
 
-    def recovery(self, states, neighbor_states):
+    def recovery(self, states):
         rec0 = np.ones(states.shape) * self.params["recovery1"]
         rec1 = np.ones(states.shape) * self.params["recovery2"]
 

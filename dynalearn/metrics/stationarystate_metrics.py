@@ -28,32 +28,34 @@ class StationaryStateMetrics(Metrics):
         raise NotImplementedError("change_param must be implemented.")
 
     def compute_stationary_states(self, model, x0, pb=None):
-        adj = nx.to_numpy_array(self.graph_model.generate()[1])
+        model.graph = self.graph_model.generate()[1]
+
         x = x0 * 1
         avg_x0 = self.avg(x0)
         samples = np.zeros((self.num_samples, self.dynamics_model.num_states))
-        # samples = []
-        i = 0
+        x = self.burning(model, x, self.initial_burn)
 
-        x = self.burning(x, adj, self.initial_burn)
-        while i < self.num_samples:
+        for i in range(self.num_samples):
             avg_x = self.avg(x)
-            dist = np.sqrt(np.sum((avg_x - avg_x0) ** 2))
-            avg_x0 = avg_x * 1
-            if dist < self.tol:
-                samples[i] = avg_x
-                i += 1
-                if self.verbose and pb is not None:
-                    pb.update()
-                if np.random.rand() < self.reshuffle:
-                    adj = nx.to_numpy_array(self.graph_model.generate()[1])
-            x = model.burning(x, adj, self.burn)
+            samples[i] = avg_x
+            if self.verbose and pb is not None:
+                pb.update()
+
+            if (i + 1) % self.reshuffle == 0:
+                model.graph = self.graph_model.generate()[1]
+                x = x0 * 1
+                avg_x0 = self.avg(x0)
+                x = self.burning(model, x, self.initial_burn)
+
+            x = self.burning(model, x, self.burn)
 
         return np.mean(samples, axis=0), np.std(samples, axis=0)
 
-    def burning(self, x, adj, burn=1):
-        for i in range(burn):
-            x = model.sample(x, adj)
+    def burning(self, model, x, burn=1):
+
+        for b in range(burn):
+            x = model.sample(x)
+
         return x
 
     def avg(self, x):
@@ -110,13 +112,13 @@ class EpidemicsSSMetrics(StationaryStateMetrics):
     def epidemic_state(self):
         self.dynamics_model.params["init"] = 1 - self.epsilon
         g = self.graph_model.generate()[1]
-        return self.dynamics_model.initialize_states(g)
+        return self.dynamics_model.initial_states(g)
 
     def absoring_state(self):
         self.dynamics_model.params["init"] = self.epsilon
         name, g = self.graph_model.generate()
         # print(name, type(g))
-        return self.dynamics_model.initialize_states(g)
+        return self.dynamics_model.initial_states(g)
 
     def compute(self, experiment):
 

@@ -45,9 +45,9 @@ class MeanfieldMetrics(Metrics):
             )
             if self.verbose:
                 p_bar.update()
-            true_low_fp[i] = fp[0]
-            true_high_fp[i] = fp[1]
-            low_state, high_state = self.propose_initial_state(
+            true_low_fp[i] = mf.to_avg(fp[0])
+            true_high_fp[i] = mf.to_avg(fp[1])
+            low_state, high_state = self.propose_initial_states(
                 p, self.data[f"true_thresholds"], fp
             )
 
@@ -64,8 +64,8 @@ class MeanfieldMetrics(Metrics):
 
             if self.verbose:
                 p_bar.update()
-            gnn_low_fp[i] = fp[0]
-            gnn_high_fp[i] = fp[1]
+            gnn_low_fp[i] = gnn_mf.to_avg(fp[0])
+            gnn_high_fp[i] = gnn_mf.to_avg(fp[1])
             low_state, high_state = self.propose_initial_states(
                 p, self.data[f"gnn_thresholds"], fp
             )
@@ -131,17 +131,18 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
 
         if low_state is None:
             low_state = self.absorbing_state(mf)
-        low_fp = mf.to_avg(
-            mf.search_fixed_point(x0=low_state, fp_finder=self.fp_finder)
-        )
+        low_fp = mf.search_fixed_point(x0=low_state, fp_finder=self.fp_finder)
+        # mf.to_avg(mf.search_fixed_point(x0=low_state, fp_finder=self.fp_finder))
 
         if high_state is None:
             high_state = self.epidemic_state(mf)
-        high_fp = mf.to_avg(
-            mf.search_fixed_point(x0=high_state, fp_finder=self.fp_finder)
-        )
+        high_fp = mf.search_fixed_point(x0=high_state, fp_finder=self.fp_finder)
+        # mf.to_avg(
+        #     mf.search_fixed_point(x0=high_state, fp_finder=self.fp_finder)
+        # )
 
-        fp = np.array([low_fp, high_fp])
+        # fp = np.array([low_fp, high_fp])
+        fp = (low_fp, high_fp)
 
         return fp
 

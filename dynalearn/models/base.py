@@ -1,6 +1,7 @@
 import tensorflow as tf
 import torch as pt
 import numpy as np
+import networkx as nx
 from abc import ABC, abstractmethod
 
 
@@ -8,6 +9,8 @@ class GNNModel(ABC):
     def __init__(self,):
         self._model = None
         self._num_nodes = None
+        self._adj = None
+        self._graph = None
 
     @property
     def model(self):
@@ -49,16 +52,40 @@ class GNNModel(ABC):
     def num_features(self, num_features):
         raise ValueError("num_features cannot be changed.")
 
-    def predict(self, inputs, adj):
-        n = adj.shape[0]
-        if n != self.num_nodes:
-            self.num_nodes = n
-        return self.model.predict([inputs, adj], steps=1)
+    @property
+    def graph(self):
+        if self._graph is None:
+            raise ValueError("No graph has been parsed to the dynamics.")
+        else:
+            return self._graph
 
-    def sample(self, inputs, adj):
-        n = adj.shape[0]
+    @graph.setter
+    def graph(self, graph):
+        self._graph = graph
+        self._adj = nx.to_numpy_array(graph)
+
+    @property
+    def adj(self):
+        if self._adj is None:
+            raise ValueError("No graph has been parsed to the dynamics.")
+        else:
+            return self._adj
+
+    @adj.setter
+    def adj(self, adj):
+        self._graph = nx.from_numpy_array(adj)
+        self._adj = adj
+
+    def predict(self, inputs):
+        n = self.adj.shape[0]
         if n != self.num_nodes:
             self.num_nodes = n
-        p = self.predict(inputs, adj)
+        return self.model.predict([inputs, self.adj], steps=1)
+
+    def sample(self, inputs):
+        n = self.adj.shape[0]
+        if n != self.num_nodes:
+            self.num_nodes = n
+        p = self.predict(inputs)
         dist = pt.distributions.Categorical(pt.tensor(p))
         return np.array(dist.sample())

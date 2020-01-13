@@ -25,49 +25,32 @@ class SIS(SingleEpidemics):
     def __init__(self, params):
         super(SIS, self).__init__(params, {"S": 0, "I": 1})
 
-    def sample(self, states=None, adj=None):
-        if states is None:
-            states = self.states
-        else:
-            self.states = states
-            self.infected = set(np.where(states == np.state_label["I"])[0])
-
-        if adj is None:
-            g = self.graph
-        else:
-            g = nx.from_numpy_array(adj)
+    def sample(self, states):
+        infected = set(np.where(states == self.state_label["I"])[0])
 
         beta = self.params["infection"]
         gamma = self.params["recovery"]
 
-        N = g.number_of_nodes()
-        new_infected = self.infected.copy()
-        for i in self.infected:
+        N = self.graph.number_of_nodes()
+        new_states = states.copy()
+        for i in infected:
 
             # Infection phase
-            for j in g.neirhbors(i):
-                if j not in self.infected and np.random.rand() < beta:
-                    new_infected.add(j)
+            for j in self.graph.neighbors(i):
+                if j not in infected and np.random.rand() < beta:
+                    new_states[j] = self.state_label["I"]
 
             # Recovery phase
             if np.random.rand() < gamma:
-                new_infected.remove(i)
+                new_states[i] = self.state_label["S"]
 
-        self.states[set(range(N)) - new_infected] = self.state_label["S"]
-        self.states[new_infected] = self.state_label["I"]
-        self.infected = new_infected
+        return new_states
 
-        return self.states
-
-    def predict(self, states=None, adj=None):
-        if states is None:
-            states = self.states
-        if adj is None:
-            adj = nx.to_numpy_array(self.graph)
+    def predict(self, states):
 
         beta = self.params["infection"]
         gamma = self.params["recovery"]
-        inf_deg = self.state_degree(states, adj)["I"]
+        inf_deg = self.state_degree(states)["I"]
 
         state_prob = np.zeros((states.shape[0], self.num_states))
         state_prob[states == 0, 0] = (1 - beta) ** inf_deg[states == 0]
@@ -100,57 +83,36 @@ class SIR(SingleEpidemics):
         self.recovered = set()
         super(SIR, self).__init__(params, {"S": 0, "I": 1, "R": 2})
 
-    def sample(self, states=None, adj=None):
-        if states is None:
-            states = self.states
-        else:
-            self.states = states
-            self.infected = set(np.where(states == np.state_label["I"])[0])
-            self.recovered = set(np.where(states == np.state_label["R"])[0])
-
-        if adj is None:
-            g = self.graph
-        else:
-            g = nx.from_numpy_array(adj)
+    def sample(self, states):
+        infected = set(np.where(states == self.state_label["I"])[0])
+        recovered = set(np.where(states == self.state_label["R"])[0])
 
         beta = self.params["infection"]
         gamma = self.params["recovery"]
 
         N = g.number_of_nodes()
-        new_infected = self.infected.copy()
-        new_recovered = self.recovered.copy()
-        for i in self.infected:
-
+        new_states = states.copy()
+        for i in infected:
             # Infection phase
-            for j in g.neirhbors(i):
+            for j in g.neighbors(i):
                 if (
                     j not in self.infected
                     and j not in self.recovered
                     and np.random.rand() < beta
                 ):
-                    new_infected.add(j)
+                    new_states[j] = self.state_label["I"]
 
             # Recovery phase
             if np.random.rand() < gamma:
-                new_infected.remove(i)
-                new_recovered.add(i)
+                new_states[j] = self.state_label["R"]
 
-        self.states[new_infected] = self.state_label["I"]
-        self.states[new_recovered] = self.state_label["R"]
-        self.infected = new_infected
-        self.recovered = new_recovered
+        return new_states
 
-        return self.states
-
-    def predict(self, states=None, adj=None):
-        if states is None:
-            states = self.states
-        if adj is None:
-            adj = nx.to_numpy_array(self.graph)
+    def predict(self, states):
 
         beta = self.params["infection"]
         gamma = self.params["recovery"]
-        inf_deg = self.state_degree(states, adj)["I"]
+        inf_deg = self.state_degree(states, self.adj)["I"]
 
         state_prob = np.zeros((states.shape[0], self.num_states))
         state_prob[states == 0, 0] = (1 - beta) ** inf_deg[states == 0]
