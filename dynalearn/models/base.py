@@ -77,15 +77,12 @@ class GNNModel(ABC):
         self._adj = adj
 
     def predict(self, inputs):
-        n = self.adj.shape[0]
-        if n != self.num_nodes:
-            self.num_nodes = n
         return self.model.predict([inputs, self.adj], steps=1)
 
     def sample(self, inputs):
-        n = self.adj.shape[0]
-        if n != self.num_nodes:
-            self.num_nodes = n
         p = self.predict(inputs)
-        dist = pt.distributions.Categorical(pt.tensor(p))
+        p = pt.tensor(p)
+        # if pt.cuda.is_available():
+        #     p = p.cuda()
+        dist = pt.distributions.Categorical(p)
         return np.array(dist.sample())

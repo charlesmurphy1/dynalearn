@@ -103,6 +103,7 @@ class MetricsConfig:
         cls.ss_parameters = np.concatenate(
             (np.linspace(0.1, 2, 10), np.linspace(2.1, 5, 30), np.linspace(5.1, 10, 15))
         )
+        # cls.ss_parameters = np.linspace(0.1, 10, 10)
         cls.num_samples = 50
         cls.initial_burn = 1000
         cls.burn = 5
@@ -140,6 +141,7 @@ class MetricsConfig:
         cls.ss_parameters = np.concatenate(
             (np.linspace(0.1, 2, 30), np.linspace(2.1, 5, 20))
         )
+        # cls.ss_parameters = np.linspace(0.1, 5, 10)
         cls.num_samples = 50
         cls.initial_burn = 1000
         cls.burn = 5

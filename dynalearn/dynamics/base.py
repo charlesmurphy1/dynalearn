@@ -128,9 +128,13 @@ class Epidemics(Dynamics):
         self.state_label = state_label
         self.inv_state_label = {state_label[i]: i for i in state_label}
 
-    def sample(self, states=None, ajd=None):
-        p = self.predict(states=states, adj=ajd)
-        dist = pt.distributions.Categorical(pt.tensor(p))
+    def sample(self, states):
+        p = self.predict(states)
+        p = pt.tensor(p)
+        # if pt.cuda.is_available():
+        #     p = p.cuda()
+        #
+        dist = pt.distributions.Categorical(p)
         return np.array(dist.sample())
 
     def state_degree(self, states):

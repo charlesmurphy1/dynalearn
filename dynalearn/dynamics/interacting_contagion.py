@@ -7,44 +7,44 @@ class SISSIS(DoubleEpidemics):
     def __init__(self, params):
         super(SISSIS, self).__init__(params, {"SS": 0, "IS": 1, "SI": 2, "II": 3})
 
-    def sample(self, states):
-
-        p0, p1 = self.infection(states)
-        q0, q1 = self.recovery(states)
-
-        ind_ss = np.where(states == self.state_label["SS"])[0]
-        ind_is = np.where(states == self.state_label["IS"])[0]
-        ind_si = np.where(states == self.state_label["SI"])[0]
-        ind_ii = np.where(states == self.state_label["II"])[0]
-
-        N = self.graph.number_of_nodes()
-        new_states = states.copy()
-
-        cond0 = np.random.rand(len(ind_ss)) < p0[ind_ss]
-        cond1 = np.random.rand(len(ind_ss)) < p1[ind_ss]
-        new_states[ind_ss][np.where(cond0 * ~cond1)[0]] = self.state_label["IS"]
-        new_states[ind_ss][np.where(~cond0 * cond1)[0]] = self.state_label["SI"]
-        new_states[ind_ss][np.where(cond0 * cond1)[0]] = self.state_label["II"]
-
-        cond1 = np.random.rand(len(ind_is)) < q0[ind_is]
-        cond0 = np.random.rand(len(ind_is)) < p1[ind_is]
-        new_states[ind_is][np.where(cond0 * ~cond1)[0]] = self.state_label["SS"]
-        new_states[ind_is][np.where(~cond0 * cond1)[0]] = self.state_label["II"]
-        new_states[ind_is][np.where(cond0 * cond1)[0]] = self.state_label["SI"]
-
-        cond1 = np.random.rand(len(ind_si)) < q0[ind_si]
-        cond0 = np.random.rand(len(ind_si)) < p1[ind_si]
-        new_states[ind_si][np.where(cond0 * ~cond1)[0]] = self.state_label["SS"]
-        new_states[ind_si][np.where(~cond0 * cond1)[0]] = self.state_label["II"]
-        new_states[ind_si][np.where(cond0 * cond1)[0]] = self.state_label["SI"]
-
-        cond1 = np.random.rand(len(ind_ii)) < q0[ind_ii]
-        cond0 = np.random.rand(len(ind_ii)) < q1[ind_ii]
-        new_states[ind_ii][np.where(cond0 * ~cond1)[0]] = self.state_label["SI"]
-        new_states[ind_ii][np.where(~cond0 * cond1)[0]] = self.state_label["IS"]
-        new_states[ind_ii][np.where(cond0 * cond1)[0]] = self.state_label["SS"]
-
-        return new_states
+    # def sample(self, states):
+    #
+    #     p0, p1 = self.infection(states)
+    #     q0, q1 = self.recovery(states)
+    #
+    #     ind_ss = np.where(states == self.state_label["SS"])[0]
+    #     ind_is = np.where(states == self.state_label["IS"])[0]
+    #     ind_si = np.where(states == self.state_label["SI"])[0]
+    #     ind_ii = np.where(states == self.state_label["II"])[0]
+    #
+    #     N = self.graph.number_of_nodes()
+    #     new_states = states.copy()
+    #
+    #     cond0 = np.random.rand(len(ind_ss)) < p0[ind_ss]
+    #     cond1 = np.random.rand(len(ind_ss)) < p1[ind_ss]
+    #     new_states[ind_ss][np.where(cond0 * ~cond1)[0]] = self.state_label["IS"]
+    #     new_states[ind_ss][np.where(~cond0 * cond1)[0]] = self.state_label["SI"]
+    #     new_states[ind_ss][np.where(cond0 * cond1)[0]] = self.state_label["II"]
+    #
+    #     cond1 = np.random.rand(len(ind_is)) < q0[ind_is]
+    #     cond0 = np.random.rand(len(ind_is)) < p1[ind_is]
+    #     new_states[ind_is][np.where(cond0 * ~cond1)[0]] = self.state_label["SS"]
+    #     new_states[ind_is][np.where(~cond0 * cond1)[0]] = self.state_label["II"]
+    #     new_states[ind_is][np.where(cond0 * cond1)[0]] = self.state_label["SI"]
+    #
+    #     cond1 = np.random.rand(len(ind_si)) < q0[ind_si]
+    #     cond0 = np.random.rand(len(ind_si)) < p1[ind_si]
+    #     new_states[ind_si][np.where(cond0 * ~cond1)[0]] = self.state_label["SS"]
+    #     new_states[ind_si][np.where(~cond0 * cond1)[0]] = self.state_label["II"]
+    #     new_states[ind_si][np.where(cond0 * cond1)[0]] = self.state_label["SI"]
+    #
+    #     cond1 = np.random.rand(len(ind_ii)) < q0[ind_ii]
+    #     cond0 = np.random.rand(len(ind_ii)) < q1[ind_ii]
+    #     new_states[ind_ii][np.where(cond0 * ~cond1)[0]] = self.state_label["SI"]
+    #     new_states[ind_ii][np.where(~cond0 * cond1)[0]] = self.state_label["IS"]
+    #     new_states[ind_ii][np.where(cond0 * cond1)[0]] = self.state_label["SS"]
+    #
+    #     return new_states
 
     def predict(self, states):
         state_deg = self.state_degree(states)
@@ -79,8 +79,7 @@ class SISSIS(DoubleEpidemics):
 
         return state_prob
 
-    def infection(self, states):
-        neighbor_states = self.state_degree(states)
+    def infection(self, states, neighbor_states):
 
         alpha1 = self.params["infection1"]
         alpha2 = self.params["infection2"]
@@ -111,7 +110,7 @@ class SISSIS(DoubleEpidemics):
         )
         return inf0, inf1
 
-    def recovery(self, states):
+    def recovery(self, states, neighbor_states):
         rec0 = np.ones(states.shape) * self.params["recovery1"]
         rec1 = np.ones(states.shape) * self.params["recovery2"]
 

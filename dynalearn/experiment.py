@@ -72,6 +72,7 @@ class Experiment:
                 verbose=1,
             ),
         ]
+
         self.training_metrics = [
             dl.utilities.get_metrics(m) for m in config["training"].training_metrics
         ]

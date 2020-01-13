@@ -29,7 +29,7 @@ elif os.path.exists("/media/" + getpass.getuser() + "/charles-usb/"):
 
 
 dynamics_models = [
-    {"name": "SIS", "params": {"infection": 0.04, "recovery": 0.08, "init": "None"}},
+    # {"name": "SIS", "params": {"infection": 0.04, "recovery": 0.08, "init": "None"}},
     {
         "name": "PlanckSIS",
         "params": {"temperature": 6, "recovery": 0.08, "init": "None"},
@@ -47,12 +47,12 @@ dynamics_models = [
     },
 ]
 model_configs = [
-    dl.models.GNNConfig.SISGNN(),
+    # dl.models.GNNConfig.SISGNN(),
     dl.models.GNNConfig.SISGNN(),
     dl.models.GNNConfig.SISSISGNN(),
 ]
 metric_configs = [
-    dl.metrics.MetricsConfig.SISMetrics(),
+    # dl.metrics.MetricsConfig.SISMetrics(),
     dl.metrics.MetricsConfig.PlanckSISMetrics(),
     dl.metrics.MetricsConfig.SISSISMetrics(),
 ]
@@ -62,7 +62,7 @@ graph_models = [
 ]
 
 num_samples = [10000]
-bias = [0.6, 0.6, 0.8]
+bias = [0.6, 0.8]
 # bias = [0.8]
 
 tf_config = tf.ConfigProto()
@@ -110,6 +110,7 @@ for dynamics, model, metric, b in zip(
                 "path_to_dir": path_to_dir,
                 "path_to_bestmodel": path_to_models,
             }
+            dd = dl.TrainingConfig.changing_num_samples(n)
 
             experiment = dl.Experiment(config)
             # experiment.run()
