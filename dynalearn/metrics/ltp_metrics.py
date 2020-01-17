@@ -132,7 +132,8 @@ class LTPMetrics(Metrics):
             p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
 
         for g in graphs:
-            adj = graphs[g]
+            experiment.model.adj = graphs[g]
+            experiment.dynamics_model.adj = graphs[g]
             for t in range(n[g]):
                 x = inputs[g][t]
                 y = targets[g][t]
@@ -145,12 +146,12 @@ class LTPMetrics(Metrics):
                     test_nodes = test_nodeset[g][t]
                 else:
                     test_nodes = []
-                predictions = self.get_metric(experiment, adj, x, y)
+                predictions = self.get_metric(experiment, x, y)
                 summaries, counter = self.summarize(
                     summaries,
                     counter,
                     predictions,
-                    adj,
+                    graphs[g],
                     x,
                     y,
                     state_label,
@@ -200,23 +201,23 @@ class TrueLTPMetrics(LTPMetrics):
     def __init__(self, config, verbose=1):
         super(TrueLTPMetrics, self).__init__(config, verbose)
 
-    def get_metric(self, experiment, adj, input, target):
-        return experiment.dynamics_model.predict(input, adj)
+    def get_metric(self, experiment, input, target):
+        return experiment.dynamics_model.predict(input)
 
 
 class GNNLTPMetrics(LTPMetrics):
     def __init__(self, config, verbose=1):
         super(GNNLTPMetrics, self).__init__(config, verbose)
 
-    def get_metric(self, experiment, adj, input, target):
-        return experiment.model.predict(input, adj)
+    def get_metric(self, experiment, input, target):
+        return experiment.model.predict(input)
 
 
 class MLELTPMetrics(LTPMetrics):
     def __init__(self, config, verbose=1):
         super(MLELTPMetrics, self).__init__(config, verbose)
 
-    def get_metric(self, experiment, adj, input, target):
+    def get_metric(self, experiment, input, target):
         one_hot_target = np.zeros(
             (target.shape[0], len(experiment.dynamics_model.state_label)), dtype="int"
         )

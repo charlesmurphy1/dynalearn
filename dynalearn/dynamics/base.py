@@ -131,9 +131,6 @@ class Epidemics(Dynamics):
     def sample(self, states):
         p = self.predict(states)
         p = pt.tensor(p)
-        # if pt.cuda.is_available():
-        #     p = p.cuda()
-        #
         dist = pt.distributions.Categorical(p)
         return np.array(dist.sample())
 

@@ -43,13 +43,12 @@ class StationaryStateMetrics(Metrics):
 
             if (i + 1) % self.reshuffle == 0:
                 model.graph = self.graph_model.generate()[1]
-                x = x0 * 1
-                avg_x0 = self.avg(x0)
                 x = self.burning(model, x, self.initial_burn)
 
             x = self.burning(model, x, self.burn)
-
-        return np.mean(samples, axis=0), np.std(samples, axis=0)
+        if np.sum(x) > 0:
+            x0 = x
+        return np.mean(samples, axis=0), np.std(samples, axis=0), x0
 
     def burning(self, model, x, burn=1):
 
@@ -148,17 +147,21 @@ class EpidemicsSSMetrics(StationaryStateMetrics):
         true_high_std_ss = np.zeros(
             (len(self.parameters), self.dynamics_model.num_states)
         )
-
+        x0 = self.absoring_state()
         for i, p in enumerate(self.parameters):
             self.change_param(p)
-            low = self.compute_stationary_states(
-                self.dynamics_model, self.absoring_state(), p_bar
+            avg_low, std_low, x0 = self.compute_stationary_states(
+                self.dynamics_model, x0, p_bar
             )
-            high = self.compute_stationary_states(
-                self.dynamics_model, self.epidemic_state(), p_bar
+            true_low_avg_ss[i], true_low_std_ss[i] = avg_low, std_low
+
+        x0 = self.epidemic_state()
+        for i, p in reversed(list(enumerate(self.parameters))):
+            self.change_param(p)
+            avg_high, std_high, x0 = self.compute_stationary_states(
+                self.dynamics_model, x0, p_bar
             )
-            true_low_avg_ss[i], true_low_std_ss[i] = low[0], low[1]
-            true_high_avg_ss[i], true_high_std_ss[i] = high[0], high[1]
+            true_high_avg_ss[i], true_high_std_ss[i] = avg_high, std_high
 
         self.data["true_low_avg"] = true_low_avg_ss
         self.data["true_low_std"] = true_low_std_ss
@@ -177,16 +180,21 @@ class EpidemicsSSMetrics(StationaryStateMetrics):
         gnn_high_std_ss = np.zeros(
             (len(self.parameters), self.dynamics_model.num_states)
         )
-        for i, pp in enumerate(self.parameters):
-            self.change_param(pp)
-            low = self.compute_stationary_states(
-                self.gnn_model, self.absoring_state(), p_bar
+        x0 = self.absoring_state()
+        for i, p in enumerate(self.parameters):
+            self.change_param(p)
+            avg_low, std_low, x0 = self.compute_stationary_states(
+                self.gnn_model, x0, p_bar
             )
-            high = self.compute_stationary_states(
-                self.gnn_model, self.epidemic_state(), p_bar
+            gnn_low_avg_ss[i], gnn_low_std_ss[i] = avg_low, std_low
+
+        x0 = self.epidemic_state()
+        for i, p in reversed(list(enumerate(self.parameters))):
+            self.change_param(p)
+            avg_high, std_high, x0 = self.compute_stationary_states(
+                self.gnn_model, x0, p_bar
             )
-            gnn_low_avg_ss[i], gnn_low_std_ss[i] = low[0], low[1]
-            gnn_high_avg_ss[i], gnn_high_std_ss[i] = high[0], high[1]
+            gnn_high_avg_ss[i], gnn_high_std_ss[i] = avg_high, std_high
 
         self.data["gnn_low_avg"] = gnn_low_avg_ss
         self.data["gnn_low_std"] = gnn_low_std_ss

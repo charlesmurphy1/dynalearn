@@ -27,6 +27,7 @@ class GNN_MF(MF):
             adj = np.zeros((self.model.num_nodes, self.model.num_nodes))
             adj[1 : k + 1, 0] = 1
             adj[0, 1 : k + 1] = 1
+            self.model.adj = adj
             for s in state_degree:
                 neighbors_states = np.concatenate(
                     [ss * np.ones(l) for ss, l in enumerate(s)]
@@ -45,7 +46,7 @@ class GNN_MF(MF):
                 inputs[1:] = neighbors_states
                 for i in range(self.s_dim):
                     inputs[0] = i
-                    p = self.model.predict(inputs, adj)[0]
+                    p = self.model.predict(inputs)[0]
                     for j in range(self.s_dim):
                         ltp[(i, j, k_ind, *s)] = p[j]
         return ltp

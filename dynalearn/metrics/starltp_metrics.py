@@ -96,6 +96,8 @@ class StarLTPMetrics(Metrics):
             adj = np.zeros((N, N))
             adj[1 : k + 1, 0] = 1
             adj[0, 1 : k + 1] = 1
+            experiment.model.adj = adj
+            experiment.dynamics_model.adj = adj
             all_comb = all_combinations(k, len(state_label))
             if len(all_comb) > max_num_sample:
                 all_comb = sample(all_comb, max_num_sample)
@@ -108,7 +110,7 @@ class StarLTPMetrics(Metrics):
                 inputs[1 : k + 1] = neighbors_states
                 for in_s, in_l in state_label.items():
                     inputs[0] = in_l
-                    summaries[(in_l, *s)] = self.get_metric(experiment, inputs, adj)
+                    summaries[(in_l, *s)] = self.get_metric(experiment, inputs)
                     if self.verbose:
                         p_bar.update()
 
@@ -127,22 +129,22 @@ class TrueStarLTPMetrics(StarLTPMetrics):
     def __init__(self, config, verbose=1):
         super(TrueStarLTPMetrics, self).__init__(config, verbose)
 
-    def get_metric(self, experiment, inputs, adj):
-        return experiment.dynamics_model.predict(inputs, adj)[0]
+    def get_metric(self, experiment, inputs):
+        return experiment.dynamics_model.predict(inputs)[0]
 
 
 class GNNStarLTPMetrics(StarLTPMetrics):
     def __init__(self, config, verbose=1):
         super(GNNStarLTPMetrics, self).__init__(config, verbose)
 
-    def get_metric(self, experiment, inputs, adj):
-        return experiment.model.predict(inputs, adj)[0]
+    def get_metric(self, experiment, inputs):
+        return experiment.model.predict(inputs)[0]
 
 
 class UniformStarLTPMetrics(StarLTPMetrics):
     def __init__(self, config, verbose=1):
         super(UniformStarLTPMetrics, self).__init__(config, verbose)
 
-    def get_metric(self, experiment, inputs, adj):
+    def get_metric(self, experiment, inputs):
         num_states = len(experiment.dynamics_model.state_label)
         return np.ones(num_states) / num_states

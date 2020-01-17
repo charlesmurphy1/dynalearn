@@ -32,8 +32,8 @@ class AME(BaseMeanField):
         _x = x.reshape(self.array_shape)
         _q = self.app_q(_x)
         new_x = self.app_x(_x, _q)
-        # new_x = self.clip(new_x)
-        # new_x = self.normalize_state(new_x)
+        new_x = self.clip(new_x)
+        new_x = self.normalize_state(new_x)
         return new_x.reshape(-1)
 
     def app_x(self, x, q):

@@ -20,7 +20,7 @@ class DynamicsGenerator:
         self.shuffle = config.shuffle
         self.with_truth = config.with_truth
 
-        self.clear()
+        self.clear(clear_samplers=False)
 
         self.verbose = verbose
 
@@ -42,6 +42,7 @@ class DynamicsGenerator:
         return [inputs, adj], targets, weights
 
     def copy(self):
+
         generator_copy = self.__class__(
             self.graph_model, self.dynamics_model, None, self.__config, self.verbose
         )
@@ -53,16 +54,15 @@ class DynamicsGenerator:
         generator_copy.inputs = self.inputs
         generator_copy.targets = self.targets
         generator_copy.gt_targets = self.gt_targets
-
         return generator_copy
 
-    def clear(self, clear_samples=True):
+    def clear(self, clear_samplers=True):
         self.graphs = dict()
         self.inputs = dict()
         self.targets = dict()
         self.gt_targets = dict()
 
-        if clear_samples:
+        if clear_samplers:
             for s in self.samplers:
                 self.samplers[s].clear()
 

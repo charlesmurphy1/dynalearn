@@ -21,7 +21,7 @@ class MetricsConfig:
             (np.linspace(0.1, 3, 50), np.linspace(3.1, 10, 20))
         )
         cls.num_k = 5
-        cls.epsilon = 1e-2
+        cls.epsilon = 5e-3
         cls.tol = 1e-3
         cls.p_range = (0.1, 3)
         cls.fp_finder = None
@@ -54,8 +54,8 @@ class MetricsConfig:
         cls.mf_parameters = np.concatenate(
             (np.linspace(0.1, 3, 50), np.linspace(3.1, 10, 20))
         )
-        cls.num_k = 7
-        cls.epsilon = 1e-2
+        cls.num_k = 6
+        cls.epsilon = 5e-3
         cls.tol = 1e-3
         cls.p_range = (0.1, 10)
         cls.fp_finder = None
@@ -91,7 +91,7 @@ class MetricsConfig:
         cls.mf_parameters = np.concatenate(
             (np.linspace(0.1, 2, 10), np.linspace(2.1, 5, 50), np.linspace(5.1, 10, 20))
         )
-        cls.num_k = 7
+        cls.num_k = 6
         cls.epsilon = 5e-3
         cls.tol = 1e-3
         cls.p_range = (0.1, 10)
@@ -129,8 +129,8 @@ class MetricsConfig:
         cls.mf_parameters = np.concatenate(
             (np.linspace(0.1, 2, 50), np.linspace(2.1, 5, 20))
         )
-        cls.num_k = 7
-        cls.epsilon = 1e-2
+        cls.num_k = 6
+        cls.epsilon = 5e-3
         cls.tol = 1e-3
         cls.p_range = (0.1, 10)
         cls.fp_finder = None
@@ -167,8 +167,8 @@ class MetricsConfig:
         cls.mf_parameters = np.concatenate(
             (np.linspace(0.1, 3, 20), np.linspace(3.1, 10, 10))
         )
-        cls.num_k = 7
-        cls.epsilon = 1e-2
+        cls.num_k = 6
+        cls.epsilon = 5e-3
         cls.tol = 1e-3
         cls.p_range = (0.1, 3)
         cls.fp_finder = None

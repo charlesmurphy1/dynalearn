@@ -166,8 +166,6 @@ class Experiment:
             self.generator.partition_sampler(
                 "test", fraction=test_fraction, bias=test_bias
             )
-        # n1 = self.generator.samplers["val"].avail_node_set["BAGraph_0"][0]
-        # print(n1)
 
     def train_model(self, epochs=None):
 
@@ -186,7 +184,6 @@ class Experiment:
             val_generator.mode = "val"
         else:
             val_generator = None
-
         history = self.model.model.fit_generator(
             self.generator,
             validation_data=val_generator,

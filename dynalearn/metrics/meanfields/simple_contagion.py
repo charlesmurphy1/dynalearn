@@ -25,7 +25,7 @@ class SIR_MF(MF):
         )
 
     def compute_ltp(self,):
-        tp = np.zeros((self.s_dim, self.s_dim, *self.k_grid.shape))
+        ltp = np.zeros((self.s_dim, self.s_dim, *self.k_grid.shape))
         ltp[0, 0] = (1 - self.params["infection"]) ** self.l_grid[1]
         ltp[0, 1] = 1 - ltp[0, 0]
         ltp[0, 2] = 0

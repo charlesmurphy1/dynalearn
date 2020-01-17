@@ -83,7 +83,7 @@ class DegreeSequenceGraph(GraphGenerator):
     def __generator(self, N):
         it = 0
         while it < self.maxiter:
-            seq = self.degree_dist.sample(N)
+            seq = np.sort(self.degree_dist.sample(N))[::-1]
             if np.sum(seq) % 2 == 0:
                 return nx.configuration_model(seq, seed=np.random.randint(2 ** 31))
             it += 1
