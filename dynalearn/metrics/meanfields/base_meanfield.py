@@ -52,14 +52,16 @@ class BaseMeanField:
 
     def approx_jacobian(self, x, epsilon=1e-6):
         jac = np.zeros((x.shape[0], x.shape[0])).astype(self.dtype)
-        if self.verbose:
-            pb = tqdm.tqdm(range(x.shape[0]), "Computing Jacobian matrix")
+        if self.verbose != 0:
+            print("Computing Jacobian matrix")
+        if self.verbose == 1:
+            pb = tqdm.tqdm(range(x.shape[0]))
         for i in range(x.shape[0]):
             f = lambda xx: self.application(xx)[i]
             jac[i] = approx_fprime(x, f, epsilon)
-            if self.verbose:
+            if self.verbose == 1:
                 pb.update()
-        if self.verbose:
+        if self.verbose == 1:
             pb.close()
         return jac
 

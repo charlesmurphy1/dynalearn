@@ -8,7 +8,7 @@ import tqdm
 
 
 class StatisticsMetrics(Metrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         super(StatisticsMetrics, self).__init__(verbose)
         self.__config = config
         self.aggregator = config.aggregator
@@ -82,11 +82,13 @@ class StatisticsMetrics(Metrics):
             else:
                 n[g] = inputs[g].shape[0]
 
-        if self.verbose:
+        if self.verbose != 0:
+            print("Computing " + self.__class__.__name__)
+        if self.verbose == 1:
             num_iter = int(np.sum([inputs[g].shape[0] for g in graphs]))
             if self.num_points < num_iter:
                 num_iter = self.num_points
-            p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
+            p_bar = tqdm.tqdm(range(num_iter))
 
         for g in graphs:
             adj = graphs[g]
@@ -105,9 +107,9 @@ class StatisticsMetrics(Metrics):
                 summaries = self.summarize(
                     summaries, adj, x, state_label, train_nodes, val_nodes, test_nodes
                 )
-                if self.verbose:
+                if self.verbose == 1:
                     p_bar.update()
-        if self.verbose:
+        if self.verbose == 1:
             p_bar.close()
 
         self.data["summaries"] = np.array([s for s in summaries])

@@ -82,7 +82,6 @@ class Sampler(ABC):
         self.graph_set = list(graphs.keys())
         self.avail_graph_set = list(graphs.keys())
         self.update_weights(graphs, inputs)
-        # print(self.name, self.avail_node_set["BAGraph_0"][0])
 
         return
 

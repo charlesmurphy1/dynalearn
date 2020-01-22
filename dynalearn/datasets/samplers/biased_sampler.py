@@ -13,7 +13,7 @@ class BiasedSampler(RandomSampler):
     def update_weights(self, graphs, inputs):
         total_num_samples = np.sum([inputs[g].shape[0] for g in graphs])
 
-        if self.verbose:
+        if self.verbose == 1:
             p_bar = tqdm.tqdm(range(total_num_samples))
 
         # Update dist
@@ -29,13 +29,13 @@ class BiasedSampler(RandomSampler):
                     else:
                         dist[sum] = 1 / total_num_samples
                 t1 = time()
-                if self.verbose:
+                if self.verbose == 1:
                     p_bar.set_description(
                         "Update dist - " + str(round(t1 - t0, 5)) + "s"
                     )
                     p_bar.update()
 
-        if self.verbose:
+        if self.verbose == 1:
             p_bar.close()
             p_bar = tqdm.tqdm(range(total_num_samples))
 
@@ -54,7 +54,7 @@ class BiasedSampler(RandomSampler):
                     self.node_weights[g][t][n] = dist[sum] ** (-1)
                 self.state_weights[g][t] = np.sum(self.node_weights[g][t])
                 t1 = time()
-                if self.verbose:
+                if self.verbose == 1:
                     p_bar.set_description(
                         "Update weights - " + str(round(t1 - t0, 5)) + "s"
                     )

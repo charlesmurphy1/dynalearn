@@ -11,7 +11,7 @@ from matplotlib.colors import LogNorm
 
 
 class AttentionMetrics(Metrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         super(AttentionMetrics, self).__init__(verbose)
         self.__config = config
         self.num_points = config.att_num_points
@@ -56,9 +56,11 @@ class AttentionMetrics(Metrics):
         state_label = experiment.dynamics_model.state_label
         attention_layers = self._get_all_attn_layers(experiment)
 
-        if self.verbose:
+        if self.verbose != 0:
+            print("Computing " + self.__class__.__name__)
+        if self.verbose == 1:
             num_iter = int(len(attention_layers) * np.sum([n[g] for g in graphs]))
-            p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
+            p_bar = tqdm.tqdm(range(num_iter))
 
         for l, layer in enumerate(attention_layers):
             summaries = {
@@ -75,14 +77,14 @@ class AttentionMetrics(Metrics):
                     summaries = self.summarize(
                         summaries, predictions, state_label, adj, x
                     )
-                    if self.verbose:
+                    if self.verbose == 1:
                         p_bar.update()
             for s in summaries:
                 in_s = int(s[0])
                 out_s = int(s[1])
                 self.data[f"layer{l}/{in_s}_{out_s}"] = summaries[s]
 
-        if self.verbose:
+        if self.verbose == 1:
             p_bar.close()
         self.num_layers = len(attention_layers)
 

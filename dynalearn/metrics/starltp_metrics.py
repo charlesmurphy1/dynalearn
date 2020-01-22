@@ -17,7 +17,7 @@ def all_combinations(k, d):
 
 
 class StarLTPMetrics(Metrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         self.__config = config
         self.degree_class = config.degree_class
         self.aggregator = config.aggregator
@@ -52,9 +52,9 @@ class StarLTPMetrics(Metrics):
         )
         return x, y, err_low, err_high
 
-    def compare(self, name, metrics, func=None, verbose=False):
+    def compare(self, name, metrics, func=None, verbose=0):
         size = self.data["summaries"].shape[0]
-        if verbose:
+        if verbose == 1:
             pbar = tqdm.tqdm(range(size), f"Comparing using {func}")
         ans = np.zeros(size)
 
@@ -62,9 +62,9 @@ class StarLTPMetrics(Metrics):
             ValueError("Summaries are not the same.")
         for i, s in enumerate(self.data["summaries"]):
             ans[i] = func(self.data["ltp"][i], metrics.data[name][i])
-            if verbose:
+            if verbose == 1:
                 pbar.update()
-        if verbose:
+        if verbose == 1:
             pbar.close()
         return ans
 
@@ -78,7 +78,9 @@ class StarLTPMetrics(Metrics):
         d = len(state_label)
         summaries = {}
 
-        if self.verbose:
+        if self.verbose != 0:
+            print("Computing " + self.__class__.__name__)
+        if self.verbose == 1:
             num_iter = int(
                 d
                 * np.sum(
@@ -90,7 +92,7 @@ class StarLTPMetrics(Metrics):
                     ]
                 )
             )
-            p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
+            p_bar = tqdm.tqdm(range(num_iter))
 
         for k in self.degree_class:
             adj = np.zeros((N, N))
@@ -111,10 +113,10 @@ class StarLTPMetrics(Metrics):
                 for in_s, in_l in state_label.items():
                     inputs[0] = in_l
                     summaries[(in_l, *s)] = self.get_metric(experiment, inputs)
-                    if self.verbose:
+                    if self.verbose == 1:
                         p_bar.update()
 
-        if self.verbose:
+        if self.verbose == 1:
             p_bar.close()
 
         self.data["summaries"] = np.array([s for s in summaries])
@@ -126,7 +128,7 @@ class StarLTPMetrics(Metrics):
 
 
 class TrueStarLTPMetrics(StarLTPMetrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         super(TrueStarLTPMetrics, self).__init__(config, verbose)
 
     def get_metric(self, experiment, inputs):
@@ -134,7 +136,7 @@ class TrueStarLTPMetrics(StarLTPMetrics):
 
 
 class GNNStarLTPMetrics(StarLTPMetrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         super(GNNStarLTPMetrics, self).__init__(config, verbose)
 
     def get_metric(self, experiment, inputs):
@@ -142,7 +144,7 @@ class GNNStarLTPMetrics(StarLTPMetrics):
 
 
 class UniformStarLTPMetrics(StarLTPMetrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         super(UniformStarLTPMetrics, self).__init__(config, verbose)
 
     def get_metric(self, experiment, inputs):

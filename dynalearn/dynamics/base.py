@@ -81,6 +81,10 @@ class Dynamics(ABC):
 		"""
         raise NotImplementedError("self.get_avg_states has not been implemented.")
 
+    @abstractmethod
+    def is_dead(self, states):
+        raise NotImplementedError("is_dead has not been implemented.")
+
     @property
     def graph(self):
         if self._graph is None:
@@ -170,16 +174,17 @@ class SingleEpidemics(Epidemics):
 
         N = self.graph.number_of_nodes()
         if self.params["init"] is not None:
-            init_n_infected = ceil(N * self.params["init"])
+            num_infected = ceil(N * self.params["init"])
         else:
-            init_n_infected = np.random.choice(range(N))
+            num_infected = np.random.choice(range(N))
         nodeset = np.array(list(self.graph.nodes()))
-        ind = np.random.choice(nodeset, size=init_n_infected, replace=False)
+        ind = np.random.choice(nodeset, size=num_infected, replace=False)
         states = np.ones(N) * self.state_label["S"]
         states[ind] = self.state_label["I"]
-
-        self.continue_simu = True
         return states
+
+    def is_dead(self, states):
+        return np.all(states == self.state_label["S"])
 
 
 class DoubleEpidemics(Epidemics):
@@ -204,15 +209,16 @@ class DoubleEpidemics(Epidemics):
             init_n_infected = np.random.choice(range(N))
         N = self.graph.number_of_nodes()
 
-        n_eff = int(np.round(N * (1 - np.sqrt(1 - init_n_infected / N))))
+        num_infected = int(np.round(N * (1 - np.sqrt(1 - init_n_infected / N))))
         nodeset = np.array(list(self.graph.nodes()))
-        ind1 = np.random.choice(nodeset, size=n_eff, replace=False)
-        ind2 = np.random.choice(nodeset, size=n_eff, replace=False)
+        ind1 = np.random.choice(nodeset, size=num_infected, replace=False)
+        ind2 = np.random.choice(nodeset, size=num_infected, replace=False)
         ind3 = np.intersect1d(ind1, ind2)
         states = np.ones(N) * self.state_label["SS"]
         states[ind1] = self.state_label["IS"]
         states[ind2] = self.state_label["SI"]
         states[ind3] = self.state_label["II"]
-
-        self.continue_simu = True
         return states
+
+    def is_dead(self, states):
+        return np.all(states == self.state_label["SS"])

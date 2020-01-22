@@ -79,8 +79,8 @@ class DynamicsGenerator:
 
         states = self.dynamics_model.initial_states(graph)
 
-        if self.verbose:
-            p_bar = tqdm.tqdm(range(num_sample), "Generating data")
+        if self.verbose == 1:
+            p_bar = tqdm.tqdm(range(num_sample))
 
         while sample < num_sample:
             null_iteration = 0
@@ -96,21 +96,21 @@ class DynamicsGenerator:
 
                 t1 = time.time()
 
-                if self.verbose:
+                if self.verbose == 1:
                     p_bar.set_description(
                         "Generating data - " + str(round(t1 - t0, 5)) + "s"
                     )
                     p_bar.update()
 
                 sample += 1
-                if not self.dynamics_model.continue_simu:
+                if self.dynamics_model.is_dead(states):
                     null_iteration += 1
 
                 if sample == num_sample or null_iteration == self.max_null_iter:
                     break
             self.dynamics_model.initial_states()
 
-        if self.verbose:
+        if self.verbose == 1:
             p_bar.close()
 
         if self.shuffle:

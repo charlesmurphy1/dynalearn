@@ -32,16 +32,16 @@ dynamics_models = [
     # {"name": "SIS", "params": {"infection": 0.04, "recovery": 0.08, "init": "None"}},
     # {
     #     "name": "PlanckSIS",
-    #     "params": {"temperature": 6, "recovery": 0.08, "init": "None"},
+    #     "params": {"temperature": 10, "recovery": 0.08, "init": "None"},
     # },
     {
         "name": "SISSIS",
         "params": {
-            "infection1": 0.04,
-            "infection2": 0.03,
-            "recovery1": 0.08,
-            "recovery2": 0.1,
-            "coupling": 5,
+            "infection1": 0.02,
+            "infection2": 0.01,
+            "recovery1": 0.12,
+            "recovery2": 0.13,
+            "coupling": 10,
             "init": "None",
         },
     }
@@ -57,8 +57,8 @@ metric_configs = [
     dl.metrics.MetricsConfig.SISSISMetrics()
 ]
 graph_models = [
-    # {"name": "ERGraph", "params": {"N": 1000, "density": 0.004}},
-    {"name": "BAGraph", "params": {"N": 1000, "M": 2}}
+    # {"name": "ERGraph", "params": {"N": 1000, "density": 0.006}},
+    {"name": "BAGraph", "params": {"N": 1000, "M": 4}}
 ]
 
 num_samples = [10000]

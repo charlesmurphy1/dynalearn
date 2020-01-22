@@ -13,8 +13,9 @@ from tensorflow.keras.backend import variable
 
 
 class Experiment:
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         self.__config = config
+        self._verbose = verbose
         self.graph_model = dl.graphs.get(config["graph"])
         self.dynamics_model = dl.dynamics.get(config["dynamics"])
         self.model = dl.models.get(config["model"])
@@ -61,7 +62,8 @@ class Experiment:
         self.optimizer.lr = variable(config["training"].initial_lr)
         self.callbacks = [
             LearningRateScheduler(
-                dl.utilities.get_schedule(config["training"].schedule), verbose=1
+                dl.utilities.get_schedule(config["training"].schedule),
+                verbose=self.verbose,
             ),
             ks.callbacks.ModelCheckpoint(
                 os.path.join(self.path_to_bestmodel, self.name + ".h5"),
@@ -69,7 +71,7 @@ class Experiment:
                 monitor="val_loss",
                 mode="min",
                 period=1,
-                verbose=1,
+                verbose=self.verbose,
             ),
         ]
 
@@ -98,19 +100,19 @@ class Experiment:
 
     def run(self, overwrite=True):
         self.save_config(overwrite)
-        if self.verbose:
+        if self.verbose != 0:
             print("\n---Generating data---")
         self.generate_data()
         self.save_data(overwrite)
 
-        if self.verbose:
+        if self.verbose != 0:
             print("\n---Training model---")
         self.train_model()
         self.save_history(overwrite)
         self.save_model(overwrite)
         self.load_model(best=True)
 
-        if self.verbose:
+        if self.verbose != 0:
             print("\n---Computing metrics---")
         self.compute_metrics()
         self.save_metrics(overwrite)
@@ -152,7 +154,7 @@ class Experiment:
         if self.__config["training"].val_fraction is not None:
             val_fraction = self.__config["training"].val_fraction
             val_bias = self.__config["training"].val_bias
-            if self.verbose:
+            if self.verbose != 0:
                 print("Partitioning generator for validation")
             self.generator.partition_sampler(
                 "val", fraction=val_fraction, bias=val_bias
@@ -161,7 +163,7 @@ class Experiment:
         if self.__config["training"].test_fraction is not None:
             test_fraction = self.__config["training"].test_fraction
             test_bias = self.__config["training"].test_bias
-            if self.verbose:
+            if self.verbose != 0:
                 print("Partitioning generator for test")
             self.generator.partition_sampler(
                 "test", fraction=test_fraction, bias=test_bias

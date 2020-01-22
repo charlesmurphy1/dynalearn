@@ -3,33 +3,30 @@ import dynalearn as dl
 import numpy as np
 import tqdm
 from abc import abstractmethod
+from scipy.optimize import approx_fprime
+import time
 
 
-def bisection(f, a, b, tol=1e-3, p_bar=None, maxiter=100):
+def bisection(f, a, b, num_iter=100, p_bar=None):
 
     if f(a) * f(b) >= 0:
         print("Warning: f(a) and f(b) have the same sign")
         return (a + b) / 2
 
-    for i in range(maxiter):
+    for i in range(num_iter):
         x = (a + b) / 2
         if f(x) > 0:
             b = x
         else:
             a = x
-        diff = np.abs(a - b)
         if p_bar is not None:
-            p_bar.set_description("diff: {0}".format(diff))
             p_bar.update()
-        if diff < tol:
-            return x
 
-    print("Warning: bisection did not converge.")
     return x
 
 
 class MeanfieldMetrics(Metrics):
-    def __init__(self, degree_dist, config, verbose=1):
+    def __init__(self, degree_dist, config, verbose=0):
         self.degree_dist = degree_dist
         self.__config = config
         self.parameters = config.mf_parameters
@@ -41,11 +38,11 @@ class MeanfieldMetrics(Metrics):
         true_mf = dl.metrics.meanfields.get(experiment.dynamics_model, self.degree_dist)
         gnn_mf = dl.metrics.meanfields.GNN_MF(experiment.model, self.degree_dist)
 
-        if self.verbose:
+        if self.verbose != 0:
             print("Computing " + self.__class__.__name__ + ": True")
         self.data[f"true_thresholds"] = self.compute_thresholds(true_mf)
         self.data[f"true_fp"] = self.compute_fixed_points(true_mf)
-        if self.verbose:
+        if self.verbose != 0:
             print("Computing " + self.__class__.__name__ + ": GNN")
         self.data[f"gnn_thresholds"] = self.compute_thresholds(gnn_mf)
         self.data[f"gnn_fp"] = self.compute_fixed_points(gnn_mf)
@@ -65,9 +62,10 @@ class MeanfieldMetrics(Metrics):
 
 
 class EpidemicsMFMetrics(MeanfieldMetrics):
-    def __init__(self, degree_dist, config, verbose=1):
+    def __init__(self, degree_dist, config, verbose=0):
         self.epsilon = config.epsilon
         self.tol = config.tol
+        self.fp_finder = config.fp_finder
         if config.discontinuous:
             self.criterion = self.__discontinuous_threshold_criterion
         else:
@@ -78,27 +76,30 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
     def compute_fixed_points(self, mf):
 
         size = (len(self.parameters), mf.s_dim)
-        x0 = self.absorbing_state(mf)
-        low_fp = np.zeros(size)
-        if self.verbose:
+
+        if self.verbose == 1:
             p_bar = tqdm.tqdm(range(2 * len(self.parameters)), "Fixed points")
 
+        x0 = self.absorbing_state(mf)
+        low_fp = np.zeros(size)
         for i, p in enumerate(self.parameters):
             mf = self.change_param(mf, p)
-            x0 = mf.search_fixed_point(x0=x0, fp_finder=self.fp_finder)
-            low_fp[i] = mf.to_avg(x0)
-            if self.verbose:
+            x = mf.search_fixed_point(x0=x0, fp_finder=self.fp_finder)
+            low_fp[i] = mf.to_avg(x)
+            # if low_fp[i, 0] >= 1 - self.epsilon:
+            #     x0 = self.absorbing_state(mf)
+            if self.verbose == 1:
                 p_bar.update()
 
         high_fp = np.zeros(size)
         x0 = self.epidemic_state(mf)
         for i, p in reversed(list(enumerate(self.parameters))):
             mf = self.change_param(mf, p)
-            x0 = mf.search_fixed_point(x0=x0, fp_finder=self.fp_finder)
-            high_fp[i] = mf.to_avg(x0)
-            if self.verbose:
+            x = mf.search_fixed_point(x0=x0, fp_finder=self.fp_finder)
+            high_fp[i] = mf.to_avg(x)
+            if self.verbose == 1:
                 p_bar.update()
-        if self.verbose:
+        if self.verbose == 1:
             p_bar.close()
 
         return np.concatenate(
@@ -113,18 +114,25 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
         p_min = self.p_range[0]
         p_max = self.p_range[1]
 
-        if self.verbose:
+        if self.verbose == 1:
             p_bar = tqdm.tqdm(range(1), "Thresholds")
+        else:
+            p_bar = None
 
+        num_iter = np.ceil(np.log2(p_max - p_min) - np.log2(self.tol)).astype("int")
         if low_f(p_min) * low_f(p_max) < 0:
-            low_threshold = bisection(low_f, p_min, p_max, tol=self.tol, p_bar=p_bar)
+            low_threshold = bisection(
+                low_f, p_min, p_max, num_iter=num_iter, p_bar=p_bar
+            )
             thresholds = np.append(thresholds, low_threshold)
 
         if high_f(p_min) * high_f(p_max) < 0:
-            high_threshold = bisection(high_f, p_min, p_max, tol=self.tol, p_bar=p_bar)
+            high_threshold = bisection(
+                high_f, p_min, p_max, num_iter=num_iter, p_bar=p_bar
+            )
             thresholds = np.append(thresholds, high_threshold)
 
-        if self.verbose:
+        if self.verbose == 1:
             p_bar.close()
         return thresholds
 
@@ -148,7 +156,7 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
         _mf = self.change_param(mf, p)
         fp = _mf.search_fixed_point(x0=states, fp_finder=self.fp_finder)
         s = _mf.to_avg(fp)[0]
-        if s > 1 - 1e-2:
+        if s >= 1 - 1e-2:
             val = -1
         else:
             val = 1
@@ -156,7 +164,7 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
 
 
 class PoissonEpidemicsMFMetrics(EpidemicsMFMetrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         self.num_k = config.num_k
         self.degree_dist = dl.utilities.poisson_distribution(
             config.mf_parameters[0], num_k=self.num_k
@@ -173,7 +181,7 @@ class PoissonEpidemicsMFMetrics(EpidemicsMFMetrics):
 
 
 class DegreeRegularEpidemicsMFMetrics(EpidemicsMFMetrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         self.degree_dist = dl.utilities.kronecker_distribution(config.mf_parameters[0])
         super(DegreeRegularEpidemicsMFMetrics, self).__init__(
             self.degree_dist, config, verbose

@@ -6,7 +6,7 @@ import tqdm
 
 
 class LossMetrics(Metrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         super(LossMetrics, self).__init__(verbose)
         self.__config = config
         self.num_points = config.num_points
@@ -46,11 +46,13 @@ class LossMetrics(Metrics):
             else:
                 n[g] = inputs[g].shape[0]
 
-        if self.verbose:
+        if self.verbose != 0:
+            print("Computing " + self.__class__.__name__)
+        if self.verbose == 1:
             num_iter = int(np.sum([inputs[g].shape[0] for g in graphs]))
             if self.num_points < num_iter:
                 num_iter = self.num_points
-            p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
+            p_bar = tqdm.tqdm(range(num_iter))
 
         approx_loss_dict = {d: np.zeros(self.max_num_sample) for d in self.datasets}
         exact_loss_dict = {d: np.zeros(self.max_num_sample) for d in self.datasets}
@@ -85,10 +87,10 @@ class LossMetrics(Metrics):
                     if counter[d] == self.max_num_sample:
                         is_full = True
 
-                if self.verbose:
+                if self.verbose == 1:
                     p_bar.update()
 
-        if self.verbose:
+        if self.verbose == 1:
             p_bar.close()
 
         for d in self.datasets:

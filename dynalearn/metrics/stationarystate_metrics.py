@@ -8,7 +8,7 @@ from abc import abstractmethod
 
 
 class StationaryStateMetrics(Metrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         self.__config = config
         self.parameters = config.ss_parameters
         self.num_samples = config.num_samples
@@ -27,17 +27,34 @@ class StationaryStateMetrics(Metrics):
     def change_param(self, p):
         raise NotImplementedError("change_param must be implemented.")
 
-    def compute_stationary_states(self, model, x0, pb=None):
-        model.graph = self.graph_model.generate()[1]
+    @abstractmethod
+    def compute_stationary_states(self, model):
+        raise NotImplementedError("compute_stationary_states must be implemented.")
 
+    def compute(self, experiment):
+        true_model = experiment.dynamics_model
+        gnn_model = experiment.model
+
+        if self.verbose:
+            print("Computing " + self.__class__.__name__ + ": True")
+        avg, std = self.compute_stationary_states(true_model)
+        self.data[f"true_ss_avg"] = avg
+        self.data[f"true_ss_std"] = std
+        if self.verbose:
+            print("Computing " + self.__class__.__name__ + ": GNN")
+        avg, std = self.compute_stationary_states(gnn_model)
+        self.data[f"gnn_ss_avg"] = avg
+        self.data[f"gnn_ss_std"] = std
+
+    def get_samples(self, model, x0, pb=None):
+
+        model.graph = self.graph_model.generate()[1]
         x = x0 * 1
-        avg_x0 = self.avg(x0)
-        samples = np.zeros((self.num_samples, self.dynamics_model.num_states))
+        samples = np.zeros((self.num_samples, model.graph.number_of_nodes()))
         x = self.burning(model, x, self.initial_burn)
 
         for i in range(self.num_samples):
-            avg_x = self.avg(x)
-            samples[i] = avg_x
+            samples[i] = x
             if self.verbose and pb is not None:
                 pb.update()
 
@@ -46,9 +63,7 @@ class StationaryStateMetrics(Metrics):
                 x = self.burning(model, x, self.initial_burn)
 
             x = self.burning(model, x, self.burn)
-        if np.sum(x) > 0:
-            x0 = x
-        return np.mean(samples, axis=0), np.std(samples, axis=0), x0
+        return samples
 
     def burning(self, model, x, burn=1):
 
@@ -58,10 +73,16 @@ class StationaryStateMetrics(Metrics):
         return x
 
     def avg(self, x):
-        avg_x = []
+        avg_x = np.zeros(self.dynamics_model.num_states)
         for i in range(self.dynamics_model.num_states):
-            avg_x.append(np.mean(x == i))
-        return np.array(avg_x)
+            avg_x[i] = np.mean(x == i)
+        return avg_x
+
+    def std(self, x):
+        std_x = np.zeros(self.dynamics_model.num_states)
+        for i in range(self.dynamics_model.num_states):
+            std_x[i] = np.std(x == i)
+        return np.array(std_x)
 
     @property
     def graph_model(self):
@@ -104,109 +125,57 @@ class StationaryStateMetrics(Metrics):
 
 
 class EpidemicsSSMetrics(StationaryStateMetrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         self.epsilon = config.epsilon
         super(EpidemicsSSMetrics, self).__init__(config, verbose)
 
     def epidemic_state(self):
         self.dynamics_model.params["init"] = 1 - self.epsilon
-        g = self.graph_model.generate()[1]
+        name, g = self.graph_model.generate()
         return self.dynamics_model.initial_states(g)
 
     def absoring_state(self):
         self.dynamics_model.params["init"] = self.epsilon
         name, g = self.graph_model.generate()
-        # print(name, type(g))
         return self.dynamics_model.initial_states(g)
 
-    def compute(self, experiment):
-
-        self.dynamics_model = experiment.dynamics_model
-        self.gnn_model = experiment.model
-        n_prev = self.gnn_model.num_nodes * 1
-
-        self.gnn_model.num_nodes = self.graph_model.num_nodes
+    def compute_stationary_states(self, model):
+        avg = np.zeros((2, len(self.parameters), self.dynamics_model.num_states))
+        std = np.zeros((2, len(self.parameters), self.dynamics_model.num_states))
 
         if self.verbose:
-            p_bar = tqdm.tqdm(
-                range(4 * len(self.parameters) * self.num_samples),
-                "Computing " + self.__class__.__name__,
-            )
+            pb = tqdm.tqdm(range(2 * len(self.parameters) * self.num_samples))
+        else:
+            pb = None
 
-        self.data["parameters"] = self.parameters
-
-        true_low_avg_ss = np.zeros(
-            (len(self.parameters), self.dynamics_model.num_states)
-        )
-        true_low_std_ss = np.zeros(
-            (len(self.parameters), self.dynamics_model.num_states)
-        )
-        true_high_avg_ss = np.zeros(
-            (len(self.parameters), self.dynamics_model.num_states)
-        )
-        true_high_std_ss = np.zeros(
-            (len(self.parameters), self.dynamics_model.num_states)
-        )
         x0 = self.absoring_state()
         for i, p in enumerate(self.parameters):
             self.change_param(p)
-            avg_low, std_low, x0 = self.compute_stationary_states(
-                self.dynamics_model, x0, p_bar
-            )
-            true_low_avg_ss[i], true_low_std_ss[i] = avg_low, std_low
+            samples = self.get_samples(model, x0, pb)
+            x0 = samples[-1]
+            if self.dynamics_model.is_dead(x0):
+                x0 = self.absoring_state()
+            avg[0, i] = self.avg(samples)
+            std[0, i] = self.std(samples)
 
         x0 = self.epidemic_state()
         for i, p in reversed(list(enumerate(self.parameters))):
             self.change_param(p)
-            avg_high, std_high, x0 = self.compute_stationary_states(
-                self.dynamics_model, x0, p_bar
-            )
-            true_high_avg_ss[i], true_high_std_ss[i] = avg_high, std_high
-
-        self.data["true_low_avg"] = true_low_avg_ss
-        self.data["true_low_std"] = true_low_std_ss
-        self.data["true_high_avg"] = true_high_avg_ss
-        self.data["true_high_std"] = true_high_std_ss
-
-        gnn_low_avg_ss = np.zeros(
-            (len(self.parameters), self.dynamics_model.num_states)
-        )
-        gnn_low_std_ss = np.zeros(
-            (len(self.parameters), self.dynamics_model.num_states)
-        )
-        gnn_high_avg_ss = np.zeros(
-            (len(self.parameters), self.dynamics_model.num_states)
-        )
-        gnn_high_std_ss = np.zeros(
-            (len(self.parameters), self.dynamics_model.num_states)
-        )
-        x0 = self.absoring_state()
-        for i, p in enumerate(self.parameters):
-            self.change_param(p)
-            avg_low, std_low, x0 = self.compute_stationary_states(
-                self.gnn_model, x0, p_bar
-            )
-            gnn_low_avg_ss[i], gnn_low_std_ss[i] = avg_low, std_low
-
-        x0 = self.epidemic_state()
-        for i, p in reversed(list(enumerate(self.parameters))):
-            self.change_param(p)
-            avg_high, std_high, x0 = self.compute_stationary_states(
-                self.gnn_model, x0, p_bar
-            )
-            gnn_high_avg_ss[i], gnn_high_std_ss[i] = avg_high, std_high
-
-        self.data["gnn_low_avg"] = gnn_low_avg_ss
-        self.data["gnn_low_std"] = gnn_low_std_ss
-        self.data["gnn_high_avg"] = gnn_high_avg_ss
-        self.data["gnn_high_std"] = gnn_high_std_ss
+            samples = self.get_samples(model, x0, pb)
+            x0 = samples[-1]
+            if self.dynamics_model.is_dead(x0):
+                x0 = self.absoring_state()
+            avg[1, i] = self.avg(samples)
+            std[1, i] = self.std(samples)
 
         if self.verbose:
-            p_bar.close()
+            pb.close()
+
+        return avg, std
 
 
 class PoissonEpidemicsSSMetrics(EpidemicsSSMetrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         self.num_nodes = config.num_nodes
         self.num_k = config.num_k
         super(PoissonEpidemicsSSMetrics, self).__init__(config, verbose)

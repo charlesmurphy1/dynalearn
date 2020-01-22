@@ -19,44 +19,43 @@ class FinderResult(object):
 
 
 class FixedPointFinder(object):
-    def __init__(self, verbose):
+    def __init__(self, tol, verbose):
+        self.tol = tol
         self.verbose = verbose
 
-    def dist(self, x, y):
-        return np.sqrt(((x - y) ** 2).sum())
+    def has_converged(self, x0, x1):
+        diff = np.abs(x0 - x1) / np.abs(x0.mean())
+        if np.any(diff > self.tol):
+            return False
+        else:
+            return True
 
     def __call__(self, f_to_solve, **kwargs):
         raise NotImplementedError()
 
 
 class RecurrenceFPF(FixedPointFinder):
-    def __init__(self, tol=1e-6, max_iter=1000, verbose=1):
-        self.tol = tol
+    def __init__(self, tol=1e-6, initial_iter=500, max_iter=1000, verbose=0):
+        self.initial_iter = initial_iter
         self.max_iter = max_iter
-        super(RecurrenceFPF, self).__init__(verbose)
+        super(RecurrenceFPF, self).__init__(tol, verbose)
 
     def __call__(self, f, x0):
-        nfev = 0
-        diff = np.inf
-        success = True
-        while diff > self.tol:
-            _x = f(x0)
-            diff = self.dist(x0, _x)
-            x0 = _x * 1
-            nfev += 1
-            if nfev > self.max_iter:
-                success = False
-                if self.verbose:
-                    print(f"No further progress after {nfev} evaluations.")
-                break
-        return FinderResult(x0, x0 - f(x0), success, nfev)
+        for i in range(self.max_iter):
+            x1 = f(x0)
+            if self.has_converged(x0, x1) and i > self.initial_iter:
+                return FinderResult(x1, np.abs(x0 - x1), True, i)
+            x0 = x1 * 1
+
+        if self.verbose != 0:
+            print(f"No further progress after {i} evaluations.")
+        return FinderResult(x1, np.abs(x0 - x1), False, i)
 
 
 class ApproxNewtonFPF(FixedPointFinder):
-    def __init__(self, tol=1e-6, max_iter=1000, verbose=1):
-        self.tol = tol
+    def __init__(self, tol=1e-6, max_iter=1000, verbose=0):
         self.max_iter = max_iter
-        super(ApproxNewtonFPF, self).__init__(verbose)
+        super(ApproxNewtonFPF, self).__init__(tol, verbose)
 
     def __call__(self, f, x0):
         f_to_solve = lambda x: f(x) - x

@@ -6,7 +6,7 @@ from abc import abstractmethod
 
 
 class LTPMetrics(Metrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         self.__config = config
         self.aggregator = config.aggregator
         self.max_num_sample = config.max_num_sample
@@ -125,11 +125,13 @@ class LTPMetrics(Metrics):
             else:
                 n[g] = inputs[g].shape[0]
 
-        if self.verbose:
+        if self.verbose != 0:
+            print("Computing " + self.__class__.__name__)
+        if self.verbose == 1:
             num_iter = int(np.sum([inputs[g].shape[0] for g in graphs]))
             if self.num_points < num_iter:
                 num_iter = self.num_points
-            p_bar = tqdm.tqdm(range(num_iter), "Computing " + self.__class__.__name__)
+            p_bar = tqdm.tqdm(range(num_iter))
 
         for g in graphs:
             experiment.model.adj = graphs[g]
@@ -160,10 +162,10 @@ class LTPMetrics(Metrics):
                     test_nodes,
                 )
 
-                if self.verbose:
+                if self.verbose == 1:
                     p_bar.update()
 
-        if self.verbose:
+        if self.verbose == 1:
             p_bar.close()
 
         d = len(state_label)
@@ -198,7 +200,7 @@ class LTPMetrics(Metrics):
 
 
 class TrueLTPMetrics(LTPMetrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         super(TrueLTPMetrics, self).__init__(config, verbose)
 
     def get_metric(self, experiment, input, target):
@@ -206,7 +208,7 @@ class TrueLTPMetrics(LTPMetrics):
 
 
 class GNNLTPMetrics(LTPMetrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         super(GNNLTPMetrics, self).__init__(config, verbose)
 
     def get_metric(self, experiment, input, target):
@@ -214,7 +216,7 @@ class GNNLTPMetrics(LTPMetrics):
 
 
 class MLELTPMetrics(LTPMetrics):
-    def __init__(self, config, verbose=1):
+    def __init__(self, config, verbose=0):
         super(MLELTPMetrics, self).__init__(config, verbose)
 
     def get_metric(self, experiment, input, target):
