@@ -3,9 +3,10 @@ import numpy as np
 import networkx as nx
 import time
 import tqdm
+from tensorflow.python.keras.utils.data_utils import Sequence
 
 
-class DynamicsGenerator:
+class DynamicsGenerator(Sequence):
     def __init__(self, graph_model, dynamics_model, sampler, config, verbose=0):
         self.__config = config
         self.graph_model = graph_model
@@ -40,6 +41,9 @@ class DynamicsGenerator:
             targets = self.to_one_hot(self.targets[g_index][s_index, :])
         weights = n_mask
         return [inputs, adj], targets, weights
+
+    def __getitem__(self, key):
+        return self.__next__()
 
     def copy(self):
 
@@ -154,6 +158,10 @@ class DynamicsGenerator:
             self.main_sampler.update_weights(self.graphs, self.inputs)
             new_sampler.update_weights(self.graphs, self.inputs)
         self.samplers[name] = new_sampler
+
+    # @property
+    # def shape(self):
+    #     return (len(self),)
 
     @property
     def samplers(self):
