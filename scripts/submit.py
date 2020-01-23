@@ -4,10 +4,10 @@ import time
 
 num_samples = 10000
 
-path_to_dir = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/training/"
-path_to_models = (
-    "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/models/"
-)
+path_to_data = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
+path_to_dir = os.path.join(path_to_data, "training")
+path_to_models = os.path.join(path_to_data, "models")
+
 configs_to_run = [
     dl.ExperimentConfig.sis_er(num_samples, path_to_dir, path_to_models),
     dl.ExperimentConfig.sis_ba(num_samples, path_to_dir, path_to_models),
@@ -18,7 +18,7 @@ configs_to_run = [
 ]
 
 for config in configs_to_run:
-    config.save("../data/training")
+    config.save(path_to_dir)
     script = "#!/bin/bash\n"
     script += "#SBATCH --account=def-aallard\n"
     script += "#SBATCH --time=24:00:00\n"
