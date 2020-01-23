@@ -120,7 +120,7 @@ class ExperimentConfig:
             "config": metrics,
         }
         self.config["training"] = TrainingConfig.changing_num_samples(num_samples)
-        self.config["path_to_dir"] = path_to_dir
+        self.config["path_to_data"] = os.path.join(path_to_dir, name)
         self.config["path_to_bestmodel"] = path_to_model
 
     def save(self, path=None, overwrite=True):

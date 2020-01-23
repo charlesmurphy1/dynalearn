@@ -27,6 +27,7 @@ class Experiment:
 
         self.name = config["name"]
         self.path_to_dir = config["path_to_dir"]
+        self.path_to_data = os.path.join(self.path_to_dir, self.name)
         self.path_to_bestmodel = config["path_to_bestmodel"]
 
         if "filename_config" not in config:
@@ -79,8 +80,8 @@ class Experiment:
             dl.utilities.get_metrics(m) for m in config["training"].training_metrics
         ]
 
-        if not os.path.exists(os.path.join(self.path_to_dir, self.name)):
-            os.makedirs(os.path.join(self.path_to_dir, self.name))
+        if not os.path.exists(self.path_to_data):
+            os.makedirs(self.path_to_data)
 
         if not os.path.exists(os.path.join(self.path_to_bestmodel)):
             os.makedirs(os.path.join(self.path_to_bestmodel))
@@ -131,7 +132,7 @@ class Experiment:
         self.load_history()
 
     def save_config(self, overwrite=True):
-        path = os.path.join(self.path_to_dir, self.name, self.filename_config)
+        path = os.path.join(self.path_to_data, self.filename_config)
         if os.path.exists(path) and not overwrite:
             return
 
@@ -139,7 +140,7 @@ class Experiment:
             pickle.dump(self.__config, f)
 
     def load_config(self,):
-        path = os.path.join(self.path_to_dir, self.name, self.filename_config)
+        path = os.path.join(self.path_to_data, self.filename_config)
 
         if not os.path.exists(path):
             return
@@ -212,26 +213,24 @@ class Experiment:
 
     def save_model(self, overwrite=True):
         self.model.model.save_weights(
-            os.path.join(self.path_to_dir, self.name, self.filename_model)
+            os.path.join(self.path_to_data, self.filename_model)
         )
 
     def load_model(self, best=True):
         if best:
             path = os.path.join(self.path_to_bestmodel, self.name + ".h5")
         else:
-            path = os.path.join(self.path_to_dir, self.name, self.filename_model)
+            path = os.path.join(self.path_to_data, self.filename_model)
         if os.path.exists(path):
             self.model.model.load_weights(path)
 
     def save_data(self, overwrite=True):
-        h5file = h5py.File(
-            os.path.join(self.path_to_dir, self.name, self.filename_data)
-        )
+        h5file = h5py.File(os.path.join(self.path_to_data, self.filename_data))
         self.generator.save(h5file, overwrite)
         h5file.close()
 
     def load_data(self):
-        path = os.path.join(self.path_to_dir, self.name, self.filename_data)
+        path = os.path.join(self.path_to_data, self.filename_data)
         if os.path.exists(path):
             h5file = h5py.File(path)
         else:
@@ -241,7 +240,7 @@ class Experiment:
         h5file.close()
 
     def save_history(self, overwrite=True):
-        path = os.path.join(self.path_to_dir, self.name, self.filename_history)
+        path = os.path.join(self.path_to_data, self.filename_history)
         if os.path.exists(path) and not overwrite:
             return
         h5file = h5py.File(path, "w")
@@ -249,7 +248,7 @@ class Experiment:
             h5file.create_dataset(k, data=v, fillvalue=np.nan)
 
     def load_history(self,):
-        path = os.path.join(self.path_to_dir, self.name, self.filename_history)
+        path = os.path.join(self.path_to_data, self.filename_history)
         if os.path.exists(path):
             h5file = h5py.File(path)
         else:
@@ -260,7 +259,7 @@ class Experiment:
         h5file.close()
 
     def save_metrics(self, overwrite=True):
-        path = os.path.join(self.path_to_dir, self.name, self.filename_metrics)
+        path = os.path.join(self.path_to_data, self.filename_metrics)
         if os.path.exists(path) and not overwrite:
             return
 
@@ -270,7 +269,7 @@ class Experiment:
         h5file.close()
 
     def load_metrics(self):
-        path = os.path.join(self.path_to_dir, self.name, self.filename_metrics)
+        path = os.path.join(self.path_to_data, self.filename_metrics)
         if os.path.exists(path):
             h5file = h5py.File(path, "r")
         else:

@@ -4,9 +4,9 @@ import time
 
 num_samples = 10000
 
-path_to_data = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
-path_to_dir = os.path.join(path_to_data, "training")
-path_to_models = os.path.join(path_to_data, "models")
+path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
+path_to_dir = os.path.join(path_to_all, "training")
+path_to_models = os.path.join(path_to_all, "models")
 
 configs_to_run = [
     dl.ExperimentConfig.sis_er(num_samples, path_to_dir, path_to_models),
@@ -19,11 +19,12 @@ configs_to_run = [
 
 for config in configs_to_run:
     config.save(path_to_dir)
+    path_to_data = os.path.join(path_to_dir, config.config["name"])
     script = "#!/bin/bash\n"
     script += "#SBATCH --account=def-aallard\n"
     script += "#SBATCH --time=24:00:00\n"
     script += "#SBATCH --job-name=training_{0}\n".format(config.config["name"])
-    script += "#SBATCH --output={0}.out\n".format(config.config["name"])
+    script += "#SBATCH --output={0}.out\n".format(os.path.join(path_to_data, "output"))
     script += "#SBATCH --gres=gpu:1\n"
     script += "#SBATCH --mem=12G\n"
     script += "\n"
@@ -36,11 +37,10 @@ for config in configs_to_run:
 
     # seed = int(time.time())
     seed = 0
-    path = "{0}/{1}-{2}.bash".format(
-        "./launching_scripts/", config.config["name"], seed
-    )
+    path = "{0}/{1}-{2}.bash".format("./launching_scripts", config.config["name"], seed)
 
     with open(path, "w") as f:
         f.write(script)
 
     os.system("bash {0}".format(path))
+    # os.system("sbatch {0}".format(path))
