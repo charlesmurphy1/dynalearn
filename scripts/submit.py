@@ -3,8 +3,11 @@ import os
 import time
 
 num_samples = 10000
-path_to_dir = "~/projects/def-aallard/murphy9/data/dynalearn-data/training/"
-path_to_models = "~/projects/def-aallard/murphy9/data/dynalearn-data/models/"
+
+path_to_dir = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/training/"
+path_to_models = (
+    "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/models/"
+)
 configs_to_run = [
     dl.ExperimentConfig.sis_er(num_samples, path_to_dir, path_to_models),
     dl.ExperimentConfig.sis_ba(num_samples, path_to_dir, path_to_models),
