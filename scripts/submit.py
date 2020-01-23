@@ -2,14 +2,16 @@ import dynalearn as dl
 import os
 import time
 
-
+num_samples = 10000
+path_to_dir = "~/projects/def-aallard/murphy9/data/dynalearn-data/training/"
+path_to_models = "~/projects/def-aallard/murphy9/data/dynalearn-data/models/"
 configs_to_run = [
-    dl.ExperimentConfig.sis_er(),
-    dl.ExperimentConfig.sis_ba(),
-    dl.ExperimentConfig.plancksis_er(),
-    dl.ExperimentConfig.plancksis_ba(),
-    dl.ExperimentConfig.sissis_er(),
-    dl.ExperimentConfig.sissis_ba(),
+    dl.ExperimentConfig.sis_er(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.sis_ba(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.plancksis_er(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.plancksis_ba(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.sissis_er(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.sissis_ba(num_samples, path_to_dir, path_to_models),
 ]
 
 for config in configs_to_run:
