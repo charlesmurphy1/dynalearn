@@ -37,10 +37,10 @@ for config in configs_to_run:
 
     # seed = int(time.time())
     seed = 0
-    path = "{0}/{1}-{2}.bash".format("./launching_scripts", config.config["name"], seed)
+    path = "{0}/{1}-{2}.bash".format("./launch_scripts", config.config["name"], seed)
 
     with open(path, "w") as f:
         f.write(script)
 
-    os.system("bash {0}".format(path))
-    # os.system("sbatch {0}".format(path))
+    # os.system("bash {0}".format(path))
+    os.system("sbatch {0}".format(path))
