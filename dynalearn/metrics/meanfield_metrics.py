@@ -114,12 +114,12 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
         p_min = self.p_range[0]
         p_max = self.p_range[1]
 
+        num_iter = np.ceil(np.log2(p_max - p_min) - np.log2(self.tol)).astype("int")
         if self.verbose == 1:
-            p_bar = tqdm.tqdm(range(1), "Thresholds")
+            p_bar = tqdm.tqdm(range(2 * num_iter), "Thresholds")
         else:
             p_bar = None
 
-        num_iter = np.ceil(np.log2(p_max - p_min) - np.log2(self.tol)).astype("int")
         if low_f(p_min) * low_f(p_max) < 0:
             low_threshold = bisection(
                 low_f, p_min, p_max, num_iter=num_iter, p_bar=p_bar
