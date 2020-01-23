@@ -18,7 +18,7 @@ class Experiment:
         self._verbose = verbose
         self.graph_model = dl.graphs.get(config["graph"])
         self.dynamics_model = dl.dynamics.get(config["dynamics"])
-        self.model = dl.models.get(config["model"]["config"])
+        self.model = dl.models.get(config["model"])
         self.model.num_nodes = self.graph_model.num_nodes
         self.generator = dl.datasets.get(
             config["generator"], self.graph_model, self.dynamics_model
@@ -99,7 +99,6 @@ class Experiment:
         return cls(config)
 
     def run(self, overwrite=True):
-        self.save_config(overwrite)
         if self.verbose != 0:
             print("\n---Generating data---")
         self.generate_data()

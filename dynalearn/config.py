@@ -77,12 +77,13 @@ class TrainingConfig:
 class ExperimentConfig:
     def __init__(self):
         self.config = {}
+        self.path_to_config = None
         self.config["path_to_dir"] = (
             "/home/"
             + getpass.getuser()
             + "/Documents/ulaval/doctorat/projects/dynalearn/data/training/"
         )
-        self.config["path_to_models"] = (
+        self.config["path_to_bestmodel"] = (
             "/home/"
             + getpass.getuser()
             + "/Documents/ulaval/doctorat/projects/dynalearn/data/models/"
@@ -92,14 +93,14 @@ class ExperimentConfig:
             self.config["path_to_dir"] = (
                 "/media/" + getpass.getuser() + "/LaCie/dynalearn-data/training/"
             )
-            self.config["path_to_models"] = (
+            self.config["path_to_bestmodel"] = (
                 "/media/" + getpass.getuser() + "/LaCie/dynalearn-data/models/"
             )
         elif os.path.exists("/media/" + getpass.getuser() + "/charles-usb/"):
             self.config["path_to_dir"] = (
                 "/media/" + getpass.getuser() + "/charles-usb/dynalearn-data/training/"
             )
-            self.config["path_to_models"] = (
+            self.config["path_to_bestmodel"] = (
                 "/media/" + getpass.getuser() + "/charles-usb/dynalearn-data/models/"
             )
 
@@ -142,6 +143,8 @@ class ExperimentConfig:
             )
         else:
             path = os.path.join(path, self.config["name"] + "_config.pickle")
+
+        self.path_to_config = path
         if os.path.exists(path) and not overwrite:
             return
 
@@ -165,7 +168,7 @@ class ExperimentConfig:
             "params": {"infection": 0.04, "recovery": 0.08, "init": "None"},
         }
         graph = {"name": "BAGraph", "params": {"N": 1000, "M": 2}}
-        model = {"name": "SISGNN", "config": dl.models.GNNConfig.SISGNN()}
+        model = {"name": "EpidemicPredictor", "config": dl.models.GNNConfig.SISGNN()}
         metrics = dl.metrics.MetricsConfig.SISMetrics()
         cls.set_config(name, num_samples, dynamics, graph, model, metrics)
         return cls
@@ -179,7 +182,7 @@ class ExperimentConfig:
             "params": {"infection": 0.04, "recovery": 0.08, "init": "None"},
         }
         graph = {"name": "ERGraph", "params": {"N": 1000, "density": 0.004}}
-        model = {"name": "SISGNN", "config": dl.models.GNNConfig.SISGNN()}
+        model = {"name": "EpidemicPredictor", "config": dl.models.GNNConfig.SISGNN()}
         metrics = dl.metrics.MetricsConfig.SISMetrics()
         cls.set_config(name, num_samples, dynamics, graph, model, metrics)
         return cls
@@ -193,7 +196,10 @@ class ExperimentConfig:
             "params": {"temperature": 10, "recovery": 0.07, "init": "None"},
         }
         graph = {"name": "BAGraph", "params": {"N": 1000, "M": 2}}
-        model = {"name": "ComplexSISGNN", "config": dl.models.GNNConfig.ComplexSISGNN()}
+        model = {
+            "name": "EpidemicPredictor",
+            "config": dl.models.GNNConfig.ComplexSISGNN(),
+        }
         metrics = dl.metrics.MetricsConfig.PlanckSISMetrics()
         cls.set_config(name, num_samples, dynamics, graph, model, metrics)
         return cls
@@ -207,7 +213,10 @@ class ExperimentConfig:
             "params": {"temperature": 10, "recovery": 0.07, "init": "None"},
         }
         graph = {"name": "ERGraph", "params": {"N": 1000, "density": 0.004}}
-        model = {"name": "ComplexSISGNN", "config": dl.models.GNNConfig.ComplexSISGNN()}
+        model = {
+            "name": "EpidemicPredictor",
+            "config": dl.models.GNNConfig.ComplexSISGNN(),
+        }
         metrics = dl.metrics.MetricsConfig.PlanckSISMetrics()
         cls.set_config(name, num_samples, dynamics, graph, model, metrics)
         return cls
@@ -228,7 +237,7 @@ class ExperimentConfig:
             },
         }
         graph = {"name": "BAGraph", "params": {"N": 1000, "M": 2}}
-        model = {"name": "SISSISGNN", "config": dl.models.GNNConfig.SISSISGNN()}
+        model = {"name": "EpidemicPredictor", "config": dl.models.GNNConfig.SISSISGNN()}
         metrics = dl.metrics.MetricsConfig.SISSISMetrics()
         cls.set_config(name, num_samples, dynamics, graph, model, metrics)
         return cls
@@ -249,7 +258,7 @@ class ExperimentConfig:
             },
         }
         graph = {"name": "ERGraph", "params": {"N": 1000, "density": 0.004}}
-        model = {"name": "SISSISGNN", "config": dl.models.GNNConfig.SISSISGNN()}
+        model = {"name": "EpidemicPredictor", "config": dl.models.GNNConfig.SISSISGNN()}
         metrics = dl.metrics.MetricsConfig.SISSISMetrics()
         cls.set_config(name, num_samples, dynamics, graph, model, metrics)
         return cls
