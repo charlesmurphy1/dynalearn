@@ -66,6 +66,31 @@ class GraphAttention(Layer):
 
         super(GraphAttention, self).__init__(**kwargs)
 
+    def get_config(self):
+        config = super().get_config().copy()
+
+        config.update(
+            {
+                "F_": self.F_,
+                "attn_heads": self.attn_heads,
+                "attn_heads_reduction": self.attn_heads_reduction,
+                "dropout_rate": self.dropout_rate,
+                "activation": self.activation,
+                "use_bias": self.use_bias,
+                "kernel_initializer": self.kernel_initializer,
+                "bias_initializer": self.bias_initializer,
+                "attn_kernel_initializer": self.attn_kernel_initializer,
+                "kernel_regularizer": self.kernel_regularizer,
+                "bias_regularizer": self.bias_regularizer,
+                "attn_kernel_regularizer": self.attn_kernel_regularizer,
+                "activity_regularizer": self.activity_regularizer,
+                "kernel_constraint": self.kernel_constraint,
+                "bias_constraint": self.bias_constraint,
+                "attn_kernel_constraint": self.attn_kernel_constraint,
+            }
+        )
+        return config
+
     def build(self, input_shape):
         assert len(input_shape) >= 2
         F = int(input_shape[0][-1])

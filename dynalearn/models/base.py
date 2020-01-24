@@ -77,7 +77,7 @@ class GNNModel(ABC):
         self._adj = adj
 
     def predict(self, inputs):
-        return self.model.predict([inputs, self.adj], steps=1)
+        return self.model.predict([inputs, self.adj], batch_size=self.adj.shape[0])
 
     def sample(self, inputs):
         p = self.predict(inputs)

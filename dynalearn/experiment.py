@@ -63,8 +63,7 @@ class Experiment:
         self.optimizer.lr = variable(config["training"].initial_lr)
         self.callbacks = [
             LearningRateScheduler(
-                dl.utilities.get_schedule(config["training"].schedule),
-                verbose=self.verbose,
+                dl.utilities.get_schedule(config["training"].schedule), verbose=0,
             ),
             ks.callbacks.ModelCheckpoint(
                 os.path.join(self.path_to_bestmodel, self.name + ".h5"),
@@ -72,7 +71,7 @@ class Experiment:
                 monitor="val_loss",
                 mode="min",
                 period=1,
-                verbose=self.verbose,
+                verbose=0,
             ),
         ]
 

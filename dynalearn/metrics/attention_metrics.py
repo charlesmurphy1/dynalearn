@@ -73,7 +73,7 @@ class AttentionMetrics(Metrics):
                     if self.is_summaries_full(summaries):
                         break
                     x = inputs[g][t]
-                    predictions = layer.predict([x, adj], steps=1)
+                    predictions = layer.predict([x, adj], batch_size=adj.shape[0])
                     summaries = self.summarize(
                         summaries, predictions, state_label, adj, x
                     )
