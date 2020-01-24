@@ -17,9 +17,9 @@ class StationaryStateMetrics(Metrics):
         self.reshuffle = config.reshuffle
         self.tol = config.tol
 
-        self._graph_model = None
-        self._dynamics_model = None
-        self._gnn_model = None
+        self.graph_model = None
+        self.dynamics_model = None
+        self.gnn_model = None
 
         super(StationaryStateMetrics, self).__init__(verbose)
 
@@ -32,17 +32,17 @@ class StationaryStateMetrics(Metrics):
         raise NotImplementedError("compute_stationary_states must be implemented.")
 
     def compute(self, experiment):
-        true_model = experiment.dynamics_model
-        gnn_model = experiment.model
+        self.dynamics_model = experiment.dynamics_model
+        self.gnn_model = experiment.model
 
         if self.verbose:
             print("Computing " + self.__class__.__name__ + ": True")
-        avg, std = self.compute_stationary_states(true_model)
+        avg, std = self.compute_stationary_states(self.dynamics_model)
         self.data[f"true_ss_avg"] = avg
         self.data[f"true_ss_std"] = std
         if self.verbose:
             print("Computing " + self.__class__.__name__ + ": GNN")
-        avg, std = self.compute_stationary_states(gnn_model)
+        avg, std = self.compute_stationary_states(self.gnn_model)
         self.data[f"gnn_ss_avg"] = avg
         self.data[f"gnn_ss_std"] = std
 
@@ -84,44 +84,44 @@ class StationaryStateMetrics(Metrics):
             std_x[i] = np.std(x == i)
         return np.array(std_x)
 
-    @property
-    def graph_model(self):
-        if self._graph_model is None:
-            raise ValueError("graph model is unavailable.")
-        else:
-            return self._graph_model
+    # @property
+    # def graph_model(self):
+    #     if self._graph_model is None:
+    #         raise ValueError("graph model is unavailable.")
+    #     else:
+    #         return self._graph_model
+    #
+    # @graph_model.setter
+    # def graph_model(self, graph_model):
+    #     name = type(graph_model).__name__
+    #     params = graph_model.params
+    #     param_dict = {"name": name, "params": params}
+    #     self._graph_model = dl.graphs.get(param_dict)
 
-    @graph_model.setter
-    def graph_model(self, graph_model):
-        name = type(graph_model).__name__
-        params = graph_model.params
-        param_dict = {"name": name, "params": params}
-        self._graph_model = dl.graphs.get(param_dict)
-
-    @property
-    def dynamics_model(self):
-        if self._dynamics_model is None:
-            raise ValueError("dynamics model is unavailable.")
-        else:
-            return self._dynamics_model
-
-    @dynamics_model.setter
-    def dynamics_model(self, dynamics_model):
-        name = type(dynamics_model).__name__
-        params = dynamics_model.params
-        param_dict = {"name": name, "params": params}
-        self._dynamics_model = dl.dynamics.get(param_dict)
-
-    @property
-    def gnn_model(self):
-        if self._gnn_model is None:
-            raise ValueError("GNN model is unavailable.")
-        else:
-            return self._gnn_model
-
-    @gnn_model.setter
-    def gnn_model(self, gnn_model):
-        self._gnn_model = gnn_model
+    # @property
+    # def dynamics_model(self):
+    #     if self._dynamics_model is None:
+    #         raise ValueError("dynamics model is unavailable.")
+    #     else:
+    #         return self._dynamics_model
+    #
+    # @dynamics_model.setter
+    # def dynamics_model(self, dynamics_model):
+    #     name = type(dynamics_model).__name__
+    #     params = dynamics_model.params
+    #     param_dict = {"name": name, "params": params}
+    #     self._dynamics_model = dl.dynamics.get(param_dict)
+    #
+    # @property
+    # def gnn_model(self):
+    #     if self._gnn_model is None:
+    #         raise ValueError("GNN model is unavailable.")
+    #     else:
+    #         return self._gnn_model
+    #
+    # @gnn_model.setter
+    # def gnn_model(self, gnn_model):
+    #     self._gnn_model = gnn_model
 
 
 class EpidemicsSSMetrics(StationaryStateMetrics):
