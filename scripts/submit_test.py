@@ -2,30 +2,27 @@ import dynalearn as dl
 import os
 import time
 
-num_samples = 10000
+num_samples = 100
 
 path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
-path_to_dir = os.path.join(path_to_all, "training")
-path_to_models = os.path.join(path_to_all, "models")
+path_to_dir = os.path.join(path_to_all, "test")
+path_to_models = os.path.join(path_to_all, "test")
 
 configs_to_run = [
     dl.ExperimentConfig.sis_er(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.sis_ba(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.plancksis_er(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.plancksis_ba(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.sissis_er(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.sissis_ba(num_samples, path_to_dir, path_to_models),
 ]
 
 for config in configs_to_run:
     path_to_data = os.path.join(path_to_dir, config.config["name"])
     if not os.path.exists(path_to_data):
         os.makedirs(path_to_data)
+    config.config["training"].step_per_epoch = num_samples
+    config.config["training"].num_epochs = 5
     config.save(path_to_data)
     script = "#!/bin/bash\n"
     script += "#SBATCH --account=def-aallard\n"
-    script += "#SBATCH --time=24:00:00\n"
-    script += "#SBATCH --job-name={0}\n".format(config.config["name"])
+    script += "#SBATCH --time=02:00:00\n"
+    script += "#SBATCH --job-name=test-sis\n".format(config.config["name"])
     script += "#SBATCH --output={0}.out\n".format(os.path.join(path_to_data, "output"))
     script += "#SBATCH --gres=gpu:1\n"
     script += "#SBATCH --mem=12G\n"
