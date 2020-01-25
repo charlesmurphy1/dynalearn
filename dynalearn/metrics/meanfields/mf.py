@@ -9,8 +9,8 @@ np.seterr(divide="ignore", invalid="ignore")
 
 
 class MF(BaseMeanField):
-    def __init__(self, s_dim, degree_dist, tol=1e-5, verbose=0, dtype="float"):
-        self.s_dim = s_dim
+    def __init__(self, num_states, degree_dist, tol=1e-5, verbose=0, dtype="float"):
+        self.num_states = num_states
         self.degree_dist = degree_dist
         super(MF, self).__init__(self.array_shape, tol=tol, verbose=verbose)
 
@@ -25,9 +25,9 @@ class MF(BaseMeanField):
     def app_x(self, x, phi):
         m_k = self.multinomial(phi)
         new_x = np.zeros(self.array_shape)
-        for i in range(self.s_dim):
+        for i in range(self.num_states):
             new_x += (self.ltp[i] * m_k).sum(
-                tuple([-i - 1 for i in range(self.s_dim)])
+                tuple([-i - 1 for i in range(self.num_states)])
             ) * x[i]
         return new_x
 
@@ -86,10 +86,10 @@ class MF(BaseMeanField):
         self.k_min = self.degree_dist.values.min()
         self.k_max = self.degree_dist.values.max()
         self.k_dim = int(self.k_max - self.k_min + 1)
-        self.array_shape = (self.s_dim, self.k_dim)
+        self.array_shape = (self.num_states, self.k_dim)
 
         self.k_grid, self.l_grid = config_k_l_grid(
-            degree_dist.values, np.arange(self.k_max + 1), self.s_dim
+            degree_dist.values, np.arange(self.k_max + 1), self.num_states
         )
         self.good_config = self.l_grid.sum(0) == self.k_grid
         self.bad_config = (self.l_grid.sum(0) > self.k_grid) + (

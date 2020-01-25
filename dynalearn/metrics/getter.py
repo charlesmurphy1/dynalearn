@@ -15,8 +15,10 @@ metrics_dict = {
     "GNNStarLTPMetrics": GNNStarLTPMetrics,
     "UniformStarLTPMetrics": UniformStarLTPMetrics,
     "AttentionMetrics": AttentionMetrics,
-    "PoissonEpidemicsSSMetrics": PoissonEpidemicsSSMetrics,
-    "PoissonEpidemicsMFMetrics": PoissonEpidemicsMFMetrics,
+    "TruePEMFMetrics": TruePEMFMetrics,
+    "GNNPEMFMetrics": GNNPEMFMetrics,
+    "TruePESSMetrics": TruePESSMetrics,
+    "GNNPESSMetrics": GNNPESSMetrics,
 }
 
 

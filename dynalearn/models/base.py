@@ -63,6 +63,8 @@ class GNNModel(ABC):
     def graph(self, graph):
         self._graph = graph
         self._adj = nx.to_numpy_array(graph)
+        if self.num_nodes != self._adj.shape[0]:
+            self.num_nodes = self._adj.shape[0]
 
     @property
     def adj(self):
@@ -75,6 +77,8 @@ class GNNModel(ABC):
     def adj(self, adj):
         self._graph = nx.from_numpy_array(adj)
         self._adj = adj
+        if self.num_nodes != self._adj.shape[0]:
+            self.num_nodes = self._adj.shape[0]
 
     def predict(self, inputs):
         return self.model.predict([inputs, self.adj], batch_size=self.adj.shape[0])

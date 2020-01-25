@@ -21,9 +21,9 @@ class GNN_MF(MF):
     def compute_ltp(self,):
         self.model.num_nodes = self.k_max + 1
 
-        ltp = np.zeros((self.s_dim, self.s_dim, *self.k_grid.shape))
+        ltp = np.zeros((self.num_states, self.num_states, *self.k_grid.shape))
         for k_ind, k in enumerate(self.degree_dist.values):
-            state_degree = np.array(all_combinations(k, self.s_dim))
+            state_degree = np.array(all_combinations(k, self.num_states))
             adj = np.zeros((self.model.num_nodes, self.model.num_nodes))
             adj[1 : k + 1, 0] = 1
             adj[0, 1 : k + 1] = 1
@@ -44,9 +44,9 @@ class GNN_MF(MF):
 
                 inputs = np.zeros(self.model.num_nodes)
                 inputs[1:] = neighbors_states
-                for i in range(self.s_dim):
+                for i in range(self.num_states):
                     inputs[0] = i
                     p = self.model.predict(inputs)[0]
-                    for j in range(self.s_dim):
+                    for j in range(self.num_states):
                         ltp[(i, j, k_ind, *s)] = p[j]
         return ltp

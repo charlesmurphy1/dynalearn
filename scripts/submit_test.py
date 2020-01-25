@@ -5,6 +5,7 @@ import time
 num_samples = 100
 
 path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
+# path_to_all = "../data/"
 path_to_dir = os.path.join(path_to_all, "test")
 path_to_models = os.path.join(path_to_all, "test")
 
@@ -17,7 +18,24 @@ for config in configs_to_run:
     if not os.path.exists(path_to_data):
         os.makedirs(path_to_data)
     config.config["training"].step_per_epoch = num_samples
-    config.config["training"].num_epochs = 5
+    config.config["training"].num_epochs = 1
+    config.config["metrics"]["name"] = [
+        "AttentionMetrics",
+        "TrueLTPMetrics",
+        "GNNLTPMetrics",
+        "MLELTPMetrics",
+        "TrueStarLTPMetrics",
+        "GNNStarLTPMetrics",
+        "UniformStarLTPMetrics",
+        "StatisticsMetrics",
+        "TruePEMFMetrics",
+        "GNNPEMFMetrics",
+        "TruePESSMetrics",
+        "GNNPESSMetrics",
+    ]
+    config.config["metrics"]["config"].num_samples = 1
+    config.config["metrics"]["config"].initial_burn = 1
+
     config.save(path_to_data)
     script = "#!/bin/bash\n"
     script += "#SBATCH --account=def-aallard\n"
@@ -30,7 +48,7 @@ for config in configs_to_run:
     script += "module load python/3.7 scipy-stack mpi4py\n"
     script += "source ~/pyenv/.dynalearn-env/bin/activate\n"
     script += "python training_script.py --config_path {0} --verbose {1}\n".format(
-        config.path_to_config, 2
+        config.path_to_config, 1
     )
     script += "deactivate\n"
 

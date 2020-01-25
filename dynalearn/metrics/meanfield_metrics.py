@@ -26,27 +26,20 @@ def bisection(f, a, b, num_iter=100, p_bar=None):
 
 
 class MeanfieldMetrics(Metrics):
-    def __init__(self, degree_dist, config, verbose=0):
-        self.degree_dist = degree_dist
+    def __init__(self, config, verbose=0):
         self.__config = config
         self.parameters = config.mf_parameters
         self.p_range = config.p_range
         self.fp_finder = config.fp_finder
+        self.model = None
         super(MeanfieldMetrics, self).__init__(verbose)
 
     def compute(self, experiment):
-        true_mf = dl.metrics.meanfields.get(experiment.dynamics_model, self.degree_dist)
-        gnn_mf = dl.metrics.meanfields.GNN_MF(experiment.model, self.degree_dist)
-
+        self.get_model(experiment)
         if self.verbose != 0:
-            print("Computing " + self.__class__.__name__ + ": True")
-        self.data[f"true_thresholds"] = self.compute_thresholds(true_mf)
-        self.data[f"true_fp"] = self.compute_fixed_points(true_mf)
-        if self.verbose != 0:
-            print("Computing " + self.__class__.__name__ + ": GNN")
-        self.data[f"gnn_thresholds"] = self.compute_thresholds(gnn_mf)
-        self.data[f"gnn_fp"] = self.compute_fixed_points(gnn_mf)
-        self.data[f"parameters"] = self.parameters
+            print("Computing " + self.__class__.__name__)
+        self.data[f"thresholds"] = self.compute_thresholds()
+        self.data[f"fixed_points"] = self.compute_fixed_points()
 
     @abstractmethod
     def compute_fixed_points(self, mf):
@@ -60,9 +53,13 @@ class MeanfieldMetrics(Metrics):
     def change_param(self, mf, value):
         raise NotImplementedError("change_param must be implemented.")
 
+    @abstractmethod
+    def get_model(self, experiment):
+        raise NotImplementedError("get_model must be implemented.")
+
 
 class EpidemicsMFMetrics(MeanfieldMetrics):
-    def __init__(self, degree_dist, config, verbose=0):
+    def __init__(self, config, verbose=0):
         self.epsilon = config.epsilon
         self.tol = config.tol
         self.fp_finder = config.fp_finder
@@ -71,32 +68,30 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
         else:
             self.criterion = self.__continuous_threshold_criterion
 
-        super(EpidemicsMFMetrics, self).__init__(degree_dist, config, verbose)
+        super(EpidemicsMFMetrics, self).__init__(config, verbose)
 
-    def compute_fixed_points(self, mf):
+    def compute_fixed_points(self):
 
-        size = (len(self.parameters), mf.s_dim)
+        size = (len(self.parameters), self.model.num_states)
 
         if self.verbose == 1:
             p_bar = tqdm.tqdm(range(2 * len(self.parameters)), "Fixed points")
 
-        x0 = self.absorbing_state(mf)
+        x0 = self.absorbing_state()
         low_fp = np.zeros(size)
         for i, p in enumerate(self.parameters):
-            mf = self.change_param(mf, p)
-            x = mf.search_fixed_point(x0=x0, fp_finder=self.fp_finder)
-            low_fp[i] = mf.to_avg(x)
-            # if low_fp[i, 0] >= 1 - self.epsilon:
-            #     x0 = self.absorbing_state(mf)
+            self.change_param(p)
+            x = self.model.search_fixed_point(x0=x0, fp_finder=self.fp_finder)
+            low_fp[i] = self.model.to_avg(x)
             if self.verbose == 1:
                 p_bar.update()
 
         high_fp = np.zeros(size)
-        x0 = self.epidemic_state(mf)
+        x0 = self.epidemic_state()
         for i, p in reversed(list(enumerate(self.parameters))):
-            mf = self.change_param(mf, p)
-            x = mf.search_fixed_point(x0=x0, fp_finder=self.fp_finder)
-            high_fp[i] = mf.to_avg(x)
+            self.change_param(p)
+            x = self.model.search_fixed_point(x0=x0, fp_finder=self.fp_finder)
+            high_fp[i] = self.model.to_avg(x)
             if self.verbose == 1:
                 p_bar.update()
         if self.verbose == 1:
@@ -106,9 +101,9 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
             (low_fp.reshape(1, *size), high_fp.reshape(1, *size)), axis=0
         )
 
-    def compute_thresholds(self, mf):
-        low_f = lambda p: self.criterion(mf, self.absorbing_state(mf).reshape(-1), p)
-        high_f = lambda p: self.criterion(mf, self.epidemic_state(mf).reshape(-1), p)
+    def compute_thresholds(self):
+        low_f = lambda p: self.criterion(self.absorbing_state().reshape(-1), p)
+        high_f = lambda p: self.criterion(self.epidemic_state().reshape(-1), p)
 
         thresholds = np.array([])
         p_min = self.p_range[0]
@@ -136,26 +131,26 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
             p_bar.close()
         return thresholds
 
-    def epidemic_state(self, mf):
-        x = np.ones(mf.array_shape).astype(mf.dtype) * self.epsilon
+    def epidemic_state(self):
+        x = np.ones(self.model.array_shape).astype(self.model.dtype) * self.epsilon
         x[0] = 1 - self.epsilon
         x = 1 - x
-        return mf.normalize_state(x)
+        return self.model.normalize_state(x)
 
-    def absorbing_state(self, mf):
-        x = np.ones(mf.array_shape) * self.epsilon
+    def absorbing_state(self):
+        x = np.ones(self.model.array_shape) * self.epsilon
         x[0] = 1 - self.epsilon
-        return mf.normalize_state(x)
+        return self.model.normalize_state(x)
 
-    def __continuous_threshold_criterion(self, mf, states, p):
-        _mf = self.change_param(mf, p)
-        val = _mf.stability(states) - 1
+    def __continuous_threshold_criterion(self, states, p):
+        self.change_param(p)
+        val = self.model.stability(states) - 1
         return val
 
-    def __discontinuous_threshold_criterion(self, mf, states, p):
-        _mf = self.change_param(mf, p)
-        fp = _mf.search_fixed_point(x0=states, fp_finder=self.fp_finder)
-        s = _mf.to_avg(fp)[0]
+    def __discontinuous_threshold_criterion(self, states, p):
+        self.change_param(p)
+        fp = self.model.search_fixed_point(x0=states, fp_finder=self.fp_finder)
+        s = self.model.to_avg(fp)[0]
         if s >= 1 - 1e-2:
             val = -1
         else:
@@ -163,32 +158,29 @@ class EpidemicsMFMetrics(MeanfieldMetrics):
         return val
 
 
-class PoissonEpidemicsMFMetrics(EpidemicsMFMetrics):
+class PoissonEMFMetrics(EpidemicsMFMetrics):
     def __init__(self, config, verbose=0):
         self.num_k = config.num_k
-        self.degree_dist = dl.utilities.poisson_distribution(
-            config.mf_parameters[0], num_k=self.num_k
-        )
-        super(PoissonEpidemicsMFMetrics, self).__init__(
-            self.degree_dist, config, verbose
-        )
+        super(PoissonEMFMetrics, self).__init__(config, verbose)
 
-    def change_param(self, mf, avgk):
-        _degree_dist = dl.utilities.poisson_distribution(avgk, self.num_k)
-        mf.degree_dist = _degree_dist
-        self.degree_dist = _degree_dist
-        return mf
+    def change_param(self, avgk):
+        degree_dist = dl.utilities.poisson_distribution(avgk, self.num_k)
+        self.model.degree_dist = degree_dist
 
 
-class DegreeRegularEpidemicsMFMetrics(EpidemicsMFMetrics):
+class TruePEMFMetrics(PoissonEMFMetrics):
     def __init__(self, config, verbose=0):
-        self.degree_dist = dl.utilities.kronecker_distribution(config.mf_parameters[0])
-        super(DegreeRegularEpidemicsMFMetrics, self).__init__(
-            self.degree_dist, config, verbose
-        )
+        super(TruePEMFMetrics, self).__init__(config, verbose)
 
-    def change_param(self, mf, avgk):
-        _degree_dist = dl.utilities.kronecker_distribution(avgk)
-        mf.degree_dist = _degree_dist
-        self.degree_dist = _degree_dist
-        return mf
+    def get_model(self, experiment):
+        degree_dist = dl.utilities.poisson_distribution(self.parameters[0], self.num_k)
+        self.model = dl.metrics.meanfields.get(experiment.dynamics_model, degree_dist)
+
+
+class GNNPEMFMetrics(PoissonEMFMetrics):
+    def __init__(self, config, verbose=0):
+        super(GNNPEMFMetrics, self).__init__(config, verbose)
+
+    def get_model(self, experiment):
+        degree_dist = dl.utilities.poisson_distribution(self.parameters[0], self.num_k)
+        self.model = dl.metrics.meanfields.GNN_MF(experiment.model, degree_dist)

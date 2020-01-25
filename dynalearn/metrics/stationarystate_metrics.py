@@ -17,41 +17,40 @@ class StationaryStateMetrics(Metrics):
         self.reshuffle = config.reshuffle
         self.tol = config.tol
 
-        self.graph_model = None
-        self.dynamics_model = None
-        self.gnn_model = None
+        self.graph = None
+        self.model = None
+        self.dynamics = None
 
         super(StationaryStateMetrics, self).__init__(verbose)
 
     @abstractmethod
-    def change_param(self, p):
+    def change_param(self, new_param):
         raise NotImplementedError("change_param must be implemented.")
 
     @abstractmethod
     def compute_stationary_states(self, model):
         raise NotImplementedError("compute_stationary_states must be implemented.")
 
+    @abstractmethod
+    def get_model(self, experiment):
+        raise NotImplementedError("get_model must be implemented.")
+
     def compute(self, experiment):
-        self.dynamics_model = experiment.dynamics_model
-        self.gnn_model = experiment.model
+        self.get_model(experiment)
+        self.dynamics = experiment.dynamics_model
 
         if self.verbose:
-            print("Computing " + self.__class__.__name__ + ": True")
-        avg, std = self.compute_stationary_states(self.dynamics_model)
-        self.data[f"true_ss_avg"] = avg
-        self.data[f"true_ss_std"] = std
-        if self.verbose:
-            print("Computing " + self.__class__.__name__ + ": GNN")
-        avg, std = self.compute_stationary_states(self.gnn_model)
-        self.data[f"gnn_ss_avg"] = avg
-        self.data[f"gnn_ss_std"] = std
+            print("Computing " + self.__class__.__name__)
+        avg, std = self.compute_stationary_states()
+        self.data[f"avg"] = avg
+        self.data[f"std"] = std
 
-    def get_samples(self, model, x0, pb=None):
+    def get_samples(self, x0, pb=None):
 
-        model.graph = self.graph_model.generate()[1]
+        self.model.graph = self.graph_model.generate()[1]
         x = x0 * 1
-        samples = np.zeros((self.num_samples, model.graph.number_of_nodes()))
-        x = self.burning(model, x, self.initial_burn)
+        samples = np.zeros((self.num_samples, self.model.graph.number_of_nodes()))
+        x = self.burning(x, self.initial_burn)
 
         for i in range(self.num_samples):
             samples[i] = x
@@ -59,89 +58,50 @@ class StationaryStateMetrics(Metrics):
                 pb.update()
 
             if (i + 1) % self.reshuffle == 0:
-                model.graph = self.graph_model.generate()[1]
-                x = self.burning(model, x, self.initial_burn)
+                self.model.graph = self.graph_model.generate()[1]
+                x = self.burning(x, self.initial_burn)
 
-            x = self.burning(model, x, self.burn)
+            x = self.burning(x, self.burn)
         return samples
 
-    def burning(self, model, x, burn=1):
+    def burning(self, x, burn=1):
 
         for b in range(burn):
-            x = model.sample(x)
+            x = self.model.sample(x)
 
         return x
 
     def avg(self, x):
-        avg_x = np.zeros(self.dynamics_model.num_states)
-        for i in range(self.dynamics_model.num_states):
+        avg_x = np.zeros(self.model.num_states)
+        for i in range(self.model.num_states):
             avg_x[i] = np.mean(x == i)
         return avg_x
 
     def std(self, x):
-        std_x = np.zeros(self.dynamics_model.num_states)
-        for i in range(self.dynamics_model.num_states):
+        std_x = np.zeros(self.model.num_states)
+        for i in range(self.model.num_states):
             std_x[i] = np.std(x == i)
         return np.array(std_x)
 
-    # @property
-    # def graph_model(self):
-    #     if self._graph_model is None:
-    #         raise ValueError("graph model is unavailable.")
-    #     else:
-    #         return self._graph_model
-    #
-    # @graph_model.setter
-    # def graph_model(self, graph_model):
-    #     name = type(graph_model).__name__
-    #     params = graph_model.params
-    #     param_dict = {"name": name, "params": params}
-    #     self._graph_model = dl.graphs.get(param_dict)
 
-    # @property
-    # def dynamics_model(self):
-    #     if self._dynamics_model is None:
-    #         raise ValueError("dynamics model is unavailable.")
-    #     else:
-    #         return self._dynamics_model
-    #
-    # @dynamics_model.setter
-    # def dynamics_model(self, dynamics_model):
-    #     name = type(dynamics_model).__name__
-    #     params = dynamics_model.params
-    #     param_dict = {"name": name, "params": params}
-    #     self._dynamics_model = dl.dynamics.get(param_dict)
-    #
-    # @property
-    # def gnn_model(self):
-    #     if self._gnn_model is None:
-    #         raise ValueError("GNN model is unavailable.")
-    #     else:
-    #         return self._gnn_model
-    #
-    # @gnn_model.setter
-    # def gnn_model(self, gnn_model):
-    #     self._gnn_model = gnn_model
-
-
-class EpidemicsSSMetrics(StationaryStateMetrics):
+class EpidemicSSMetrics(StationaryStateMetrics):
     def __init__(self, config, verbose=0):
         self.epsilon = config.epsilon
-        super(EpidemicsSSMetrics, self).__init__(config, verbose)
+        super(EpidemicSSMetrics, self).__init__(config, verbose)
 
     def epidemic_state(self):
-        self.dynamics_model.params["init"] = 1 - self.epsilon
+        self.dynamics.params["init"] = 1 - self.epsilon
         name, g = self.graph_model.generate()
-        return self.dynamics_model.initial_states(g)
+        return self.dynamics.initial_states(g)
 
     def absoring_state(self):
-        self.dynamics_model.params["init"] = self.epsilon
+        self.dynamics.params["init"] = self.epsilon
         name, g = self.graph_model.generate()
-        return self.dynamics_model.initial_states(g)
+        return self.dynamics.initial_states(g)
 
-    def compute_stationary_states(self, model):
-        avg = np.zeros((2, len(self.parameters), self.dynamics_model.num_states))
-        std = np.zeros((2, len(self.parameters), self.dynamics_model.num_states))
+    def compute_stationary_states(self):
+        avg = np.zeros((2, len(self.parameters), self.model.num_states))
+        std = np.zeros((2, len(self.parameters), self.model.num_states))
 
         if self.verbose:
             pb = tqdm.tqdm(range(2 * len(self.parameters) * self.num_samples))
@@ -151,9 +111,9 @@ class EpidemicsSSMetrics(StationaryStateMetrics):
         x0 = self.absoring_state()
         for i, p in enumerate(self.parameters):
             self.change_param(p)
-            samples = self.get_samples(model, x0, pb)
+            samples = self.get_samples(x0, pb)
             x0 = samples[-1]
-            if self.dynamics_model.is_dead(x0):
+            if self.dynamics.is_dead(x0):
                 x0 = self.absoring_state()
             avg[0, i] = self.avg(samples)
             std[0, i] = self.std(samples)
@@ -161,9 +121,9 @@ class EpidemicsSSMetrics(StationaryStateMetrics):
         x0 = self.epidemic_state()
         for i, p in reversed(list(enumerate(self.parameters))):
             self.change_param(p)
-            samples = self.get_samples(model, x0, pb)
+            samples = self.get_samples(x0, pb)
             x0 = samples[-1]
-            if self.dynamics_model.is_dead(x0):
+            if self.dynamics.is_dead(x0):
                 x0 = self.absoring_state()
             avg[1, i] = self.avg(samples)
             std[1, i] = self.std(samples)
@@ -174,11 +134,11 @@ class EpidemicsSSMetrics(StationaryStateMetrics):
         return avg, std
 
 
-class PoissonEpidemicsSSMetrics(EpidemicsSSMetrics):
+class PoissonESSMetrics(EpidemicSSMetrics):
     def __init__(self, config, verbose=0):
         self.num_nodes = config.num_nodes
         self.num_k = config.num_k
-        super(PoissonEpidemicsSSMetrics, self).__init__(config, verbose)
+        super(PoissonESSMetrics, self).__init__(config, verbose)
         self.change_param(config.ss_parameters[0])
 
     def change_param(self, avgk):
@@ -186,3 +146,20 @@ class PoissonEpidemicsSSMetrics(EpidemicsSSMetrics):
         self.graph_model = dl.graphs.DegreeSequenceGraph(
             {"N": self.num_nodes, "degree_dist": poisson_dist}
         )
+
+
+class TruePESSMetrics(PoissonESSMetrics):
+    def __init__(self, config, verbose=0):
+        super(TruePESSMetrics, self).__init__(config, verbose)
+
+    def get_model(self, experiment):
+        self.model = experiment.dynamics_model
+
+
+class GNNPESSMetrics(PoissonESSMetrics):
+    def __init__(self, config, verbose=0):
+        super(GNNPESSMetrics, self).__init__(config, verbose)
+
+    def get_model(self, experiment):
+        self.model = experiment.model
+        self.model.num_nodes = self.num_nodes

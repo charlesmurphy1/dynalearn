@@ -50,7 +50,7 @@ class ComplexSISMF(MF):
         )
 
     def compute_ltp(self,):
-        ltp = np.zeros((self.s_dim, self.s_dim, *self.k_grid.shape))
+        ltp = np.zeros((self.num_states, self.num_states, *self.k_grid.shape))
         activation_prob = self.activation(self.l_grid, self.k_grid)
         deactivation_prob = self.deactivation(self.l_grid, self.k_grid)
         ltp[0, 0] = 1 - activation_prob
@@ -71,7 +71,7 @@ class ComplexSIRMF(MF):
         )
 
     def compute_ltp(self,):
-        ltp = np.zeros((self.s_dim, self.s_dim, *self.k_grid.shape))
+        ltp = np.zeros((self.num_states, self.num_states, *self.k_grid.shape))
         activation_prob = self.activation(self.l_grid, self.k_grid)
         deactivation_prob = self.deactivation(self.l_grid, self.k_grid)
         ltp[0, 0] = 1 - activation_prob

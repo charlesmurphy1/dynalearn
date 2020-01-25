@@ -9,7 +9,7 @@ class SISSIS_MF(MF):
         super(SISSIS_MF, self).__init__(4, degree_dist, tol=tol, verbose=verbose)
 
     def compute_ltp(self,):
-        ltp = np.zeros((self.s_dim, self.s_dim, *self.k_grid.shape))
+        ltp = np.zeros((self.num_states, self.num_states, *self.k_grid.shape))
         tau1, tau2 = self.params["infection1"], self.params["infection2"]
         gamma1, gamma2 = self.params["recovery1"], self.params["recovery2"]
         zeta = self.params["coupling"]
