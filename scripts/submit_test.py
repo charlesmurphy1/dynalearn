@@ -50,6 +50,7 @@ for config in configs_to_run:
     script += "python training_script.py --config_path {0} --verbose {1}\n".format(
         config.path_to_config, 1
     )
+    script += "python datafig.py --config_path {0}\n".format(config.path_to_config)
     script += "deactivate\n"
 
     # seed = int(time.time())
