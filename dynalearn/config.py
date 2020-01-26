@@ -114,8 +114,10 @@ class ExperimentConfig:
                 "GNNStarLTPMetrics",
                 "UniformStarLTPMetrics",
                 "StatisticsMetrics",
-                "PoissonEpidemicsMFMetrics",
-                "PoissonEpidemicsSSMetrics",
+                "TruePEMFMetrics",
+                "GNNPEMFMetrics",
+                "TruePESSMetrics",
+                "GNNPESSMetrics",
             ],
             "config": metrics,
         }
