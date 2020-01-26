@@ -100,6 +100,8 @@ class Experiment:
 
     def run(self, overwrite=True):
         if self.verbose != 0:
+            print("\n---Building---")
+        if self.verbose != 0:
             print("\n---Generating data---")
         self.generate_data()
         self.save_data(overwrite)
@@ -115,6 +117,9 @@ class Experiment:
             print("\n---Computing metrics---")
         self.compute_metrics()
         self.save_metrics(overwrite)
+
+        if self.verbose != 0:
+            print("\n---Finished---")
 
     def save(self, overwrite=True):
         self.save_config(overwrite)

@@ -38,8 +38,8 @@ class MeanfieldMetrics(Metrics):
         self.get_model(experiment)
         if self.verbose != 0:
             print("Computing " + self.__class__.__name__)
-        self.data[f"thresholds"] = self.compute_thresholds()
-        self.data[f"fixed_points"] = self.compute_fixed_points()
+        self.data["thresholds"] = self.compute_thresholds()
+        self.data["fixed_points"] = self.compute_fixed_points()
 
     @abstractmethod
     def compute_fixed_points(self, mf):

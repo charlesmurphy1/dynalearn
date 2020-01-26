@@ -42,8 +42,8 @@ class StationaryStateMetrics(Metrics):
         if self.verbose:
             print("Computing " + self.__class__.__name__)
         avg, std = self.compute_stationary_states()
-        self.data[f"avg"] = avg
-        self.data[f"std"] = std
+        self.data["avg"] = avg
+        self.data["std"] = std
 
     def get_samples(self, x0, pb=None):
 
