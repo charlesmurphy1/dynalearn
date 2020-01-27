@@ -12,19 +12,19 @@ def generate_ltp_data(h5file, experiment):
     transitions = {(0, 1): "S-I", (1, 0): "I-S"}
 
     for t in transitions:
-        name = "true-ltp/{0}".format(transitions[t])
+        name = "ltp-true/{0}".format(transitions[t])
         x, y, el, eh = true.aggregate(true.data["ltp/train"], in_state=t[0], out_state=t[1],
                                       err_operation="percentile")
         data = np.array([x, y, el, eh]).T
         h5file.create_dataset(name, data=data)
 
-        name = "gnn-ltp/{0}".format(transitions[t])
+        name = "ltp-gnn/{0}".format(transitions[t])
         x, y, el, eh = gnn.aggregate(gnn.data["ltp/train"], in_state=t[0], out_state=t[1],
                                       err_operation="percentile")
         data = np.array([x, y, el, eh]).T
         h5file.create_dataset(name, data=data)
 
-        name = "mle-ltp/{0}".format(transitions[t])
+        name = "ltp-mle/{0}".format(transitions[t])
         x, y, el, eh = mle.aggregate(mle.data["ltp/train"], in_state=t[0], out_state=t[1],
                                       err_operation="percentile")
         data = np.array([x, y, el, eh]).T
@@ -58,17 +58,17 @@ def generate_error_data(h5file, experiment):
 def generate_ssmf_data(h5file, experiment):
     true_mf = experiment.metrics["TruePEMFMetrics"]
     true_ss = experiment.metrics["TruePESSMetrics"]
-    h5file.create_dataset("true/fixed_points", data=true_mf.data["fixed_points"])
-    h5file.create_dataset("true/thresholds", data=true_mf.data["thresholds"])
-    h5file.create_dataset("true/ss_avg", data=true_ss.data["avg"])
-    h5file.create_dataset("true/ss_std", data=true_ss.data["std"])
+    h5file.create_dataset("true-fixed_points", data=true_mf.data["fixed_points"])
+    h5file.create_dataset("true-thresholds", data=true_mf.data["thresholds"])
+    h5file.create_dataset("true-ss_avg", data=true_ss.data["avg"])
+    h5file.create_dataset("true-ss_std", data=true_ss.data["std"])
 
     gnn_mf = experiment.metrics["GNNPEMFMetrics"]
     gnn_ss = experiment.metrics["GNNPESSMetrics"]
-    h5file.create_dataset("gnn/fixed_points", data=gnn_mf.data["fixed_points"])
-    h5file.create_dataset("gnn/thresholds", data=gnn_mf.data["thresholds"])
-    h5file.create_dataset("gnn/ss_avg", data=gnn_ss.data["avg"])
-    h5file.create_dataset("gnn/ss_std", data=gnn_ss.data["std"])
+    h5file.create_dataset("gnn-fixed_points", data=gnn_mf.data["fixed_points"])
+    h5file.create_dataset("gnn-thresholds", data=gnn_mf.data["thresholds"])
+    h5file.create_dataset("gnn-ss_avg", data=gnn_ss.data["avg"])
+    h5file.create_dataset("gnn-ss_std", data=gnn_ss.data["std"])
 
 
 parser = argparse.ArgumentParser()
