@@ -9,12 +9,12 @@ path_to_dir = os.path.join(path_to_all, "training")
 path_to_models = os.path.join(path_to_all, "models")
 
 configs_to_run = [
-#    dl.ExperimentConfig.sis_er(num_samples, path_to_dir, path_to_models),
-#    dl.ExperimentConfig.sis_ba(num_samples, path_to_dir, path_to_models),
-#    dl.ExperimentConfig.plancksis_er(num_samples, path_to_dir, path_to_models),
-#    dl.ExperimentConfig.plancksis_ba(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.sissis_er(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.sissis_ba(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.sis_er(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.sis_ba(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.plancksis_er(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.plancksis_ba(num_samples, path_to_dir, path_to_models),
+#    dl.ExperimentConfig.sissis_er(num_samples, path_to_dir, path_to_models),
+#    dl.ExperimentConfig.sissis_ba(num_samples, path_to_dir, path_to_models),
 ]
 
 for config in configs_to_run:
@@ -24,16 +24,15 @@ for config in configs_to_run:
     config.save(path_to_data)
     script = "#!/bin/bash\n"
     script += "#SBATCH --account=def-aallard\n"
-    script += "#SBATCH --time=48:00:00\n"
+    script += "#SBATCH --time=2:00:00\n"
     script += "#SBATCH --job-name={0}\n".format(config.config["name"])
     script += "#SBATCH --output={0}.out\n".format(os.path.join(path_to_data, "output"))
-    script += "#SBATCH --gres=gpu:1\n"
-    script += "#SBATCH --mem=24G\n"
+    script += "#SBATCH --mem=16G\n"
     script += "\n"
     script += "module load python/3.7 scipy-stack mpi4py\n"
     script += "source ~/pyenv/.dynalearn-env/bin/activate\n"
-    script += "python training_script.py --config_path {0} --verbose {1}\n".format(
-        config.path_to_config, 2
+    script += "python datafig.py --config_path {0}\n".format(
+        config.path_to_config
     )
     script += "python datafig.py --config_path {0}\n".format(config.path_to_config)
     script += "deactivate\n"

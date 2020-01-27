@@ -2,6 +2,8 @@ import h5py
 import numpy as np
 import dynalearn as dl
 import argparse
+import os
+from scipy.spatial.distance import jensenshannon
 
 def generate_ltp_data(h5file, experiment):
     true = experiment.metrics["TrueLTPMetrics"]
@@ -36,13 +38,13 @@ def generate_error_data(h5file, experiment):
     mle = experiment.metrics["MLELTPMetrics"]
 
     name = "jsd-true-gnn"
-    jsd = true.compare("ltp", gnn, func=jensenshannon, verbose=verbose)
+    jsd = true.compare("ltp", gnn, func=jensenshannon, verbose=0)
     x, y, el, eh = true.aggregate(jsd, for_degree=True, err_operation="percentile")
     data = np.array([x, y, el, eh]).T
     h5file.create_dataset(name, data=data)
 
     name = "jsd-true-uni"
-    jsd = true.compare("ltp", uni, func=jensenshannon, verbose=verbose)
+    jsd = true.compare("ltp", uni, func=jensenshannon, verbose=0)
     x, y, el, eh = true.aggregate(jsd, for_degree=True, err_operation="percentile")
     data = np.array([x, y, el, eh]).T
     h5file.create_dataset(name, data=data)
@@ -84,7 +86,7 @@ args = parser.parse_args()
 config = dl.ExperimentConfig.config_from_file(args.config_path)
 experiment = dl.Experiment(config.config, verbose=0)
 experiment.load()
-
+print(os.path.join(experiment.path_to_data, "figure_data.h5"))
 h5file = h5py.File(os.path.join(experiment.path_to_data, "figure_data.h5"))
 generate_ltp_data(h5file, experiment)
 generate_error_data(h5file, experiment)
