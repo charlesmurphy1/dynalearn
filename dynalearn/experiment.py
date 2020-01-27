@@ -229,14 +229,17 @@ class Experiment:
             self.model.model.load_weights(path)
 
     def save_data(self, overwrite=True):
-        h5file = h5py.File(os.path.join(self.path_to_data, self.filename_data))
+        path = os.path.join(self.path_to_data, self.filename_data)
+        if os.path.exists(path) and not overwrite:
+            return
+        h5file = h5py.File(path, "w")
         self.generator.save(h5file, overwrite)
         h5file.close()
 
     def load_data(self):
         path = os.path.join(self.path_to_data, self.filename_data)
         if os.path.exists(path):
-            h5file = h5py.File(path)
+            h5file = h5py.File(path, "r")
         else:
             return
 
@@ -254,7 +257,7 @@ class Experiment:
     def load_history(self,):
         path = os.path.join(self.path_to_data, self.filename_history)
         if os.path.exists(path):
-            h5file = h5py.File(path)
+            h5file = h5py.File(path, "r")
         else:
             return
 
@@ -267,7 +270,7 @@ class Experiment:
         if os.path.exists(path) and not overwrite:
             return
 
-        h5file = h5py.File(path)
+        h5file = h5py.File(path, "a")
         for k, v in self.metrics.items():
             v.save(k, h5file, overwrite=overwrite)
         h5file.close()
