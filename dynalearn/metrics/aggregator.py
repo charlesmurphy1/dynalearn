@@ -59,6 +59,8 @@ class Aggregator(ABC):
                 if len(val) > 0:
                     y[i] = op_val(val)
                     err_low[i], err_high[i] = op_err(val)
+                else:
+                    y[i] = np.nan
         else:
             x, all_x = self.aggregate_summaries(summaries)
             y = np.zeros(x.shape)
@@ -79,6 +81,8 @@ class Aggregator(ABC):
                 if len(val) > 0:
                     y[i] = op_val(val)
                     err_low[i], err_high[i] = op_err(val)
+                else:
+                    y[i] = np.nan
 
         x = x[~np.isnan(y)]
         err_low = err_low[~np.isnan(y)]
