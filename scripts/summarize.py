@@ -5,6 +5,7 @@ import argparse
 import os
 from scipy.spatial.distance import jensenshannon
 
+
 def generate_ltp_data(h5file, experiment):
     true = experiment.metrics["TrueLTPMetrics"]
     gnn = experiment.metrics["GNNLTPMetrics"]
@@ -13,22 +14,35 @@ def generate_ltp_data(h5file, experiment):
 
     for t in transitions:
         name = "ltp-true/{0}".format(transitions[t])
-        x, y, el, eh = true.aggregate(true.data["ltp/train"], in_state=t[0], out_state=t[1],
-                                      err_operation="percentile")
+        x, y, el, eh = true.aggregate(
+            true.data["ltp/val"],
+            in_state=t[0],
+            out_state=t[1],
+            err_operation="percentile",
+        )
         data = np.array([x, y, el, eh]).T
         h5file.create_dataset(name, data=data)
 
         name = "ltp-gnn/{0}".format(transitions[t])
-        x, y, el, eh = gnn.aggregate(gnn.data["ltp/train"], in_state=t[0], out_state=t[1],
-                                      err_operation="percentile")
+        x, y, el, eh = gnn.aggregate(
+            gnn.data["ltp/val"],
+            in_state=t[0],
+            out_state=t[1],
+            err_operation="percentile",
+        )
         data = np.array([x, y, el, eh]).T
         h5file.create_dataset(name, data=data)
 
         name = "ltp-mle/{0}".format(transitions[t])
-        x, y, el, eh = mle.aggregate(mle.data["ltp/train"], in_state=t[0], out_state=t[1],
-                                      err_operation="percentile")
+        x, y, el, eh = mle.aggregate(
+            mle.data["ltp/train"],
+            in_state=t[0],
+            out_state=t[1],
+            err_operation="percentile",
+        )
         data = np.array([x, y, el, eh]).T
         h5file.create_dataset(name, data=data)
+
 
 def generate_error_data(h5file, experiment):
     true = experiment.metrics["TrueStarLTPMetrics"]
@@ -54,6 +68,7 @@ def generate_error_data(h5file, experiment):
     x, y, el, eh = _true.aggregate(jsd, for_degree=True, err_operation="percentile")
     data = np.array([x, y, el, eh]).T
     h5file.create_dataset(name, data=data)
+
 
 def generate_ssmf_data(h5file, experiment):
     true_mf = experiment.metrics["TruePEMFMetrics"]

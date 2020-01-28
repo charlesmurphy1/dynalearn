@@ -21,8 +21,9 @@ class TrainingConfig:
         cls.num_graphs = 1
         cls.num_samples = 10000
         cls.step_per_epoch = 10000
+        cls.sampling_bias = 0.6
         cls.val_fraction = 0.01
-        cls.val_bias = 1
+        cls.val_bias = 0.8
         cls.test_fraction = None
         cls.test_bias = 0.8
         cls.np_seed = 1
@@ -42,6 +43,7 @@ class TrainingConfig:
         cls.num_graphs = 1
         cls.num_samples = 100
         cls.step_per_epoch = 100
+        cls.sampling_bias = 0.6
         cls.val_fraction = 0.01
         cls.val_bias = 0.8
         cls.test_fraction = None
@@ -63,13 +65,14 @@ class TrainingConfig:
         cls.num_graphs = 1
         cls.num_samples = num_samples
         cls.step_per_epoch = 10000
+        cls.sampling_bias = 0.6
         cls.val_fraction = 0.01
-        cls.val_bias = 0.8
+        cls.val_bias = 0.6
         cls.test_fraction = None
         cls.test_bias = 0.8
         cls.np_seed = 1
-        cls.training_metrics = ["model_entropy"]
-        # cls.training_metrics = ["model_entropy", "jensenshannon"]
+        # cls.training_metrics = ["model_entropy"]
+        cls.training_metrics = ["model_entropy", "jensenshannon"]
 
         return cls
 
@@ -90,6 +93,7 @@ class ExperimentConfig:
         path_to_dir,
         path_to_model,
     ):
+        training_config = TrainingConfig.changing_num_samples(num_samples)
         self.config["name"] = name
         self.config["dynamics"] = dynamics
         self.config["graph"] = graph
@@ -100,7 +104,7 @@ class ExperimentConfig:
             "sampler": {
                 "name": "StateBiasedSampler",
                 "config": dl.datasets.samplers.SamplerConfig.BiasedSamplerDefault(
-                    dynamics, 0.6
+                    dynamics, training_config.sampling_bias
                 ),
             },
         }
@@ -121,17 +125,15 @@ class ExperimentConfig:
             ],
             "config": metrics,
         }
-        self.config["training"] = TrainingConfig.changing_num_samples(num_samples)
+        self.config["training"] = training_config
         self.config["path_to_dir"] = path_to_dir
         self.config["path_to_bestmodel"] = path_to_model
 
     def save(self, path=None, overwrite=True):
         if path is None:
-            path = os.path.join(
-                self.config["path_to_dir"], self.config["name"] + "_config.pickle"
-            )
+            path = os.path.join(self.config["path_to_dir"], "config.pickle")
         else:
-            path = os.path.join(path, self.config["name"] + "_config.pickle")
+            path = os.path.join(path, "config.pickle")
 
         self.path_to_config = path
         if os.path.exists(path) and not overwrite:

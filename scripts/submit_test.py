@@ -4,8 +4,8 @@ import time
 
 num_samples = 100
 
-path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
-# path_to_all = "../data/"
+# path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
+path_to_all = "../data/"
 path_to_dir = os.path.join(path_to_all, "test")
 path_to_models = os.path.join(path_to_all, "test")
 
@@ -60,5 +60,5 @@ for config in configs_to_run:
     with open(path, "w") as f:
         f.write(script)
 
-    # os.system("bash {0}".format(path))
-    os.system("sbatch {0}".format(path))
+    os.system("bash {0}".format(path))
+    # os.system("sbatch {0}".format(path))
