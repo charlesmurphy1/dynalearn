@@ -73,8 +73,8 @@ def generate_error_data(h5file, experiment):
 def generate_ssmf_data(h5file, experiment):
     true_mf = experiment.metrics["TruePEMFMetrics"]
     true_ss = experiment.metrics["TruePESSMetrics"]
-#    h5file.create_dataset("mf_parameters", data=true_mf.data["parameters"])
-#    h5file.create_dataset("ss_parameters", data=true_ss.data["parameters"])
+    h5file.create_dataset("mf-parameters", data=true_mf.data["parameters"])
+    h5file.create_dataset("ss-parameters", data=true_ss.data["parameters"])
 
     h5file.create_dataset("true-fixed_points", data=true_mf.data["fixed_points"])
     h5file.create_dataset("true-thresholds", data=true_mf.data["thresholds"])

@@ -42,6 +42,7 @@ class StationaryStateMetrics(Metrics):
         if self.verbose:
             print("Computing " + self.__class__.__name__)
         avg, std = self.compute_stationary_states()
+        self.data["parameters"] = self.parameters
         self.data["avg"] = avg
         self.data["std"] = std
 
