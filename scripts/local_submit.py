@@ -34,9 +34,9 @@ for config in configs_to_run:
     ]
     config.save(path_to_data)
     script = "#!/bin/bash\n"
-    # script += "python training_script.py --config_path {0} --verbose {1}\n".format(
-    #     config.path_to_config, 1
-    # )
+    script += "python training_script.py --config_path {0} --verbose {1}\n".format(
+        config.path_to_config, 1
+    )
     script += "python summarize.py --config_path {0}\n".format(config.path_to_config)
 
     # seed = int(time.time())

@@ -76,17 +76,17 @@ def generate_ssmf_data(h5file, experiment):
     h5file.create_dataset("mf-parameters", data=true_mf.data["parameters"])
     h5file.create_dataset("ss-parameters", data=true_ss.data["parameters"])
 
-    h5file.create_dataset("true-fixed_points", data=true_mf.data["fixed_points"])
-    h5file.create_dataset("true-thresholds", data=true_mf.data["thresholds"])
-    h5file.create_dataset("true-ss_avg", data=true_ss.data["avg"])
-    h5file.create_dataset("true-ss_std", data=true_ss.data["std"])
+    h5file.create_dataset("fixed_points-true", data=true_mf.data["fixed_points"])
+    h5file.create_dataset("thresholds-true", data=true_mf.data["thresholds"])
+    h5file.create_dataset("ss_avg-true", data=true_ss.data["avg"])
+    h5file.create_dataset("ss_std-true", data=true_ss.data["std"])
 
     gnn_mf = experiment.metrics["GNNPEMFMetrics"]
     gnn_ss = experiment.metrics["GNNPESSMetrics"]
-    h5file.create_dataset("gnn-fixed_points", data=gnn_mf.data["fixed_points"])
-    h5file.create_dataset("gnn-thresholds", data=gnn_mf.data["thresholds"])
-    h5file.create_dataset("gnn-ss_avg", data=gnn_ss.data["avg"])
-    h5file.create_dataset("gnn-ss_std", data=gnn_ss.data["std"])
+    h5file.create_dataset("fixed_points-gnn", data=gnn_mf.data["fixed_points"])
+    h5file.create_dataset("thresholds-gnn", data=gnn_mf.data["thresholds"])
+    h5file.create_dataset("ss_avg-gnn", data=gnn_ss.data["avg"])
+    h5file.create_dataset("ss_std-gnn", data=gnn_ss.data["std"])
 
 
 parser = argparse.ArgumentParser()

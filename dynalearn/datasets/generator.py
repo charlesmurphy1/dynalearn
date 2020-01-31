@@ -44,7 +44,7 @@ class DynamicsGenerator(Sequence):
         weights *= weights.shape[0]
         return [inputs, adj], targets, weights
 
-    def __getitem__(self, key):
+    def __getitem__(self, index):
         return self.__next__()
 
     def copy(self):
