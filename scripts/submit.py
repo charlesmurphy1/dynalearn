@@ -9,12 +9,12 @@ path_to_dir = os.path.join(path_to_all, "training")
 path_to_models = os.path.join(path_to_all, "models")
 
 configs_to_run = [
-    #    dl.ExperimentConfig.sis_er(num_samples, path_to_dir, path_to_models),
-    #    dl.ExperimentConfig.sis_ba(num_samples, path_to_dir, path_to_models),
-    #    dl.ExperimentConfig.plancksis_er(num_samples, path_to_dir, path_to_models),
-    #    dl.ExperimentConfig.plancksis_ba(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.sissis_er(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.sissis_ba(num_samples, path_to_dir, path_to_models),
+#    dl.ExperimentConfig.sis_er(num_samples, path_to_dir, path_to_models),
+#    dl.ExperimentConfig.sis_ba(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.plancksis_er(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.plancksis_ba(num_samples, path_to_dir, path_to_models),
+#    dl.ExperimentConfig.sissis_er(num_samples, path_to_dir, path_to_models),
+#    dl.ExperimentConfig.sissis_ba(num_samples, path_to_dir, path_to_models),
 ]
 
 for config in configs_to_run:
@@ -45,5 +45,5 @@ for config in configs_to_run:
     with open(path, "w") as f:
         f.write(script)
 
-    # os.system("bash {0}".format(path))
     os.system("sbatch {0}".format(path))
+
