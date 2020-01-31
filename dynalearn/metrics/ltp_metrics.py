@@ -120,7 +120,7 @@ class LTPMetrics(Metrics):
         counter = {}
         n = {}
         for g in graphs:
-            if self.num_points < inputs[g].shape[0]:
+            if self.num_points < inputs[g].shape[0] or self.num_points is not None:
                 n[g] = self.num_points
             else:
                 n[g] = inputs[g].shape[0]
@@ -218,6 +218,8 @@ class GNNLTPMetrics(LTPMetrics):
 class MLELTPMetrics(LTPMetrics):
     def __init__(self, config, verbose=0):
         super(MLELTPMetrics, self).__init__(config, verbose)
+        if "mle_num_points" in config.__dict__:
+            self.num_points = config.mle_num_points
 
     def get_metric(self, experiment, input, target):
         one_hot_target = np.zeros(
