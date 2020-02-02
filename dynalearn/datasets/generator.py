@@ -40,8 +40,8 @@ class DynamicsGenerator(Sequence):
         else:
             targets = self.to_one_hot(self.targets[g_index][s_index, :])
         weights = n_mask
-        weights /= weights.sum()
-        weights *= weights.shape[0]
+        # weights /= weights.sum()
+        # weights *= weights.shape[0]
         return [inputs, adj], targets, weights
 
     def __getitem__(self, index):
