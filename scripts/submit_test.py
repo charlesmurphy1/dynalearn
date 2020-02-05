@@ -4,13 +4,13 @@ import time
 
 num_samples = 100
 
-# path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
-path_to_all = "../data/"
+path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
+# path_to_all = "../data/"
 path_to_dir = os.path.join(path_to_all, "test")
 path_to_models = os.path.join(path_to_all, "test")
 
 configs_to_run = [
-    dl.ExperimentConfig.sis_er(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.sis_ba(num_samples, path_to_dir, path_to_models),
 ]
 
 for config in configs_to_run:
@@ -28,10 +28,10 @@ for config in configs_to_run:
         "GNNStarLTPMetrics",
         "UniformStarLTPMetrics",
         "StatisticsMetrics",
-        "TruePEMFMetrics",
-        "GNNPEMFMetrics",
-        "TruePESSMetrics",
-        "GNNPESSMetrics",
+        # "TruePEMFMetrics",
+        # "GNNPEMFMetrics",
+        # "TruePESSMetrics",
+        # "GNNPESSMetrics",
     ]
     config.config["metrics"]["config"].num_samples = 1
     config.config["metrics"]["config"].initial_burn = 1
@@ -45,12 +45,12 @@ for config in configs_to_run:
     script += "#SBATCH --gres=gpu:1\n"
     script += "#SBATCH --mem=12G\n"
     script += "\n"
-    script += "module load python/3.7 scipy-stack mpi4py\n"
-    script += "source ~/pyenv/.dynalearn-env/bin/activate\n"
+    script += "module load python/3.6 scipy-stack mpi4py\n"
+    script += "source ~/.dynalearn-env/bin/activate\n"
     script += "python training_script.py --config_path {0} --verbose {1}\n".format(
         config.path_to_config, 1
     )
-    script += "python datafig.py --config_path {0}\n".format(config.path_to_config)
+    script += "python summarie.py --config_path {0}\n".format(config.path_to_config)
     script += "deactivate\n"
 
     # seed = int(time.time())

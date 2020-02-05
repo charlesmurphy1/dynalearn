@@ -179,7 +179,7 @@ class SingleEpidemics(Epidemics):
             num_infected = np.random.choice(range(N))
         nodeset = np.array(list(self.graph.nodes()))
         ind = np.random.choice(nodeset, size=num_infected, replace=False)
-        states = np.ones(N) * self.state_label["S"]
+        states = np.zeros(N) * self.state_label["S"]
         states[ind] = self.state_label["I"]
         return states
 
