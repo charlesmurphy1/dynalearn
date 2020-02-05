@@ -26,9 +26,8 @@ class Experiment:
         self.metrics = dl.metrics.get(config["metrics"])
 
         self.name = config["name"]
-        self.path_to_dir = config["path_to_dir"]
-        self.path_to_data = os.path.join(self.path_to_dir, self.name)
-        self.path_to_bestmodel = config["path_to_bestmodel"]
+        self._path_to_data = config["path_to_data"]
+        self._path_to_models = config["path_to_models"]
 
         if "filename_config" not in config:
             self.filename_config = "config.pickle"
@@ -66,7 +65,7 @@ class Experiment:
                 dl.utilities.get_schedule(config["training"].schedule), verbose=0,
             ),
             ks.callbacks.ModelCheckpoint(
-                os.path.join(self.path_to_bestmodel, self.name + ".h5"),
+                os.path.join(self.path_to_models, self.name + ".h5"),
                 save_best_only=True,
                 monitor="val_loss",
                 mode="min",
@@ -82,8 +81,8 @@ class Experiment:
         if not os.path.exists(self.path_to_data):
             os.makedirs(self.path_to_data)
 
-        if not os.path.exists(os.path.join(self.path_to_bestmodel)):
-            os.makedirs(os.path.join(self.path_to_bestmodel))
+        if not os.path.exists(os.path.join(self.path_to_models)):
+            os.makedirs(os.path.join(self.path_to_models))
 
         self.verbose = verbose
         self.history = dict()
@@ -222,7 +221,7 @@ class Experiment:
 
     def load_model(self, best=True):
         if best:
-            path = os.path.join(self.path_to_bestmodel, self.name + ".h5")
+            path = os.path.join(self.path_to_models, self.name + ".h5")
         else:
             path = os.path.join(self.path_to_data, self.filename_model)
         if os.path.exists(path):
@@ -299,11 +298,21 @@ class Experiment:
             self.metrics[m].verbose = verbose
 
     @property
-    def path_to_dir(self):
-        return self._path_to_dir
+    def path_to_data(self):
+        return self._path_to_data
 
-    @path_to_dir.setter
-    def path_to_dir(self, path_to_dir):
-        self._path_to_dir = path_to_dir
-        if not os.path.exists(path_to_dir):
-            os.makedirs(path_to_dir)
+    @path_to_data.setter
+    def path_to_data(self, path_to_data):
+        self._path_to_data = path_to_data
+        if not os.path.exists(path_to_data):
+            os.makedirs(path_to_data)
+
+    @property
+    def path_to_models(self):
+        return self._path_to_models
+
+    @path_to_models.setter
+    def path_to_models(self, path_to_models):
+        self._path_to_models = path_to_models
+        if not os.path.exists(path_to_models):
+            os.makedirs(path_to_models)

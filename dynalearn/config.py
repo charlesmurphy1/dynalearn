@@ -90,8 +90,8 @@ class ExperimentConfig:
         graph,
         model,
         metrics,
-        path_to_dir,
-        path_to_model,
+        path_to_data,
+        path_to_models,
     ):
         training_config = TrainingConfig.changing_num_samples(num_samples)
         self.config["name"] = name
@@ -126,8 +126,8 @@ class ExperimentConfig:
             "config": metrics,
         }
         self.config["training"] = training_config
-        self.config["path_to_dir"] = path_to_dir
-        self.config["path_to_bestmodel"] = path_to_model
+        self.config["path_to_data"] = path_to_data
+        self.config["path_to_models"] = path_to_models
 
     def save(self, path=None, overwrite=True):
         if path is None:

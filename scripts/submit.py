@@ -1,4 +1,3 @@
-import dynalearn as dl
 import os
 import time
 
@@ -9,40 +8,39 @@ path_to_dir = os.path.join(path_to_all, "training")
 path_to_models = os.path.join(path_to_all, "models")
 
 configs_to_run = [
-    dl.ExperimentConfig.sis_er(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.sis_ba(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.plancksis_er(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.plancksis_ba(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.sissis_er(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.sissis_ba(num_samples, path_to_dir, path_to_models),
+    "sis_er",
+    "sis_ba",
+    "plancksis_er",
+    "plancksis_ba",
+    "sissis_er",
+    "sissis_ba",
 ]
 
 for config in configs_to_run:
-    path_to_data = os.path.join(path_to_dir, config.config["name"])
-    if not os.path.exists(path_to_data):
-        os.makedirs(path_to_data)
-    config.save(path_to_data)
+    name = config + "_" + str(num_samples)
+    path_to_data = os.path.join(path_to_dir, name)
     script = "#!/bin/bash\n"
     script += "#SBATCH --account=def-aallard\n"
     script += "#SBATCH --time=48:00:00\n"
-    script += "#SBATCH --job-name={0}\n".format(config.config["name"])
+    script += "#SBATCH --job-name={0}\n".format(config)
     script += "#SBATCH --output={0}.out\n".format(os.path.join(path_to_data, "output"))
     script += "#SBATCH --gres=gpu:1\n"
     script += "#SBATCH --mem=24G\n"
     script += "\n"
     script += "module load python/3.6 scipy-stack mpi4py\n"
     script += "source ~/.dynalearn-env/bin/activate\n"
-    script += "python training_script.py --config_path {0} --verbose {1}\n".format(
-        config.path_to_config, 1
-    )
-    script += "python summarize.py --config_path {0}\n".format(config.path_to_config)
+    script += "python training_script.py"
+    script += " --name {0}".format(config)
+    script += " --num_samples {0}".format(num_samples)
+    script += " --path_to_data {0}".format(path_to_data)
+    script += " --path_to_models {0}".format(path_to_models)
+    script += " --verbose 2"
     script += "deactivate\n"
 
-    # seed = int(time.time())
-    seed = 1
-    path = "{0}/{1}-{2}.sh".format("./launch_scripts", config.config["name"], seed)
+    seed = 0
+    path_to_script = "{0}/{1}-{2}.sh".format("./launch_scripts", name, seed)
 
-    with open(path, "w") as f:
+    with open(path_to_script, "w") as f:
         f.write(script)
 
-    os.system("sbatch {0}".format(path))
+    os.system("sbatch {0}".format(path_to_script))

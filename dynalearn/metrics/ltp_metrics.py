@@ -130,9 +130,7 @@ class LTPMetrics(Metrics):
         if self.verbose != 0:
             print("Computing " + self.__class__.__name__)
         if self.verbose == 1:
-            num_iter = int(np.sum([inputs[g].shape[0] for g in graphs]))
-            if self.num_points < num_iter:
-                num_iter = self.num_points
+            num_iter = int(np.sum([n[g] for g in graphs]))
             p_bar = tqdm.tqdm(range(num_iter))
 
         for g in graphs:
