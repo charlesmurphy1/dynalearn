@@ -15,7 +15,7 @@ path_to_data = os.path.join(path_to_dir, config)
 script = "#!/bin/bash\n"
 script += "#SBATCH --account=def-aallard\n"
 script += "#SBATCH --time=1:00:00\n"
-script += "#SBATCH --job-name={0}\n".format(config)
+script += "#SBATCH --job-name={0}\n".format(name)
 script += "#SBATCH --output={0}.out\n".format(os.path.join(path_to_data, "output"))
 script += "#SBATCH --gres=gpu:1\n"
 script += "#SBATCH --mem=12G\n"
