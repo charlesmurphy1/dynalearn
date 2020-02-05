@@ -5,16 +5,16 @@ import time
 num_samples = 10000
 
 path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
-path_to_dir = os.path.join(path_to_all, "training")
-path_to_models = os.path.join(path_to_all, "models")
+path_to_dir = os.path.join(path_to_all, "training-2")
+path_to_models = os.path.join(path_to_all, "nonorm-models")
 
 configs_to_run = [
 #    dl.ExperimentConfig.sis_er(num_samples, path_to_dir, path_to_models),
-#    dl.ExperimentConfig.sis_ba(num_samples, path_to_dir, path_to_models),
-    dl.ExperimentConfig.plancksis_er(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.sis_ba(num_samples, path_to_dir, path_to_models),
+#    dl.ExperimentConfig.plancksis_er(num_samples, path_to_dir, path_to_models),
     dl.ExperimentConfig.plancksis_ba(num_samples, path_to_dir, path_to_models),
-#    dl.ExperimentConfig.sissis_er(num_samples, path_to_dir, path_to_models),
-#    dl.ExperimentConfig.sissis_ba(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.sissis_er(num_samples, path_to_dir, path_to_models),
+    dl.ExperimentConfig.sissis_ba(num_samples, path_to_dir, path_to_models),
 ]
 
 for config in configs_to_run:
@@ -39,7 +39,7 @@ for config in configs_to_run:
     script += "deactivate\n"
 
     # seed = int(time.time())
-    seed = 0
+    seed = 1
     path = "{0}/{1}-{2}.sh".format("./launch_scripts", config.config["name"], seed)
 
     with open(path, "w") as f:

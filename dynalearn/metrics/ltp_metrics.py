@@ -120,7 +120,9 @@ class LTPMetrics(Metrics):
         counter = {}
         n = {}
         for g in graphs:
-            if self.num_points < inputs[g].shape[0] or self.num_points is not None:
+            if self.num_points is None:
+                n[g] = inputs[g].shape[0]
+            elif self.num_points < inputs[g].shape[0]:
                 n[g] = self.num_points
             else:
                 n[g] = inputs[g].shape[0]

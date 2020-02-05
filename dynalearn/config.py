@@ -60,14 +60,14 @@ class TrainingConfig:
 
         cls.name_optimizer = "Adam"
         cls.initial_lr = 0.0005
-        cls.schedule = {"epoch": 10, "factor": 2}
+        cls.schedule = {"epoch": 10, "factor": 5}
         cls.num_epochs = 20
         cls.num_graphs = 1
         cls.num_samples = num_samples
         cls.step_per_epoch = 10000
-        cls.sampling_bias = 0.6
+        cls.sampling_bias = 0.8
         cls.val_fraction = 0.01
-        cls.val_bias = 0.6
+        cls.val_bias = 0.8
         cls.test_fraction = None
         cls.test_bias = 0.8
         cls.np_seed = 1
