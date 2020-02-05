@@ -1,9 +1,7 @@
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
-import numpy as np
 
-extensions = [
-]
+extensions = []
 
 setup(
     name="dynalearn",
@@ -11,5 +9,5 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     ext_modules=extensions,
-    setup_requires=[]
+    setup_requires=[],
 )
