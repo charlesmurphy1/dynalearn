@@ -3,9 +3,11 @@ import numpy as np
 import networkx as nx
 import time
 import tqdm
+
 from tensorflow.python.keras.utils.data_utils import Sequence
 
 
+# class DynamicsGenerator(Sequence):
 class DynamicsGenerator(Sequence):
     def __init__(self, graph_model, dynamics_model, sampler, config, verbose=0):
         self.__config = config
@@ -32,16 +34,13 @@ class DynamicsGenerator(Sequence):
         return self
 
     def __next__(self):
-        g_index, s_index, n_mask = self.main_sampler(self.batch_size)
+        g_index, s_index, weights = self.main_sampler(self.batch_size)
         inputs = self.inputs[g_index][s_index, :]
         adj = self.graphs[g_index]
         if self.with_truth:
             targets = self.gt_targets[g_index][s_index, :, :]
         else:
             targets = self.to_one_hot(self.targets[g_index][s_index, :])
-        weights = n_mask
-        # weights /= weights.sum()
-        # weights *= weights.shape[0]
         return [inputs, adj], targets, weights
 
     def __getitem__(self, index):
@@ -114,7 +113,7 @@ class DynamicsGenerator(Sequence):
 
                 if sample == num_sample or null_iteration == self.max_null_iter:
                     break
-            self.dynamics_model.initial_states()
+            states = self.dynamics_model.initial_states()
 
         if self.verbose == 1:
             p_bar.close()

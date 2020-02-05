@@ -117,14 +117,13 @@ class Sampler(ABC):
             if batch_size == -1 or batch_size > len(
                 self.avail_node_set[g_index][s_index]
             ):
-                p = p[self.avail_node_set[g_index][s_index]]
-                mask[self.avail_node_set[g_index][s_index]] = p * np.sum(p > 0)
+                n_index = self.avail_node_set[g_index][s_index]
+                mask[n_index] = p[n_index] * np.sum(p > 0)
             else:
                 n_index = np.random.choice(
                     self.node_set[g_index][s_index], size=batch_size, p=p, replace=False
                 ).astype("int")
-                p = p[n_index]
-                mask[n_index] = p * np.sum(p > 0)
+                mask[n_index] = p[n_index] * batch_size
         return mask
 
     def sample_nodes(self, g_index, s_index, size=None, bias=1):
