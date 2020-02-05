@@ -7,6 +7,11 @@ path_to_all = "../data/"
 path_to_dir = os.path.join(path_to_all, "training")
 path_to_models = os.path.join(path_to_all, "models")
 
+if not os.path.exists(path_to_dir):
+    os.makedirs(path_to_dir)
+if not os.path.exists(path_to_models):
+    os.makedirs(path_to_models)
+
 configs_to_run = [
     "sis_er",
     # "sis_ba",

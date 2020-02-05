@@ -8,6 +8,11 @@ path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
 path_to_dir = os.path.join(path_to_all, "test-training")
 path_to_models = os.path.join(path_to_all, "test-models")
 
+if not os.path.exists(path_to_dir):
+    os.makedirs(path_to_dir)
+if not os.path.exists(path_to_models):
+    os.makedirs(path_to_models)
+
 config = "sis_er"
 
 name = config + "_" + str(num_samples)
