@@ -90,27 +90,27 @@ def summarize_ssmf(h5file, experiment):
 
 
 def get_config(args):
-    if args.name == "sis_er":
+    if args.config == "sis_er":
         return dl.ExperimentConfig.sis_er(
             args.num_samples, args.path_to_data, args.path_to_models
         )
-    elif args.name == "sis_ba":
+    elif args.config == "sis_ba":
         return dl.ExperimentConfig.sis_ba(
             args.num_samples, args.path_to_data, args.path_to_models
         )
-    elif args.name == "plancksis_er":
+    elif args.config == "plancksis_er":
         return dl.ExperimentConfig.plancksis_er(
             args.num_samples, args.path_to_data, args.path_to_models
         )
-    elif args.name == "plancksis_ba":
+    elif args.config == "plancksis_ba":
         return dl.ExperimentConfig.plancksis_ba(
             args.num_samples, args.path_to_data, args.path_to_models
         )
-    elif args.name == "sissis_er":
+    elif args.config == "sissis_er":
         return dl.ExperimentConfig.sissis_er(
             args.num_samples, args.path_to_data, args.path_to_models
         )
-    elif args.name == "sissis_ba":
+    elif args.config == "sissis_ba":
         return dl.ExperimentConfig.sissis_ba(
             args.num_samples, args.path_to_data, args.path_to_models
         )
@@ -118,11 +118,11 @@ def get_config(args):
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--name",
-    "-n",
+    "--config",
+    "-c",
     type=str,
-    metavar="NAME",
-    help="Name of the experiment.",
+    metavar="Config",
+    help="Config name of the experiment.",
     choices=[
         "sis_er",
         "sis_ba",

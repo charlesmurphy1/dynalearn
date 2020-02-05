@@ -26,8 +26,6 @@ class Experiment:
         self.metrics = dl.metrics.get(config["metrics"])
 
         self.name = config["name"]
-        self._path_to_data = None
-        self._path_to_models = None
         self.path_to_data = config["path_to_data"]
         self.path_to_models = config["path_to_models"]
 
@@ -298,23 +296,3 @@ class Experiment:
         self.generator.verbose = verbose
         for m in self.metrics:
             self.metrics[m].verbose = verbose
-
-    @property
-    def path_to_data(self):
-        return self._path_to_data
-
-    @path_to_data.setter
-    def path_to_data(self, path_to_data):
-        self._path_to_data = path_to_data
-        if not os.path.exists(path_to_data):
-            os.makedirs(path_to_data)
-
-    @property
-    def path_to_models(self):
-        return self._path_to_models
-
-    @path_to_models.setter
-    def path_to_models(self, path_to_models):
-        self._path_to_models = path_to_models
-        if not os.path.exists(path_to_models):
-            os.makedirs(path_to_models)
