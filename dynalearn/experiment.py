@@ -26,8 +26,10 @@ class Experiment:
         self.metrics = dl.metrics.get(config["metrics"])
 
         self.name = config["name"]
-        self._path_to_data = config["path_to_data"]
-        self._path_to_models = config["path_to_models"]
+        self._path_to_data = None
+        self._path_to_models = None
+        self.path_to_data = config["path_to_data"]
+        self.path_to_models = config["path_to_models"]
 
         if "filename_config" not in config:
             self.filename_config = "config.pickle"
