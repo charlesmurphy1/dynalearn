@@ -14,11 +14,11 @@ name = config + "_" + str(num_samples)
 path_to_data = os.path.join(path_to_dir, config)
 script = "#!/bin/bash\n"
 script += "#SBATCH --account=def-aallard\n"
-script += "#SBATCH --time=48:00:00\n"
+script += "#SBATCH --time=1:00:00\n"
 script += "#SBATCH --job-name={0}\n".format(config)
 script += "#SBATCH --output={0}.out\n".format(os.path.join(path_to_data, "output"))
 script += "#SBATCH --gres=gpu:1\n"
-script += "#SBATCH --mem=24G\n"
+script += "#SBATCH --mem=12G\n"
 script += "\n"
 script += "module load python/3.6 scipy-stack mpi4py\n"
 script += "source ~/.dynalearn-env/bin/activate\n"
