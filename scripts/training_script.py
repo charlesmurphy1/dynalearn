@@ -136,7 +136,7 @@ parser.add_argument(
 parser.add_argument(
     "--num_samples",
     "-s",
-    type=str,
+    type=int,
     metavar="NUM_SAMPLES",
     help="Number of samples to train from.",
     default=10000,
