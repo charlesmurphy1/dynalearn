@@ -3,8 +3,8 @@ import time
 
 num_samples = 100
 
-path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
-# path_to_all = "../data/"
+# path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
+path_to_all = "../data/"
 path_to_dir = os.path.join(path_to_all, "test-training")
 path_to_models = os.path.join(path_to_all, "test-models")
 
@@ -17,6 +17,8 @@ config = "sis_er"
 
 name = config + "_" + str(num_samples)
 path_to_data = os.path.join(path_to_dir, name)
+if not os.path.exists(path_to_data):
+    os.makedirs(path_to_data)
 script = "#!/bin/bash\n"
 script += "#SBATCH --account=def-aallard\n"
 script += "#SBATCH --time=1:00:00\n"
@@ -33,7 +35,7 @@ script += " --num_samples {0}".format(num_samples)
 script += " --path_to_data {0}".format(path_to_data)
 script += " --path_to_models {0}".format(path_to_models)
 script += " --verbose 1"
-script += " --test 1"
+script += " --test 1\n"
 script += "deactivate\n"
 
 seed = 0
@@ -42,4 +44,5 @@ path = "{0}/{1}-{2}.sh".format("./launch_scripts", config, seed)
 with open(path, "w") as f:
     f.write(script)
 
-os.system("sbatch {0}".format(path))
+# os.system("sbatch {0}".format(path))
+os.system("bash {0}".format(path))

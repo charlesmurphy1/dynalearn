@@ -39,7 +39,7 @@ for config in configs_to_run:
     script += " --num_samples {0}".format(num_samples)
     script += " --path_to_data {0}".format(path_to_data)
     script += " --path_to_models {0}".format(path_to_models)
-    script += " --verbose 1"
+    script += " --verbose 1\n"
     script += "deactivate\n"
 
     seed = 0
