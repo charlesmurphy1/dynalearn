@@ -25,7 +25,7 @@ class GNNConfig:
 
         cls.num_states = 2
         cls.in_features = [32]
-        cls.attn_features = [32]
+        cls.attn_features = [64]
         cls.out_features = [32]
         cls.n_heads = [1]
         cls.in_activation = "relu"

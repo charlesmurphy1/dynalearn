@@ -98,6 +98,7 @@ class Experiment:
         return cls(config)
 
     def run(self, overwrite=True):
+        self.save_config()
         if self.verbose != 0:
             print("\n---Building---")
         if self.verbose != 0:

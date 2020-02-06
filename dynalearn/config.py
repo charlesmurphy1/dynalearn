@@ -208,9 +208,9 @@ class ExperimentConfig:
         name = "plancksis-ba-{0}".format(num_samples)
         dynamics = {
             "name": "PlanckSIS",
-            "params": {"temperature": 6, "recovery": 0.08, "init": "None"},
+            "params": {"temperature": 8, "recovery": 0.06, "init": "None"},
         }
-        graph = {"name": "BAGraph", "params": {"N": 1000, "M": 2}}
+        graph = {"name": "BAGraph", "params": {"N": 1000, "M": 3}}
         model = {
             "name": "EpidemicPredictor",
             "config": dl.models.GNNConfig.ComplexSISGNN(),
@@ -236,9 +236,9 @@ class ExperimentConfig:
         name = "plancksis-er-{0}".format(num_samples)
         dynamics = {
             "name": "PlanckSIS",
-            "params": {"temperature": 6, "recovery": 0.08, "init": "None"},
+            "params": {"temperature": 8, "recovery": 0.06, "init": "None"},
         }
-        graph = {"name": "ERGraph", "params": {"N": 1000, "density": 0.004}}
+        graph = {"name": "ERGraph", "params": {"N": 1000, "density": 0.006}}
         model = {
             "name": "EpidemicPredictor",
             "config": dl.models.GNNConfig.ComplexSISGNN(),
