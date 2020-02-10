@@ -4,6 +4,7 @@ import dynalearn as dl
 import argparse
 import os
 from scipy.spatial.distance import jensenshannon
+import tensorflow as tf
 
 
 def summarize_ltp(h5file, experiment):
@@ -76,43 +77,43 @@ def summarize_ssmf(h5file, experiment):
     h5file.create_dataset("mf-parameters", data=true_mf.data["parameters"])
     h5file.create_dataset("ss-parameters", data=true_ss.data["parameters"])
 
-    h5file.create_dataset("fixed_points-true", data=true_mf.data["fixed_points"])
-    h5file.create_dataset("thresholds-true", data=true_mf.data["thresholds"])
-    h5file.create_dataset("ss_avg-true", data=true_ss.data["avg"])
-    h5file.create_dataset("ss_std-true", data=true_ss.data["std"])
+    h5file.create_dataset("mf-true/fixed_points", data=true_mf.data["fixed_points"])
+    h5file.create_dataset("mf-true/thresholds", data=true_mf.data["thresholds"])
+    h5file.create_dataset("ss-true/avg", data=true_ss.data["avg"])
+    h5file.create_dataset("ss-true/std", data=true_ss.data["std"])
 
     gnn_mf = experiment.metrics["GNNPEMFMetrics"]
     gnn_ss = experiment.metrics["GNNPESSMetrics"]
-    h5file.create_dataset("fixed_points-gnn", data=gnn_mf.data["fixed_points"])
-    h5file.create_dataset("thresholds-gnn", data=gnn_mf.data["thresholds"])
-    h5file.create_dataset("ss_avg-gnn", data=gnn_ss.data["avg"])
-    h5file.create_dataset("ss_std-gnn", data=gnn_ss.data["std"])
+    h5file.create_dataset("mf-gnn/fixed_points", data=gnn_mf.data["fixed_points"])
+    h5file.create_dataset("mf-gnn/thresholds", data=gnn_mf.data["thresholds"])
+    h5file.create_dataset("mf-gnn/avg", data=gnn_ss.data["avg"])
+    h5file.create_dataset("mf-gnn/std", data=gnn_ss.data["std"])
 
 
 def get_config(args):
     if args.config == "sis_er":
         return dl.ExperimentConfig.sis_er(
-            args.num_samples, args.path_to_data, args.path_to_models
+            args.num_samples, args.path_to_data, args.path_to_model
         )
     elif args.config == "sis_ba":
         return dl.ExperimentConfig.sis_ba(
-            args.num_samples, args.path_to_data, args.path_to_models
+            args.num_samples, args.path_to_data, args.path_to_model
         )
     elif args.config == "plancksis_er":
         return dl.ExperimentConfig.plancksis_er(
-            args.num_samples, args.path_to_data, args.path_to_models
+            args.num_samples, args.path_to_data, args.path_to_model
         )
     elif args.config == "plancksis_ba":
         return dl.ExperimentConfig.plancksis_ba(
-            args.num_samples, args.path_to_data, args.path_to_models
+            args.num_samples, args.path_to_data, args.path_to_model
         )
     elif args.config == "sissis_er":
         return dl.ExperimentConfig.sissis_er(
-            args.num_samples, args.path_to_data, args.path_to_models
+            args.num_samples, args.path_to_data, args.path_to_model
         )
     elif args.config == "sissis_ba":
         return dl.ExperimentConfig.sissis_ba(
-            args.num_samples, args.path_to_data, args.path_to_models
+            args.num_samples, args.path_to_data, args.path_to_model
         )
 
 
@@ -150,7 +151,7 @@ parser.add_argument(
     default="./",
 )
 parser.add_argument(
-    "--path_to_models",
+    "--path_to_model",
     "-pm",
     type=str,
     metavar="PATH",
@@ -158,7 +159,7 @@ parser.add_argument(
     default="./",
 )
 parser.add_argument(
-    "--path_to_summaries",
+    "--path_to_summary",
     "-ps",
     type=str,
     metavar="PATH",
@@ -176,7 +177,7 @@ parser.add_argument(
     default=0,
 )
 parser.add_argument(
-    "--test", "-t", type=int, choices=[0, 1], metavar="TEST", help="Test.", default=0,
+    "--test", "-t", type=int, choices=[0, 1], metavar="TEST", help="Test.", default=0
 )
 
 args = parser.parse_args()
@@ -198,17 +199,22 @@ if args.test == 1:
     config.config["training"].num_samples = 100
     config.config["training"].step_per_epoch = 100
     config.config["training"].num_epochs = 1
+
+tf_config = tf.ConfigProto()
+tf_config.gpu_options.allow_growth = True
+session = tf.Session(config=tf_config)
+
 experiment = dl.Experiment(config.config, verbose=args.verbose)
 
 experiment.run()
 
-if not os.path.exists(args.path_to_summaries):
-    os.makedirs(args.path_to_summaries)
-
 h5file = h5py.File(
-    os.path.join(args.path_to_summaries, "{0}.h5".format(experiment.name)), "w"
+    os.path.join(args.path_to_summary, "{0}.h5".format(experiment.name)), "w"
 )
 summarize_ltp(h5file, experiment)
 summarize_error(h5file, experiment)
 if args.test == 0:
     summarize_ssmf(h5file, experiment)
+
+
+plt.plot()

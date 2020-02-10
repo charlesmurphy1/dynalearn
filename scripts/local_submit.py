@@ -1,22 +1,25 @@
 import os
 import time
 
-num_samples = 10000
+num_samples = 20000
 
 path_to_all = "../data/"
 path_to_dir = os.path.join(path_to_all, "training")
-path_to_models = os.path.join(path_to_all, "models")
+path_to_model = os.path.join(path_to_all, "models")
+path_to_summary = os.path.join(path_to_dir, "summary")
 
 if not os.path.exists(path_to_dir):
     os.makedirs(path_to_dir)
-if not os.path.exists(path_to_models):
-    os.makedirs(path_to_models)
+if not os.path.exists(path_to_model):
+    os.makedirs(path_to_model)
+if not os.path.exists(path_to_summary):
+    os.makedirs(path_to_summary)
 
 configs_to_run = [
-    "sis_er",
+    # "sis_er",
     # "sis_ba",
     # "plancksis_er",
-    # "plancksis_ba",
+    "plancksis_ba",
     # "sissis_er",
     # "sissis_ba",
 ]
@@ -38,7 +41,9 @@ for config in configs_to_run:
     script += " --config {0}".format(config)
     script += " --num_samples {0}".format(num_samples)
     script += " --path_to_data {0}".format(path_to_data)
-    script += " --path_to_models {0}".format(path_to_models)
+    script += " --path_to_model {0}".format(path_to_model)
+    script += " --path_to_summary {0}".format(path_to_summary)
+    script += " --test 0"
     script += " --verbose 1\n"
     script += "deactivate\n"
 

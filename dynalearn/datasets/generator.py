@@ -4,11 +4,8 @@ import networkx as nx
 import time
 import tqdm
 
-from tensorflow.python.keras.utils.data_utils import Sequence
 
-
-# class DynamicsGenerator(Sequence):
-class DynamicsGenerator(Sequence):
+class DynamicsGenerator:
     def __init__(self, graph_model, dynamics_model, sampler, config, verbose=0):
         self.__config = config
         self.graph_model = graph_model
@@ -23,7 +20,10 @@ class DynamicsGenerator(Sequence):
         self.shuffle = config.shuffle
         self.with_truth = config.with_truth
 
-        self.clear(clear_samplers=False)
+        self.graphs = dict()
+        self.inputs = dict()
+        self.targets = dict()
+        self.gt_targets = dict()
 
         self.verbose = verbose
 
@@ -34,20 +34,17 @@ class DynamicsGenerator(Sequence):
         return self
 
     def __next__(self):
-        g_index, s_index, weights = self.main_sampler(self.batch_size)
+        g_index, s_index, n_mask = self.main_sampler(self.batch_size)
         inputs = self.inputs[g_index][s_index, :]
         adj = self.graphs[g_index]
         if self.with_truth:
             targets = self.gt_targets[g_index][s_index, :, :]
         else:
             targets = self.to_one_hot(self.targets[g_index][s_index, :])
+        weights = n_mask
         return [inputs, adj], targets, weights
 
-    def __getitem__(self, index):
-        return self.__next__()
-
     def copy(self):
-
         generator_copy = self.__class__(
             self.graph_model, self.dynamics_model, None, self.__config, self.verbose
         )
@@ -59,15 +56,16 @@ class DynamicsGenerator(Sequence):
         generator_copy.inputs = self.inputs
         generator_copy.targets = self.targets
         generator_copy.gt_targets = self.gt_targets
+
         return generator_copy
 
-    def clear(self, clear_samplers=True):
+    def clear(self, clear_samples=True):
         self.graphs = dict()
         self.inputs = dict()
         self.targets = dict()
         self.gt_targets = dict()
 
-        if clear_samplers:
+        if clear_samples:
             for s in self.samplers:
                 self.samplers[s].clear()
 
@@ -82,12 +80,13 @@ class DynamicsGenerator(Sequence):
         targets = np.zeros([num_sample, N])
         gt_targets = np.zeros([num_sample, N, self.num_states])
 
-        states = self.dynamics_model.initial_states(graph)
+        self.dynamics_model.graph = graph
 
-        if self.verbose == 1:
-            p_bar = tqdm.tqdm(range(num_sample))
+        if self.verbose:
+            p_bar = tqdm.tqdm(range(num_sample), "Generating data")
 
         while sample < num_sample:
+            states = self.dynamics_model.initial_states()
             null_iteration = 0
             for t in range(self.resampling_time):
                 t0 = time.time()
@@ -96,12 +95,11 @@ class DynamicsGenerator(Sequence):
                 inputs[sample, :] = x
                 targets[sample, :] = y
                 gt_targets[sample] = z
-
                 states = y
 
                 t1 = time.time()
 
-                if self.verbose == 1:
+                if self.verbose:
                     p_bar.set_description(
                         "Generating data - " + str(round(t1 - t0, 5)) + "s"
                     )
@@ -113,9 +111,8 @@ class DynamicsGenerator(Sequence):
 
                 if sample == num_sample or null_iteration == self.max_null_iter:
                     break
-            states = self.dynamics_model.initial_states()
 
-        if self.verbose == 1:
+        if self.verbose:
             p_bar.close()
 
         if self.shuffle:
@@ -132,7 +129,7 @@ class DynamicsGenerator(Sequence):
     def __update_states(self, states):
         inputs = states
         targets = self.dynamics_model.sample(states)
-        gt_targets = self.dynamics_model.predict(inputs)
+        gt_targets = self.dynamics_model.predict(states)
         return inputs, targets, gt_targets
 
     def to_one_hot(self, arr):
@@ -159,10 +156,6 @@ class DynamicsGenerator(Sequence):
             self.main_sampler.update_weights(self.graphs, self.inputs)
             new_sampler.update_weights(self.graphs, self.inputs)
         self.samplers[name] = new_sampler
-
-    # @property
-    # def shape(self):
-    #     return (len(self),)
 
     @property
     def samplers(self):

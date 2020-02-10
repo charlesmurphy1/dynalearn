@@ -18,7 +18,7 @@ class GNN_MF(MF):
             self.model.num_states, degree_dist, tol=tol, verbose=verbose
         )
 
-    def compute_ltp(self,):
+    def compute_ltp(self):
         self.model.num_nodes = self.k_max + 1
 
         ltp = np.zeros((self.num_states, self.num_states, *self.k_grid.shape))

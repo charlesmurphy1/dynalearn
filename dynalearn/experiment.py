@@ -13,9 +13,8 @@ from tensorflow.keras.backend import variable
 
 
 class Experiment:
-    def __init__(self, config, verbose=0):
+    def __init__(self, config, verbose=1):
         self.__config = config
-        self._verbose = verbose
         self.graph_model = dl.graphs.get(config["graph"])
         self.dynamics_model = dl.dynamics.get(config["dynamics"])
         self.model = dl.models.get(config["model"])
@@ -27,7 +26,7 @@ class Experiment:
 
         self.name = config["name"]
         self.path_to_data = config["path_to_data"]
-        self.path_to_models = config["path_to_models"]
+        self.path_to_model = config["path_to_model"]
 
         if "filename_config" not in config:
             self.filename_config = "config.pickle"
@@ -62,18 +61,17 @@ class Experiment:
         self.optimizer.lr = variable(config["training"].initial_lr)
         self.callbacks = [
             LearningRateScheduler(
-                dl.utilities.get_schedule(config["training"].schedule), verbose=0,
+                dl.utilities.get_schedule(config["training"].schedule), verbose=1
             ),
             ks.callbacks.ModelCheckpoint(
-                os.path.join(self.path_to_models, self.name + ".h5"),
+                os.path.join(self.path_to_model, self.name + ".h5"),
                 save_best_only=True,
                 monitor="val_loss",
                 mode="min",
                 period=1,
-                verbose=0,
+                verbose=1,
             ),
         ]
-
         self.training_metrics = [
             dl.utilities.get_metrics(m) for m in config["training"].training_metrics
         ]
@@ -81,8 +79,8 @@ class Experiment:
         if not os.path.exists(self.path_to_data):
             os.makedirs(self.path_to_data)
 
-        if not os.path.exists(os.path.join(self.path_to_models)):
-            os.makedirs(os.path.join(self.path_to_models))
+        if not os.path.exists(self.path_to_model):
+            os.makedirs(self.path_to_model)
 
         self.verbose = verbose
         self.history = dict()
@@ -98,27 +96,27 @@ class Experiment:
         return cls(config)
 
     def run(self, overwrite=True):
-        self.save_config()
-        if self.verbose != 0:
-            print("\n---Building---")
-        if self.verbose != 0:
+        if self.verbose:
+            print("\n---Experiment {0}---".format(self.name))
+        self.save_config(overwrite)
+        if self.verbose:
             print("\n---Generating data---")
         self.generate_data()
         self.save_data(overwrite)
 
-        if self.verbose != 0:
+        if self.verbose:
             print("\n---Training model---")
         self.train_model()
         self.save_history(overwrite)
         self.save_model(overwrite)
         self.load_model(best=True)
 
-        if self.verbose != 0:
+        if self.verbose:
             print("\n---Computing metrics---")
         self.compute_metrics()
         self.save_metrics(overwrite)
 
-        if self.verbose != 0:
+        if self.verbose:
             print("\n---Finished---")
 
     def save(self, overwrite=True):
@@ -158,7 +156,7 @@ class Experiment:
         if self.__config["training"].val_fraction is not None:
             val_fraction = self.__config["training"].val_fraction
             val_bias = self.__config["training"].val_bias
-            if self.verbose != 0:
+            if self.verbose:
                 print("Partitioning generator for validation")
             self.generator.partition_sampler(
                 "val", fraction=val_fraction, bias=val_bias
@@ -167,7 +165,7 @@ class Experiment:
         if self.__config["training"].test_fraction is not None:
             test_fraction = self.__config["training"].test_fraction
             test_bias = self.__config["training"].test_bias
-            if self.verbose != 0:
+            if self.verbose:
                 print("Partitioning generator for test")
             self.generator.partition_sampler(
                 "test", fraction=test_fraction, bias=test_bias
@@ -190,6 +188,7 @@ class Experiment:
             val_generator.mode = "val"
         else:
             val_generator = None
+
         history = self.model.model.fit_generator(
             self.generator,
             validation_data=val_generator,
@@ -222,24 +221,21 @@ class Experiment:
 
     def load_model(self, best=True):
         if best:
-            path = os.path.join(self.path_to_models, self.name + ".h5")
+            path = os.path.join(self.path_to_model, self.name + ".h5")
         else:
             path = os.path.join(self.path_to_data, self.filename_model)
         if os.path.exists(path):
             self.model.model.load_weights(path)
 
     def save_data(self, overwrite=True):
-        path = os.path.join(self.path_to_data, self.filename_data)
-        if os.path.exists(path) and not overwrite:
-            return
-        h5file = h5py.File(path, "w")
+        h5file = h5py.File(os.path.join(self.path_to_data, self.filename_data))
         self.generator.save(h5file, overwrite)
         h5file.close()
 
     def load_data(self):
         path = os.path.join(self.path_to_data, self.filename_data)
         if os.path.exists(path):
-            h5file = h5py.File(path, "r")
+            h5file = h5py.File(path)
         else:
             return
 
@@ -257,7 +253,7 @@ class Experiment:
     def load_history(self,):
         path = os.path.join(self.path_to_data, self.filename_history)
         if os.path.exists(path):
-            h5file = h5py.File(path, "r")
+            h5file = h5py.File(path)
         else:
             return
 
@@ -270,7 +266,7 @@ class Experiment:
         if os.path.exists(path) and not overwrite:
             return
 
-        h5file = h5py.File(path, "a")
+        h5file = h5py.File(path)
         for k, v in self.metrics.items():
             v.save(k, h5file, overwrite=overwrite)
         h5file.close()

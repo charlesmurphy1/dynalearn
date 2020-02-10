@@ -1,12 +1,12 @@
 import numpy as np
-
+from abc import ABC, abstractmethod
 from scipy.optimize import approx_fprime
 from .finder import RecurrenceFPF
 from .utilities import power_method, EPSILON
 import tqdm
 
 
-class BaseMeanField:
+class BaseMeanField(ABC):
     def __init__(self, array_shape, tol=1e-5, verbose=0, dtype="float"):
         self.array_shape = array_shape
         self.tol = tol
@@ -65,20 +65,22 @@ class BaseMeanField:
             pb.close()
         return jac
 
-    def compute_thresholds(self):
-        raise NotImplementedError()
-
+    @abstractmethod
     def compute_ltp(self):
         raise NotImplementedError()
 
+    @abstractmethod
     def application(self, x):
         raise NotImplementedError()
 
+    @abstractmethod
     def to_compartment(self, graph, state):
         raise NotImplementedError()
 
+    @abstractmethod
     def to_avg(self, x):
         raise NotImplementedError()
 
+    @abstractmethod
     def normalize_state(self, x, clip=True):
         raise NotImplementedError()

@@ -10,24 +10,6 @@ class ComplexContagionSIS(SingleEpidemics):
         self.act_f = activation_f
         self.deact_f = deactivation_f
 
-    # def sample(self, states):
-    #     susceptible = np.where(states == self.state_label["S"])[0]
-    #     infected = np.where(states == self.state_label["I"])[0]
-    #
-    #     inf_prob = self.act_f(self.state_degree(states))
-    #     rec_prob = self.deact_f(self.state_degree(states))
-    #
-    #     N = self.graph.number_of_nodes()
-    #     new_states = states.copy()
-    #
-    #     inf_ind = np.where(np.random.rand(len(susceptible)) < inf_prob[susceptible])[0]
-    #     new_states[inf_ind] = self.state_label["I"]
-    #
-    #     rec_ind = np.where(np.random.rand(len(infected)) < rec_prob[infected])[0]
-    #     new_states[rec_ind] = self.state_label["S"]
-    #
-    #     return new_states
-
     def predict(self, states):
         inf_prob = self.act_f(self.state_degree(states))
         rec_prob = self.deact_f(self.state_degree(states))
@@ -45,24 +27,6 @@ class ComplexContagionSIR(SingleEpidemics):
         super(ComplexContagionSIR, self).__init__(params, {"S": 0, "I": 1, "R": 2})
         self.act_f = activation_f
         self.deact_f = deactivation_f
-
-    # def sample(self, states):
-    #     susceptible = np.where(states == self.state_label["S"])[0]
-    #     infected = np.where(states == self.state_label["I"])[0]
-    #
-    #     inf_prob = self.act_f(self.state_degree(states))
-    #     rec_prob = self.deact_f(self.state_degree(states))
-    #
-    #     N = self.graph.number_of_nodes()
-    #     new_states = states.copy()
-    #
-    #     inf_ind = np.where(np.random.rand(len(susceptible)) < inf_prob[susceptible])[0]
-    #     new_states[inf_ind] = self.state_label["I"]
-    #
-    #     rec_ind = np.where(np.random.rand(len(infected)) < rec_prob[infected])[0]
-    #     new_states[rec_ind] = self.state_label["R"]
-    #
-    #     return new_states
 
     def predict(self, states):
         inf_prob = self.act_f(self.state_degree(states))

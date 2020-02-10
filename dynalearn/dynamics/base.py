@@ -44,6 +44,7 @@ class Dynamics(ABC):
         self._num_states = num_states
         self._graph = None
         self._adj = None
+        self._num_nodes = None
         self._degree = None
 
     @abstractmethod
@@ -55,7 +56,7 @@ class Dynamics(ABC):
         raise NotImplementedError("self.initial_states() has not been impletemented")
 
     @abstractmethod
-    def predict(self, states=None, ajd=None):
+    def predict(self, states):
         """
 		Computes the next activity states probability distribution. (virtual) (private)
 
@@ -63,7 +64,7 @@ class Dynamics(ABC):
         raise NotImplementedError("self.transition() has not been impletemented")
 
     @abstractmethod
-    def sample(self, states=None, ajd=None):
+    def sample(self, states):
         """
 		Computes the next activity states. (virtual) (private)
 
@@ -71,19 +72,12 @@ class Dynamics(ABC):
         raise NotImplementedError("sample has not been impletemented")
 
     @abstractmethod
-    def get_avg_state(self):
+    def is_dead(self, states):
         """
-		Get the average states. (virtual)
-
-		**Returns**
-		avg_state : Activity
+		Computes the next activity states. (virtual) (private)
 
 		"""
-        raise NotImplementedError("self.get_avg_states has not been implemented.")
-
-    @abstractmethod
-    def is_dead(self, states):
-        raise NotImplementedError("is_dead has not been implemented.")
+        raise NotImplementedError("sample has not been impletemented")
 
     @property
     def graph(self):
@@ -96,8 +90,8 @@ class Dynamics(ABC):
     def graph(self, graph):
         self._graph = graph
         self._adj = nx.to_numpy_array(graph)
+        self._num_nodes = self._graph.number_of_nodes()
         self._degree = np.sum(self._adj, axis=1)
-        self.initial_states()
 
     @property
     def adj(self):
@@ -109,9 +103,16 @@ class Dynamics(ABC):
     @adj.setter
     def adj(self, adj):
         self._adj = adj
-        self._graph = nx.from_numpy_array(adj)
-        self._degree = np.sum(adj, axis=1)
-        self.initial_states()
+        self.graph = nx.from_numpy_array(adj)
+        self._num_nodes = self._graph.number_of_nodes()
+        self._degree = np.sum(self._adj, axis=1)
+
+    @property
+    def num_nodes(self):
+        if self._num_nodes is None:
+            raise ValueError("No graph has been parsed to the dynamics.")
+        else:
+            return self._num_nodes
 
     @property
     def degree(self):
@@ -134,14 +135,12 @@ class Epidemics(Dynamics):
 
     def sample(self, states):
         p = self.predict(states)
-        p = pt.tensor(p)
-        dist = pt.distributions.Categorical(p)
+        dist = pt.distributions.Categorical(pt.tensor(p))
         return np.array(dist.sample())
 
     def state_degree(self, states):
-        N = self.adj.shape[0]
         if len(states.shape) < 2:
-            states = states.reshape(1, N)
+            states = states.reshape(1, self.num_nodes)
 
         state_l = {
             s: np.matmul(states == self.state_label[s], self.adj).squeeze()
@@ -150,41 +149,31 @@ class Epidemics(Dynamics):
 
         return state_l
 
-    def get_avg_state(self):
-        N = self.graph.number_of_nodes()
-        state_dict = {l: np.zeros(N) for l in self.state_label}
-
-        for v in self.graph.nodes():
-            label = self.inv_state_label[self.states[v]]
-            state_dict[label][v] = 1
-
-        avg_states = {l: np.mean(state_dict[l]) for l in state_dict}
-        std_states = {l: np.std(state_dict[l]) for l in state_dict}
-
 
 class SingleEpidemics(Epidemics):
     def __init__(self, params, state_label):
+
         if "S" not in state_label or "I" not in state_label:
             raise ValueError("state_label must contain states 'S' and 'I'.")
         super(SingleEpidemics, self).__init__(params, state_label)
 
-    def initial_states(self, graph=None):
-        if graph is not None:
-            self.graph = graph
-
-        N = self.graph.number_of_nodes()
+    def initial_states(self):
         if self.params["init"] is not None:
-            num_infected = ceil(N * self.params["init"])
+            init_n_infected = ceil(self.num_nodes * self.params["init"])
         else:
-            num_infected = np.random.choice(range(N))
+            init_n_infected = np.random.choice(range(self.num_nodes))
         nodeset = np.array(list(self.graph.nodes()))
-        ind = np.random.choice(nodeset, size=num_infected, replace=False)
-        states = np.zeros(N) * self.state_label["S"]
+        ind = np.random.choice(nodeset, size=init_n_infected, replace=False)
+        states = np.ones(self.num_nodes) * self.state_label["S"]
         states[ind] = self.state_label["I"]
+
         return states
 
     def is_dead(self, states):
-        return np.all(states == self.state_label["S"])
+        if np.all(states == self.state_label["S"]):
+            return True
+        else:
+            return False
 
 
 class DoubleEpidemics(Epidemics):
@@ -198,27 +187,30 @@ class DoubleEpidemics(Epidemics):
             raise ValueError("state_label must contain states 'S' and 'I'.")
         super(DoubleEpidemics, self).__init__(params, state_label)
 
-    def initial_states(self, graph=None):
-        if graph is not None:
-            self.graph = graph
-
-        N = self.graph.number_of_nodes()
+    def initial_states(self):
         if self.params["init"] is not None:
-            init_n_infected = ceil(N * self.params["init"])
+            init_n_infected = ceil(self.num_nodes * self.params["init"])
         else:
-            init_n_infected = np.random.choice(range(N))
-        N = self.graph.number_of_nodes()
+            init_n_infected = np.random.choice(range(self.num_nodes))
 
-        num_infected = int(np.round(N * (1 - np.sqrt(1 - init_n_infected / N))))
+        n_eff = int(
+            np.round(
+                self.num_nodes * (1 - np.sqrt(1 - init_n_infected / self.num_nodes))
+            )
+        )
         nodeset = np.array(list(self.graph.nodes()))
-        ind1 = np.random.choice(nodeset, size=num_infected, replace=False)
-        ind2 = np.random.choice(nodeset, size=num_infected, replace=False)
+        ind1 = np.random.choice(nodeset, size=n_eff, replace=False)
+        ind2 = np.random.choice(nodeset, size=n_eff, replace=False)
         ind3 = np.intersect1d(ind1, ind2)
-        states = np.ones(N) * self.state_label["SS"]
+        states = np.ones(self.num_nodes) * self.state_label["SS"]
         states[ind1] = self.state_label["IS"]
         states[ind2] = self.state_label["SI"]
         states[ind3] = self.state_label["II"]
+
         return states
 
     def is_dead(self, states):
-        return np.all(states == self.state_label["SS"])
+        if np.all(states == self.state_label["SS"]):
+            return True
+        else:
+            return False

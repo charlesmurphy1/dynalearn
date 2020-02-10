@@ -1,32 +1,32 @@
 import os
 import time
 
-num_samples = 10000
+num_samples = 20000
 
-# path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
-path_to_all = "../data"
+path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
 path_to_dir = os.path.join(path_to_all, "training")
-path_to_models = os.path.join(path_to_all, "models")
+path_to_model = os.path.join(path_to_all, "models")
+path_to_summary = os.path.join(path_to_dir, "summary")
 
 if not os.path.exists(path_to_dir):
     os.makedirs(path_to_dir)
-if not os.path.exists(path_to_models):
-    os.makedirs(path_to_models)
+if not os.path.exists(path_to_model):
+    os.makedirs(path_to_model)
+if not os.path.exists(path_to_summary):
+    os.makedirs(path_to_summary)
 
 configs_to_run = [
-    "sis_er",
-    "sis_ba",
-    "plancksis_er",
+    # "sis_er",
+    # "sis_ba",
+    # "plancksis_er",
     "plancksis_ba",
-    "sissis_er",
-    "sissis_ba",
+    # "sissis_er",
+    # "sissis_ba",
 ]
 
 for config in configs_to_run:
     name = config + "_" + str(num_samples)
     path_to_data = os.path.join(path_to_dir, name)
-    if not os.path.exists(path_to_data):
-        os.makedirs(path_to_data)
     script = "#!/bin/bash\n"
     script += "#SBATCH --account=def-aallard\n"
     script += "#SBATCH --time=48:00:00\n"
@@ -41,15 +41,18 @@ for config in configs_to_run:
     script += " --config {0}".format(config)
     script += " --num_samples {0}".format(num_samples)
     script += " --path_to_data {0}".format(path_to_data)
-    script += " --path_to_models {0}".format(path_to_models)
+    script += " --path_to_model {0}".format(path_to_model)
+    script += " --path_to_summary {0}".format(path_to_summary)
+    script += " --test 0"
     script += " --verbose 2\n"
     script += "deactivate\n"
 
     seed = 0
-    path_to_script = "{0}/{1}-{2}.sh".format("./launch_scripts", name, seed)
+    path = "{0}/{1}-{2}.sh".format(
+        "/home/murphy9/source/dynalearn/scripts/launch_scripts", config, seed
+    )
 
-    with open(path_to_script, "w") as f:
+    with open(path, "w") as f:
         f.write(script)
 
-    # os.system("sbatch {0}".format(path_to_script))
-    os.system("bash {0}".format(path_to_script))
+    os.system("sbatch {0}".format(path))

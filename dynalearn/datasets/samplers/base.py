@@ -82,6 +82,7 @@ class Sampler(ABC):
         self.graph_set = list(graphs.keys())
         self.avail_graph_set = list(graphs.keys())
         self.update_weights(graphs, inputs)
+        # print(self.name, self.avail_node_set["BAGraph_0"][0])
 
         return
 
@@ -117,13 +118,14 @@ class Sampler(ABC):
             if batch_size == -1 or batch_size > len(
                 self.avail_node_set[g_index][s_index]
             ):
-                n_index = self.avail_node_set[g_index][s_index]
-                mask[n_index] = p[n_index] * np.sum(p > 0)
+                p = p[self.avail_node_set[g_index][s_index]]
+                mask[self.avail_node_set[g_index][s_index]] = p * np.sum(p > 0)
             else:
                 n_index = np.random.choice(
                     self.node_set[g_index][s_index], size=batch_size, p=p, replace=False
                 ).astype("int")
-                mask[n_index] = p[n_index] * batch_size
+                p = p[n_index]
+                mask[n_index] = p * np.sum(p > 0)
         return mask
 
     def sample_nodes(self, g_index, s_index, size=None, bias=1):

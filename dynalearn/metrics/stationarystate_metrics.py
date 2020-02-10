@@ -50,7 +50,7 @@ class StationaryStateMetrics(Metrics):
 
         self.model.graph = self.graph_model.generate()[1]
         x = x0 * 1
-        samples = np.zeros((self.num_samples, self.model.graph.number_of_nodes()))
+        samples = np.zeros((self.num_samples, self.model.num_nodes))
         x = self.burning(x, self.initial_burn)
 
         for i in range(self.num_samples):
@@ -93,12 +93,14 @@ class EpidemicSSMetrics(StationaryStateMetrics):
     def epidemic_state(self):
         self.dynamics.params["init"] = 1 - self.epsilon
         name, g = self.graph_model.generate()
-        return self.dynamics.initial_states(g)
+        self.dynamics.graph = g
+        return self.dynamics.initial_states()
 
     def absoring_state(self):
         self.dynamics.params["init"] = self.epsilon
         name, g = self.graph_model.generate()
-        return self.dynamics.initial_states(g)
+        self.dynamics.graph = g
+        return self.dynamics.initial_states()
 
     def compute_stationary_states(self):
         avg = np.zeros((2, len(self.parameters), self.model.num_states))
@@ -163,4 +165,3 @@ class GNNPESSMetrics(PoissonESSMetrics):
 
     def get_model(self, experiment):
         self.model = experiment.model
-        self.model.num_nodes = self.num_nodes
