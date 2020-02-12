@@ -66,22 +66,20 @@ class StationaryStateMetrics(Metrics):
         return self.avg(samples, axis=-1)
 
     def burning(self, x, burn=1):
-
         for b in range(burn):
             x = self.model.sample(x)
-
         return x
 
     def avg(self, x, axis=None):
-        avg_x = np.zeros(self.model.num_states)
+        avg_x = []
         for i in range(self.model.num_states):
-            avg_x[i] = np.mean(x == i, axis=axis)
+            avg_x[i].append(np.mean(x == i, axis=axis))
         return avg_x
 
     def std(self, x, axis=None):
-        std_x = np.zeros(self.model.num_states)
+        std_x = []
         for i in range(self.model.num_states):
-            std_x[i] = np.std(x == i, axis=axis)
+            std_x[i].append(np.std(x == i, axis=axis))
         return np.array(std_x)
 
 
