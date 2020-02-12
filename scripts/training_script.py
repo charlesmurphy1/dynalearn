@@ -45,6 +45,27 @@ def summarize_ltp(h5file, experiment):
         h5file.create_dataset(name, data=data)
 
 
+def summarize_starltp(h5file, experiment):
+    true = experiment.metrics["TrueStarLTPMetrics"]
+    gnn = experiment.metrics["GNNStarLTPMetrics"]
+    transitions = {(0, 1): "S-I", (1, 0): "I-S"}
+
+    for t in transitions:
+        name = "starltp-true/{0}".format(transitions[t])
+        x, y, el, eh = true.aggregate(
+            true.data["ltp"], in_state=t[0], out_state=t[1], err_operation="percentile",
+        )
+        data = np.array([x, y, el, eh]).T
+        h5file.create_dataset(name, data=data)
+
+        name = "starltp-gnn/{0}".format(transitions[t])
+        x, y, el, eh = gnn.aggregate(
+            gnn.data["ltp"], in_state=t[0], out_state=t[1], err_operation="percentile",
+        )
+        data = np.array([x, y, el, eh]).T
+        h5file.create_dataset(name, data=data)
+
+
 def summarize_error(h5file, experiment):
     true = experiment.metrics["TrueStarLTPMetrics"]
     gnn = experiment.metrics["GNNStarLTPMetrics"]
@@ -86,8 +107,8 @@ def summarize_ssmf(h5file, experiment):
     gnn_ss = experiment.metrics["GNNPESSMetrics"]
     h5file.create_dataset("mf-gnn/fixed_points", data=gnn_mf.data["fixed_points"])
     h5file.create_dataset("mf-gnn/thresholds", data=gnn_mf.data["thresholds"])
-    h5file.create_dataset("mf-gnn/avg", data=gnn_ss.data["avg"])
-    h5file.create_dataset("mf-gnn/std", data=gnn_ss.data["std"])
+    h5file.create_dataset("ss-gnn/avg", data=gnn_ss.data["avg"])
+    h5file.create_dataset("ss-gnn/std", data=gnn_ss.data["std"])
 
 
 def get_config(args):
@@ -130,7 +151,7 @@ parser.add_argument(
         "plancksis_er",
         "plancksis_ba",
         "sissis_er",
-        "sissis_er",
+        "sissis_ba",
     ],
     required=True,
 )
@@ -212,9 +233,7 @@ h5file = h5py.File(
     os.path.join(args.path_to_summary, "{0}.h5".format(experiment.name)), "w"
 )
 summarize_ltp(h5file, experiment)
+summarize_starltp(h5file, experiment)
 summarize_error(h5file, experiment)
 if args.test == 0:
     summarize_ssmf(h5file, experiment)
-
-
-plt.plot()

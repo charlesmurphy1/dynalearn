@@ -126,8 +126,8 @@ class ExperimentConfig:
                 "StatisticsMetrics",
                 "TruePEMFMetrics",
                 "GNNPEMFMetrics",
-                # "TruePESSMetrics",
-                # "GNNPESSMetrics",
+                "TruePESSMetrics",
+                "GNNPESSMetrics",
             ],
             "config": metrics,
         }
