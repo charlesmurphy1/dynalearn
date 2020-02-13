@@ -63,7 +63,7 @@ class StationaryStateMetrics(Metrics):
                 x = self.burning(x, self.initial_burn)
 
             x = self.burning(x, self.burn)
-        return self.avg(samples, axis=-1)
+        return samples
 
     def burning(self, x, burn=1):
         for b in range(burn):
@@ -114,20 +114,22 @@ class EpidemicSSMetrics(StationaryStateMetrics):
             self.change_param(p)
             samples = self.get_samples(x0, pb)
             x0 = samples[-1]
+            avg_samples = self.avg(samples, axis=-1)
             if self.dynamics.is_dead(x0):
                 x0 = self.absoring_state()
-            avg[0, i] = self.avg(samples)
-            std[0, i] = self.std(samples)
+            avg[0, i] = self.avg(avg_samples)
+            std[0, i] = self.std(avg_samples)
 
         x0 = self.epidemic_state()
         for i, p in reversed(list(enumerate(self.parameters))):
             self.change_param(p)
             samples = self.get_samples(x0, pb)
             x0 = samples[-1]
+            avg_samples = self.avg(samples, axis=-1)
             if self.dynamics.is_dead(x0):
                 x0 = self.absoring_state()
-            avg[1, i] = self.avg(samples)
-            std[1, i] = self.std(samples)
+            avg[1, i] = self.avg(avg_samples)
+            std[1, i] = self.std(avg_samples)
 
         if self.verbose:
             pb.close()
