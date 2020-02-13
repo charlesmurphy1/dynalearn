@@ -32,7 +32,7 @@ class MetricsConfig:
         cls.ss_parameters = np.concatenate(
             (np.linspace(0.1, 3, 30), np.linspace(3.1, 10, 20))
         )
-        cls.num_samples = 50
+        cls.num_samples = 5
         cls.initial_burn = 200
         cls.burn = 10
         cls.reshuffle = 10
@@ -69,7 +69,7 @@ class MetricsConfig:
         cls.ss_parameters = np.concatenate(
             (np.linspace(0.1, 2, 10), np.linspace(2.1, 6, 50), np.linspace(6.1, 10, 10))
         )
-        cls.num_samples = 50
+        cls.num_samples = 5
         cls.initial_burn = 200
         cls.burn = 10
         cls.reshuffle = 10
@@ -106,7 +106,7 @@ class MetricsConfig:
         cls.ss_parameters = np.concatenate(
             (np.linspace(0.1, 3, 10), np.linspace(3.1, 6, 30), np.linspace(6.1, 10, 10))
         )
-        cls.num_samples = 50
+        cls.num_samples = 5
         cls.initial_burn = 200
         cls.burn = 10
         cls.reshuffle = 10
