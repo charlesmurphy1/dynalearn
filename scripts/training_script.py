@@ -92,23 +92,14 @@ def summarize_error(h5file, experiment):
     h5file.create_dataset(name, data=data)
 
 
-def summarize_ssmf(h5file, experiment):
+def summarize_mf(h5file, experiment):
     true_mf = experiment.metrics["TruePEMFMetrics"]
-    true_ss = experiment.metrics["TruePESSMetrics"]
     h5file.create_dataset("mf-parameters", data=true_mf.data["parameters"])
-    h5file.create_dataset("ss-parameters", data=true_ss.data["parameters"])
-
     h5file.create_dataset("mf-true/fixed_points", data=true_mf.data["fixed_points"])
     h5file.create_dataset("mf-true/thresholds", data=true_mf.data["thresholds"])
-    h5file.create_dataset("ss-true/avg", data=true_ss.data["avg"])
-    h5file.create_dataset("ss-true/std", data=true_ss.data["std"])
-
     gnn_mf = experiment.metrics["GNNPEMFMetrics"]
-    gnn_ss = experiment.metrics["GNNPESSMetrics"]
     h5file.create_dataset("mf-gnn/fixed_points", data=gnn_mf.data["fixed_points"])
     h5file.create_dataset("mf-gnn/thresholds", data=gnn_mf.data["thresholds"])
-    h5file.create_dataset("ss-gnn/avg", data=gnn_ss.data["avg"])
-    h5file.create_dataset("ss-gnn/std", data=gnn_ss.data["std"])
 
 
 def get_config(args):
@@ -235,5 +226,4 @@ h5file = h5py.File(
 summarize_ltp(h5file, experiment)
 summarize_starltp(h5file, experiment)
 summarize_error(h5file, experiment)
-if args.test == 0:
-    summarize_ssmf(h5file, experiment)
+summarize_mf(h5file, experiment)

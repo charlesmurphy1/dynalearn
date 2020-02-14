@@ -30,6 +30,7 @@ script += "\n"
 script += "module load python/3.6 scipy-stack mpi4py\n"
 script += "source ~/.dynalearn-env/bin/activate\n"
 script += "python training_script.py"
+# script += "python ss_script.py"
 script += " --config {0}".format(config)
 script += " --num_samples {0}".format(num_samples)
 script += " --path_to_data {0}".format(path_to_data)

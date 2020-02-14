@@ -28,11 +28,11 @@ class MetricsConfig:
         cls.discontinuous = False
 
         # stationary states metrics
-        cls.num_nodes = 5000
+        cls.num_nodes = 10000
         cls.ss_parameters = np.concatenate(
             (np.linspace(0.1, 3, 30), np.linspace(3.1, 10, 20))
         )
-        cls.num_samples = 5
+        cls.num_samples = 50
         cls.initial_burn = 200
         cls.burn = 10
         cls.reshuffle = 10
@@ -65,11 +65,11 @@ class MetricsConfig:
         cls.discontinuous = True
 
         # stationary states metrics
-        cls.num_nodes = 5000
+        cls.num_nodes = 10000
         cls.ss_parameters = np.concatenate(
             (np.linspace(0.1, 2, 10), np.linspace(2.1, 6, 50), np.linspace(6.1, 10, 10))
         )
-        cls.num_samples = 5
+        cls.num_samples = 50
         cls.initial_burn = 200
         cls.burn = 10
         cls.reshuffle = 10
@@ -92,7 +92,7 @@ class MetricsConfig:
 
         # meanfield metrics
         cls.mf_parameters = np.concatenate(
-            (np.linspace(0.1, 3, 10), np.linspace(3.1, 6, 30), np.linspace(6.1, 10, 10))
+            (np.linspace(0.1, 5, 40), np.linspace(6.1, 10, 10))
         )
         cls.num_k = 7
         cls.epsilon = 1e-2
@@ -102,11 +102,11 @@ class MetricsConfig:
         cls.discontinuous = True
 
         # stationary states metrics
-        cls.num_nodes = 5000
+        cls.num_nodes = 10000
         cls.ss_parameters = np.concatenate(
-            (np.linspace(0.1, 3, 10), np.linspace(3.1, 6, 30), np.linspace(6.1, 10, 10))
+            (np.linspace(0.1, 5, 40), np.linspace(6.1, 10, 10))
         )
-        cls.num_samples = 5
+        cls.num_samples = 50
         cls.initial_burn = 200
         cls.burn = 10
         cls.reshuffle = 10

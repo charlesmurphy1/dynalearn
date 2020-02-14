@@ -117,8 +117,8 @@ class EpidemicSSMetrics(StationaryStateMetrics):
             avg_samples = self.avg(samples, axis=-1)
             if self.dynamics.is_dead(x0):
                 x0 = self.absoring_state()
-            avg[0, i] = self.avg(avg_samples)
-            std[0, i] = self.std(avg_samples)
+            avg[0, i] = np.mean(avg_samples, axis=-1)
+            std[0, i] = np.std(avg_samples, axis=-1)
 
         x0 = self.epidemic_state()
         for i, p in reversed(list(enumerate(self.parameters))):
@@ -128,8 +128,8 @@ class EpidemicSSMetrics(StationaryStateMetrics):
             avg_samples = self.avg(samples, axis=-1)
             if self.dynamics.is_dead(x0):
                 x0 = self.absoring_state()
-            avg[1, i] = self.avg(avg_samples)
-            std[1, i] = self.std(avg_samples)
+            avg[1, i] = np.mean(avg_samples, axis=-1)
+            std[1, i] = np.std(avg_samples, axis=-1)
 
         if self.verbose:
             pb.close()
