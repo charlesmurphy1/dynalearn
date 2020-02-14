@@ -74,13 +74,7 @@ class StationaryStateMetrics(Metrics):
         avg_x = []
         for i in range(self.model.num_states):
             avg_x.append(np.mean(x == i, axis=axis))
-        return avg_x
-
-    def std(self, x, axis=None):
-        std_x = []
-        for i in range(self.model.num_states):
-            std_x.append(np.std(x == i, axis=axis))
-        return np.array(std_x)
+        return np.array(avg_x)
 
 
 class EpidemicSSMetrics(StationaryStateMetrics):
