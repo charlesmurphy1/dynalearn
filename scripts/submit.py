@@ -28,6 +28,8 @@ for nn in num_samples:
     for config in configs_to_run:
         name = config + "_" + str(nn)
         path_to_data = os.path.join(path_to_dir, name)
+        if not os.path.exists(path_to_data):
+            os.makedirs(path_to_data)
         script = "#!/bin/bash\n"
         script += "#SBATCH --account=def-aallard\n"
         script += "#SBATCH --time=48:00:00\n"
