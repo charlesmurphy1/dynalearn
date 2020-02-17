@@ -27,6 +27,8 @@ configs_to_run = [
 for config in configs_to_run:
     name = config + "_" + str(num_samples)
     path_to_data = os.path.join(path_to_dir, name)
+    if not os.path.exists(path_to_data):
+        os.makedirs(path_to_data)
     script = "#!/bin/bash\n"
     script += "#SBATCH --account=def-aallard\n"
     script += "#SBATCH --time=48:00:00\n"
@@ -37,7 +39,8 @@ for config in configs_to_run:
     script += "\n"
     script += "module load python/3.6 scipy-stack mpi4py\n"
     script += "source ~/.dynalearn-env/bin/activate\n"
-    script += "python training_script.py"
+    # script += "python training_script.py"
+    script += "python ss_script.py"
     script += " --config {0}".format(config)
     script += " --num_samples {0}".format(num_samples)
     script += " --path_to_data {0}".format(path_to_data)

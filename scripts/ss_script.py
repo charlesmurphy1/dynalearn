@@ -9,6 +9,12 @@ import tensorflow as tf
 
 def summarize_mf(h5file, experiment):
     true_mf = experiment.metrics["TruePEMFMetrics"]
+    if "mf-parameters" in h5file:
+        del h5file["mf-parameters"]
+        del h5file["mf-true/fixed_points"]
+        del h5file["mf-true/thresholds"]
+        del h5file["mf-gnn/fixed_points"]
+        del h5file["mf-gnn/thresholds"]
     h5file.create_dataset("mf-parameters", data=true_mf.data["parameters"])
     h5file.create_dataset("mf-true/fixed_points", data=true_mf.data["fixed_points"])
     h5file.create_dataset("mf-true/thresholds", data=true_mf.data["thresholds"])
@@ -19,12 +25,18 @@ def summarize_mf(h5file, experiment):
 def summarize_ss(h5file, experiment):
 
     true_ss = experiment.metrics["TruePESSMetrics"]
+    if "ss-parameters" in h5file:
+        del h5file["ss-parameters"]
+        del h5file["ss-true/avg"]
+        del h5file["ss-true/std"]
+        del h5file["ss-gnn/avg"]
+        del h5file["ss-gnn/std"]
     h5file.create_dataset("ss-parameters", data=true_ss.data["parameters"])
     h5file.create_dataset("ss-true/avg", data=true_ss.data["avg"])
     h5file.create_dataset("ss-true/std", data=true_ss.data["std"])
 
     gnn_ss = experiment.metrics["GNNPESSMetrics"]
-    h5file.create_dataset("ss-gnn/avg", data=true_ss.data["avg"])
+    h5file.create_dataset("ss-gnn/avg", data=gnn_ss.data["avg"])
     h5file.create_dataset("ss-gnn/std", data=gnn_ss.data["std"])
 
 
@@ -134,12 +146,15 @@ tf_config = tf.ConfigProto()
 tf_config.gpu_options.allow_growth = True
 session = tf.Session(config=tf_config)
 
+config.config["metrics"]["config"].num_samples = 50
+config.config["metrics"]["config"].num_nodes = 1000
 experiment = dl.Experiment(config.config, verbose=args.verbose)
 
 experiment.load()
 experiment.compute_metrics()
+experiment.save()
 
 h5file = h5py.File(
-    os.path.join(args.path_to_summary, "{0}.h5".format(experiment.name)), "a"
+    os.path.join(args.path_to_summary, "{0}.h5".format(experiment.name)), "r+"
 )
 summarize_ss(h5file, experiment)
