@@ -123,6 +123,23 @@ class StatisticsMetrics(Metrics):
             [summaries[s]["test"] if "test" in summaries[s] else 0 for s in summaries]
         )
 
+        entropy = self.entropy("train", True)
+        ess = self.effective_samplesize("train")
+        if entropy is not None:
+            self.data["norm_entropy/train"] = entropy
+            self.data["effective_samplesize/train"] = ess
+
+        entropy = self.entropy("val", True)
+        ess = self.effective_samplesize("val")
+        if entropy is not None:
+            self.data["norm_entropy/val"] = entropy
+            self.data["effective_samplesize/val"] = ess
+
+        entropy = self.entropy("test", True)
+        ess = self.effective_samplesize("test")
+        if entropy is not None:
+            self.data["effective_samplesize/test"] = ess
+
     def jensenshannon(self, dataset1, dataset2):
         prob1 = self.data["counts/" + dataset1] / np.sum(
             self.data["counts/" + dataset1]
@@ -142,6 +159,8 @@ class StatisticsMetrics(Metrics):
         return 1 - abs(prob1 - prob2) / 2
 
     def entropy(self, dataset, normalize=True):
+        if "counts/" + dataset not in self.data:
+            return
         prob = self.data["counts/" + dataset] / np.sum(self.data["counts/" + dataset])
         entropy = -np.sum(prob[prob > 0] * np.log(prob[prob > 0]))
 
@@ -155,6 +174,8 @@ class StatisticsMetrics(Metrics):
         return entropy
 
     def max_entropy(self, dataset):
+        if "counts/" + dataset not in self.data:
+            return
         degrees = np.unique(np.sort(np.sum(self.data["summaries"][:, 1:], axis=-1)))
         degrees = degrees[degrees > 0]
         num_states = self.data["summaries"][0, 1:].shape[0]
@@ -165,5 +186,7 @@ class StatisticsMetrics(Metrics):
         return max_entropy
 
     def effective_samplesize(self, dataset):
+        if "counts/" + dataset not in self.data:
+            return
         w = self.data["counts/" + dataset]
         return np.sum(w) ** 2 / np.sum(w ** 2)

@@ -1,7 +1,6 @@
 import os
 import time
 
-num_samples = 20000
 
 path_to_all = "../data/"
 path_to_dir = os.path.join(path_to_all, "training")
@@ -15,13 +14,14 @@ if not os.path.exists(path_to_model):
 if not os.path.exists(path_to_summary):
     os.makedirs(path_to_summary)
 
+num_samples = 10000
 configs_to_run = [
     # "sis_er",
     # "sis_ba",
     # "plancksis_er",
-    "plancksis_ba",
-    # "sissis_er",
-    # "sissis_ba",
+    # "plancksis_ba",
+    "sissis_er",
+    "sissis_ba",
 ]
 
 for config in configs_to_run:

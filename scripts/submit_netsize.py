@@ -4,7 +4,7 @@ import time
 
 path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
 path_to_dir = os.path.join(path_to_all, "training")
-path_to_model = os.path.join(path_to_all, "models")
+path_to_model = os.path.join(path_to_dir, "models")
 path_to_summary = os.path.join(path_to_dir, "summary")
 
 if not os.path.exists(path_to_dir):
@@ -14,7 +14,7 @@ if not os.path.exists(path_to_model):
 if not os.path.exists(path_to_summary):
     os.makedirs(path_to_summary)
 
-num_samples = [100, 500, 1000, 5000, 10000, 20000, 50000]
+num_nodes = [100, 200, 500, 1000, 2000, 5000, 10000]
 configs_to_run = [
     "sis_er",
     "sis_ba",
@@ -24,15 +24,16 @@ configs_to_run = [
     "sissis_ba",
 ]
 
-for nn in num_samples:
+for nn in num_nodes:
     for config in configs_to_run:
-        name = config + "_" + str(nn)
+        name = config + "_nn" + str(nn)
         path_to_data = os.path.join(path_to_dir, name)
         if not os.path.exists(path_to_data):
             os.makedirs(path_to_data)
+        num_samples = int(1e6 / nn)
         script = "#!/bin/bash\n"
         script += "#SBATCH --account=def-aallard\n"
-        script += "#SBATCH --time=48:00:00\n"
+        script += "#SBATCH --time=24:00:00\n"
         script += "#SBATCH --job-name={0}\n".format(name)
         script += "#SBATCH --output={0}.out\n".format(
             os.path.join(path_to_data, "output")
@@ -45,7 +46,10 @@ for nn in num_samples:
         script += "python training_script.py"
         # script += "python ss_script.py"
         script += " --config {0}".format(config)
-        script += " --num_samples {0}".format(nn)
+        script += " --num_samples {0}".format(num_samples)
+        script += " --num_nodes {0}".format(nn)
+        script += " --resampling_time {0}".format(2)
+        script += " --suffix {0}".format(f"nn{nn}")
         script += " --path_to_data {0}".format(path_to_data)
         script += " --path_to_model {0}".format(path_to_model)
         script += " --path_to_summary {0}".format(path_to_summary)

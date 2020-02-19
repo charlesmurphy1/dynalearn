@@ -96,27 +96,27 @@ class Experiment:
         return cls(config)
 
     def run(self, overwrite=True):
-        if self.verbose:
+        if self.verbose != 0:
             print("\n---Experiment {0}---".format(self.name))
         self.save_config(overwrite)
-        if self.verbose:
+        if self.verbose != 0:
             print("\n---Generating data---")
         self.generate_data()
         self.save_data(overwrite)
 
-        if self.verbose:
+        if self.verbose != 0:
             print("\n---Training model---")
         self.train_model()
         self.save_history(overwrite)
         self.save_model(overwrite)
         self.load_model(best=True)
 
-        if self.verbose:
+        if self.verbose != 0:
             print("\n---Computing metrics---")
         self.compute_metrics()
         self.save_metrics(overwrite)
 
-        if self.verbose:
+        if self.verbose != 0:
             print("\n---Finished---")
 
     def save(self, overwrite=True):
@@ -156,7 +156,7 @@ class Experiment:
         if self.__config["training"].val_fraction is not None:
             val_fraction = self.__config["training"].val_fraction
             val_bias = self.__config["training"].val_bias
-            if self.verbose:
+            if self.verbose == 1:
                 print("Partitioning generator for validation")
             self.generator.partition_sampler(
                 "val", fraction=val_fraction, bias=val_bias
@@ -165,7 +165,7 @@ class Experiment:
         if self.__config["training"].test_fraction is not None:
             test_fraction = self.__config["training"].test_fraction
             test_bias = self.__config["training"].test_bias
-            if self.verbose:
+            if self.verbose == 1:
                 print("Partitioning generator for test")
             self.generator.partition_sampler(
                 "test", fraction=test_fraction, bias=test_bias

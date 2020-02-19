@@ -92,40 +92,53 @@ def summarize_error(h5file, experiment):
     h5file.create_dataset(name, data=data)
 
 
-def summarize_mf(h5file, experiment):
-    true_mf = experiment.metrics["TruePEMFMetrics"]
-    h5file.create_dataset("mf-parameters", data=true_mf.data["parameters"])
-    h5file.create_dataset("mf-true/fixed_points", data=true_mf.data["fixed_points"])
-    h5file.create_dataset("mf-true/thresholds", data=true_mf.data["thresholds"])
-    gnn_mf = experiment.metrics["GNNPEMFMetrics"]
-    h5file.create_dataset("mf-gnn/fixed_points", data=gnn_mf.data["fixed_points"])
-    h5file.create_dataset("mf-gnn/thresholds", data=gnn_mf.data["thresholds"])
+def summarize_stats(h5file, experiment):
+    metric = experiment.metrics["StatisticsMetrics"]
+    if "norm_entropy/train" in metric.data:
+        h5file.create_dataset(
+            "stats/entropy/train", data=metric.data["norm_entropy/train"]
+        )
+        h5file.create_dataset(
+            "stats/ess/train", data=metric.data["effective_samplesize/train"]
+        )
+    if "norm_entropy/val" in metric.data:
+        h5file.create_dataset("stats/entropy/val", data=metric.data["norm_entropy/val"])
+        h5file.create_dataset(
+            "stats/ess/val", data=metric.data["effective_samplesize/val"]
+        )
+    if "norm_entropy/test" in metric.data:
+        h5file.create_dataset(
+            "stats/entropy/test", data=metric.data["norm_entropy/test"]
+        )
+        h5file.create_dataset(
+            "stats/ess/test", data=metric.data["effective_samplesize/test"]
+        )
 
 
 def get_config(args):
     if args.config == "sis_er":
         return dl.ExperimentConfig.sis_er(
-            args.num_samples, args.path_to_data, args.path_to_model
+            args.suffix, args.path_to_data, args.path_to_model
         )
     elif args.config == "sis_ba":
         return dl.ExperimentConfig.sis_ba(
-            args.num_samples, args.path_to_data, args.path_to_model
+            args.suffix, args.path_to_data, args.path_to_model
         )
     elif args.config == "plancksis_er":
         return dl.ExperimentConfig.plancksis_er(
-            args.num_samples, args.path_to_data, args.path_to_model
+            args.suffix, args.path_to_data, args.path_to_model
         )
     elif args.config == "plancksis_ba":
         return dl.ExperimentConfig.plancksis_ba(
-            args.num_samples, args.path_to_data, args.path_to_model
+            args.suffix, args.path_to_data, args.path_to_model
         )
     elif args.config == "sissis_er":
         return dl.ExperimentConfig.sissis_er(
-            args.num_samples, args.path_to_data, args.path_to_model
+            args.suffix, args.path_to_data, args.path_to_model
         )
     elif args.config == "sissis_ba":
         return dl.ExperimentConfig.sissis_ba(
-            args.num_samples, args.path_to_data, args.path_to_model
+            args.suffix, args.path_to_data, args.path_to_model
         )
 
 
@@ -153,6 +166,25 @@ parser.add_argument(
     metavar="NUM_SAMPLES",
     help="Number of samples to train from.",
     default=10000,
+)
+parser.add_argument(
+    "--num_nodes",
+    "-n",
+    type=int,
+    metavar="NUM_NODES",
+    help="Number of nodes to train from.",
+    default=1000,
+)
+parser.add_argument(
+    "--resampling_time",
+    "-r",
+    type=int,
+    metavar="RESAMPLING_TIME",
+    help="Resampling time to generate the data.",
+    default=2,
+)
+parser.add_argument(
+    "--suffix", "-ss", type=str, metavar="SUFFIX", help="Suffix.", default=2,
 )
 parser.add_argument(
     "--path_to_data",
@@ -194,23 +226,32 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-
 config = get_config(args)
-
+config.config["metrics"]["name"] = [
+    "AttentionMetrics",
+    "TrueLTPMetrics",
+    "GNNLTPMetrics",
+    "MLELTPMetrics",
+    "TrueStarLTPMetrics",
+    "GNNStarLTPMetrics",
+    "UniformStarLTPMetrics",
+    "StatisticsMetrics",
+]
 if args.test == 1:
-    config.config["metrics"]["name"] = [
-        "AttentionMetrics",
-        "TrueLTPMetrics",
-        "GNNLTPMetrics",
-        "MLELTPMetrics",
-        "TrueStarLTPMetrics",
-        "GNNStarLTPMetrics",
-        "UniformStarLTPMetrics",
-        "StatisticsMetrics",
-    ]
     config.config["training"].num_samples = 100
     config.config["training"].step_per_epoch = 100
     config.config["training"].num_epochs = 1
+else:
+    config.config["training"].num_samples = args.num_samples
+    if args.num_samples < 10000:
+        config.config["training"].step_per_epoch = 10000
+    elif args.num_samples > 50000:
+        config.config["training"].step_per_epoch = 50000
+    else:
+        config.config["training"].step_per_epoch = args.num_samples
+
+config.config["graph"]["params"]["N"] = args.num_nodes
+config.config["generator"]["config"].resampling_time = args.resampling_time
 
 tf_config = tf.ConfigProto()
 tf_config.gpu_options.allow_growth = True
@@ -223,7 +264,9 @@ experiment.run()
 h5file = h5py.File(
     os.path.join(args.path_to_summary, "{0}.h5".format(experiment.name)), "w"
 )
+
+
 summarize_ltp(h5file, experiment)
 summarize_starltp(h5file, experiment)
 summarize_error(h5file, experiment)
-summarize_mf(h5file, experiment)
+summarize_stats(h5file, experiment)

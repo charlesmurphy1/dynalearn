@@ -16,8 +16,8 @@ class TrainingConfig:
 
         cls.name_optimizer = "Adam"
         cls.initial_lr = 0.0005
-        cls.schedule = {"epoch": 10, "factor": 2}
-        cls.num_epochs = 20
+        cls.schedule = {"epoch": 10, "factor": 5}
+        cls.num_epochs = 30
         cls.num_graphs = 1
         cls.num_samples = 10000
         cls.step_per_epoch = 10000
@@ -53,35 +53,6 @@ class TrainingConfig:
 
         return cls
 
-    @classmethod
-    def changing_num_samples(cls, num_samples):
-
-        cls = cls()
-
-        cls.name_optimizer = "Adam"
-        cls.initial_lr = 0.0005
-        cls.schedule = {"epoch": 10, "factor": 5}
-        cls.num_epochs = 30
-        cls.num_graphs = 1
-        cls.num_samples = num_samples
-        if num_samples < 10000:
-            cls.step_per_epoch = 10000
-        elif num_samples > 50000:
-            cls.step_per_epoch = 50000
-        else:
-            cls.step_per_epoch = num_samples
-
-        cls.sampling_bias = 0.6
-        cls.val_fraction = 0.01
-        cls.val_bias = 0.8
-        cls.test_fraction = None
-        cls.test_bias = 0.8
-        cls.np_seed = 1
-        # cls.training_metrics = ["model_entropy"]
-        cls.training_metrics = ["model_entropy", "jensenshannon"]
-
-        return cls
-
 
 class ExperimentConfig:
     def __init__(self):
@@ -89,17 +60,9 @@ class ExperimentConfig:
         self.path_to_config = None
 
     def set_config(
-        self,
-        name,
-        num_samples,
-        dynamics,
-        graph,
-        model,
-        metrics,
-        path_to_data,
-        path_to_model,
+        self, name, dynamics, graph, model, metrics, path_to_data, path_to_model,
     ):
-        training_config = TrainingConfig.changing_num_samples(num_samples)
+        training_config = TrainingConfig.default()
         self.config["name"] = name
         self.config["dynamics"] = dynamics
         self.config["graph"] = graph
@@ -157,11 +120,9 @@ class ExperimentConfig:
         return cls
 
     @classmethod
-    def sis_ba(
-        cls, num_samples=10000, path_to_dir="../data/", path_to_model="../data/"
-    ):
+    def sis_ba(cls, suffix, path_to_dir="../data/", path_to_model="../data/"):
         cls = cls()
-        name = "sis-ba-{0}".format(num_samples)
+        name = "sis-ba-{0}".format(suffix)
         dynamics = {
             "name": "SIS",
             "params": {"infection": 0.04, "recovery": 0.08, "init": "None"},
@@ -170,24 +131,15 @@ class ExperimentConfig:
         model = {"name": "EpidemicPredictor", "config": dl.models.GNNConfig.SISGNN()}
         metrics = dl.metrics.MetricsConfig.SISMetrics()
         cls.set_config(
-            name,
-            num_samples,
-            dynamics,
-            graph,
-            model,
-            metrics,
-            path_to_dir,
-            path_to_model,
+            name, dynamics, graph, model, metrics, path_to_dir, path_to_model,
         )
         cls.config["generator"]["sampler"]["config"].sampling_bias = 0.6
         return cls
 
     @classmethod
-    def sis_er(
-        cls, num_samples=10000, path_to_dir="../data/", path_to_model="../data/"
-    ):
+    def sis_er(cls, suffix, path_to_dir="../data/", path_to_model="../data/"):
         cls = cls()
-        name = "sis-er-{0}".format(num_samples)
+        name = "sis-er-{0}".format(suffix)
         dynamics = {
             "name": "SIS",
             "params": {"infection": 0.04, "recovery": 0.08, "init": "None"},
@@ -196,24 +148,15 @@ class ExperimentConfig:
         model = {"name": "EpidemicPredictor", "config": dl.models.GNNConfig.SISGNN()}
         metrics = dl.metrics.MetricsConfig.SISMetrics()
         cls.set_config(
-            name,
-            num_samples,
-            dynamics,
-            graph,
-            model,
-            metrics,
-            path_to_dir,
-            path_to_model,
+            name, dynamics, graph, model, metrics, path_to_dir, path_to_model,
         )
         cls.config["generator"]["sampler"]["config"].sampling_bias = 0.6
         return cls
 
     @classmethod
-    def plancksis_ba(
-        cls, num_samples=10000, path_to_dir="../data/", path_to_model="../data/"
-    ):
+    def plancksis_ba(cls, suffix, path_to_dir="../data/", path_to_model="../data/"):
         cls = cls()
-        name = "plancksis-ba-{0}".format(num_samples)
+        name = "plancksis-ba-{0}".format(suffix)
         dynamics = {
             "name": "PlanckSIS",
             "params": {"temperature": 8, "recovery": 0.06, "init": "None"},
@@ -225,24 +168,15 @@ class ExperimentConfig:
         }
         metrics = dl.metrics.MetricsConfig.PlanckSISMetrics()
         cls.set_config(
-            name,
-            num_samples,
-            dynamics,
-            graph,
-            model,
-            metrics,
-            path_to_dir,
-            path_to_model,
+            name, dynamics, graph, model, metrics, path_to_dir, path_to_model,
         )
         cls.config["generator"]["sampler"]["config"].sampling_bias = 0.6
         return cls
 
     @classmethod
-    def plancksis_er(
-        cls, num_samples=10000, path_to_dir="../data/", path_to_model="../data/"
-    ):
+    def plancksis_er(cls, suffix, path_to_dir="../data/", path_to_model="../data/"):
         cls = cls()
-        name = "plancksis-er-{0}".format(num_samples)
+        name = "plancksis-er-{0}".format(suffix)
         dynamics = {
             "name": "PlanckSIS",
             "params": {"temperature": 8, "recovery": 0.06, "init": "None"},
@@ -254,24 +188,15 @@ class ExperimentConfig:
         }
         metrics = dl.metrics.MetricsConfig.PlanckSISMetrics()
         cls.set_config(
-            name,
-            num_samples,
-            dynamics,
-            graph,
-            model,
-            metrics,
-            path_to_dir,
-            path_to_model,
+            name, dynamics, graph, model, metrics, path_to_dir, path_to_model,
         )
         cls.config["generator"]["sampler"]["config"].sampling_bias = 0.6
         return cls
 
     @classmethod
-    def sissis_ba(
-        cls, num_samples=10000, path_to_dir="../data/", path_to_model="../data/"
-    ):
+    def sissis_ba(cls, suffix, path_to_dir="../data/", path_to_model="../data/"):
         cls = cls()
-        name = "sissis-ba-{0}".format(num_samples)
+        name = "sissis-ba-{0}".format(suffix)
         dynamics = {
             "name": "SISSIS",
             "params": {
@@ -287,24 +212,15 @@ class ExperimentConfig:
         model = {"name": "EpidemicPredictor", "config": dl.models.GNNConfig.SISSISGNN()}
         metrics = dl.metrics.MetricsConfig.SISSISMetrics()
         cls.set_config(
-            name,
-            num_samples,
-            dynamics,
-            graph,
-            model,
-            metrics,
-            path_to_dir,
-            path_to_model,
+            name, dynamics, graph, model, metrics, path_to_dir, path_to_model,
         )
         cls.config["generator"]["sampler"]["config"].sampling_bias = 0.8
         return cls
 
     @classmethod
-    def sissis_er(
-        cls, num_samples=10000, path_to_dir="../data/", path_to_model="../data/"
-    ):
+    def sissis_er(cls, suffix, path_to_dir="../data/", path_to_model="../data/"):
         cls = cls()
-        name = "sissis-er-{0}".format(num_samples)
+        name = "sissis-er-{0}".format(suffix)
         dynamics = {
             "name": "SISSIS",
             "params": {
@@ -320,14 +236,7 @@ class ExperimentConfig:
         model = {"name": "EpidemicPredictor", "config": dl.models.GNNConfig.SISSISGNN()}
         metrics = dl.metrics.MetricsConfig.SISSISMetrics()
         cls.set_config(
-            name,
-            num_samples,
-            dynamics,
-            graph,
-            model,
-            metrics,
-            path_to_dir,
-            path_to_model,
+            name, dynamics, graph, model, metrics, path_to_dir, path_to_model,
         )
         cls.config["generator"]["sampler"]["config"].sampling_bias = 0.8
         return cls
