@@ -59,7 +59,7 @@ for rt in resampling_time:
 
         seed = 0
         path = "{0}/{1}-{2}.sh".format(
-            "{0}cedar/launch-scripts".format(path_to_scripts), config, seed,
+            "~/project/murphy9/dynlearn-launch", config, seed,
         )
 
         with open(path, "w") as f:
