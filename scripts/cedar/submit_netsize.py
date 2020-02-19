@@ -3,7 +3,7 @@ import time
 
 
 path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
-path_to_dir = os.path.join(path_to_all, "training")
+path_to_dir = os.path.join(path_to_all, "num_nodes")
 path_to_model = os.path.join(path_to_dir, "models")
 path_to_summary = os.path.join(path_to_dir, "summary")
 
@@ -43,7 +43,7 @@ for nn in num_nodes:
         script += "\n"
         script += "module load python/3.6 scipy-stack mpi4py\n"
         script += "source ~/.dynalearn-env/bin/activate\n"
-        script += "python ~/source/dynalearn/scripts/training_script.py"
+        script += "python {0}training_script.py".format(path_to_scripts)
         # script += "python ss_script.py"
         script += " --config {0}".format(config)
         script += " --num_samples {0}".format(num_samples)
@@ -59,7 +59,7 @@ for nn in num_nodes:
 
         seed = 0
         path = "{0}/{1}-{2}.sh".format(
-            "/home/murphy9/projects/def-aallard/murphy9/launch-scripts", config, seed,
+            "{0}cedar/launch-scripts".format(path_to_scripts), config, seed,
         )
 
         with open(path, "w") as f:

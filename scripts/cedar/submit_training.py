@@ -42,7 +42,7 @@ for ns in num_samples:
         script += "\n"
         script += "module load python/3.6 scipy-stack mpi4py\n"
         script += "source ~/.dynalearn-env/bin/activate\n"
-        script += "python ~/source/dynalearn/scripts/training_script.py"
+        script += "python {0}training_script.py".format(path_to_scripts)
         # script += "python ss_script.py"
         script += " --config {0}".format(config)
         script += " --num_samples {0}".format(ns)
@@ -58,7 +58,7 @@ for ns in num_samples:
 
         seed = 0
         path = "{0}/{1}-{2}.sh".format(
-            "/home/murphy9/projects/def-aallard/murphy9/launch-scripts",
+            "{0}cedar/launch-scripts".format(path_to_scripts), config, seed,
         )
 
         with open(path, "w") as f:
