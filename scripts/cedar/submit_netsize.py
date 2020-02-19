@@ -59,9 +59,7 @@ for nn in num_nodes:
 
         seed = 0
         path = "{0}/{1}-{2}.sh".format(
-            "/home/murphy9/projects/def-aallard/murphy9/scripts/cedar/launch_scripts",
-            config,
-            seed,
+            "/home/murphy9/projects/def-aallard/murphy9/launch-scripts", config, seed,
         )
 
         with open(path, "w") as f:
