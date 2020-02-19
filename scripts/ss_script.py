@@ -22,18 +22,23 @@ def summarize_mf(h5file, experiment):
     h5file.create_dataset("mf-gnn/fixed_points", data=gnn_mf.data["fixed_points"])
     h5file.create_dataset("mf-gnn/thresholds", data=gnn_mf.data["thresholds"])
 
+
 def summarize_ss(h5file, experiment):
 
     true_ss = experiment.metrics["TruePESSMetrics"]
     if "ss-parameters" in h5file:
         del h5file["ss-parameters"]
+    h5file.create_dataset("ss-parameters", data=true_ss.data["parameters"])
+
+    if "ss-true" in h5file:
         del h5file["ss-true/avg"]
         del h5file["ss-true/std"]
-        del h5file["ss-gnn/avg"]
-        del h5file["ss-gnn/std"]
-    h5file.create_dataset("ss-parameters", data=true_ss.data["parameters"])
     h5file.create_dataset("ss-true/avg", data=true_ss.data["avg"])
     h5file.create_dataset("ss-true/std", data=true_ss.data["std"])
+
+    if "ss-gnn" in h5file:
+        del h5file["ss-gnn/avg"]
+        del h5file["ss-gnn/std"]
 
     gnn_ss = experiment.metrics["GNNPESSMetrics"]
     h5file.create_dataset("ss-gnn/avg", data=gnn_ss.data["avg"])
@@ -147,7 +152,7 @@ tf_config.gpu_options.allow_growth = True
 session = tf.Session(config=tf_config)
 
 config.config["metrics"]["config"].num_samples = 50
-config.config["metrics"]["config"].num_nodes = 1000
+config.config["metrics"]["config"].num_nodes = 10000
 experiment = dl.Experiment(config.config, verbose=args.verbose)
 
 experiment.load()
@@ -157,4 +162,5 @@ experiment.save()
 h5file = h5py.File(
     os.path.join(args.path_to_summary, "{0}.h5".format(experiment.name)), "r+"
 )
+summarize_mf(h5file, experiment)
 summarize_ss(h5file, experiment)
