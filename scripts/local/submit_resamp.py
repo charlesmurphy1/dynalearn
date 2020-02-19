@@ -2,8 +2,8 @@ import os
 import time
 
 
-path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
-path_to_dir = os.path.join(path_to_all, "training")
+path_to_all = "../../data"
+path_to_dir = os.path.join(path_to_all, "resampling_time")
 path_to_model = os.path.join(path_to_dir, "models")
 path_to_summary = os.path.join(path_to_dir, "summary")
 
@@ -14,14 +14,14 @@ if not os.path.exists(path_to_model):
 if not os.path.exists(path_to_summary):
     os.makedirs(path_to_summary)
 
-resampling_time = np.logspace(0, 4, 20).astype('int')
+resampling_time = [2]
 configs_to_run = [
-    "sis_er",
+    # "sis_er",
     "sis_ba",
-    "plancksis_er",
-    "plancksis_ba",
-    "sissis_er",
-    "sissis_ba",
+    # "plancksis_er",
+    # "plancksis_ba",
+    # "sissis_er",
+    # "sissis_ba",
 ]
 
 for rt in resampling_time:
@@ -42,26 +42,24 @@ for rt in resampling_time:
         script += "\n"
         script += "module load python/3.6 scipy-stack mpi4py\n"
         script += "source ~/.dynalearn-env/bin/activate\n"
-        script += "python training_script.py"
+        script += "python ../training_script.py"
         # script += "python ss_script.py"
         script += " --config {0}".format(config)
-        script += " --num_samples {0}".format(10000)
+        script += " --num_samples {0}".format(1000)
         script += " --num_nodes {0}".format(1000)
         script += " --resampling_time {0}".format(rt)
         script += " --suffix {0}".format(f"rt{rt}")
         script += " --path_to_data {0}".format(path_to_data)
         script += " --path_to_model {0}".format(path_to_model)
         script += " --path_to_summary {0}".format(path_to_summary)
-        script += " --test 0"
+        script += " --test 1"
         script += " --verbose 2\n"
         script += "deactivate\n"
 
         seed = 0
-        path = "{0}/{1}-{2}.sh".format(
-            "/home/murphy9/source/dynalearn/scripts/launch_scripts", config, seed
-        )
+        path = "{0}/{1}-{2}.sh".format("launch_scripts", config, seed)
 
         with open(path, "w") as f:
             f.write(script)
 
-        os.system("sbatch {0}".format(path))
+        os.system("bash {0}".format(path))
