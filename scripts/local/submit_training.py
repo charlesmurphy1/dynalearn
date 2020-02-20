@@ -2,7 +2,6 @@ import os
 import time
 
 
-# path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
 path_to_all = "../../data/"
 path_to_dir = os.path.join(path_to_all, "training")
 path_to_model = os.path.join(path_to_dir, "models")
