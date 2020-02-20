@@ -242,16 +242,16 @@ if args.test == 1:
     config.config["training"].step_per_epoch = 100
     config.config["training"].num_epochs = 1
 else:
-    config.config["training"].num_samples = args.num_samples
-    if args.num_samples < 10000:
+    config.config["training"].num_samples = int(args.num_samples)
+    if int(args.num_samples) < 10000:
         config.config["training"].step_per_epoch = 10000
-    elif args.num_samples > 50000:
+    elif int(args.num_samples) > 50000:
         config.config["training"].step_per_epoch = 50000
     else:
-        config.config["training"].step_per_epoch = args.num_samples
+        config.config["training"].step_per_epoch = int(args.num_samples)
 
-config.config["graph"]["params"]["N"] = args.num_nodes
-config.config["generator"]["config"].resampling_time = args.resampling_time
+config.config["graph"]["params"]["N"] = int(args.num_nodes)
+config.config["generator"]["config"].resampling_time = int(args.resampling_time)
 
 tf_config = tf.ConfigProto()
 tf_config.gpu_options.allow_growth = True

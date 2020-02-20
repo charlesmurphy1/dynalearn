@@ -3,7 +3,7 @@ import time
 
 
 path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
-path_to_dir = os.path.join(path_to_all, "training")
+path_to_dir = os.path.join(path_to_all, "netsize")
 path_to_model = os.path.join(path_to_dir, "models")
 path_to_summary = os.path.join(path_to_dir, "summary")
 
@@ -30,7 +30,7 @@ for nn in num_nodes:
         path_to_data = os.path.join(path_to_dir, name)
         if not os.path.exists(path_to_data):
             os.makedirs(path_to_data)
-        num_samples = int(1e6 / nn)
+        num_samples = int(1e7 / nn)
         script = "#!/bin/bash\n"
         script += "#SBATCH --account=def-aallard\n"
         script += "#SBATCH --time=24:00:00\n"
@@ -42,8 +42,8 @@ for nn in num_nodes:
         script += "#SBATCH --mem=24G\n"
         script += "\n"
         script += "module load python/3.6 scipy-stack mpi4py\n"
-        script += "source ~/.dynalearn-env/bin/activate\n"
-        script += "python ~/source/dynalearn/scripts/training_script.py"
+        script += "source /home/murphy9/.dynalearn-env/bin/activate\n"
+        script += "python /home/murphy9/source/dynalearn/scripts/training_script.py"
         # script += "python ss_script.py"
         script += " --config {0}".format(config)
         script += " --num_samples {0}".format(num_samples)
