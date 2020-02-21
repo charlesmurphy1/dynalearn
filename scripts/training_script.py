@@ -237,16 +237,18 @@ config.config["metrics"]["name"] = [
     "UniformStarLTPMetrics",
     "StatisticsMetrics",
 ]
+
+total_num_samples = int(args.num_samples) * int(args.num_nodes)
 if args.test == 1:
     config.config["training"].num_samples = 100
     config.config["training"].step_per_epoch = 100
     config.config["training"].num_epochs = 1
 else:
     config.config["training"].num_samples = int(args.num_samples)
-    if int(args.num_samples) < 10000:
-        config.config["training"].step_per_epoch = 10000
-    elif int(args.num_samples) > 50000:
-        config.config["training"].step_per_epoch = 50000
+    if total_num_samples < 1e7:
+        config.config["training"].step_per_epoch = 1e7 / int(args.num_nodes)
+    elif total_num_samples > 5e7:
+        config.config["training"].step_per_epoch = 5e7 / int(args.num_nodes)
     else:
         config.config["training"].step_per_epoch = int(args.num_samples)
 
