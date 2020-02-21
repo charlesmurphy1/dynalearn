@@ -14,8 +14,7 @@ if not os.path.exists(path_to_model):
 if not os.path.exists(path_to_summary):
     os.makedirs(path_to_summary)
 
-num_samples = [100, 500, 1000, 5000, 10000, 20000]
-#num_samples = [10000]
+num_samples = [10000]
 configs_to_run = [
     "sis_er",
     "sis_ba",
@@ -33,7 +32,7 @@ for ns in num_samples:
             os.makedirs(path_to_data)
         script = "#!/bin/bash\n"
         script += "#SBATCH --account=def-aallard\n"
-        script += "#SBATCH --time=12:00:00\n"
+        script += "#SBATCH --time=60:00:00\n"
         script += "#SBATCH --job-name={0}\n".format(name)
         script += "#SBATCH --output={0}.out\n".format(
             os.path.join(path_to_data, "output")
@@ -43,12 +42,8 @@ for ns in num_samples:
         script += "\n"
         script += "module load python/3.6 scipy-stack mpi4py\n"
         script += "source /home/murphy9/.dynalearn-env/bin/activate\n"
-        script += "python /home/murphy9/source/dynalearn/scripts/training_script.py"
-        # script += "python /home/murphy9/source/dynalearn/scripts/ss_script.py"
+        script += "python /home/murphy9/source/dynalearn/scripts/ss_script.py"
         script += " --config {0}".format(config)
-        script += " --num_samples {0}".format(ns)
-        script += " --num_nodes {0}".format(1000)
-        script += " --resampling_time {0}".format(2)
         script += " --suffix {0}".format(f"ns{ns}")
         script += " --path_to_data {0}".format(path_to_data)
         script += " --path_to_model {0}".format(path_to_model)

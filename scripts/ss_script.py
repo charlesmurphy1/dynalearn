@@ -48,27 +48,27 @@ def summarize_ss(h5file, experiment):
 def get_config(args):
     if args.config == "sis_er":
         return dl.ExperimentConfig.sis_er(
-            args.num_samples, args.path_to_data, args.path_to_model
+            args.suffix, args.path_to_data, args.path_to_model
         )
     elif args.config == "sis_ba":
         return dl.ExperimentConfig.sis_ba(
-            args.num_samples, args.path_to_data, args.path_to_model
+            args.suffix, args.path_to_data, args.path_to_model
         )
     elif args.config == "plancksis_er":
         return dl.ExperimentConfig.plancksis_er(
-            args.num_samples, args.path_to_data, args.path_to_model
+            args.suffix, args.path_to_data, args.path_to_model
         )
     elif args.config == "plancksis_ba":
         return dl.ExperimentConfig.plancksis_ba(
-            args.num_samples, args.path_to_data, args.path_to_model
+            args.suffix, args.path_to_data, args.path_to_model
         )
     elif args.config == "sissis_er":
         return dl.ExperimentConfig.sissis_er(
-            args.num_samples, args.path_to_data, args.path_to_model
+            args.suffix, args.path_to_data, args.path_to_model
         )
     elif args.config == "sissis_ba":
         return dl.ExperimentConfig.sissis_ba(
-            args.num_samples, args.path_to_data, args.path_to_model
+            args.suffix, args.path_to_data, args.path_to_model
         )
 
 
@@ -90,13 +90,14 @@ parser.add_argument(
     required=True,
 )
 parser.add_argument(
-    "--num_samples",
-    "-s",
-    type=int,
-    metavar="NUM_SAMPLES",
-    help="Number of samples to train from.",
-    default=10000,
+    "--suffix",
+    "-ss",
+    type=str,
+    metavar="SUFFIX",
+    help="Suffix of the experiment.",
+    required=True,
 )
+
 parser.add_argument(
     "--path_to_data",
     "-pd",
