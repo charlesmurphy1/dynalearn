@@ -3,7 +3,7 @@ import time
 
 
 path_to_all = "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
-path_to_dir = os.path.join(path_to_all, "num_nodes")
+path_to_dir = os.path.join(path_to_all, "netsize")
 path_to_model = os.path.join(path_to_dir, "models")
 path_to_summary = os.path.join(path_to_dir, "summary")
 path_to_scripts = "~/source/dynalearn/scripts/"

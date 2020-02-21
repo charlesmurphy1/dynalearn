@@ -3,7 +3,7 @@ import time
 
 
 path_to_all = "../../data"
-path_to_dir = os.path.join(path_to_all, "resampling_time")
+path_to_dir = os.path.join(path_to_all, "resamp")
 path_to_model = os.path.join(path_to_dir, "models")
 path_to_summary = os.path.join(path_to_dir, "summary")
 
