@@ -254,6 +254,8 @@ else:
 
 config.config["graph"]["params"]["N"] = int(args.num_nodes)
 config.config["generator"]["config"].resampling_time = int(args.resampling_time)
+if config.config["graph"]["name"] == "ERGraph":
+    config.config["graph"]["params"]["density"] = 4 / int(args.num_nodes)
 
 tf_config = tf.ConfigProto()
 tf_config.gpu_options.allow_growth = True
