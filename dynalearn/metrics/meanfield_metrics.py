@@ -61,7 +61,7 @@ class MeanfieldMetrics(Metrics):
 
 class EpidemicsMFMetrics(MeanfieldMetrics):
     def __init__(self, config, verbose=0):
-        self.epsilon = config.epsilon
+        self.epsilon = config.mf_epsilon
         self.tol = config.tol
         self.fp_finder = config.fp_finder
         if config.discontinuous:

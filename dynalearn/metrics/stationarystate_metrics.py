@@ -79,7 +79,7 @@ class StationaryStateMetrics(Metrics):
 
 class EpidemicSSMetrics(StationaryStateMetrics):
     def __init__(self, config, verbose=0):
-        self.epsilon = config.epsilon
+        self.epsilon = config.ss_epsilon
         super(EpidemicSSMetrics, self).__init__(config, verbose)
 
     def epidemic_state(self):
