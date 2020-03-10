@@ -55,6 +55,9 @@ class StationaryStateMetrics(Metrics):
 
         for i in range(self.num_samples):
             samples[i] = x
+            if self.dynamics.is_dead(x):
+                x = self.burning(x, self.initial_burn)
+                x = x0 * 1
             if self.verbose and pb is not None:
                 pb.update()
 
