@@ -34,9 +34,7 @@ class MetricsConfig:
             (np.linspace(0.1, 3, 30), np.linspace(3.1, 10, 20))
         )
         cls.num_samples = 25
-        cls.initial_burn = 200
-        cls.burn = 10
-        cls.reshuffle = 10
+        cls.burn = 1000
         cls.fp_finder = None
 
         return cls
@@ -72,9 +70,7 @@ class MetricsConfig:
             (np.linspace(0.1, 2, 10), np.linspace(2.1, 6, 50), np.linspace(6.1, 10, 10))
         )
         cls.num_samples = 25
-        cls.initial_burn = 200
-        cls.burn = 10
-        cls.reshuffle = 10
+        cls.burn = 1000
         cls.fp_finder = None
 
         return cls
@@ -110,9 +106,7 @@ class MetricsConfig:
             (np.linspace(0.1, 5, 40), np.linspace(6.1, 10, 10))
         )
         cls.num_samples = 25
-        cls.initial_burn = 200
-        cls.burn = 10
-        cls.reshuffle = 10
+        cls.burn = 1000
         cls.fp_finder = None
 
         return cls
