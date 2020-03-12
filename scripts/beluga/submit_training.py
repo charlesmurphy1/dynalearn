@@ -17,12 +17,12 @@ if not os.path.exists(path_to_summary):
 num_samples = [100, 500, 1000, 5000, 10000, 20000]
 #num_samples = [10000]
 configs_to_run = [
-    "sis_er",
-    "sis_ba",
+#    "sis_er",
+#    "sis_ba",
     "plancksis_er",
     "plancksis_ba",
-    "sissis_er",
-    "sissis_ba",
+#    "sissis_er",
+#    "sissis_ba",
 ]
 
 for ns in num_samples:

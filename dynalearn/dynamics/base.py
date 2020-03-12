@@ -158,10 +158,11 @@ class SingleEpidemics(Epidemics):
         super(SingleEpidemics, self).__init__(params, state_label)
 
     def initial_states(self):
-        if self.params["init"] is not None:
-            init_n_infected = ceil(self.num_nodes * self.params["init"])
+        if self.params["init"] is None:
+            p = self.params["init"]
         else:
-            init_n_infected = np.random.choice(range(self.num_nodes))
+            p = np.random.rand()
+        n_infected = np.random.binom(self.num_nodes, p)
         nodeset = np.array(list(self.graph.nodes()))
         ind = np.random.choice(nodeset, size=init_n_infected, replace=False)
         states = np.ones(self.num_nodes) * self.state_label["S"]
@@ -188,19 +189,17 @@ class DoubleEpidemics(Epidemics):
         super(DoubleEpidemics, self).__init__(params, state_label)
 
     def initial_states(self):
-        if self.params["init"] is not None:
-            init_n_infected = ceil(self.num_nodes * self.params["init"])
+        if self.params["init"] is None:
+            p1 = 1 - np.sqrt(1 - self.params["init"])
+            p2 = 1 - np.sqrt(1 - self.params["init"])
         else:
-            init_n_infected = np.random.choice(range(self.num_nodes))
-
-        n_eff = int(
-            np.round(
-                self.num_nodes * (1 - np.sqrt(1 - init_n_infected / self.num_nodes))
-            )
-        )
+            p1 = np.random.rand()
+            p2 = np.random.rand()
+        n1_infected = np.random.binom(self.num_nodes, p1)
+        n2_infected = np.random.binom(self.num_nodes, p2)
         nodeset = np.array(list(self.graph.nodes()))
-        ind1 = np.random.choice(nodeset, size=n_eff, replace=False)
-        ind2 = np.random.choice(nodeset, size=n_eff, replace=False)
+        ind1 = np.random.choice(nodeset, size=n1_infected, replace=False)
+        ind2 = np.random.choice(nodeset, size=n2_infected, replace=False)
         ind3 = np.intersect1d(ind1, ind2)
         states = np.ones(self.num_nodes) * self.state_label["SS"]
         states[ind1] = self.state_label["IS"]

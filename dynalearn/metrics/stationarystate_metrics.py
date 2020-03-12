@@ -12,9 +12,7 @@ class StationaryStateMetrics(Metrics):
         self.__config = config
         self.parameters = config.ss_parameters
         self.num_samples = config.num_samples
-        self.initial_burn = config.initial_burn
         self.burn = config.burn
-        self.reshuffle = config.reshuffle
         self.tol = config.tol
 
         self.graph = None
@@ -46,26 +44,18 @@ class StationaryStateMetrics(Metrics):
         self.data["avg"] = avg
         self.data["std"] = std
 
-    def get_samples(self, x0, pb=None):
+    def get_samples(self, gen_x0=None, pb=None):
 
         self.model.graph = self.graph_model.generate()[1]
-        x = x0 * 1
+        if gen_x0 is None:
+            gen_x0 = self.dynamics.initial_states
         samples = np.zeros((self.num_samples, self.model.num_nodes))
-        x = self.burning(x, self.initial_burn)
 
         for i in range(self.num_samples):
-            samples[i] = x
-            if self.dynamics.is_dead(x):
-                x = self.burning(x, self.initial_burn)
-                x = x0 * 1
+            self.model.graph = self.graph_model.generate()[1]
+            samples[i] = self.burning(gen_x0(), self.burn)
             if self.verbose and pb is not None:
                 pb.update()
-
-            if (i + 1) % self.reshuffle == 0:
-                self.model.graph = self.graph_model.generate()[1]
-                x = self.burning(x, self.initial_burn)
-
-            x = self.burning(x, self.burn)
         return samples
 
     def burning(self, x, burn=1):
@@ -109,24 +99,21 @@ class EpidemicSSMetrics(StationaryStateMetrics):
         x0 = self.absoring_state()
         for i, p in enumerate(self.parameters):
             self.change_param(p)
-            samples = self.get_samples(x0, pb)
-            x0 = samples[-1]
+            samples = self.get_samples(self.absoring_state, pb)
             avg_samples = self.avg(samples, axis=-1)
             if self.dynamics.is_dead(x0):
                 x0 = self.absoring_state()
             avg[0, i] = np.mean(avg_samples, axis=-1)
             std[0, i] = np.std(avg_samples, axis=-1)
 
-        x0 = self.epidemic_state()
         for i, p in reversed(list(enumerate(self.parameters))):
             self.change_param(p)
-            samples = self.get_samples(x0, pb)
-            x0 = samples[-1]
+            samples = self.get_samples(self.epidemic_state, pb)
             avg_samples = self.avg(samples, axis=-1)
             if self.dynamics.is_dead(x0):
                 x0 = self.absoring_state()
-            avg[1, i] = np.mean(avg_samples, axis=-1)
-            std[1, i] = np.std(avg_samples, axis=-1)
+            avg[0, i] = np.mean(avg_samples, axis=-1)
+            std[0, i] = np.std(avg_samples, axis=-1)
 
         if self.verbose:
             pb.close()
