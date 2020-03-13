@@ -152,8 +152,10 @@ tf_config = tf.ConfigProto()
 tf_config.gpu_options.allow_growth = True
 session = tf.Session(config=tf_config)
 
-config.config["metrics"]["config"].num_samples = 50
-config.config["metrics"]["config"].num_nodes = 10000
+config.config["metrics"]["config"].num_nodes = 2000
+config.config["metrics"]["config"].num_samples = 100
+config.config["metrics"]["config"].ss_epsilon = 1e-2
+config.config["metrics"]["config"].burn = 200
 experiment = dl.Experiment(config.config, verbose=args.verbose)
 
 experiment.load()

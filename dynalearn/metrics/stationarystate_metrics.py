@@ -75,17 +75,12 @@ class EpidemicSSMetrics(StationaryStateMetrics):
         self.epsilon = config.ss_epsilon
         super(EpidemicSSMetrics, self).__init__(config, verbose)
 
-    def epidemic_state(self):
-        self.dynamics.params["init"] = 1 - self.epsilon
+    def get_initial_state(self, inf_fraction):
+        self.dynamics.params["init"] = inf_fraction
         name, g = self.graph_model.generate()
         self.dynamics.graph = g
-        return self.dynamics.initial_states()
-
-    def absoring_state(self):
-        self.dynamics.params["init"] = self.epsilon
-        name, g = self.graph_model.generate()
-        self.dynamics.graph = g
-        return self.dynamics.initial_states()
+        x = self.dynamics.initial_states()
+        return x
 
     def compute_stationary_states(self):
         avg = np.zeros((2, len(self.parameters), self.model.num_states))
@@ -96,24 +91,34 @@ class EpidemicSSMetrics(StationaryStateMetrics):
         else:
             pb = None
 
-        x0 = self.absoring_state()
+        inf_fraction = self.epsilon
         for i, p in enumerate(self.parameters):
+            init_state = lambda: self.get_initial_state(inf_fraction)
             self.change_param(p)
-            samples = self.get_samples(self.absoring_state, pb)
+            samples = self.get_samples(init_state, pb)
             avg_samples = self.avg(samples, axis=-1)
-            if self.dynamics.is_dead(x0):
-                x0 = self.absoring_state()
             avg[0, i] = np.mean(avg_samples, axis=-1)
             std[0, i] = np.std(avg_samples, axis=-1)
+            inf_fraction = 1 - avg[0, i, 0]
+            if inf_fraction < self.epsilon:
+                inf_fraction = self.epsilon
+            elif inf_fraction > 1 - self.epsilon:
+                inf_fraction = 1 - self.epsilon
 
-        for i, p in reversed(list(enumerate(self.parameters))):
+        inf_fraction = 1 - self.epsilon
+        for i, p in enumerate(self.parameters[::-1]):
+            i = -1 - i
+            init_state = lambda: self.get_initial_state(inf_fraction)
             self.change_param(p)
-            samples = self.get_samples(self.epidemic_state, pb)
+            samples = self.get_samples(init_state, pb)
             avg_samples = self.avg(samples, axis=-1)
-            if self.dynamics.is_dead(x0):
-                x0 = self.absoring_state()
-            avg[0, i] = np.mean(avg_samples, axis=-1)
-            std[0, i] = np.std(avg_samples, axis=-1)
+            avg[1, i] = np.mean(avg_samples, axis=-1)
+            std[1, i] = np.std(avg_samples, axis=-1)
+            inf_fraction = 1 - avg[1, i, 0]
+            if inf_fraction < self.epsilon:
+                inf_fraction = self.epsilon
+            elif inf_fraction > 1 - self.epsilon:
+                inf_fraction = 1 - self.epsilon
 
         if self.verbose:
             pb.close()

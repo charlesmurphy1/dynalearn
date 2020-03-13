@@ -158,13 +158,13 @@ class SingleEpidemics(Epidemics):
         super(SingleEpidemics, self).__init__(params, state_label)
 
     def initial_states(self):
-        if self.params["init"] is None:
+        if self.params["init"] is not None:
             p = self.params["init"]
         else:
             p = np.random.rand()
-        n_infected = np.random.binom(self.num_nodes, p)
+        n_infected = np.random.binomial(self.num_nodes, p)
         nodeset = np.array(list(self.graph.nodes()))
-        ind = np.random.choice(nodeset, size=init_n_infected, replace=False)
+        ind = np.random.choice(nodeset, size=n_infected, replace=False)
         states = np.ones(self.num_nodes) * self.state_label["S"]
         states[ind] = self.state_label["I"]
 
@@ -189,14 +189,14 @@ class DoubleEpidemics(Epidemics):
         super(DoubleEpidemics, self).__init__(params, state_label)
 
     def initial_states(self):
-        if self.params["init"] is None:
+        if self.params["init"] is not None:
             p1 = 1 - np.sqrt(1 - self.params["init"])
             p2 = 1 - np.sqrt(1 - self.params["init"])
         else:
             p1 = np.random.rand()
             p2 = np.random.rand()
-        n1_infected = np.random.binom(self.num_nodes, p1)
-        n2_infected = np.random.binom(self.num_nodes, p2)
+        n1_infected = np.random.binomial(self.num_nodes, p1)
+        n2_infected = np.random.binomial(self.num_nodes, p2)
         nodeset = np.array(list(self.graph.nodes()))
         ind1 = np.random.choice(nodeset, size=n1_infected, replace=False)
         ind2 = np.random.choice(nodeset, size=n2_infected, replace=False)
