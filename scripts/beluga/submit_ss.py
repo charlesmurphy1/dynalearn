@@ -32,7 +32,7 @@ for ns in num_samples:
             os.makedirs(path_to_data)
         script = "#!/bin/bash\n"
         script += "#SBATCH --account=def-aallard\n"
-        script += "#SBATCH --time=60:00:00\n"
+        script += "#SBATCH --time=48:00:00\n"
         script += "#SBATCH --job-name={0}\n".format(name)
         script += "#SBATCH --output={0}.out\n".format(
             os.path.join(path_to_data, "output")
