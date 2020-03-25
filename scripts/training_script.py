@@ -210,6 +210,15 @@ parser.add_argument(
     help="Path to the summary directory.",
     default="./",
 )
+parser.add_argument(
+    "--with_truth",
+    "-ue",
+    type=int,
+    choices=[0, 1],
+    metavar="BOOL",
+    help="Using ground truth for training.",
+    default=0,
+)
 
 parser.add_argument(
     "--verbose",
@@ -254,6 +263,7 @@ else:
 
 config.config["graph"]["params"]["N"] = int(args.num_nodes)
 config.config["generator"]["config"].resampling_time = int(args.resampling_time)
+config.config["generator"]["config"].with_truth = bool(args.with_truth)
 if config.config["graph"]["name"] == "ERGraph":
     config.config["graph"]["params"]["density"] = 4 / int(args.num_nodes)
 

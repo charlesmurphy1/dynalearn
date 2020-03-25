@@ -90,7 +90,7 @@ class MetricsConfig:
 
         # meanfield metrics
         cls.mf_parameters = np.concatenate(
-            (np.linspace(0.1, 5, 40), np.linspace(6.1, 10, 10))
+            (np.linspace(0.1, 5, 40), np.linspace(5.1, 10, 10))
         )
         cls.num_k = 7
         cls.mf_epsilon = 1e-2
@@ -103,7 +103,7 @@ class MetricsConfig:
         cls.num_nodes = 10000
         cls.ss_epsilon = 10.0 / cls.num_nodes
         cls.ss_parameters = np.concatenate(
-            (np.linspace(0.1, 5, 40), np.linspace(6.1, 10, 10))
+            (np.linspace(0.1, 5, 40), np.linspace(5.1, 10, 10))
         )
         cls.num_samples = 25
         cls.burn = 1000
