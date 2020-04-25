@@ -18,6 +18,8 @@ class LearnableEpidemics(DynamicsModel):
             config = Config()
             config.__dict__ = kwagrs
         self.nn = GeneralEpidemicsGNN(config)
+        if torch.cuda.is_available():
+            self.nn = self.nn.cuda()
         self._edge_index = None
         DynamicsModel.__init__(self, config, config.num_states)
 
