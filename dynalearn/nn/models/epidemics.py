@@ -53,6 +53,8 @@ class GeneralEpidemicsGNN(GraphNeuralNetwork):
         )
         self.reset_parameter()
         self.optimizer = self.optimizer(self.parameters())
+        if torch.cuda.is_available():
+            self = self.cuda()
 
     def forward(self, x, edge_index):
         x = x.view(-1, 1)

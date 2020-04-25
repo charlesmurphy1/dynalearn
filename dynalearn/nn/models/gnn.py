@@ -22,6 +22,8 @@ class GraphNeuralNetwork(torch.nn.Module):
         self.loss = get_loss(config.loss)
         self.optimizer = get_optimizer(config.optimizer)
         self.history = History()
+        if torch.cuda.is_available():
+            self = self.cuda()
 
     @abstractmethod
     def forward(self, x, edge_index):
