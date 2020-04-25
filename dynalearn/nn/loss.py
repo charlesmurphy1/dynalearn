@@ -10,6 +10,8 @@ def weighted_cross_entropy(y_pred, y_true, weights=None):
         y_true = onehot(y_true, num_class=y_pred.size(-1))
     if weights is None:
         weights = torch.ones([y_true.size(i) for i in range(y_true.dim() - 1)])
+        if torch.cuda.is_available():
+            weights = weights.cuda()
     weights /= weights.sum()
     loss = weights * (-y_true * torch.log(y_pred)).sum(-1)
     return loss.sum()

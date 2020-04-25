@@ -107,6 +107,8 @@ def onehot(x, num_class=None, dim=-1):
     if num_class is None:
         num_class = int(x.max())
     x_onehot = torch.zeros(*tuple(x.size()), num_class).float()
+    if torch.cuda.is_available():
+        x_onehot = x_onehot.cuda()
     x = x.long().view(-1, 1)
     x_onehot.scatter_(dim, x, 1)
     return x_onehot
@@ -114,8 +116,12 @@ def onehot(x, num_class=None, dim=-1):
 
 def to_edge_index(g):
     g = g.to_directed()
+
     if len(list(g.edges())) == 0:
-        return torch.empty((2, 0), dtype=torch.long)
+        edge_index = torch.empty((2, 0), dtype=torch.long)
     else:
         edge_index = np.array(list(nx.to_edgelist(g)))[:, :2].astype("int").T
-        return torch.LongTensor(edge_index)
+        edge_index = torch.LongTensor(edge_index)
+
+    if torch.cuda.is_available():
+        edge_index = edge_index.cuda()
