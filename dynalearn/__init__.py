@@ -1,8 +1,7 @@
 import dynalearn.datasets
 import dynalearn.dynamics
-import dynalearn.graphs
-import dynalearn.metrics
-import dynalearn.models
+import dynalearn.meanfields
+import dynalearn.networks
+import dynalearn.nn
 import dynalearn.utilities
-from .experiment import *
-from .config import *
+from dynalearn.experiments import *

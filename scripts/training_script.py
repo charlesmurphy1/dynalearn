@@ -3,142 +3,174 @@ import numpy as np
 import dynalearn as dl
 import argparse
 import os
+
+from dynalearn.experiments import LTPMetrics
+from os.path import exists, join
 from scipy.spatial.distance import jensenshannon
-import tensorflow as tf
 
 
 def summarize_ltp(h5file, experiment):
-    true = experiment.metrics["TrueLTPMetrics"]
-    gnn = experiment.metrics["GNNLTPMetrics"]
-    mle = experiment.metrics["MLELTPMetrics"]
+    true = experiment.post_metrics["TrueLTPMetrics"]
+    gnn = experiment.post_metrics["GNNLTPMetrics"]
+    mle = experiment.post_metrics["MLELTPMetrics"]
     transitions = {(0, 1): "S-I", (1, 0): "I-S"}
 
     for t in transitions:
-        name = "ltp-true/{0}".format(transitions[t])
-        x, y, el, eh = true.aggregate(
-            true.data["ltp/val"],
+        name = "ltp/true/{0}".format(transitions[t])
+        summaries = true.summaries
+        x, y, el, eh = LTPMetrics.aggregate(
+            true.data["val_ltp"],
+            true.data["summaries"],
             in_state=t[0],
             out_state=t[1],
-            err_operation="percentile",
+            axis=1,
+            reduce="mean",
+            err_reduce="percentile",
         )
         data = np.array([x, y, el, eh]).T
         h5file.create_dataset(name, data=data)
 
-        name = "ltp-gnn/{0}".format(transitions[t])
-        x, y, el, eh = gnn.aggregate(
-            gnn.data["ltp/val"],
+        name = "ltp/gnn/{0}".format(transitions[t])
+        x, y, el, eh = LTPMetrics.aggregate(
+            gnn.data["val_ltp"],
+            gnn.data["summaries"],
             in_state=t[0],
             out_state=t[1],
-            err_operation="percentile",
+            axis=1,
+            reduce="mean",
+            err_reduce="percentile",
         )
         data = np.array([x, y, el, eh]).T
         h5file.create_dataset(name, data=data)
 
-        name = "ltp-mle/{0}".format(transitions[t])
-        x, y, el, eh = mle.aggregate(
-            mle.data["ltp/train"],
+        name = "ltp/mle/{0}".format(transitions[t])
+        x, y, el, eh = LTPMetrics.aggregate(
+            mle.data["ltp"],
+            mle.data["summaries"],
             in_state=t[0],
             out_state=t[1],
-            err_operation="percentile",
+            axis=1,
+            reduce="mean",
+            err_reduce="percentile",
         )
         data = np.array([x, y, el, eh]).T
         h5file.create_dataset(name, data=data)
 
 
 def summarize_starltp(h5file, experiment):
-    true = experiment.metrics["TrueStarLTPMetrics"]
-    gnn = experiment.metrics["GNNStarLTPMetrics"]
+    true = experiment.post_metrics["TrueStarLTPMetrics"]
+    gnn = experiment.post_metrics["GNNStarLTPMetrics"]
     transitions = {(0, 1): "S-I", (1, 0): "I-S"}
 
     for t in transitions:
-        name = "starltp-true/{0}".format(transitions[t])
-        x, y, el, eh = true.aggregate(
-            true.data["ltp"], in_state=t[0], out_state=t[1], err_operation="percentile",
+        name = "starltp/true/{0}".format(transitions[t])
+        summaries = true.summaries
+        x, y, el, eh = LTPMetrics.aggregate(
+            true.data["ltp"],
+            true.data["summaries"],
+            in_state=t[0],
+            out_state=t[1],
+            axis=1,
+            reduce="mean",
+            err_reduce="percentile",
         )
         data = np.array([x, y, el, eh]).T
         h5file.create_dataset(name, data=data)
 
-        name = "starltp-gnn/{0}".format(transitions[t])
-        x, y, el, eh = gnn.aggregate(
-            gnn.data["ltp"], in_state=t[0], out_state=t[1], err_operation="percentile",
+        name = "starltp/gnn/{0}".format(transitions[t])
+        x, y, el, eh = LTPMetrics.aggregate(
+            gnn.data["ltp"],
+            gnn.data["summaries"],
+            in_state=t[0],
+            out_state=t[1],
+            axis=1,
+            reduce="mean",
+            err_reduce="percentile",
         )
         data = np.array([x, y, el, eh]).T
         h5file.create_dataset(name, data=data)
 
 
 def summarize_error(h5file, experiment):
-    true = experiment.metrics["TrueStarLTPMetrics"]
-    gnn = experiment.metrics["GNNStarLTPMetrics"]
-    uni = experiment.metrics["UniformStarLTPMetrics"]
-    _true = experiment.metrics["TrueLTPMetrics"]
-    mle = experiment.metrics["MLELTPMetrics"]
+    true = experiment.post_metrics["TrueStarLTPMetrics"]
+    gnn = experiment.post_metrics["GNNStarLTPMetrics"]
+    uni = experiment.post_metrics["UniformStarLTPMetrics"]
+    _true = experiment.post_metrics["TrueLTPMetrics"]
+    mle = experiment.post_metrics["MLELTPMetrics"]
 
-    name = "jsd-true-gnn"
-    jsd = true.compare("ltp", gnn, func=jensenshannon, verbose=0)
-    x, y, el, eh = true.aggregate(jsd, for_degree=True, err_operation="percentile")
+    name = "jsd/true-gnn"
+    summaries = true.summaries
+    jsd = LTPMetrics.compare(
+        true.data["ltp"], gnn.data["ltp"], true.data["summaries"], func=jensenshannon
+    )
+    x, y, el, eh = LTPMetrics.aggregate(
+        jsd, true.data["summaries"], err_reduce="percentile"
+    )
     data = np.array([x, y, el, eh]).T
     h5file.create_dataset(name, data=data)
 
-    name = "jsd-true-uni"
-    jsd = true.compare("ltp", uni, func=jensenshannon, verbose=0)
-    x, y, el, eh = true.aggregate(jsd, for_degree=True, err_operation="percentile")
+    name = "jsd/true-uni"
+    summaries = true.summaries
+    jsd = LTPMetrics.compare(
+        true.data["ltp"], uni.data["ltp"], true.data["summaries"], func=jensenshannon
+    )
+    x, y, el, eh = LTPMetrics.aggregate(
+        jsd, true.data["summaries"], err_reduce="percentile"
+    )
     data = np.array([x, y, el, eh]).T
     h5file.create_dataset(name, data=data)
 
-    name = "jsd-true-mle"
-    jsd = _true.compare("ltp/train", "ltp/train", mle, func=jensenshannon)
-    x, y, el, eh = _true.aggregate(jsd, for_degree=True, err_operation="percentile")
+    name = "jsd/true-mle"
+    summaries = _true.summaries
+    jsd = LTPMetrics.compare(
+        _true.data["ltp"], mle.data["ltp"], _true.data["summaries"], func=jensenshannon
+    )
+    x, y, el, eh = LTPMetrics.aggregate(
+        jsd, _true.data["summaries"], err_reduce="percentile"
+    )
     data = np.array([x, y, el, eh]).T
     h5file.create_dataset(name, data=data)
 
 
 def summarize_stats(h5file, experiment):
-    metric = experiment.metrics["StatisticsMetrics"]
-    if "norm_entropy/train" in metric.data:
-        h5file.create_dataset(
-            "stats/entropy/train", data=metric.data["norm_entropy/train"]
-        )
-        h5file.create_dataset(
-            "stats/ess/train", data=metric.data["effective_samplesize/train"]
-        )
-    if "norm_entropy/val" in metric.data:
-        h5file.create_dataset("stats/entropy/val", data=metric.data["norm_entropy/val"])
-        h5file.create_dataset(
-            "stats/ess/val", data=metric.data["effective_samplesize/val"]
-        )
-    if "norm_entropy/test" in metric.data:
-        h5file.create_dataset(
-            "stats/entropy/test", data=metric.data["norm_entropy/test"]
-        )
-        h5file.create_dataset(
-            "stats/ess/test", data=metric.data["effective_samplesize/test"]
-        )
+    metric = experiment.post_metrics["StatisticsMetrics"]
+    if "all_entropy" in metric.data:
+        h5file.create_dataset("stats/entropy/all", data=metric.data["all_entropy"])
+        h5file.create_dataset("stats/ess/all", data=metric.data["all_ess"])
+    if "train_entropy" in metric.data:
+        h5file.create_dataset("stats/entropy/train", data=metric.data["train_entropy"])
+        h5file.create_dataset("stats/ess/train", data=metric.data["train_ess"])
+    if "val_entropy" in metric.data:
+        h5file.create_dataset("stats/entropy/val", data=metric.data["val_entropy"])
+        h5file.create_dataset("stats/ess/val", data=metric.data["val_ess"])
+    if "test_entropy" in metric.data:
+        h5file.create_dataset("stats/entropy/test", data=metric.data["test_entropy"])
+        h5file.create_dataset("stats/ess/test", data=metric.data["test_ess"])
 
 
 def get_config(args):
-    if args.config == "sis_er":
-        return dl.ExperimentConfig.sis_er(
-            args.suffix, args.path_to_data, args.path_to_model
-        )
-    elif args.config == "sis_ba":
-        return dl.ExperimentConfig.sis_ba(
-            args.suffix, args.path_to_data, args.path_to_model
-        )
-    elif args.config == "plancksis_er":
+    fast = bool(args.run_fast)
+    if args.config == "test":
+        return dl.ExperimentConfig.test()
+    elif args.config == "sis-er":
+        return dl.ExperimentConfig.sis_er(args.name, args.path, args.path_to_best, fast)
+    elif args.config == "sis-ba":
+        return dl.ExperimentConfig.sis_ba(args.name, args.path, args.path_to_best, fast)
+    elif args.config == "plancksis-er":
         return dl.ExperimentConfig.plancksis_er(
-            args.suffix, args.path_to_data, args.path_to_model
+            args.name, args.path, args.path_to_best, fast
         )
-    elif args.config == "plancksis_ba":
+    elif args.config == "plancksis-ba":
         return dl.ExperimentConfig.plancksis_ba(
-            args.suffix, args.path_to_data, args.path_to_model
+            args.name, args.path, args.path_to_best, fast
         )
-    elif args.config == "sissis_er":
+    elif args.config == "sissis-er":
         return dl.ExperimentConfig.sissis_er(
-            args.suffix, args.path_to_data, args.path_to_model
+            args.name, args.path, args.path_to_best, fast
         )
-    elif args.config == "sissis_ba":
+    elif args.config == "sissis-ba":
         return dl.ExperimentConfig.sissis_ba(
-            args.suffix, args.path_to_data, args.path_to_model
+            args.name, args.path, args.path_to_best, fast
         )
 
 
@@ -147,16 +179,25 @@ parser.add_argument(
     "--config",
     "-c",
     type=str,
-    metavar="Config",
-    help="Config name of the experiment.",
+    metavar="CONFIG",
+    help="Configuration of the experiment.",
     choices=[
-        "sis_er",
-        "sis_ba",
-        "plancksis_er",
-        "plancksis_ba",
-        "sissis_er",
-        "sissis_ba",
+        "test",
+        "sis-er",
+        "sis-ba",
+        "plancksis-er",
+        "plancksis-ba",
+        "sissis-er",
+        "sissis-ba",
     ],
+    required=True,
+)
+parser.add_argument(
+    "--name",
+    "-na",
+    type=str,
+    metavar="NAME",
+    help="Name of the experiment.",
     required=True,
 )
 parser.add_argument(
@@ -184,19 +225,42 @@ parser.add_argument(
     default=2,
 )
 parser.add_argument(
-    "--suffix", "-ss", type=str, metavar="SUFFIX", help="Suffix.", default=2,
+    "--batch_size",
+    "-bs",
+    type=int,
+    metavar="BATCH_SIZE",
+    help="Size of the batches during training.",
+    default=2,
 )
 parser.add_argument(
-    "--path_to_data",
-    "-pd",
+    "--with_truth",
+    "-wt",
+    type=int,
+    choices=[0, 1],
+    metavar="BOOL",
+    help="Using ground truth for training.",
+    default=0,
+)
+parser.add_argument(
+    "--run_fast",
+    "-rf",
+    type=int,
+    choices=[0, 1],
+    metavar="BOOL",
+    help="Running fast analysis with meanfields and stationary states (takes longer).",
+    default=0,
+)
+parser.add_argument(
+    "--path",
+    "-pa",
     type=str,
     metavar="PATH",
     help="Path to the directory where to save the experiment.",
     default="./",
 )
 parser.add_argument(
-    "--path_to_model",
-    "-pm",
+    "--path_to_best",
+    "-pb",
     type=str,
     metavar="PATH",
     help="Path to the model directory.",
@@ -211,16 +275,6 @@ parser.add_argument(
     default="./",
 )
 parser.add_argument(
-    "--with_truth",
-    "-ue",
-    type=int,
-    choices=[0, 1],
-    metavar="BOOL",
-    help="Using ground truth for training.",
-    default=0,
-)
-
-parser.add_argument(
     "--verbose",
     "-v",
     type=int,
@@ -229,51 +283,22 @@ parser.add_argument(
     help="Verbose.",
     default=0,
 )
-parser.add_argument(
-    "--test", "-t", type=int, choices=[0, 1], metavar="TEST", help="Test.", default=0
-)
 
 args = parser.parse_args()
-
 config = get_config(args)
-config.config["metrics"]["name"] = [
-    "AttentionMetrics",
-    "TrueLTPMetrics",
-    "GNNLTPMetrics",
-    "MLELTPMetrics",
-    "TrueStarLTPMetrics",
-    "GNNStarLTPMetrics",
-    "UniformStarLTPMetrics",
-    "StatisticsMetrics",
-]
 
-total_num_samples = int(args.num_samples) * int(args.num_nodes)
-if args.test == 1:
-    config.config["training"].num_samples = 100
-    config.config["training"].step_per_epoch = 100
-    config.config["training"].num_epochs = 1
-else:
-    config.config["training"].num_samples = int(args.num_samples)
-    if total_num_samples < 1e7:
-        config.config["training"].step_per_epoch = 1e7 / int(args.num_nodes)
-    elif total_num_samples > 5e7:
-        config.config["training"].step_per_epoch = 5e7 / int(args.num_nodes)
-    else:
-        config.config["training"].step_per_epoch = int(args.num_samples)
+config.train_details.num_samples = int(args.num_samples)
+config.train_details.batch_size = args.batch_size
+config.networks.num_nodes = args.num_nodes
+if config.networks.name is "ERNetwork":
+    config.networks.p = np.min([1, 4 / int(args.num_nodes - 1)])
+config.dataset.resampling_time = int(args.resampling_time)
+config.dataset.with_truth = bool(args.with_truth)
 
-config.config["graph"]["params"]["N"] = int(args.num_nodes)
-config.config["generator"]["config"].resampling_time = int(args.resampling_time)
-config.config["generator"]["config"].with_truth = bool(args.with_truth)
-if config.config["graph"]["name"] == "ERGraph":
-    config.config["graph"]["params"]["density"] = 4 / int(args.num_nodes)
-
-tf_config = tf.ConfigProto()
-tf_config.gpu_options.allow_growth = True
-session = tf.Session(config=tf_config)
-
-experiment = dl.Experiment(config.config, verbose=args.verbose)
-
+experiment = dl.Experiment(config, verbose=args.verbose)
 experiment.run()
+# experiment.load()
+# experiment.compute_metrics()
 
 h5file = h5py.File(
     os.path.join(args.path_to_summary, "{0}.h5".format(experiment.name)), "w"

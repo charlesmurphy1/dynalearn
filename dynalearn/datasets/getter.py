@@ -1,18 +1,18 @@
-import dynalearn as dl
-
-generators = ["DynamicsGenerator"]
+from dynalearn.datasets import Dataset, DegreeWeightedDataset, StateWeightedDataset
 
 
-def get(config, graph_model, dynamics_model):
-    name = config["name"]
-    _config = config["config"]
-    # print(config)
-    sampler = dl.datasets.samplers.get(config["sampler"])
-    if name == "DynamicsGenerator":
-        return dl.datasets.DynamicsGenerator(
-            graph_model, dynamics_model, sampler, _config
-        )
+__datasets__ = {
+    "Dataset": Dataset,
+    "DegreeWeightedDataset": DegreeWeightedDataset,
+    "StateWeightedDataset": StateWeightedDataset,
+}
+
+
+def get(config):
+    name = config.name
+    if name in __datasets__:
+        return __datasets__[name](config)
     else:
         raise ValueError(
-            "Wrong name of generator. Valid entries are: {0}".format(generators)
+            f"{name} is invalid, possible entries are {list(__datasets__.keys())}"
         )

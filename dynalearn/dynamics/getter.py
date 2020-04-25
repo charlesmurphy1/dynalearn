@@ -1,13 +1,14 @@
-from .simple_contagion import *
-from .complex_contagion import *
-from .interacting_contagion import *
+from .simple import *
+from .complex import *
+from .interacting import *
+from .learnable import *
 
 
-dynamics_models = {
+__dynamics__ = {
     "SIS": SIS,
     "SIR": SIR,
-    "SoftThresholdSIS": SoftThresholdSIS,
-    "SoftThresholdSIR": SoftThresholdSIR,
+    "ThresholdSIS": ThresholdSIS,
+    "ThresholdSIR": ThresholdSIR,
     "NonLinearSIS": NonLinearSIS,
     "NonLinearSIR": NonLinearSIR,
     "SineSIS": SineSIS,
@@ -15,20 +16,15 @@ dynamics_models = {
     "PlanckSIS": PlanckSIS,
     "PlanckSIR": PlanckSIR,
     "SISSIS": SISSIS,
+    "LearnableEpidemics": LearnableEpidemics,
 }
 
 
 def get(config):
-    name = config["name"]
-    params = config["params"]
-    if "init" not in params or params["init"] == "None":
-        params["init"] = None
-
-    if name in dynamics_models:
-        return dynamics_models[name](params)
+    name = config.name
+    if name in __dynamics__:
+        return __dynamics__[name](config)
     else:
         raise ValueError(
-            "Wrong name of dynamics. Valid entries are: {0}".format(
-                list(dynamics_models.keys())
-            )
+            f"{name} is invalid, possible entries are {list(__dynamics__.keys())}"
         )

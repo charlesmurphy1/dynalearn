@@ -2,64 +2,78 @@ import os
 import time
 
 
-path_to_all = "../../data/"
-path_to_dir = os.path.join(path_to_all, "training")
-path_to_model = os.path.join(path_to_dir, "models")
-path_to_summary = os.path.join(path_to_dir, "summary")
+path_to_dynalearn = (
+    "/home/charles/Documents/ulaval/doctorat/projects/dynalearn-all/dynalearn/"
+)
+path_to_dynalearn_data = (
+    "/home/charles/Documents/ulaval/doctorat/projects/dynalearn-all/dynalearn/data/"
+)
+path_to_all = os.path.join(path_to_dynalearn_data, "training")
+path_to_data = os.path.join(path_to_all, "full_data")
+path_to_best = os.path.join(path_to_all, "best")
+path_to_summary = os.path.join(path_to_all, "summary")
+path_to_outputs = os.path.join(path_to_all, "outputs")
 
-if not os.path.exists(path_to_dir):
-    os.makedirs(path_to_dir)
-if not os.path.exists(path_to_model):
-    os.makedirs(path_to_model)
+if not os.path.exists(path_to_data):
+    os.makedirs(path_to_data)
+if not os.path.exists(path_to_best):
+    os.makedirs(path_to_best)
 if not os.path.exists(path_to_summary):
     os.makedirs(path_to_summary)
+if not os.path.exists(path_to_outputs):
+    os.makedirs(path_to_outputs)
 
-num_samples = [100]
+num_nodes = 1000
+# num_samples = [100, 500, 1000, 5000, 10000, 20000]
+num_samples = [1000]
 configs_to_run = [
-    # "sis_er",
-    "sis_ba",
-    # "plancksis_er",
-    # "plancksis_ba",
-    # "sissis_er",
-    # "sissis_ba",
+    # "sis-er",
+    "sis-ba",
+    # "plancksis-er",
+    # "plancksis-ba",
+    # "sissis-er",
+    # "sissis-ba",
 ]
 
 for ns in num_samples:
     for config in configs_to_run:
-        name = config + "_ns" + str(ns)
-        path_to_data = os.path.join(path_to_dir, name)
-        if not os.path.exists(path_to_data):
-            os.makedirs(path_to_data)
+        suffix = "ns" + str(ns)
+        name = config + "-" + suffix
         script = "#!/bin/bash\n"
         script += "#SBATCH --account=def-aallard\n"
-        script += "#SBATCH --time=24:00:00\n"
+        script += "#SBATCH --time=12:00:00\n"
         script += "#SBATCH --job-name={0}\n".format(name)
         script += "#SBATCH --output={0}.out\n".format(
-            os.path.join(path_to_data, "output")
+            os.path.join(path_to_outputs, name)
         )
         script += "#SBATCH --gres=gpu:1\n"
         script += "#SBATCH --mem=24G\n"
         script += "\n"
         script += "module load python/3.6 scipy-stack mpi4py\n"
-        script += "source ~/.dynalearn-env/bin/activate\n"
-        script += "python ../training_script.py"
-        # script += "python ss_script.py"
+        script += "source /home/murphy9/.dynalearn-env/bin/activate\n"
+        script += "python {0}scripts/training_script.py".format(path_to_dynalearn)
         script += " --config {0}".format(config)
+        script += " --name {0}".format(name)
         script += " --num_samples {0}".format(ns)
-        script += " --num_nodes {0}".format(1000)
+        script += " --num_nodes {0}".format(num_nodes)
         script += " --resampling_time {0}".format(2)
-        script += " --suffix {0}".format(f"ns{ns}")
-        script += " --path_to_data {0}".format(path_to_data)
-        script += " --path_to_model {0}".format(path_to_model)
+        script += " --batch_size {0}".format(1)
+        script += " --with_truth {0}".format(1)
+        script += " --run_fast {0}".format(0)
+        script += " --path {0}".format(path_to_data)
+        script += " --path_to_best {0}".format(path_to_best)
         script += " --path_to_summary {0}".format(path_to_summary)
-        script += " --test 1"
-        script += " --verbose 2\n"
+        script += " --verbose 1\n"
         script += "deactivate\n"
 
         seed = 0
-        path = "{0}/{1}-{2}.sh".format("launch_scripts", config, seed)
+        path_to_script = "{0}/{1}-{2}.sh".format(
+            os.path.join(path_to_dynalearn, "scripts/local/launch_scripts"),
+            config,
+            seed,
+        )
 
-        with open(path, "w") as f:
+        with open(path_to_script, "w") as f:
             f.write(script)
 
-        os.system("bash {0}".format(path))
+        os.system("bash {0}".format(path_to_script))
