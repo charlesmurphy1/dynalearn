@@ -9,10 +9,10 @@ EPSILON = 1e-8
 def model_entropy(y_pred, y_true, weights=None):
     y_pred = torch.clamp(y_pred, EPSILON, 1 - EPSILON)
     if weights is None:
-        return torch.mean((y_pred * torch.log(y_pred)).sum(-1))
+        return -torch.mean((y_pred * torch.log(y_pred)).sum(-1))
     else:
         weights /= weights.sum()
-        return torch.sum(weights * (y_pred * torch.log(y_pred)).sum(-1))
+        return -torch.sum(weights * (y_pred * torch.log(y_pred)).sum(-1))
 
 
 def relative_entropy(y_pred, y_true, weights=None):
@@ -32,7 +32,7 @@ def approx_relative_entropy(y_pred, y_true, weights=None):
     y_pred = torch.clamp(y_pred, EPSILON, 1 - EPSILON)
     cross_entropy = weighted_cross_entropy(y_pred, y_true, weights=weights)
     entropy = weighted_cross_entropy(y_pred, y_pred, weights=weights)
-    return cross_entropy - entropy
+    return entropy - cross_entropy
 
 
 def jensenshannon(y_pred, y_true, weights=None):
