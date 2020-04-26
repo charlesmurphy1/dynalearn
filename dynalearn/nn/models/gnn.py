@@ -51,7 +51,7 @@ class GraphNeuralNetwork(torch.nn.Module):
             callbacks.on_epoch_begin(self.history.epoch)
             t0 = time.time()
             self._do_epoch_(
-                dataset, batch_size=batch_size, callbacks=callbacks, verbose=verbose,
+                dataset, batch_size=batch_size, callbacks=callbacks, verbose=verbose
             )
             t1 = time.time()
 
@@ -105,6 +105,8 @@ class GraphNeuralNetwork(torch.nn.Module):
 
     def _do_batch_(self, batch):
         loss = torch.tensor(0.0)
+        if torch.cuda.is_available():
+            loss = loss.cuda()
         num_samples = 0
         for data in batch:
             (x, edge_index), y_true, w = data
