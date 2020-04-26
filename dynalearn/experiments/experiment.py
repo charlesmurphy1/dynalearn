@@ -152,18 +152,23 @@ class Experiment:
         self.model.nn.save_weights(join(self.path_to_data, self.fname_model))
 
     def load(self, best=True):
-        with h5py.File(join(self.path_to_data, self.fname_data), "r") as f:
-            self.dataset.load(f)
-        with h5py.File(join(self.path_to_data, self.fname_metrics), "r") as f:
-            for k in self.post_metrics.keys():
-                self.post_metrics[k].load(f)
-        with open(join(self.path_to_data, self.fname_config), "rb") as f:
-            self.config = pickle.load(f)
+        if exists(join(self.path_to_data, self.fname_data)):
+            with h5py.File(join(self.path_to_data, self.fname_data), "r") as f:
+                self.dataset.load(f)
+        if exists(join(self.path_to_data, self.fname_metrics)):
+            with h5py.File(join(self.path_to_data, self.fname_metrics), "r") as f:
+                for k in self.post_metrics.keys():
+                    self.post_metrics[k].load(f)
+        if exists(join(self.path_to_data, self.fname_config)):
+            with open(join(self.path_to_data, self.fname_config), "rb") as f:
+                self.config = pickle.load(f)
 
-        self.model.nn.load_history(join(self.path_to_data, self.fname_history))
-        self.model.nn.load_optimizer(join(self.path_to_data, self.fname_optim))
+        if exists(join(self.path_to_data, self.fname_optim)):
+            self.model.nn.load_history(join(self.path_to_data, self.fname_optim))
+        if exists(join(self.path_to_data, self.fname_optim)):
+            self.model.nn.load_optimizer(join(self.path_to_data, self.fname_optim))
 
         if best and exists(join(self.path_to_best, self.fname_best)):
             self.model.nn.load_weights(join(self.path_to_best, self.fname_best))
-        else:
+        elif join(self.path_to_best, self.fname_model):
             self.model.nn.load_weights(join(self.path_to_data, self.fname_model))
