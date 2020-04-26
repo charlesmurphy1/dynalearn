@@ -123,5 +123,4 @@ def to_edge_index(g):
         edge_index = np.array(list(nx.to_edgelist(g)))[:, :2].astype("int").T
         edge_index = torch.LongTensor(edge_index)
 
-    if torch.cuda.is_available():
-        edge_index = edge_index.cuda()
+    return edge_index
