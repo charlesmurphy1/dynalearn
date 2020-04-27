@@ -5,3 +5,4 @@ import dynalearn.networks
 import dynalearn.nn
 import dynalearn.utilities
 from dynalearn.experiments import *
+from dynalearn.config import *

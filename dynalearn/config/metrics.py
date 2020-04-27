@@ -46,7 +46,7 @@ class MetricsConfig(Config):
         cls.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
 
         # stationary and meanfield metrics
-        cls.num_samples = 100
+        cls.num_samples = 10
         cls.num_nodes = 2000
         cls.epsilon = 10.0 / cls.num_nodes
         cls.full_data = False
@@ -55,11 +55,12 @@ class MetricsConfig(Config):
             (np.linspace(0.1, 3, 30), np.linspace(3.1, 10, 20))
         )
 
-        cls.finder = "HybridRecurrenceNewtonFPF"
+        cls.finder = "RecurrenceFPF"
         cls.num_k = 7
         cls.tol = 1e-6
         cls.max_iter = 1000
         cls.rec_iter = 100
+        cls.initial_iter = 100
         cls.with_numba = True
 
         return cls
@@ -116,11 +117,12 @@ class MetricsConfig(Config):
             (np.linspace(0.1, 2, 10), np.linspace(2.1, 6, 50), np.linspace(6.1, 10, 10))
         )
 
-        cls.finder = "HybridRecurrenceNewtonFPF"
+        cls.finder = "RecurrenceFPF"
         cls.num_k = 7
         cls.tol = 1e-6
         cls.max_iter = 1000
         cls.rec_iter = 100
+        cls.initial_iter = 100
         cls.with_numba = True
 
         return cls
@@ -177,11 +179,12 @@ class MetricsConfig(Config):
             (np.linspace(0.1, 5, 40), np.linspace(5.1, 10, 10))
         )
 
-        cls.finder = "HybridRecurrenceNewtonFPF"
+        cls.finder = "RecurrenceFPF"
         cls.num_k = 7
         cls.tol = 1e-6
         cls.max_iter = 1000
         cls.rec_iter = 100
+        cls.initial_iter = 100
         cls.with_numba = True
 
         return cls
@@ -216,10 +219,11 @@ class MetricsConfig(Config):
         cls.burn = 100
         cls.parameters = np.linspace(0.01, 10.0, 10)
 
-        cls.finder = "HybridRecurrenceNewtonFPF"
+        cls.finder = "RecurrenceFPF"
         cls.num_k = 7
         cls.tol = 1e-6
         cls.max_iter = 5000
         cls.rec_iter = 100
+        cls.initial_iter = 100
 
         return cls

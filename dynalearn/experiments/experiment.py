@@ -156,6 +156,7 @@ class Experiment:
             with h5py.File(join(self.path_to_data, self.fname_data), "r") as f:
                 self.dataset.load(f)
         if exists(join(self.path_to_data, self.fname_metrics)):
+            print(join(self.path_to_data, self.fname_metrics))
             with h5py.File(join(self.path_to_data, self.fname_metrics), "r") as f:
                 for k in self.post_metrics.keys():
                     self.post_metrics[k].load(f)
