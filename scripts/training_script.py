@@ -148,6 +148,51 @@ def summarize_stats(h5file, experiment):
         h5file.create_dataset("stats/ess/test", data=metric.data["test_ess"])
 
 
+def summarize_ss(h5file, experiment):
+    metrics = [
+        experiment.post_metrics["TruePESSMetrics"],
+        experiment.post_metrics["GNNPESSMetrics"],
+    ]
+    label = ["true", "gnn"]
+    for l, m in zip(metrics):
+        if "parameters" in m.data:
+            h5file.create_dataset(f"ss/{l}/parameters", data=m.data["parameters"])
+        if "absorbing_stationary_state" in m.data:
+            h5file.create_dataset(
+                f"ss/{l}/absorbing/mean",
+                data=m.data["absorbing_stationary_state"][:, 0],
+            )
+            h5file.create_dataset(
+                f"ss/{l}/absorbing/std", data=m.data["absorbing_stationary_state"][:, 1]
+            )
+        if "epidemic_stationary_state" in m.data:
+            h5file.create_dataset(
+                f"ss/{l}/epidemic/mean", data=m.data["epidemic_stationary_state"][:, 0]
+            )
+            h5file.create_dataset(
+                f"ss/{l}/epidemic/std", data=m.data["epidemic_stationary_state"][:, 1]
+            )
+
+
+def summarize_mf(h5file, experiment):
+    metrics = [
+        experiment.post_metrics["TruePEMFMetrics"],
+        experiment.post_metrics["GNNPEMFMetrics"],
+    ]
+    label = ["true", "gnn"]
+    for l, m in zip(metrics):
+        if "parameters" in m.data:
+            h5file.create_dataset(f"mf/{l}/parameters", data=m.data["parameters"])
+        if "absorbing_stationary_state" in m.data:
+            h5file.create_dataset(
+                f"mf/{l}/absorbing", data=m.data["absorbing_stationary_state"]
+            )
+        if "epidemic_stationary_state" in m.data:
+            h5file.create_dataset(
+                f"mf/{l}/epidemic", data=m.data["epidemic_stationary_state"]
+            )
+
+
 def get_config(args):
     fast = bool(args.run_fast)
     if args.config == "test":
@@ -296,9 +341,11 @@ config.dataset.resampling_time = int(args.resampling_time)
 config.dataset.with_truth = bool(args.with_truth)
 
 experiment = dl.Experiment(config, verbose=args.verbose)
-experiment.run()
-# experiment.load()
-# experiment.compute_metrics()
+# experiment.run()
+experiment.load()
+experiment.generate_data()
+experiment.compute_metrics()
+experiment.save()
 
 h5file = h5py.File(
     os.path.join(args.path_to_summary, "{0}.h5".format(experiment.name)), "w"
@@ -309,3 +356,6 @@ summarize_ltp(h5file, experiment)
 summarize_starltp(h5file, experiment)
 summarize_error(h5file, experiment)
 summarize_stats(h5file, experiment)
+if not args.run_fast:
+    summarize_ss(h5file, experiment)
+    summarize_mf(h5file, experiment)
