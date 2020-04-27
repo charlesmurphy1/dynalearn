@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 
 from abc import abstractmethod
-from .base import Metrics
+from .metrics import Metrics
 from dynalearn.utilities import all_combinations
 from itertools import product
 
@@ -22,11 +22,7 @@ class LTPMetrics(Metrics):
         self.all_nodes = {}
         self.summaries = set()
 
-        self.names = [
-            "summaries",
-            "ltp",
-            "train_ltp",
-        ]
+        self.names = ["summaries", "ltp", "train_ltp"]
 
     @abstractmethod
     def get_model(self, experiment):
@@ -267,10 +263,7 @@ class StarLTPMetrics(LTPMetrics):
     def __init__(self, config, verbose=0):
         LTPMetrics.__init__(self, config, verbose)
         self.degree_class = config.degree_class
-        self.names = [
-            "summaries",
-            "ltp",
-        ]
+        self.names = ["summaries", "ltp"]
 
     def initialize(self, experiment):
         self.model = self.get_model(experiment)

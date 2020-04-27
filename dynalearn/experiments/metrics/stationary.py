@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 
 from abc import abstractmethod
-from .base import Metrics
+from .metrics import Metrics
 from dynalearn.utilities import poisson_distribution
 from dynalearn.networks import ConfigurationNetwork
 from dynalearn.config import NetworkConfig

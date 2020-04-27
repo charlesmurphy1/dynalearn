@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 
 from abc import abstractmethod
-from .base import Metrics
+from .metrics import Metrics
 from dynalearn.meanfields.getter import get as get_mf
 from dynalearn.meanfields.finder import get as get_finder
 from dynalearn.utilities import poisson_distribution

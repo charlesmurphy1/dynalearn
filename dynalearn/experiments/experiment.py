@@ -9,6 +9,7 @@ import torch
 from dynalearn.datasets.getter import get as get_datasets
 from dynalearn.dynamics.getter import get as get_dynamics
 from dynalearn.experiments.metrics.getter import get as get_post_metrics
+from dynalearn.experiments.summaries.getter import get as get_summaries
 from dynalearn.networks.getter import get as get_network
 from dynalearn.nn.metrics import get as get_train_metrics
 from dynalearn.nn.callbacks.getter import get as get_callbacks
@@ -32,12 +33,14 @@ class Experiment:
         self.test_dataset = None
         self.train_details = config.train_details
         self.post_metrics = get_post_metrics(config.post_metrics)
+        self.summaries = get_summaries(config.summaries)
         self.train_metrics = get_train_metrics(config.train_metrics)
         self.callbacks = get_callbacks(config.callbacks)
 
         # Files location
         self.path_to_data = config.path_to_data
         self.path_to_best = config.path_to_best
+        self.path_to_summary = config.path_to_summary
 
         # File names
         self.fname_data = (
@@ -96,6 +99,10 @@ class Experiment:
         self.compute_metrics()
 
         if self.verbose != 0:
+            print("\n---Summarizing---")
+        self.compute_summaries()
+
+        if self.verbose != 0:
             print("\n---Saving---")
         self.save()
         return
@@ -138,11 +145,18 @@ class Experiment:
         for k, m in self.post_metrics.items():
             m.compute(self, verbose=self.verbose)
 
+    def compute_summaries(self):
+        for k, m in self.summaries.items():
+            m.compute(self, verbose=self.verbose)
+
     def save(self):
         with h5py.File(join(self.path_to_data, self.fname_data), "w") as f:
             self.dataset.save(f)
         with h5py.File(join(self.path_to_data, self.fname_metrics), "w") as f:
             for k, m in self.post_metrics.items():
+                m.save(f)
+        with h5py.File(join(self.path_to_summary, self.name + ".h5"), "w") as f:
+            for k, m in self.summaries.items():
                 m.save(f)
         with open(join(self.path_to_data, self.fname_config), "wb") as f:
             pickle.dump(self.config, f)
@@ -156,10 +170,13 @@ class Experiment:
             with h5py.File(join(self.path_to_data, self.fname_data), "r") as f:
                 self.dataset.load(f)
         if exists(join(self.path_to_data, self.fname_metrics)):
-            print(join(self.path_to_data, self.fname_metrics))
             with h5py.File(join(self.path_to_data, self.fname_metrics), "r") as f:
                 for k in self.post_metrics.keys():
                     self.post_metrics[k].load(f)
+        if exists(join(self.path_to_summary, self.name + ".h5")):
+            with h5py.File(join(self.path_to_summary, self.name + ".h5"), "r") as f:
+                for k in self.summaries.keys():
+                    self.summaries[k].load(f)
         if exists(join(self.path_to_data, self.fname_config)):
             with open(join(self.path_to_data, self.fname_config), "rb") as f:
                 self.config = pickle.load(f)

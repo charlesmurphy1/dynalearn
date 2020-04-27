@@ -47,7 +47,14 @@ class CallbackConfig(Config):
 
 class ExperimentConfig(Config):
     @classmethod
-    def sis_er(cls, name=None, path_to_data="./", path_to_best="./", fast=True):
+    def sis_er(
+        cls,
+        name=None,
+        path_to_data="./",
+        path_to_best="./",
+        path_to_summary="./",
+        fast=True,
+    ):
         cls = cls()
         if name is None:
             cls.name = "sis-er"
@@ -62,6 +69,10 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_best):
             os.makedirs(path_to_best)
 
+        cls.path_to_summary = path_to_summary
+        if not os.path.exists(path_to_summary):
+            os.makedirs(path_to_summary)
+
         cls.dataset = DatasetConfig.state_weighted_default()
         cls.networks = NetworkConfig.er_default()
         cls.dynamics = DynamicsConfig.sis_default()
@@ -69,9 +80,11 @@ class ExperimentConfig(Config):
 
         cls.train_details = TrainingConfig.default()
         if fast:
-            cls.post_metrics = config.MetricsConfig.sis_fast()
+            cls.post_metrics = MetricsConfig.sis_fast()
+            cls.summaries = SummariesConfig.sis_fast()
         else:
-            cls.post_metrics = config.MetricsConfig.sis_complete()
+            cls.post_metrics = MetricsConfig.sis_complete()
+            cls.summaries = SummariesConfig.sis_complete()
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -80,7 +93,14 @@ class ExperimentConfig(Config):
         return cls
 
     @classmethod
-    def sis_ba(cls, name=None, path_to_data="./", path_to_best="./", fast=True):
+    def sis_ba(
+        cls,
+        name=None,
+        path_to_data="./",
+        path_to_best="./",
+        path_to_summary="./",
+        fast=True,
+    ):
         cls = cls()
         if name is None:
             cls.name = "sis-ba"
@@ -95,6 +115,10 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_best):
             os.makedirs(path_to_best)
 
+        cls.path_to_summary = path_to_summary
+        if not os.path.exists(path_to_summary):
+            os.makedirs(path_to_summary)
+
         cls.dataset = DatasetConfig.state_weighted_default()
         cls.networks = NetworkConfig.ba_default()
         cls.dynamics = DynamicsConfig.sis_default()
@@ -103,8 +127,10 @@ class ExperimentConfig(Config):
         cls.train_details = TrainingConfig.default()
         if fast:
             cls.post_metrics = MetricsConfig.sis_fast()
+            cls.summaries = SummariesConfig.sis_fast()
         else:
             cls.post_metrics = MetricsConfig.sis_complete()
+            cls.summaries = SummariesConfig.sis_complete()
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -113,7 +139,14 @@ class ExperimentConfig(Config):
         return cls
 
     @classmethod
-    def plancksis_er(cls, name=None, path_to_data="./", path_to_best="./", fast=True):
+    def plancksis_er(
+        cls,
+        name=None,
+        path_to_data="./",
+        path_to_best="./",
+        path_to_summary="./",
+        fast=True,
+    ):
         cls = cls()
         if name is None:
             cls.name = "plancksis-er"
@@ -128,6 +161,10 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_best):
             os.makedirs(path_to_best)
 
+        cls.path_to_summary = path_to_summary
+        if not os.path.exists(path_to_summary):
+            os.makedirs(path_to_summary)
+
         cls.dataset = DatasetConfig.state_weighted_default()
         cls.networks = NetworkConfig.er_default()
         cls.dynamics = DynamicsConfig.plancksis_default()
@@ -136,8 +173,10 @@ class ExperimentConfig(Config):
         cls.train_details = TrainingConfig.default()
         if fast:
             cls.post_metrics = MetricsConfig.plancksis_fast()
+            cls.summaries = SummariesConfig.plancksis_fast()
         else:
             cls.post_metrics = MetricsConfig.plancksis_complete()
+            cls.summaries = SummariesConfig.plancksis_complete()
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -146,7 +185,14 @@ class ExperimentConfig(Config):
         return cls
 
     @classmethod
-    def plancksis_ba(cls, name=None, path_to_data="./", path_to_best="./", fast=True):
+    def plancksis_ba(
+        cls,
+        name=None,
+        path_to_data="./",
+        path_to_best="./",
+        path_to_summary="./",
+        fast=True,
+    ):
         cls = cls()
         if name is None:
             cls.name = "plancksis-ba"
@@ -161,6 +207,10 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_best):
             os.makedirs(path_to_best)
 
+        cls.path_to_summary = path_to_summary
+        if not os.path.exists(path_to_summary):
+            os.makedirs(path_to_summary)
+
         cls.dataset = DatasetConfig.state_weighted_default()
         cls.networks = NetworkConfig.ba_default()
         cls.dynamics = DynamicsConfig.plancksis_default()
@@ -169,8 +219,10 @@ class ExperimentConfig(Config):
         cls.train_details = TrainingConfig.default()
         if fast:
             cls.post_metrics = MetricsConfig.plancksis_fast()
+            cls.summaries = SummariesConfig.plancksis_fast()
         else:
             cls.post_metrics = MetricsConfig.plancksis_complete()
+            cls.summaries = SummariesConfig.plancksis_complete()
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -179,7 +231,14 @@ class ExperimentConfig(Config):
         return cls
 
     @classmethod
-    def sissis_er(cls, name=None, path_to_data="./", path_to_best="./", fast=True):
+    def sissis_er(
+        cls,
+        name=None,
+        path_to_data="./",
+        path_to_best="./",
+        path_to_summary="./",
+        fast=True,
+    ):
         cls = cls()
         if name is None:
             cls.name = "sissis-er"
@@ -194,6 +253,10 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_best):
             os.makedirs(path_to_best)
 
+        cls.path_to_summary = path_to_summary
+        if not os.path.exists(path_to_summary):
+            os.makedirs(path_to_summary)
+
         cls.dataset = DatasetConfig.state_weighted_default()
         cls.networks = NetworkConfig.er_default()
         cls.dynamics = DynamicsConfig.sissis_default()
@@ -202,8 +265,10 @@ class ExperimentConfig(Config):
         cls.train_details = TrainingConfig.default()
         if fast:
             cls.post_metrics = MetricsConfig.sissis_fast()
+            cls.summaries = SummariesConfig.sissis_fast()
         else:
             cls.post_metrics = MetricsConfig.sissis_complete()
+            cls.summaries = SummariesConfig.sissis_complete()
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -212,7 +277,14 @@ class ExperimentConfig(Config):
         return cls
 
     @classmethod
-    def sissis_ba(cls, name=None, path_to_data="./", path_to_best="./", fast=True):
+    def sissis_ba(
+        cls,
+        name=None,
+        path_to_data="./",
+        path_to_best="./",
+        path_to_summary="./",
+        fast=True,
+    ):
         cls = cls()
         if name is None:
             cls.name = "sissis-ba"
@@ -227,6 +299,10 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_best):
             os.makedirs(path_to_best)
 
+        cls.path_to_summary = path_to_summary
+        if not os.path.exists(path_to_summary):
+            os.makedirs(path_to_summary)
+
         cls.dataset = DatasetConfig.state_weighted_default()
         cls.networks = NetworkConfig.ba_default()
         cls.dynamics = DynamicsConfig.sissis_default()
@@ -235,8 +311,10 @@ class ExperimentConfig(Config):
         cls.train_details = TrainingConfig.default()
         if fast:
             cls.post_metrics = MetricsConfig.sissis_fast()
+            cls.summaries = SummariesConfig.sissis_fast()
         else:
             cls.post_metrics = MetricsConfig.sissis_complete()
+            cls.summaries = SummariesConfig.sissis_complete()
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
