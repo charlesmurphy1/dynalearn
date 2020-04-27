@@ -4,12 +4,16 @@ import torch.nn as nn
 from torch.nn import Parameter
 from .gat import GraphAttention
 from .gnn import GraphNeuralNetwork
+from dynalearn.config import Config
 from dynalearn.nn.activation import get as get_activation
 from torch.nn.init import kaiming_normal_
 
 
 class GeneralEpidemicsGNN(GraphNeuralNetwork):
     def __init__(self, config=None, **kwargs):
+        if config is None:
+            config = Config()
+            config.__dict__ = kwargs
         GraphNeuralNetwork.__init__(self, config=config, **kwargs)
         self.num_states = config.num_states
         self.in_channels = config.in_channels
@@ -36,15 +40,9 @@ class GeneralEpidemicsGNN(GraphNeuralNetwork):
         )
 
         if self.concat:
-            out_layer_channels = [
-                self.heads * self.att_channels,
-                *self.out_channels,
-            ]
+            out_layer_channels = [self.heads * self.att_channels, *self.out_channels]
         else:
-            out_layer_channels = [
-                self.att_channels,
-                *self.out_channels,
-            ]
+            out_layer_channels = [self.att_channels, *self.out_channels]
         self.out_layers = self._build_layer(
             out_layer_channels, self.out_activation, bias=self.bias
         )

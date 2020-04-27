@@ -1,7 +1,7 @@
 import numpy as np
 from dynalearn.dynamics.epidemics import SingleEpidemics
 from dynalearn.dynamics.activation import independent
-from dynalearn.utilities import Config
+from dynalearn.config import Config
 
 
 class SIS(SingleEpidemics):

@@ -4,7 +4,9 @@ from dynalearn.nn.history import History
 from dynalearn.nn.loss import get as get_loss
 from dynalearn.nn.models import GeneralEpidemicsGNN
 from dynalearn.nn.optimizer import get as get_optimizer
-from dynalearn.utilities import to_edge_index, Config
+from dynalearn.utilities import to_edge_index
+from dynalearn.config import Config
+
 
 import networkx as nx
 import numpy as np

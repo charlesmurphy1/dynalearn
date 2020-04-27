@@ -1,7 +1,7 @@
 import dynalearn as dl
 import os
 
-from dynalearn.utilities import Config
+from dynalearn.config import *
 
 
 class TrainingConfig(Config):
@@ -62,16 +62,16 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_best):
             os.makedirs(path_to_best)
 
-        cls.dataset = dl.datasets.DatasetConfig.state_weighted_default()
-        cls.networks = dl.networks.NetworkConfig.er_default()
-        cls.dynamics = dl.dynamics.DynamicsConfig.sis_default()
-        cls.model = dl.dynamics.DynamicsConfig.sis_gnn_default()
+        cls.dataset = DatasetConfig.state_weighted_default()
+        cls.networks = NetworkConfig.er_default()
+        cls.dynamics = DynamicsConfig.sis_default()
+        cls.model = DynamicsConfig.sis_gnn_default()
 
         cls.train_details = TrainingConfig.default()
         if fast:
-            cls.post_metrics = dl.experiments.metrics.MetricsConfig.sis_fast()
+            cls.post_metrics = config.MetricsConfig.sis_fast()
         else:
-            cls.post_metrics = dl.experiments.metrics.MetricsConfig.sis_complete()
+            cls.post_metrics = config.MetricsConfig.sis_complete()
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -95,16 +95,16 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_best):
             os.makedirs(path_to_best)
 
-        cls.dataset = dl.datasets.DatasetConfig.state_weighted_default()
-        cls.networks = dl.networks.NetworkConfig.ba_default()
-        cls.dynamics = dl.dynamics.DynamicsConfig.sis_default()
-        cls.model = dl.dynamics.DynamicsConfig.sis_gnn_default()
+        cls.dataset = DatasetConfig.state_weighted_default()
+        cls.networks = NetworkConfig.ba_default()
+        cls.dynamics = DynamicsConfig.sis_default()
+        cls.model = DynamicsConfig.sis_gnn_default()
 
         cls.train_details = TrainingConfig.default()
         if fast:
-            cls.post_metrics = dl.experiments.metrics.MetricsConfig.sis_fast()
+            cls.post_metrics = MetricsConfig.sis_fast()
         else:
-            cls.post_metrics = dl.experiments.metrics.MetricsConfig.sis_complete()
+            cls.post_metrics = MetricsConfig.sis_complete()
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -128,16 +128,16 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_best):
             os.makedirs(path_to_best)
 
-        cls.dataset = dl.datasets.DatasetConfig.state_weighted_default()
-        cls.networks = dl.networks.NetworkConfig.er_default()
-        cls.dynamics = dl.dynamics.DynamicsConfig.plancksis_default()
-        cls.model = dl.dynamics.DynamicsConfig.plancksis_gnn_default()
+        cls.dataset = DatasetConfig.state_weighted_default()
+        cls.networks = NetworkConfig.er_default()
+        cls.dynamics = DynamicsConfig.plancksis_default()
+        cls.model = DynamicsConfig.plancksis_gnn_default()
 
         cls.train_details = TrainingConfig.default()
         if fast:
-            cls.post_metrics = dl.experiments.metrics.MetricsConfig.plancksis_fast()
+            cls.post_metrics = MetricsConfig.plancksis_fast()
         else:
-            cls.post_metrics = dl.experiments.metrics.MetricsConfig.plancksis_complete()
+            cls.post_metrics = MetricsConfig.plancksis_complete()
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -161,16 +161,16 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_best):
             os.makedirs(path_to_best)
 
-        cls.dataset = dl.datasets.DatasetConfig.state_weighted_default()
-        cls.networks = dl.networks.NetworkConfig.ba_default()
-        cls.dynamics = dl.dynamics.DynamicsConfig.plancksis_default()
-        cls.model = dl.dynamics.DynamicsConfig.plancksis_gnn_default()
+        cls.dataset = DatasetConfig.state_weighted_default()
+        cls.networks = NetworkConfig.ba_default()
+        cls.dynamics = DynamicsConfig.plancksis_default()
+        cls.model = DynamicsConfig.plancksis_gnn_default()
 
         cls.train_details = TrainingConfig.default()
         if fast:
-            cls.post_metrics = dl.experiments.metrics.MetricsConfig.plancksis_fast()
+            cls.post_metrics = MetricsConfig.plancksis_fast()
         else:
-            cls.post_metrics = dl.experiments.metrics.MetricsConfig.plancksis_complete()
+            cls.post_metrics = MetricsConfig.plancksis_complete()
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -194,16 +194,16 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_best):
             os.makedirs(path_to_best)
 
-        cls.dataset = dl.datasets.DatasetConfig.state_weighted_default()
-        cls.networks = dl.networks.NetworkConfig.er_default()
-        cls.dynamics = dl.dynamics.DynamicsConfig.sissis_default()
-        cls.model = dl.dynamics.DynamicsConfig.sissis_gnn_default()
+        cls.dataset = DatasetConfig.state_weighted_default()
+        cls.networks = NetworkConfig.er_default()
+        cls.dynamics = DynamicsConfig.sissis_default()
+        cls.model = DynamicsConfig.sissis_gnn_default()
 
         cls.train_details = TrainingConfig.default()
         if fast:
-            cls.post_metrics = dl.experiments.metrics.MetricsConfig.sissis_fast()
+            cls.post_metrics = MetricsConfig.sissis_fast()
         else:
-            cls.post_metrics = dl.experiments.metrics.MetricsConfig.sissis_complete()
+            cls.post_metrics = MetricsConfig.sissis_complete()
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -227,16 +227,16 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_best):
             os.makedirs(path_to_best)
 
-        cls.dataset = dl.datasets.DatasetConfig.state_weighted_default()
-        cls.networks = dl.networks.NetworkConfig.ba_default()
-        cls.dynamics = dl.dynamics.DynamicsConfig.sissis_default()
-        cls.model = dl.dynamics.DynamicsConfig.sissis_gnn_default()
+        cls.dataset = DatasetConfig.state_weighted_default()
+        cls.networks = NetworkConfig.ba_default()
+        cls.dynamics = DynamicsConfig.sissis_default()
+        cls.model = DynamicsConfig.sissis_gnn_default()
 
         cls.train_details = TrainingConfig.default()
         if fast:
-            cls.post_metrics = dl.experiments.metrics.MetricsConfig.sissis_fast()
+            cls.post_metrics = MetricsConfig.sissis_fast()
         else:
-            cls.post_metrics = dl.experiments.metrics.MetricsConfig.sissis_complete()
+            cls.post_metrics = MetricsConfig.sissis_complete()
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -255,13 +255,13 @@ class ExperimentConfig(Config):
         cls.path_to_best = os.path.join(path, "best", cls.name + ".pt")
         if not os.path.exists(os.path.join(path, "best")):
             os.makedirs(os.path.join(path, "best"))
-        cls.dataset = dl.datasets.DatasetConfig.state_weighted_default()
-        cls.networks = dl.networks.NetworkConfig.erdosrenyi(100, 4.0 / 99.0)
-        cls.dynamics = dl.dynamics.DynamicsConfig.sis_default()
-        cls.model = dl.dynamics.DynamicsConfig.gnn_test()
+        cls.dataset = DatasetConfig.state_weighted_default()
+        cls.networks = NetworkConfig.erdosrenyi(100, 4.0 / 99.0)
+        cls.dynamics = DynamicsConfig.sis_default()
+        cls.model = DynamicsConfig.gnn_test()
 
         cls.train_details = TrainingConfig.test()
-        cls.post_metrics = dl.experiments.metrics.MetricsConfig.test()
+        cls.post_metrics = MetricsConfig.test()
         cls.train_metrics = []
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 

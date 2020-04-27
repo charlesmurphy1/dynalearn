@@ -1,5 +1,6 @@
 import numpy as np
 from dynalearn.dynamics.epidemics import MultiEpidemics
+from dynalearn.config import Config
 
 
 class SISSIS(MultiEpidemics):

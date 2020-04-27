@@ -1,7 +1,6 @@
 import numpy as np
 from .base import GenericMeanfield
 from dynalearn.dynamics.complex import *
-from dynalearn.utilities import Config
 
 
 class ThresholdSISMeanfield(GenericMeanfield):

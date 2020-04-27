@@ -1,5 +1,5 @@
 import numpy as np
-from dynalearn.utilities import Config
+from .config import Config
 
 
 class MetricsConfig(Config):
@@ -46,9 +46,9 @@ class MetricsConfig(Config):
         cls.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
 
         # stationary and meanfield metrics
-        cls.num_samples = 10
+        cls.num_samples = 100
         cls.num_nodes = 2000
-        cls.epsilon = 10.0 / cls.num_nodes
+        cls.epsilon = 1e-2
         cls.full_data = False
         cls.burn = 100
         cls.parameters = np.concatenate(
@@ -58,7 +58,7 @@ class MetricsConfig(Config):
         cls.finder = "RecurrenceFPF"
         cls.num_k = 7
         cls.tol = 1e-6
-        cls.max_iter = 1000
+        cls.max_iter = 5000
         cls.rec_iter = 100
         cls.initial_iter = 100
         cls.with_numba = True
@@ -110,7 +110,7 @@ class MetricsConfig(Config):
         # stationary and meanfield metrics
         cls.num_samples = 100
         cls.num_nodes = 2000
-        cls.epsilon = 10.0 / cls.num_nodes
+        cls.epsilon = 1e-2
         cls.full_data = False
         cls.burn = 100
         cls.parameters = np.concatenate(
@@ -120,7 +120,7 @@ class MetricsConfig(Config):
         cls.finder = "RecurrenceFPF"
         cls.num_k = 7
         cls.tol = 1e-6
-        cls.max_iter = 1000
+        cls.max_iter = 5000
         cls.rec_iter = 100
         cls.initial_iter = 100
         cls.with_numba = True
@@ -172,7 +172,7 @@ class MetricsConfig(Config):
         # stationary and meanfield metrics
         cls.num_samples = 100
         cls.num_nodes = 2000
-        cls.epsilon = 10.0 / cls.num_nodes
+        cls.epsilon = 1e-2
         cls.full_data = False
         cls.burn = 100
         cls.parameters = np.concatenate(
@@ -182,7 +182,7 @@ class MetricsConfig(Config):
         cls.finder = "RecurrenceFPF"
         cls.num_k = 7
         cls.tol = 1e-6
-        cls.max_iter = 1000
+        cls.max_iter = 5000
         cls.rec_iter = 100
         cls.initial_iter = 100
         cls.with_numba = True
@@ -214,7 +214,7 @@ class MetricsConfig(Config):
         # stationary and meanfield metrics
         cls.num_samples = 10
         cls.num_nodes = 100
-        cls.epsilon = 10.0 / cls.num_nodes
+        cls.epsilon = 1e-2
         cls.full_data = False
         cls.burn = 100
         cls.parameters = np.linspace(0.01, 10.0, 10)

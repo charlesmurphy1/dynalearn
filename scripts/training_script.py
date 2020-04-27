@@ -154,7 +154,7 @@ def summarize_ss(h5file, experiment):
         experiment.post_metrics["GNNPESSMetrics"],
     ]
     label = ["true", "gnn"]
-    for l, m in zip(metrics):
+    for l, m in zip(label, metrics):
         if "parameters" in m.data:
             h5file.create_dataset(f"ss/{l}/parameters", data=m.data["parameters"])
         if "absorbing_stationary_state" in m.data:
@@ -180,7 +180,7 @@ def summarize_mf(h5file, experiment):
         experiment.post_metrics["GNNPEMFMetrics"],
     ]
     label = ["true", "gnn"]
-    for l, m in zip(metrics):
+    for l, m in zip(label, metrics):
         if "parameters" in m.data:
             h5file.create_dataset(f"mf/{l}/parameters", data=m.data["parameters"])
         if "absorbing_stationary_state" in m.data:
@@ -341,11 +341,11 @@ config.dataset.resampling_time = int(args.resampling_time)
 config.dataset.with_truth = bool(args.with_truth)
 
 experiment = dl.Experiment(config, verbose=args.verbose)
-# experiment.run()
-experiment.load()
-experiment.generate_data()
-experiment.compute_metrics()
-experiment.save()
+experiment.run()
+# experiment.load()
+# experiment.generate_data()
+# experiment.compute_metrics()
+# experiment.save()
 
 h5file = h5py.File(
     os.path.join(args.path_to_summary, "{0}.h5".format(experiment.name)), "w"

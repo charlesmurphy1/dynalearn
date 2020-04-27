@@ -1,4 +1,7 @@
-class DatasetConfig(object):
+from .config import Config
+
+
+class DatasetConfig(Config):
     @classmethod
     def plain_default(cls):
         cls = cls()

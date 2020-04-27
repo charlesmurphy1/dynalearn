@@ -7,7 +7,8 @@ import tqdm
 
 from itertools import islice, chain
 from .sampler import Sampler
-from dynalearn.utilities import to_edge_index, Config
+from dynalearn.utilities import to_edge_index
+from dynalearn.config import Config
 
 
 class Dataset(object):

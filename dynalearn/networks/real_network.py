@@ -1,7 +1,7 @@
 import networkx as nx
 
 from dynalearn.networks.base import Network
-from dynalearn.utilities import Config
+from dynalearn.config import Config
 
 
 class RealNetwork(Network):

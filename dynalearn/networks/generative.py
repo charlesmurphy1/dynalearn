@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 
 from abc import abstractmethod
+from dynalearn.config import Config
 from dynalearn.networks.base import Network
 
 

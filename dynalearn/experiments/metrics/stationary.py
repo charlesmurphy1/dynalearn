@@ -4,7 +4,8 @@ import numpy as np
 from abc import abstractmethod
 from .base import Metrics
 from dynalearn.utilities import poisson_distribution
-from dynalearn.networks import ConfigurationNetwork, NetworkConfig
+from dynalearn.networks import ConfigurationNetwork
+from dynalearn.config import NetworkConfig
 from random import sample
 
 

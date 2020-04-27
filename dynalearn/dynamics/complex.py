@@ -1,3 +1,4 @@
+from dynalearn.config import Config
 from dynalearn.dynamics.epidemics import SingleEpidemics
 from dynalearn.dynamics.activation import constant, threshold, nonlinear, sine, planck
 import networkx as nx

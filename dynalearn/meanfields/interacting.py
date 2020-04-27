@@ -2,7 +2,6 @@ import numpy as np
 from .base import Meanfield
 from dynalearn.dynamics.interacting import SISSIS
 from dynalearn.meanfields import Meanfield
-from dynalearn.utilities import Config
 
 
 class SISSISMeanfield(Meanfield):

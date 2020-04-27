@@ -1,7 +1,7 @@
 import networkx as nx
 import numpy as np
 
-from dynalearn.utilities import Config
+from .config import Config
 
 
 class NetworkConfig(Config):

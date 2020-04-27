@@ -5,11 +5,12 @@ import time
 import torch
 import tqdm
 
+from dynalearn.config import Config
 from dynalearn.nn.callbacks import CallbackList
 from dynalearn.nn.history import History
 from dynalearn.nn.loss import get as get_loss
 from dynalearn.nn.optimizer import get as get_optimizer
-from dynalearn.utilities import to_edge_index, Config
+from dynalearn.utilities import to_edge_index
 from abc import abstractmethod
 
 

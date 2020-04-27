@@ -1,4 +1,4 @@
-from dynalearn.utilities import Config
+from .config import Config
 
 
 class OptimizerConfig(Config):

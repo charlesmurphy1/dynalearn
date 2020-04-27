@@ -1,5 +1,6 @@
 from dynalearn.nn.optimizer import *
-from dynalearn.utilities import Config
+from .config import Config
+from .optimizers import OptimizerConfig
 
 
 class DynamicsConfig(Config):
