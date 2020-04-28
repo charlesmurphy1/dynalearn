@@ -7,7 +7,7 @@ path_to_dynalearn = "/home/murphy9/source/dynalearn/"
 path_to_dynalearn_data = (
     "/home/murphy9/projects/def-aallard/murphy9/data/dynalearn-data/"
 )
-path_to_all = os.path.join(path_to_dynalearn_data, "training")
+path_to_all = os.path.join(path_to_dynalearn_data, "netsize")
 path_to_data = os.path.join(path_to_all, "full_data")
 path_to_best = os.path.join(path_to_all, "best")
 path_to_summary = os.path.join(path_to_all, "summary")
@@ -22,8 +22,8 @@ if not os.path.exists(path_to_summary):
 if not os.path.exists(path_to_outputs):
     os.makedirs(path_to_outputs)
 
-num_nodes = 1000
-num_samples_array = [100, 500, 1000, 5000, 10000, 20000]
+num_samples = 10000
+num_nodes_array = [100, 200, 500, 1000, 2000, 5000, 10000]
 config_array = [
     "sis-er",
     "sis-ba",
@@ -33,8 +33,8 @@ config_array = [
     "sissis-ba",
 ]
 
-for num_samples, config in product(num_samples_array, config_array):
-    suffix = "ns" + str(num_samples)
+for num_nodes, config in product(num_nodes_array, config_array):
+    suffix = "nn" + str(num_nodes)
     name = config + "-" + suffix
     script = "#!/bin/bash\n"
     script += "#SBATCH --account=def-aallard\n"
@@ -54,7 +54,7 @@ for num_samples, config in product(num_samples_array, config_array):
     script += " --resampling_time {0}".format(2)
     script += " --batch_size {0}".format(1)
     script += " --with_truth {0}".format(0)
-    script += " --run_fast {0}".format(0)
+    script += " --run_fast {0}".format(1)
     script += " --path {0}".format(path_to_data)
     script += " --path_to_best {0}".format(path_to_best)
     script += " --path_to_summary {0}".format(path_to_summary)
