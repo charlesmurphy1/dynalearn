@@ -5,6 +5,7 @@ from abc import abstractmethod
 from .metrics import Metrics
 from dynalearn.utilities import all_combinations
 from itertools import product
+from scipy.special import binom
 
 
 class LTPMetrics(Metrics):
@@ -257,62 +258,3 @@ class UniformLTPMetrics(LTPMetrics):
 
     def predict(self, x, y):
         return np.ones((x.shape[0], self.model.num_states)) / self.model.num_states
-
-
-class StarLTPMetrics(LTPMetrics):
-    def __init__(self, config, verbose=0):
-        LTPMetrics.__init__(self, config, verbose)
-        self.degree_class = config.degree_class
-        self.names = ["summaries", "ltp"]
-
-    def initialize(self, experiment):
-        self.model = self.get_model(experiment)
-        self.networks = {}
-        self.inputs = {}
-        self.targets = {}
-
-        self.num_points = {}
-        self.all_nodes = {}
-        self.num_updates = 0
-        num_nodes = np.max(self.degree_class) + 1
-        for k in self.degree_class:
-            self.networks[k] = nx.empty_graph(num_nodes)
-            self.networks[k].add_edges_from(nx.star_graph(k).edges())
-            self.inputs[k] = {}
-            self.targets[k] = {}
-            all_s = range(self.model.num_states)
-            all_ns = all_combinations(k, self.model.num_states)
-            self.all_nodes[k] = {}
-            self.num_points[k] = 0
-
-            for i, (s, ns) in enumerate(product(all_s, all_ns)):
-                self.num_points[k] += 1
-                self.num_updates += 1
-                self.inputs[k][i] = np.zeros(num_nodes)
-                self.targets[k][i] = np.zeros(num_nodes)
-                self.inputs[k][i][0] = s
-                self.inputs[k][i][1 : k + 1] = np.concatenate(
-                    [j * np.ones(l) for j, l in enumerate(ns)]
-                )
-                self.all_nodes[k][i] = list(range(num_nodes))
-
-        self.get_data["summaries"] = self._get_summaries_
-        self.get_data["ltp"] = lambda pb: self._get_ltp_(self.all_nodes, pb=pb)
-
-
-class TrueStarLTPMetrics(TrueLTPMetrics, StarLTPMetrics):
-    def __init__(self, config, verbose=0):
-        TrueLTPMetrics.__init__(self, config, verbose)
-        StarLTPMetrics.__init__(self, config, verbose)
-
-
-class GNNStarLTPMetrics(GNNLTPMetrics, StarLTPMetrics):
-    def __init__(self, config, verbose=0):
-        GNNLTPMetrics.__init__(self, config, verbose)
-        StarLTPMetrics.__init__(self, config, verbose)
-
-
-class UniformStarLTPMetrics(UniformLTPMetrics, StarLTPMetrics):
-    def __init__(self, config, verbose=0):
-        UniformLTPMetrics.__init__(self, config, verbose)
-        StarLTPMetrics.__init__(self, config, verbose)

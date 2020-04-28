@@ -1,4 +1,5 @@
 from .ltp import *
+from .starltp import *
 from .statistics import *
 from .stationary import *
 from .meanfield import *
