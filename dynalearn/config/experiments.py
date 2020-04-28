@@ -53,7 +53,7 @@ class ExperimentConfig(Config):
         path_to_data="./",
         path_to_best="./",
         path_to_summary="./",
-        fast=True,
+        mode="fast",
     ):
         cls = cls()
         if name is None:
@@ -79,12 +79,16 @@ class ExperimentConfig(Config):
         cls.model = DynamicsConfig.sis_gnn_default()
 
         cls.train_details = TrainingConfig.default()
-        if fast:
+        if mode == "fast":
             cls.post_metrics = MetricsConfig.sis_fast()
             cls.summaries = SummariesConfig.sis_fast()
-        else:
+        elif mode == "complete":
             cls.post_metrics = MetricsConfig.sis_complete()
             cls.summaries = SummariesConfig.sis_complete()
+        else:
+            raise ValueError(
+                f"{mode} is invalid, valid entries are ['fast', 'complete']."
+            )
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -99,7 +103,7 @@ class ExperimentConfig(Config):
         path_to_data="./",
         path_to_best="./",
         path_to_summary="./",
-        fast=True,
+        mode="fast",
     ):
         cls = cls()
         if name is None:
@@ -125,12 +129,16 @@ class ExperimentConfig(Config):
         cls.model = DynamicsConfig.sis_gnn_default()
 
         cls.train_details = TrainingConfig.default()
-        if fast:
+        if mode == "fast":
             cls.post_metrics = MetricsConfig.sis_fast()
             cls.summaries = SummariesConfig.sis_fast()
-        else:
+        elif mode == "complete":
             cls.post_metrics = MetricsConfig.sis_complete()
             cls.summaries = SummariesConfig.sis_complete()
+        else:
+            raise ValueError(
+                f"{mode} is invalid, valid entries are ['fast', 'complete']."
+            )
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -145,7 +153,7 @@ class ExperimentConfig(Config):
         path_to_data="./",
         path_to_best="./",
         path_to_summary="./",
-        fast=True,
+        mode="fast",
     ):
         cls = cls()
         if name is None:
@@ -171,12 +179,16 @@ class ExperimentConfig(Config):
         cls.model = DynamicsConfig.plancksis_gnn_default()
 
         cls.train_details = TrainingConfig.default()
-        if fast:
+        if mode == "fast":
             cls.post_metrics = MetricsConfig.plancksis_fast()
             cls.summaries = SummariesConfig.plancksis_fast()
-        else:
+        elif mode == "complete":
             cls.post_metrics = MetricsConfig.plancksis_complete()
             cls.summaries = SummariesConfig.plancksis_complete()
+        else:
+            raise ValueError(
+                f"{mode} is invalid, valid entries are ['fast', 'complete']."
+            )
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -191,7 +203,7 @@ class ExperimentConfig(Config):
         path_to_data="./",
         path_to_best="./",
         path_to_summary="./",
-        fast=True,
+        mode="fast",
     ):
         cls = cls()
         if name is None:
@@ -217,12 +229,16 @@ class ExperimentConfig(Config):
         cls.model = DynamicsConfig.plancksis_gnn_default()
 
         cls.train_details = TrainingConfig.default()
-        if fast:
+        if mode == "fast":
             cls.post_metrics = MetricsConfig.plancksis_fast()
             cls.summaries = SummariesConfig.plancksis_fast()
-        else:
+        elif mode == "complete":
             cls.post_metrics = MetricsConfig.plancksis_complete()
             cls.summaries = SummariesConfig.plancksis_complete()
+        else:
+            raise ValueError(
+                f"{mode} is invalid, valid entries are ['fast', 'complete']."
+            )
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -237,7 +253,7 @@ class ExperimentConfig(Config):
         path_to_data="./",
         path_to_best="./",
         path_to_summary="./",
-        fast=True,
+        mode="fast",
     ):
         cls = cls()
         if name is None:
@@ -263,12 +279,16 @@ class ExperimentConfig(Config):
         cls.model = DynamicsConfig.sissis_gnn_default()
 
         cls.train_details = TrainingConfig.default()
-        if fast:
+        if mode == "fast":
             cls.post_metrics = MetricsConfig.sissis_fast()
             cls.summaries = SummariesConfig.sissis_fast()
-        else:
+        elif mode == "complete":
             cls.post_metrics = MetricsConfig.sissis_complete()
             cls.summaries = SummariesConfig.sissis_complete()
+        else:
+            raise ValueError(
+                f"{mode} is invalid, valid entries are ['fast', 'complete']."
+            )
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -283,7 +303,7 @@ class ExperimentConfig(Config):
         path_to_data="./",
         path_to_best="./",
         path_to_summary="./",
-        fast=True,
+        mode="fast",
     ):
         cls = cls()
         if name is None:
@@ -309,12 +329,16 @@ class ExperimentConfig(Config):
         cls.model = DynamicsConfig.sissis_gnn_default()
 
         cls.train_details = TrainingConfig.default()
-        if fast:
+        if mode == "fast":
             cls.post_metrics = MetricsConfig.sissis_fast()
             cls.summaries = SummariesConfig.sissis_fast()
-        else:
+        elif mode == "complete":
             cls.post_metrics = MetricsConfig.sissis_complete()
             cls.summaries = SummariesConfig.sissis_complete()
+        else:
+            raise ValueError(
+                f"{mode} is invalid, valid entries are ['fast', 'complete']."
+            )
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 

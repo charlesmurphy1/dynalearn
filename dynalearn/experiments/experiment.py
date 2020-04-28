@@ -86,26 +86,40 @@ class Experiment:
     def run(self):
         if self.verbose != 0:
             print("---Experiment {0}---".format(self.name))
+
         if self.verbose != 0:
             print("\n---Generating data---")
         self.generate_data()
+        self.save_data()
 
-        if self.verbose != 0:
-            print("\n---Training model---")
-        self.train_model()
+        # if self.verbose != 0:
+        #     print("\n---Training model---")
+        # self.train_model()
+        # self.save_model()
 
         if self.verbose != 0:
             print("\n---Computing metrics---")
         self.compute_metrics()
+        self.save_metrics()
 
         if self.verbose != 0:
             print("\n---Summarizing---")
         self.compute_summaries()
+        self.save_summaries()
 
-        if self.verbose != 0:
-            print("\n---Saving---")
-        self.save()
-        return
+    def save(self):
+        self.save_data()
+        self.save_model()
+        self.save_metrics()
+        self.save_summaries()
+        self.save_config()
+
+    def load(self):
+        self.load_data()
+        self.load_model()
+        self.load_metrics()
+        self.load_summaries()
+        self.load_config()
 
     def generate_data(self):
         self.dataset.generate(self)
@@ -130,6 +144,15 @@ class Experiment:
                     print("After partitioning, test set is still empty.")
                 self.val_dataset = None
 
+    def save_data(self):
+        with h5py.File(join(self.path_to_data, self.fname_data), "w") as f:
+            self.dataset.save(f)
+
+    def load_data(self):
+        if exists(join(self.path_to_data, self.fname_data)):
+            with h5py.File(join(self.path_to_data, self.fname_data), "r") as f:
+                self.dataset.load(f)
+
     def train_model(self):
         self.model.nn.fit(
             self.dataset,
@@ -141,52 +164,57 @@ class Experiment:
             verbose=self.verbose,
         )
 
-    def compute_metrics(self):
-        for k, m in self.post_metrics.items():
-            m.compute(self, verbose=self.verbose)
-
-    def compute_summaries(self):
-        for k, m in self.summaries.items():
-            m.compute(self, verbose=self.verbose)
-
-    def save(self):
-        with h5py.File(join(self.path_to_data, self.fname_data), "w") as f:
-            self.dataset.save(f)
-        with h5py.File(join(self.path_to_data, self.fname_metrics), "w") as f:
-            for k, m in self.post_metrics.items():
-                m.save(f)
-        with h5py.File(join(self.path_to_summary, self.name + ".h5"), "w") as f:
-            for k, m in self.summaries.items():
-                m.save(f)
-        with open(join(self.path_to_data, self.fname_config), "wb") as f:
-            pickle.dump(self.config, f)
-
+    def save_model(self):
         self.model.nn.save_history(join(self.path_to_data, self.fname_history))
         self.model.nn.save_optimizer(join(self.path_to_data, self.fname_optim))
         self.model.nn.save_weights(join(self.path_to_data, self.fname_model))
 
-    def load(self, best=True):
-        if exists(join(self.path_to_data, self.fname_data)):
-            with h5py.File(join(self.path_to_data, self.fname_data), "r") as f:
-                self.dataset.load(f)
-        if exists(join(self.path_to_data, self.fname_metrics)):
-            with h5py.File(join(self.path_to_data, self.fname_metrics), "r") as f:
-                for k in self.post_metrics.keys():
-                    self.post_metrics[k].load(f)
-        if exists(join(self.path_to_summary, self.name + ".h5")):
-            with h5py.File(join(self.path_to_summary, self.name + ".h5"), "r") as f:
-                for k in self.summaries.keys():
-                    self.summaries[k].load(f)
-        if exists(join(self.path_to_data, self.fname_config)):
-            with open(join(self.path_to_data, self.fname_config), "rb") as f:
-                self.config = pickle.load(f)
-
+    def load_model(self, restore_best=True):
         if exists(join(self.path_to_data, self.fname_optim)):
             self.model.nn.load_history(join(self.path_to_data, self.fname_optim))
         if exists(join(self.path_to_data, self.fname_optim)):
             self.model.nn.load_optimizer(join(self.path_to_data, self.fname_optim))
 
-        if best and exists(join(self.path_to_best, self.fname_best)):
+        if restore_best and exists(join(self.path_to_best, self.fname_best)):
             self.model.nn.load_weights(join(self.path_to_best, self.fname_best))
         elif join(self.path_to_best, self.fname_model):
             self.model.nn.load_weights(join(self.path_to_data, self.fname_model))
+
+    def compute_metrics(self):
+        for k, m in self.post_metrics.items():
+            m.compute(self, verbose=self.verbose)
+
+    def save_metrics(self):
+        with h5py.File(join(self.path_to_data, self.fname_metrics), "w") as f:
+            for k, m in self.post_metrics.items():
+                m.save(f)
+
+    def load_metrics(self):
+        if exists(join(self.path_to_data, self.fname_metrics)):
+            with h5py.File(join(self.path_to_data, self.fname_metrics), "r") as f:
+                for k in self.post_metrics.keys():
+                    self.post_metrics[k].load(f)
+
+    def compute_summaries(self):
+        for k, m in self.summaries.items():
+            m.compute(self, verbose=self.verbose)
+
+    def save_summaries(self):
+        with h5py.File(join(self.path_to_summary, self.name + ".h5"), "w") as f:
+            for k, m in self.summaries.items():
+                m.save(f)
+
+    def load_summaries(self):
+        if exists(join(self.path_to_summary, self.name + ".h5")):
+            with h5py.File(join(self.path_to_summary, self.name + ".h5"), "r") as f:
+                for k in self.summaries.keys():
+                    self.summaries[k].load(f)
+
+    def save_config(self):
+        with open(join(self.path_to_data, self.fname_config), "wb") as f:
+            pickle.dump(self.config, f)
+
+    def load_config(self, best=True):
+        if exists(join(self.path_to_data, self.fname_config)):
+            with open(join(self.path_to_data, self.fname_config), "rb") as f:
+                self.config = pickle.load(f)

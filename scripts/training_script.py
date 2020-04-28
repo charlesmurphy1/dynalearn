@@ -8,32 +8,31 @@ from os.path import exists, join
 
 
 def get_config(args):
-    fast = bool(args.run_fast)
     if args.config == "test":
         return dl.ExperimentConfig.test()
     elif args.config == "sis-er":
         return dl.ExperimentConfig.sis_er(
-            args.name, args.path, args.path_to_best, args.path_to_summary, fast
+            args.name, args.path, args.path_to_best, args.path_to_summary, args.mode
         )
     elif args.config == "sis-ba":
         return dl.ExperimentConfig.sis_ba(
-            args.name, args.path, args.path_to_best, args.path_to_summary, fast
+            args.name, args.path, args.path_to_best, args.path_to_summary, args.mode
         )
     elif args.config == "plancksis-er":
         return dl.ExperimentConfig.plancksis_er(
-            args.name, args.path, args.path_to_best, args.path_to_summary, fast
+            args.name, args.path, args.path_to_best, args.path_to_summary, args.mode
         )
     elif args.config == "plancksis-ba":
         return dl.ExperimentConfig.plancksis_ba(
-            args.name, args.path, args.path_to_best, args.path_to_summary, fast
+            args.name, args.path, args.path_to_best, args.path_to_summary, args.mode
         )
     elif args.config == "sissis-er":
         return dl.ExperimentConfig.sissis_er(
-            args.name, args.path, args.path_to_best, args.path_to_summary, fast
+            args.name, args.path, args.path_to_best, args.path_to_summary, args.mode
         )
     elif args.config == "sissis-ba":
         return dl.ExperimentConfig.sissis_ba(
-            args.name, args.path, args.path_to_best, args.path_to_summary, fast
+            args.name, args.path, args.path_to_best, args.path_to_summary, args.mode
         )
 
 
@@ -105,13 +104,13 @@ parser.add_argument(
     default=0,
 )
 parser.add_argument(
-    "--run_fast",
-    "-rf",
-    type=int,
-    choices=[0, 1],
-    metavar="BOOL",
-    help="Running fast analysis with meanfields and stationary states (takes longer).",
-    default=0,
+    "--mode",
+    "-mm",
+    type=str,
+    choices=["fast", "complete"],
+    metavar="MODE",
+    help="Experiment mode.",
+    default="fast",
 )
 parser.add_argument(
     "--path",
