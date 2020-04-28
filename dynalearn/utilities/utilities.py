@@ -51,7 +51,6 @@ def numba_all_combinations(n, k):
     a[0] = n
     res = []
     res.append(a.copy())
-    # yield a
     while a[k - 1] != n:
         if t != 1:
             h = 0
