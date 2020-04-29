@@ -92,10 +92,10 @@ class Experiment:
         self.generate_data()
         self.save_data()
 
-        # if self.verbose != 0:
-        #     print("\n---Training model---")
-        # self.train_model()
-        # self.save_model()
+        if self.verbose != 0:
+            print("\n---Training model---")
+        self.train_model()
+        self.save_model()
 
         if self.verbose != 0:
             print("\n---Computing metrics---")
