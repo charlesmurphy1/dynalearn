@@ -47,16 +47,16 @@ class JSDErrorSummary(Summary):
 
 class TrueGNNJSDErrorSummary(JSDErrorSummary):
     def get_metrics(self, experiment):
-        m1 = experiment.post_metrics["TrueLTPMetrics"]
-        m2 = experiment.post_metrics["GNNLTPMetrics"]
+        m1 = experiment.metrics["TrueLTPMetrics"]
+        m2 = experiment.metrics["GNNLTPMetrics"]
 
         return m1, m2
 
 
 class TrueMLEJSDErrorSummary(JSDErrorSummary):
     def get_metrics(self, experiment):
-        m1 = experiment.post_metrics["TrueLTPMetrics"]
-        m2 = experiment.post_metrics["MLELTPMetrics"]
+        m1 = experiment.metrics["TrueLTPMetrics"]
+        m2 = experiment.metrics["MLELTPMetrics"]
 
         return m1, m2
 
@@ -71,13 +71,13 @@ class StarJSDErrorSummary(JSDErrorSummary):
 
 class TrueGNNStarJSDErrorSummary(StarJSDErrorSummary):
     def get_metrics(self, experiment):
-        m1 = experiment.post_metrics["TrueStarLTPMetrics"]
-        m2 = experiment.post_metrics["GNNStarLTPMetrics"]
+        m1 = experiment.metrics["TrueStarLTPMetrics"]
+        m2 = experiment.metrics["GNNStarLTPMetrics"]
         return m1, m2
 
 
 class TrueUniformStarJSDErrorSummary(StarJSDErrorSummary):
     def get_metrics(self, experiment):
-        m1 = experiment.post_metrics["TrueStarLTPMetrics"]
-        m2 = experiment.post_metrics["UniformStarLTPMetrics"]
+        m1 = experiment.metrics["TrueStarLTPMetrics"]
+        m2 = experiment.metrics["UniformStarLTPMetrics"]
         return m1, m2

@@ -56,17 +56,17 @@ class LTPSummary(Summary):
 
 class TrueLTPSummary(LTPSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["TrueLTPMetrics"]
+        return experiment.metrics["TrueLTPMetrics"]
 
 
 class GNNLTPSummary(LTPSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["GNNLTPMetrics"]
+        return experiment.metrics["GNNLTPMetrics"]
 
 
 class MLELTPSummary(LTPSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["MLELTPMetrics"]
+        return experiment.metrics["MLELTPMetrics"]
 
 
 class StarLTPSummary(LTPSummary):
@@ -80,14 +80,14 @@ class StarLTPSummary(LTPSummary):
 
 class TrueStarLTPSummary(StarLTPSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["TrueStarLTPMetrics"]
+        return experiment.metrics["TrueStarLTPMetrics"]
 
 
 class GNNStarLTPSummary(StarLTPSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["GNNStarLTPMetrics"]
+        return experiment.metrics["GNNStarLTPMetrics"]
 
 
 class UniformStarLTPSummary(StarLTPSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["UniformStarLTPMetrics"]
+        return experiment.metrics["UniformStarLTPMetrics"]

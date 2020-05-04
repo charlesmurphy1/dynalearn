@@ -8,7 +8,7 @@ import torch
 
 from dynalearn.datasets.getter import get as get_datasets
 from dynalearn.dynamics.getter import get as get_dynamics
-from dynalearn.experiments.metrics.getter import get as get_post_metrics
+from dynalearn.experiments.metrics.getter import get as get_metrics
 from dynalearn.experiments.summaries.getter import get as get_summaries
 from dynalearn.networks.getter import get as get_network
 from dynalearn.nn.metrics import get as get_train_metrics
@@ -32,7 +32,7 @@ class Experiment:
         self.val_dataset = None
         self.test_dataset = None
         self.train_details = config.train_details
-        self.post_metrics = get_post_metrics(config.post_metrics)
+        self.metrics = get_metrics(config.metrics)
         self.summaries = get_summaries(config.summaries)
         self.train_metrics = get_train_metrics(config.train_metrics)
         self.callbacks = get_callbacks(config.callbacks)
@@ -181,19 +181,19 @@ class Experiment:
             self.model.nn.load_weights(join(self.path_to_data, self.fname_model))
 
     def compute_metrics(self):
-        for k, m in self.post_metrics.items():
+        for k, m in self.metrics.items():
             m.compute(self, verbose=self.verbose)
 
     def save_metrics(self):
         with h5py.File(join(self.path_to_data, self.fname_metrics), "w") as f:
-            for k, m in self.post_metrics.items():
+            for k, m in self.metrics.items():
                 m.save(f)
 
     def load_metrics(self):
         if exists(join(self.path_to_data, self.fname_metrics)):
             with h5py.File(join(self.path_to_data, self.fname_metrics), "r") as f:
-                for k in self.post_metrics.keys():
-                    self.post_metrics[k].load(f)
+                for k in self.metrics.keys():
+                    self.metrics[k].load(f)
 
     def compute_summaries(self):
         for k, m in self.summaries.items():
