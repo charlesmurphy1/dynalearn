@@ -107,3 +107,24 @@ class SummariesConfig(Config):
         cls.axis = 1
         cls.err_reduce = "percentile"
         return cls
+
+    @classmethod
+    def test(cls):
+        cls = cls()
+        cls.names = [
+            "TrueLTPSummary",
+            "GNNLTPSummary",
+            "MLELTPSummary",
+            "TrueGNNStarJSDErrorSummary",
+            "TrueMLEJSDErrorSummary",
+            "TrueUniformStarJSDErrorSummary",
+            "StatisticsSummary",
+            "TruePESSSummary",
+            "GNNPESSSummary",
+            "TruePEMFSummary",
+            "GNNPEMFSummary",
+        ]
+        cls.axis = 1
+        cls.err_reduce = "percentile"
+        cls.transitions = [(0, 1), (1, 0)]
+        return cls
