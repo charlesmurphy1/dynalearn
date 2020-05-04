@@ -24,9 +24,8 @@ if not os.path.exists(path_to_summary):
 if not os.path.exists(path_to_outputs):
     os.makedirs(path_to_outputs)
 
-num_nodes = 1000
 # num_samples_array = [100, 500, 1000, 5000, 10000, 20000]
-num_samples_array = [1000]
+num_samples_array = [10000]
 config_array = [
     # "sis-er",
     "sis-ba",
@@ -53,18 +52,13 @@ for num_samples, config in product(num_samples_array, config_array):
     script += " --config {0}".format(config)
     script += " --name {0}".format(name)
     script += " --num_samples {0}".format(num_samples)
-    script += " --num_nodes {0}".format(num_nodes)
-    script += " --resampling_time {0}".format(2)
-    script += " --batch_size {0}".format(1)
-    script += " --with_truth {0}".format(1)
-    script += " --mode {0}".format("fast")
     script += " --path {0}".format(path_to_data)
     script += " --path_to_best {0}".format(path_to_best)
     script += " --path_to_summary {0}".format(path_to_summary)
     script += " --verbose 1\n"
     script += "deactivate\n"
 
-    path_to_script = "{0}/train-{1}.sh".format(
+    path_to_script = "{0}/ss-{1}.sh".format(
         os.path.join(path_to_dynalearn, "scripts/bernard/launch_scripts"), name
     )
 
