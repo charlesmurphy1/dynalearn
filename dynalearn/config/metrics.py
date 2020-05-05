@@ -225,5 +225,6 @@ class MetricsConfig(Config):
         cls.max_iter = 5000
         cls.rec_iter = 100
         cls.initial_iter = 100
+        cls.with_numba = True
 
         return cls

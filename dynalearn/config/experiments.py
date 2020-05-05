@@ -3,6 +3,38 @@ import os
 
 from dynalearn.config import *
 
+network_config = {"er": NetworkConfig.er_default(), "ba": NetworkConfig.ba_default()}
+dynamics_config = {
+    "sis": DynamicsConfig.sis_default(),
+    "plancksis": DynamicsConfig.plancksis_default(),
+    "sissis": DynamicsConfig.sissis_default(),
+}
+model_config = {
+    "sis": DynamicsConfig.sis_gnn_default(),
+    "plancksis": DynamicsConfig.plancksis_gnn_default(),
+    "sissis": DynamicsConfig.sissis_gnn_default(),
+}
+fast_metrics_config = {
+    "sis": MetricsConfig.sis_fast(),
+    "plancksis": MetricsConfig.plancksis_fast(),
+    "sissis": MetricsConfig.sissis_fast(),
+}
+complete_metrics_config = {
+    "sis": MetricsConfig.sis_complete(),
+    "plancksis": MetricsConfig.plancksis_complete(),
+    "sissis": MetricsConfig.sissis_complete(),
+}
+fast_summary_config = {
+    "sis": SummariesConfig.sis_fast(),
+    "plancksis": SummariesConfig.plancksis_fast(),
+    "sissis": SummariesConfig.sissis_fast(),
+}
+complete_summary_config = {
+    "sis": SummariesConfig.sis_complete(),
+    "plancksis": SummariesConfig.plancksis_complete(),
+    "sissis": SummariesConfig.sissis_complete(),
+}
+
 
 class TrainingConfig(Config):
     @classmethod
@@ -47,19 +79,26 @@ class CallbackConfig(Config):
 
 class ExperimentConfig(Config):
     @classmethod
-    def sis_er(
+    def base(
         cls,
-        name=None,
+        name,
+        dynamics,
+        network,
         path_to_data="./",
         path_to_best="./",
         path_to_summary="./",
         mode="fast",
     ):
         cls = cls()
-        if name is None:
-            cls.name = "sis-er"
-        else:
-            cls.name = name
+        if dynamics not in dynamics_config:
+            raise ValueError(
+                f"{dynamics} is invalid, valid entries are {list(dynamics_config.keys())}"
+            )
+        if network not in network_config:
+            raise ValueError(
+                f"{network} is invalid, valid entries are {list(network_config.keys())}"
+            )
+        cls.name = name
 
         cls.path_to_data = os.path.join(path_to_data, cls.name)
         if not os.path.exists(cls.path_to_data):
@@ -72,19 +111,18 @@ class ExperimentConfig(Config):
         cls.path_to_summary = path_to_summary
         if not os.path.exists(path_to_summary):
             os.makedirs(path_to_summary)
-
         cls.dataset = DatasetConfig.state_weighted_default()
-        cls.networks = NetworkConfig.er_default()
-        cls.dynamics = DynamicsConfig.sis_default()
-        cls.model = DynamicsConfig.sis_gnn_default()
+        cls.dynamics = dynamics_config[dynamics]
+        cls.model = model_config[dynamics]
+        cls.networks = network_config[network]
 
         cls.train_details = TrainingConfig.default()
         if mode == "fast":
-            cls.post_metrics = MetricsConfig.sis_fast()
-            cls.summaries = SummariesConfig.sis_fast()
+            cls.metrics = fast_metrics_config[dynamics]
+            cls.summaries = fast_summary_config[dynamics]
         elif mode == "complete":
-            cls.post_metrics = MetricsConfig.sis_complete()
-            cls.summaries = SummariesConfig.sis_complete()
+            cls.metrics = complete_metrics_config[dynamics]
+            cls.summaries = complete_summary_config[dynamics]
         else:
             raise ValueError(
                 f"{mode} is invalid, valid entries are ['fast', 'complete']."
@@ -97,273 +135,26 @@ class ExperimentConfig(Config):
         return cls
 
     @classmethod
-    def sis_ba(
-        cls,
-        name=None,
-        path_to_data="./",
-        path_to_best="./",
-        path_to_summary="./",
-        mode="fast",
-    ):
+    def test(cls, path_to_data="./", path_to_best="./", path_to_summary="./"):
         cls = cls()
-        if name is None:
-            cls.name = "sis-ba"
-        else:
-            cls.name = name
-
-        cls.path_to_data = os.path.join(path_to_data, cls.name)
-        if not os.path.exists(cls.path_to_data):
-            os.makedirs(cls.path_to_data)
-
-        cls.path_to_best = os.path.join(path_to_best, cls.name + ".pt")
-        if not os.path.exists(path_to_best):
-            os.makedirs(path_to_best)
-
-        cls.path_to_summary = path_to_summary
-        if not os.path.exists(path_to_summary):
-            os.makedirs(path_to_summary)
-
-        cls.dataset = DatasetConfig.state_weighted_default()
-        cls.networks = NetworkConfig.ba_default()
-        cls.dynamics = DynamicsConfig.sis_default()
-        cls.model = DynamicsConfig.sis_gnn_default()
-
-        cls.train_details = TrainingConfig.default()
-        if mode == "fast":
-            cls.post_metrics = MetricsConfig.sis_fast()
-            cls.summaries = SummariesConfig.sis_fast()
-        elif mode == "complete":
-            cls.post_metrics = MetricsConfig.sis_complete()
-            cls.summaries = SummariesConfig.sis_complete()
-        else:
-            raise ValueError(
-                f"{mode} is invalid, valid entries are ['fast', 'complete']."
-            )
-        cls.train_metrics = ["jensenshannon", "model_entropy"]
-        cls.callbacks = CallbackConfig.default(cls.path_to_best)
-
-        cls.seed = 0
-
-        return cls
-
-    @classmethod
-    def plancksis_er(
-        cls,
-        name=None,
-        path_to_data="./",
-        path_to_best="./",
-        path_to_summary="./",
-        mode="fast",
-    ):
-        cls = cls()
-        if name is None:
-            cls.name = "plancksis-er"
-        else:
-            cls.name = name
-
-        cls.path_to_data = os.path.join(path_to_data, cls.name)
-        if not os.path.exists(cls.path_to_data):
-            os.makedirs(cls.path_to_data)
-
-        cls.path_to_best = os.path.join(path_to_best, cls.name + ".pt")
-        if not os.path.exists(path_to_best):
-            os.makedirs(path_to_best)
-
-        cls.path_to_summary = path_to_summary
-        if not os.path.exists(path_to_summary):
-            os.makedirs(path_to_summary)
-
-        cls.dataset = DatasetConfig.state_weighted_default()
-        cls.networks = NetworkConfig.er_default()
-        cls.dynamics = DynamicsConfig.plancksis_default()
-        cls.model = DynamicsConfig.plancksis_gnn_default()
-
-        cls.train_details = TrainingConfig.default()
-        if mode == "fast":
-            cls.post_metrics = MetricsConfig.plancksis_fast()
-            cls.summaries = SummariesConfig.plancksis_fast()
-        elif mode == "complete":
-            cls.post_metrics = MetricsConfig.plancksis_complete()
-            cls.summaries = SummariesConfig.plancksis_complete()
-        else:
-            raise ValueError(
-                f"{mode} is invalid, valid entries are ['fast', 'complete']."
-            )
-        cls.train_metrics = ["jensenshannon", "model_entropy"]
-        cls.callbacks = CallbackConfig.default(cls.path_to_best)
-
-        cls.seed = 0
-
-        return cls
-
-    @classmethod
-    def plancksis_ba(
-        cls,
-        name=None,
-        path_to_data="./",
-        path_to_best="./",
-        path_to_summary="./",
-        mode="fast",
-    ):
-        cls = cls()
-        if name is None:
-            cls.name = "plancksis-ba"
-        else:
-            cls.name = name
-
-        cls.path_to_data = os.path.join(path_to_data, cls.name)
-        if not os.path.exists(cls.path_to_data):
-            os.makedirs(cls.path_to_data)
-
-        cls.path_to_best = os.path.join(path_to_best, cls.name + ".pt")
-        if not os.path.exists(path_to_best):
-            os.makedirs(path_to_best)
-
-        cls.path_to_summary = path_to_summary
-        if not os.path.exists(path_to_summary):
-            os.makedirs(path_to_summary)
-
-        cls.dataset = DatasetConfig.state_weighted_default()
-        cls.networks = NetworkConfig.ba_default()
-        cls.dynamics = DynamicsConfig.plancksis_default()
-        cls.model = DynamicsConfig.plancksis_gnn_default()
-
-        cls.train_details = TrainingConfig.default()
-        if mode == "fast":
-            cls.post_metrics = MetricsConfig.plancksis_fast()
-            cls.summaries = SummariesConfig.plancksis_fast()
-        elif mode == "complete":
-            cls.post_metrics = MetricsConfig.plancksis_complete()
-            cls.summaries = SummariesConfig.plancksis_complete()
-        else:
-            raise ValueError(
-                f"{mode} is invalid, valid entries are ['fast', 'complete']."
-            )
-        cls.train_metrics = ["jensenshannon", "model_entropy"]
-        cls.callbacks = CallbackConfig.default(cls.path_to_best)
-
-        cls.seed = 0
-
-        return cls
-
-    @classmethod
-    def sissis_er(
-        cls,
-        name=None,
-        path_to_data="./",
-        path_to_best="./",
-        path_to_summary="./",
-        mode="fast",
-    ):
-        cls = cls()
-        if name is None:
-            cls.name = "sissis-er"
-        else:
-            cls.name = name
-
-        cls.path_to_data = os.path.join(path_to_data, cls.name)
-        if not os.path.exists(cls.path_to_data):
-            os.makedirs(cls.path_to_data)
-
-        cls.path_to_best = os.path.join(path_to_best, cls.name + ".pt")
-        if not os.path.exists(path_to_best):
-            os.makedirs(path_to_best)
-
-        cls.path_to_summary = path_to_summary
-        if not os.path.exists(path_to_summary):
-            os.makedirs(path_to_summary)
-
-        cls.dataset = DatasetConfig.state_weighted_default()
-        cls.networks = NetworkConfig.er_default()
-        cls.dynamics = DynamicsConfig.sissis_default()
-        cls.model = DynamicsConfig.sissis_gnn_default()
-
-        cls.train_details = TrainingConfig.default()
-        if mode == "fast":
-            cls.post_metrics = MetricsConfig.sissis_fast()
-            cls.summaries = SummariesConfig.sissis_fast()
-        elif mode == "complete":
-            cls.post_metrics = MetricsConfig.sissis_complete()
-            cls.summaries = SummariesConfig.sissis_complete()
-        else:
-            raise ValueError(
-                f"{mode} is invalid, valid entries are ['fast', 'complete']."
-            )
-        cls.train_metrics = ["jensenshannon", "model_entropy"]
-        cls.callbacks = CallbackConfig.default(cls.path_to_best)
-
-        cls.seed = 0
-
-        return cls
-
-    @classmethod
-    def sissis_ba(
-        cls,
-        name=None,
-        path_to_data="./",
-        path_to_best="./",
-        path_to_summary="./",
-        mode="fast",
-    ):
-        cls = cls()
-        if name is None:
-            cls.name = "sissis-ba"
-        else:
-            cls.name = name
-
-        cls.path_to_data = os.path.join(path_to_data, cls.name)
-        if not os.path.exists(cls.path_to_data):
-            os.makedirs(cls.path_to_data)
-
-        cls.path_to_best = os.path.join(path_to_best, cls.name + ".pt")
-        if not os.path.exists(path_to_best):
-            os.makedirs(path_to_best)
-
-        cls.path_to_summary = path_to_summary
-        if not os.path.exists(path_to_summary):
-            os.makedirs(path_to_summary)
-
-        cls.dataset = DatasetConfig.state_weighted_default()
-        cls.networks = NetworkConfig.ba_default()
-        cls.dynamics = DynamicsConfig.sissis_default()
-        cls.model = DynamicsConfig.sissis_gnn_default()
-
-        cls.train_details = TrainingConfig.default()
-        if mode == "fast":
-            cls.post_metrics = MetricsConfig.sissis_fast()
-            cls.summaries = SummariesConfig.sissis_fast()
-        elif mode == "complete":
-            cls.post_metrics = MetricsConfig.sissis_complete()
-            cls.summaries = SummariesConfig.sissis_complete()
-        else:
-            raise ValueError(
-                f"{mode} is invalid, valid entries are ['fast', 'complete']."
-            )
-        cls.train_metrics = ["jensenshannon", "model_entropy"]
-        cls.callbacks = CallbackConfig.default(cls.path_to_best)
-
-        cls.seed = 0
-
-        return cls
-
-    @classmethod
-    def test(cls):
-        cls = cls()
-        path = "/home/charles/Documents/ulaval/doctorat/projects/dynalearn-all/dynalearn/data/test"
         cls.name = "test"
-        cls.path_to_data = os.path.join(path, cls.name)
+        cls.path_to_data = os.path.join(path_to_data, cls.name)
         if not os.path.exists(cls.path_to_data):
             os.makedirs(cls.path_to_data)
-        cls.path_to_best = os.path.join(path, "best", cls.name + ".pt")
-        if not os.path.exists(os.path.join(path, "best")):
-            os.makedirs(os.path.join(path, "best"))
+        cls.path_to_best = os.path.join(path_to_best, cls.name + ".pt")
+        if not os.path.exists(path_to_best):
+            os.makedirs(path_to_best)
+        cls.path_to_summary = path_to_summary
+        if not os.path.exists(path_to_summary):
+            os.makedirs(path_to_summary)
         cls.dataset = DatasetConfig.state_weighted_default()
-        cls.networks = NetworkConfig.erdosrenyi(100, 4.0 / 99.0)
+        cls.networks = NetworkConfig.erdosrenyi(1000, 4.0 / 999.0)
         cls.dynamics = DynamicsConfig.sis_default()
-        cls.model = DynamicsConfig.gnn_test()
+        cls.model = DynamicsConfig.sis_gnn_default()
 
         cls.train_details = TrainingConfig.test()
-        cls.post_metrics = MetricsConfig.test()
+        cls.metrics = MetricsConfig.test()
+        cls.summaries = SummariesConfig.test()
         cls.train_metrics = []
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 

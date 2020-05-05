@@ -14,9 +14,9 @@ class MeanfieldSummary(Summary):
 
 class TruePEMFSummary(MeanfieldSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["TruePEMFMetrics"]
+        return experiment.metrics["TruePEMFMetrics"]
 
 
 class GNNPEMFSummary(MeanfieldSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["GNNPEMFMetrics"]
+        return experiment.metrics["GNNPEMFMetrics"]
