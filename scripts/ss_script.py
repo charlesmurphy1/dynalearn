@@ -110,10 +110,9 @@ args = parser.parse_args()
 config = get_config(args)
 
 config.train_details.num_samples = int(args.num_samples)
-config.metrics.num_samples = 1
+config.metrics.num_samples = 100
 
 experiment = dl.Experiment(config, verbose=args.verbose)
-
 
 experiment.load()
 if args.verbose != 0:
