@@ -4,7 +4,7 @@ import numpy as np
 from abc import abstractmethod
 from .metrics import Metrics
 from dynalearn.utilities import poisson_distribution
-from dynalearn.networks import ConfigurationNetwork
+from dynalearn.networks import ConfigurationNetwork, RealTemporalNetwork
 from dynalearn.config import NetworkConfig
 from random import sample
 
@@ -40,7 +40,7 @@ class StationaryStateMetrics(Metrics):
         raise NotImplementedError()
 
     def get_networks(self, experiment):
-        self.networks = experiment.networks
+        return experiment.networks
 
     def change_param(self, p):
         return
@@ -73,7 +73,9 @@ class StationaryStateMetrics(Metrics):
             self.change_param(param)
         samples = np.zeros((self.num_samples, self.networks.num_nodes))
         for i in range(self.num_samples):
-            if hasattr(self.networks, "generate"):
+            if issubclass(self.networks, RealTemporalNetwork):
+                g = self.networks.complete_network
+            elif hasattr(self.networks, "generate"):
                 g = self.networks.generate()
             else:
                 g = sample(self.networks.data, 1)[0]
@@ -81,6 +83,7 @@ class StationaryStateMetrics(Metrics):
             self.model.network = g
             x0 = self.dynamics.initial_state(epsilon)
             samples[i] = self.burning(x0, self.burn)
+            epsilon = 1 - samples[i, 0]
             if self.verbose and pb is not None:
                 pb.update()
         avg_samples = self.avg(samples, axis=-1)

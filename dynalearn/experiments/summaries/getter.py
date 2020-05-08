@@ -1,3 +1,4 @@
+from .forecast import *
 from .ltp import *
 from .jsderror import *
 from .meanfield import *
@@ -16,10 +17,16 @@ __summaries__ = {
     "TrueGNNStarJSDErrorSummary": TrueGNNStarJSDErrorSummary,
     "TrueUniformStarJSDErrorSummary": TrueUniformStarJSDErrorSummary,
     "StatisticsSummary": StatisticsSummary,
+    "TrueSSSummary": TrueSSSummary,
+    "GNNSSSummary": GNNSSSummary,
     "TruePESSSummary": TruePESSSummary,
     "GNNPESSSummary": GNNPESSSummary,
     "TruePEMFSummary": TruePEMFSummary,
     "GNNPEMFSummary": GNNPEMFSummary,
+    "TrueForecastSummary": TrueForecastSummary,
+    "GNNForecastSummary": GNNForecastSummary,
+    "TrueRTNForecastSummary": TrueRTNForecastSummary,
+    "GNNRTNForecastSummary": GNNRTNForecastSummary,
 }
 
 

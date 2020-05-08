@@ -170,14 +170,14 @@ class Experiment:
         self.model.nn.save_weights(join(self.path_to_data, self.fname_model))
 
     def load_model(self, restore_best=True):
-        if exists(join(self.path_to_data, self.fname_optim)):
-            self.model.nn.load_history(join(self.path_to_data, self.fname_optim))
+        if exists(join(self.path_to_data, self.fname_history)):
+            self.model.nn.load_history(join(self.path_to_data, self.fname_history))
         if exists(join(self.path_to_data, self.fname_optim)):
             self.model.nn.load_optimizer(join(self.path_to_data, self.fname_optim))
 
         if restore_best and exists(join(self.path_to_best, self.fname_best)):
             self.model.nn.load_weights(join(self.path_to_best, self.fname_best))
-        elif join(self.path_to_best, self.fname_model):
+        elif exists(join(self.path_to_data, self.fname_model)):
             self.model.nn.load_weights(join(self.path_to_data, self.fname_model))
 
     def compute_metrics(self):

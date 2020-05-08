@@ -1,4 +1,5 @@
 from .metrics import *
+from .forecast import *
 from .ltp import *
 from .starltp import *
 from .meanfield import *

@@ -44,6 +44,12 @@ class CallbackConfig(Config):
         cls.path_to_best = path_to_best
         return cls
 
+    @classmethod
+    def empty(cls):
+        cls = cls()
+        cls.names = []
+        return cls
+
 
 class ExperimentConfig(Config):
     @classmethod
@@ -366,6 +372,88 @@ class ExperimentConfig(Config):
         cls.post_metrics = MetricsConfig.test()
         cls.train_metrics = []
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
+
+        cls.seed = 0
+
+        return cls
+
+    @classmethod
+    def sisrtn_forcast(
+        cls,
+        name,
+        path_to_edgelist,
+        path_to_model,
+        path_to_data="./",
+        path_to_summary="./",
+    ):
+        cls = cls()
+        if name is None:
+            cls.name = "sis-rtn"
+        else:
+            cls.name = name
+
+        cls.path_to_data = os.path.join(path_to_data, cls.name)
+        if not os.path.exists(cls.path_to_data):
+            os.makedirs(cls.path_to_data)
+
+        cls.path_to_best = path_to_model
+        cls.fname_best = "sis-ba-ns1000.pt"
+
+        cls.path_to_summary = path_to_summary
+        if not os.path.exists(cls.path_to_summary):
+            os.makedirs(cls.path_to_summary)
+
+        cls.dataset = DatasetConfig.plain_default()
+        cls.networks = NetworkConfig.realtemporalnetwork(path_to_edgelist)
+        cls.dynamics = DynamicsConfig.sis_default()
+        cls.model = DynamicsConfig.sis_gnn_default()
+
+        cls.train_details = TrainingConfig.default()
+        cls.post_metrics = MetricsConfig.rtn_forecast()
+        cls.summaries = SummariesConfig.rtn_forecast()
+        cls.train_metrics = []
+        cls.callbacks = CallbackConfig.empty()
+
+        cls.seed = 0
+
+        return cls
+
+    @classmethod
+    def plancksisrtn_forcast(
+        cls,
+        name,
+        path_to_edgelist,
+        path_to_model,
+        path_to_data="./",
+        path_to_summary="./",
+    ):
+        cls = cls()
+        if name is None:
+            cls.name = "plancksis-rtn"
+        else:
+            cls.name = name
+
+        cls.path_to_data = os.path.join(path_to_data, cls.name)
+        if not os.path.exists(cls.path_to_data):
+            os.makedirs(cls.path_to_data)
+
+        cls.path_to_best = path_to_model
+        cls.fname_best = "plancksis-ba-ns1000.pt"
+
+        cls.path_to_summary = path_to_summary
+        if not os.path.exists(cls.path_to_summary):
+            os.makedirs(cls.path_to_summary)
+
+        cls.dataset = DatasetConfig.plain_default()
+        cls.networks = NetworkConfig.realtemporalnetwork(path_to_edgelist)
+        cls.dynamics = DynamicsConfig.plancksis_default()
+        cls.model = DynamicsConfig.plancksis_gnn_default()
+
+        cls.train_details = TrainingConfig.default()
+        cls.post_metrics = MetricsConfig.rtn_forecast()
+        cls.summaries = SummariesConfig.rtn_forecast()
+        cls.train_metrics = []
+        cls.callbacks = CallbackConfig.empty()
 
         cls.seed = 0
 

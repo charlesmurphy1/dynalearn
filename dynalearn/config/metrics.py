@@ -190,6 +190,28 @@ class MetricsConfig(Config):
         return cls
 
     @classmethod
+    def rtn_forecast(cls):
+        cls = cls()
+        cls.names = [
+            "TrueSSMetrics",
+            "GNNSSMetrics",
+            "TrueRTNForecastMetrics",
+            "GNNRTNForecastMetrics",
+        ]
+
+        # stationary and meanfield metrics
+        cls.num_samples = 100
+        cls.epsilon = 1e-2
+        cls.full_data = True
+        cls.burn = 100
+
+        # forecast metrics
+        cls.num_forecasts = 10
+        cls.num_steps = 10
+
+        return cls
+
+    @classmethod
     def test(cls):
         cls = cls()
         cls.names = [

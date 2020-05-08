@@ -40,6 +40,7 @@ class MeanfieldMetrics(Metrics):
 
     def initialize(self, experiment):
         self.model = self.get_model(experiment)
+        self.p_k = self.get_degreedist(experiment)
         self.mf = get_mf(self.model)(self.p_k)
         self.mf.with_numba = self.config.with_numba
         if self.parameters is None:
@@ -142,7 +143,6 @@ class EpidemicMFMetrics(MeanfieldMetrics):
 class PoissonEMFMetrics(EpidemicMFMetrics):
     def __init__(self, config, verbose=0):
         EpidemicMFMetrics.__init__(self, config, verbose)
-        self.num_nodes = config.num_nodes
         self.num_k = config.num_k
         self.p_k = poisson_distribution(1, self.num_k)
 

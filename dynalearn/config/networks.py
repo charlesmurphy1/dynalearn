@@ -43,10 +43,11 @@ class NetworkConfig(Config):
         return cls
 
     @classmethod
-    def realtemporalnetwork(cls, path_to_edgelist, window, dt):
+    def realtemporalnetwork(cls, path_to_edgelist, window=1):
         cls.name = "RealTemporalNetwork"
-        cls.edges = np.loadtxt(path_to_edgelist, dtype=np.int)
-        cls.window = window
-        cls.dt = dt
+        cls.edges = np.loadtxt(path_to_edgelist).astype("int")
+        t = np.unique(cls.edges)
+        cls.dt = np.min(np.abs(t - np.roll(t, -1))[:-1])
+        cls.window = int(3600 / cls.dt * window)
         cls.num_nodes = np.unique(cls.edges[:, :2].flatten()).shape[0]
         return cls

@@ -1,3 +1,4 @@
+from .forecast import *
 from .ltp import *
 from .starltp import *
 from .statistics import *
@@ -12,10 +13,16 @@ __metrics__ = {
     "MLELTPMetrics": MLELTPMetrics,
     "UniformStarLTPMetrics": UniformStarLTPMetrics,
     "StatisticsMetrics": StatisticsMetrics,
+    "TrueSSMetrics": TrueSSMetrics,
+    "GNNSSMetrics": GNNSSMetrics,
     "TruePESSMetrics": TruePESSMetrics,
     "GNNPESSMetrics": GNNPESSMetrics,
     "TruePEMFMetrics": TruePEMFMetrics,
     "GNNPEMFMetrics": GNNPEMFMetrics,
+    "TrueForecastMetrics": TrueForecastMetrics,
+    "GNNForecastMetrics": GNNForecastMetrics,
+    "TrueRTNForecastMetrics": TrueRTNForecastMetrics,
+    "GNNRTNForecastMetrics": GNNRTNForecastMetrics,
 }
 
 

@@ -2,7 +2,7 @@ from dynalearn.experiments.summaries import Summary
 from abc import abstractmethod
 
 
-class StationaryStateSummary(Summary):
+class ForecastSummary(Summary):
     @abstractmethod
     def get_metrics(self, experiment):
         raise NotImplemented
@@ -12,21 +12,21 @@ class StationaryStateSummary(Summary):
         self.data = self.metrics.data
 
 
-class TrueSSSummary(StationaryStateSummary):
+class TrueForecastSummary(ForecastSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["TrueSSMetrics"]
+        return experiment.post_metrics["TrueForecastMetrics"]
 
 
-class GNNSSSummary(StationaryStateSummary):
+class GNNForecastSummary(ForecastSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["GNNSSMetrics"]
+        return experiment.post_metrics["GNNForecastMetrics"]
 
 
-class TruePESSSummary(StationaryStateSummary):
+class TrueRTNForecastSummary(ForecastSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["TruePESSMetrics"]
+        return experiment.post_metrics["TrueRTNForecastMetrics"]
 
 
-class GNNPESSSummary(StationaryStateSummary):
+class GNNRTNForecastSummary(ForecastSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["GNNPESSMetrics"]
+        return experiment.post_metrics["GNNRTNForecastMetrics"]

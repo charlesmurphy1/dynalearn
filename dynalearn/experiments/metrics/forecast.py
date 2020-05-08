@@ -1,3 +1,5 @@
+import networkx as nx
+import numpy as np
 from dynalearn.experiments.metrics import Metrics
 from abc import abstractmethod
 
@@ -44,15 +46,36 @@ class ForecastMetrics(Metrics):
 
 
 class RTNForecastMetrics(ForecastMetrics):
+    def initialize(self, experiment):
+        self.dynamics = experiment.dynamics
+        self.networks = experiment.networks
+        self.model = self.get_model(experiment)
+        self.num_states = self.dynamics.num_states
+
+        self.num_updates = len(self.networks.data) * self.num_steps * self.num_forecasts
+        self.get_data["forecasts"] = lambda pb: np.array(
+            [self._get_forecast_(pb=pb) for i in range(self.num_forecasts)]
+        )
+        self.get_data["milestones"] = lambda pb: np.array(
+            [self._get_milestone_() for i in range(self.num_forecasts)]
+        )
+        self.names.append("forecasts")
+        self.names.append("milestones")
+
+    def _get_milestone_(self):
+        return self.milestones
+
     def _get_forecast_(self, pb=None):
-        timeseries = np.zeros((self.num_steps, self.num_states))
         x = self.dynamics.initial_state(self.epsilon)
         num_networks = len(self.networks.data)
+        timeseries = np.zeros((num_networks * self.num_steps, self.num_states))
         self.networks.time = 0
+        self.milestones = []
         k = 0
         for i in range(num_networks):
             self.model.network = self.networks.generate()
-            for j in range(self.num_steps // num_networks):
+            self.milestones.append(k)
+            for j in range(self.num_steps):
                 timeseries[k] = self.avg(x)
                 k += 1
                 x = self.model.sample(x)

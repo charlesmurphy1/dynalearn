@@ -107,3 +107,14 @@ class SummariesConfig(Config):
         cls.axis = 1
         cls.err_reduce = "percentile"
         return cls
+
+    @classmethod
+    def rtn_forecast(cls):
+        cls = cls()
+        cls.names = [
+            "TrueSSSummary",
+            "GNNSSSummary",
+            "TrueRTNForecastSummary",
+            "GNNRTNForecastSummary",
+        ]
+        return cls
