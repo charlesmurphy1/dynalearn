@@ -38,7 +38,7 @@ for num_samples, config in product(num_samples_array, config_array):
     name = config + "-" + suffix
     script = "#!/bin/bash\n"
     script += "#SBATCH --account=def-aallard\n"
-    script += "#SBATCH --time=24:00:00\n"
+    script += "#SBATCH --time=48:00:00\n"
     script += "#SBATCH --job-name={0}\n".format(name)
     script += "#SBATCH --output={0}.out\n".format(os.path.join(path_to_outputs, name))
     script += "#SBATCH --gres=gpu:1\n"
@@ -54,7 +54,7 @@ for num_samples, config in product(num_samples_array, config_array):
     script += " --resampling_time {0}".format(2)
     script += " --batch_size {0}".format(1)
     script += " --with_truth {0}".format(1)
-    script += " --run_fast {0}".format(0)
+    script += " --mode {0}".format("complete")
     script += " --path {0}".format(path_to_data)
     script += " --path_to_best {0}".format(path_to_best)
     script += " --path_to_summary {0}".format(path_to_summary)
@@ -62,8 +62,8 @@ for num_samples, config in product(num_samples_array, config_array):
     script += "deactivate\n"
 
     seed = 0
-    path_to_script = "{0}/{1}-{2}.sh".format(
-        os.path.join(path_to_dynalearn, "scripts/beluga/launch_scripts"), config, seed
+    path_to_script = "{0}/{1}.sh".format(
+        os.path.join(path_to_dynalearn, "scripts/beluga/launch_scripts"), name
     )
 
     with open(path_to_script, "w") as f:

@@ -38,7 +38,7 @@ for num_samples, config in product(num_samples_array, config_array):
     name = config + "-" + suffix
     script = "#!/bin/bash\n"
     script += "#SBATCH --account=def-aallard\n"
-    script += "#SBATCH --time=12:00:00\n"
+    script += "#SBATCH --time=24:00:00\n"
     script += "#SBATCH --job-name={0}\n".format(name)
     script += "#SBATCH --output={0}.out\n".format(os.path.join(path_to_outputs, name))
     script += "#SBATCH --gres=gpu:1\n"
@@ -53,14 +53,14 @@ for num_samples, config in product(num_samples_array, config_array):
     script += " --path {0}".format(path_to_data)
     script += " --path_to_best {0}".format(path_to_best)
     script += " --path_to_summary {0}".format(path_to_summary)
-    script += " --verbose 1\n"
+    script += " --verbose 2\n"
     script += "deactivate\n"
 
     path_to_script = "{0}/{1}.sh".format(
-        os.path.join(path_to_dynalearn, "scripts/bernard/launch_scripts"), name
+        os.path.join(path_to_dynalearn, "scripts/beluga/launch_scripts"), name
     )
 
     with open(path_to_script, "w") as f:
         f.write(script)
 
-    os.system("bash {0}".format(path_to_script))
+    os.system("sbatch {0}".format(path_to_script))
