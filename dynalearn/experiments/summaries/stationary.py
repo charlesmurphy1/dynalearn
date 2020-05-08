@@ -24,9 +24,9 @@ class GNNSSSummary(StationaryStateSummary):
 
 class TruePESSSummary(StationaryStateSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["TruePESSMetrics"]
+        return experiment.metrics["TruePESSMetrics"]
 
 
 class GNNPESSSummary(StationaryStateSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["GNNPESSMetrics"]
+        return experiment.metrics["GNNPESSMetrics"]

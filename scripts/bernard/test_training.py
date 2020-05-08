@@ -25,7 +25,7 @@ if not os.path.exists(path_to_outputs):
 
 num_nodes = 1000
 # num_samples = [100, 500, 1000, 5000, 10000, 20000]
-num_samples = 1000
+num_samples = 100
 config = "test"
 name = "test"
 
@@ -47,7 +47,7 @@ script += " --num_nodes {0}".format(num_nodes)
 script += " --resampling_time {0}".format(2)
 script += " --batch_size {0}".format(1)
 script += " --with_truth {0}".format(0)
-script += " --run_fast {0}".format(0)
+script += " --mode {0}".format("fast")
 script += " --path {0}".format(path_to_data)
 script += " --path_to_best {0}".format(path_to_best)
 script += " --path_to_summary {0}".format(path_to_summary)
@@ -55,8 +55,8 @@ script += " --verbose 1\n"
 script += "deactivate\n"
 
 seed = 0
-path_to_script = "{0}/{1}-{2}.sh".format(
-    os.path.join(path_to_dynalearn, "scripts/local/launch_scripts"), config, seed,
+path_to_script = "{0}/test-{1}.sh".format(
+    os.path.join(path_to_dynalearn, "scripts/bernard/launch_scripts"), name,
 )
 
 with open(path_to_script, "w") as f:

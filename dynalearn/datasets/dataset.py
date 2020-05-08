@@ -213,7 +213,7 @@ class Dataset(object):
 
         for i, k in enumerate(h5file.keys()):
             group = h5file[k]
-            num_nodes = group["inputs"][...].shape[0]
+            num_nodes = group["inputs"][...].shape[-1]
             g = nx.empty_graph(num_nodes)
             g.add_edges_from(group["edge_list"][...].T)
             data["networks"][i] = g

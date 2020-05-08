@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.special import gammaln
+from scipy.stats import poisson
 from scipy.optimize import fsolve
 
 
@@ -45,10 +45,8 @@ def poisson_distribution(avgk, num_k):
         up = mid_k + num_k + 2
 
     k = np.arange(down, up).astype("int")
-    p_k = lambda l: np.exp(-l + k * np.log(l) - gammaln(k + 1)) / np.sum(
-        np.exp(-l + k * np.log(l) - gammaln(k + 1))
-    )
-    f_to_solve = lambda l: np.sum(k * p_k(l)) - avgk
+    p_k = lambda mu: poisson(mu).pmf(k) / np.sum(poisson(mu).pmf(k))
+    f_to_solve = lambda mu: np.sum(k * p_k(mu)) - avgk
     l = fsolve(f_to_solve, x0=avgk)[0]
 
     return DiscreteDistribution((k, p_k(l)))

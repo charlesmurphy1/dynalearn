@@ -21,21 +21,17 @@ class JSDErrorSummary(Summary):
     def initialize(self, experiment):
         self.metrics1, self.metrics2 = self.get_metrics(experiment)
 
-        self.get_data["all"] = lambda: self._get_summary_("ltp")
-        self.names.append("all")
-        self.get_data["train"] = lambda: self._get_summary_("train_ltp")
-        self.names.append("train")
+        self.data["all"] = self._get_summary_("ltp")
+        self.data["train"] = self._get_summary_("train_ltp")
         if "val_ltp" in self.metrics1.data and "val_ltp" in self.metrics2.data:
-            self.get_data["val"] = lambda: self._get_summary_("val_ltp")
-            self.names.append("val")
+            self.data["val"] = self._get_summary_("val_ltp")
         if "test_ltp" in self.metrics1.data and "test_ltp" in self.metrics2.data:
-            self.get_data["test"] = lambda: self._get_summary_("test_ltp")
-            self.names.append("test")
+            self.data["test"] = self._get_summary_("test_ltp")
 
     def _get_summary_(self, name):
         jsd = LTPMetrics.compare(
             self.metrics1.data[name],
-            self.metrics1.data[name],
+            self.metrics2.data[name],
             self.metrics1.data["summaries"],
             func=jensenshannon,
         )
@@ -47,16 +43,16 @@ class JSDErrorSummary(Summary):
 
 class TrueGNNJSDErrorSummary(JSDErrorSummary):
     def get_metrics(self, experiment):
-        m1 = experiment.post_metrics["TrueLTPMetrics"]
-        m2 = experiment.post_metrics["GNNLTPMetrics"]
+        m1 = experiment.metrics["TrueLTPMetrics"]
+        m2 = experiment.metrics["GNNLTPMetrics"]
 
         return m1, m2
 
 
 class TrueMLEJSDErrorSummary(JSDErrorSummary):
     def get_metrics(self, experiment):
-        m1 = experiment.post_metrics["TrueLTPMetrics"]
-        m2 = experiment.post_metrics["MLELTPMetrics"]
+        m1 = experiment.metrics["TrueLTPMetrics"]
+        m2 = experiment.metrics["MLELTPMetrics"]
 
         return m1, m2
 
@@ -64,20 +60,18 @@ class TrueMLEJSDErrorSummary(JSDErrorSummary):
 class StarJSDErrorSummary(JSDErrorSummary):
     def initialize(self, experiment):
         self.metrics1, self.metrics2 = self.get_metrics(experiment)
-
-        self.get_data["all"] = lambda: self._get_summary_("ltp")
-        self.names.append(f"all")
+        self.data["all"] = self._get_summary_("ltp")
 
 
 class TrueGNNStarJSDErrorSummary(StarJSDErrorSummary):
     def get_metrics(self, experiment):
-        m1 = experiment.post_metrics["TrueStarLTPMetrics"]
-        m2 = experiment.post_metrics["GNNStarLTPMetrics"]
+        m1 = experiment.metrics["TrueStarLTPMetrics"]
+        m2 = experiment.metrics["GNNStarLTPMetrics"]
         return m1, m2
 
 
 class TrueUniformStarJSDErrorSummary(StarJSDErrorSummary):
     def get_metrics(self, experiment):
-        m1 = experiment.post_metrics["TrueStarLTPMetrics"]
-        m2 = experiment.post_metrics["UniformStarLTPMetrics"]
+        m1 = experiment.metrics["TrueStarLTPMetrics"]
+        m2 = experiment.metrics["UniformStarLTPMetrics"]
         return m1, m2

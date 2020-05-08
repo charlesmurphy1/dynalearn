@@ -10,5 +10,5 @@ class Summary(Metrics):
         self.verbose = verbose or self.verbose
         self.initialize(experiment)
 
-        for k in self.names:
-            self.data[k] = self.get_data[k]()
+        # for k in self.names:
+        #     self.data[k] = self.get_data[k]()

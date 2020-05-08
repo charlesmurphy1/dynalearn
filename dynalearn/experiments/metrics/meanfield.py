@@ -54,7 +54,6 @@ class MeanfieldMetrics(Metrics):
     def _fixed_point_(self, param=None, epsilon=None):
         if param is not None:
             self.change_param(param)
-
         x0 = self.mf.flatten(self.initial_state(epsilon))
 
         f = lambda x: self.mf.flatten(self.mf.update(self.mf.unflatten(x)))
@@ -123,21 +122,35 @@ class EpidemicMFMetrics(MeanfieldMetrics):
             self.num_updates = 2 * len(self.parameters)
             self.get_data["parameters"] = lambda pb=None: self.parameters
             self.get_data["absorbing_fixed_point"] = lambda pb: self._all_fixed_points_(
-                epsilon=self.epsilon, pb=pb
+                epsilon=self.epsilon, pb=pb, ascend=True
             )
             self.get_data["epidemic_fixed_point"] = lambda pb: self._all_fixed_points_(
-                epsilon=1 - self.epsilon, pb=pb
+                epsilon=1 - self.epsilon, pb=pb, ascend=False
             )
 
-    def _all_fixed_points_(self, epsilon=None, pb=None):
+    def _all_fixed_points_(self, epsilon=None, pb=None, ascend=True):
         fixed_points = []
-        for p in self.parameters:
-            fp = self._fixed_point_(param=p)
+
+        if ascend:
+            params = np.sort(self.parameters)
+        else:
+            params = np.sort(self.parameters)[::-1]
+
+        for p in params:
+            fp = self._fixed_point_(param=p, epsilon=epsilon)
             fixed_points.append(fp)
             epsilon = 1 - fp[0]
+
+            if epsilon < self.epsilon:
+                epsilon = self.epsilon
+            elif epsilon > 1 - self.epsilon:
+                epsilon = 1 - self.epsilon
             if pb is not None:
                 pb.update()
-        return np.array(fixed_points)
+        if ascend:
+            return np.array(fixed_points)
+        else:
+            return np.array(fixed_points)[::-1]
 
 
 class PoissonEMFMetrics(EpidemicMFMetrics):

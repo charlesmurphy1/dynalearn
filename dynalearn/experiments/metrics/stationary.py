@@ -176,6 +176,11 @@ class EpidemicSSMetrics(StationaryStateMetrics):
                 epsilon = 1 - np.mean(stats, axis=-1)[0]
             else:
                 epsilon = 1 - stats[0, 0]
+
+            if epsilon < self.epsilon:
+                epsilon = self.epsilon
+            elif epsilon > 1 - self.epsilon:
+                epsilon = 1 - self.epsilon
         if ascend:
             return np.array(stationary_states)
         else:

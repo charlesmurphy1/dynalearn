@@ -18,6 +18,8 @@ from scipy.stats import multinomial
 def _marginal_ltp(x, y, k, phi, ltp):
     mltp = 0
     phi /= phi.sum()
+    if k == 0:
+        return ltp[0, x, y]
     dist = multinomial(k, phi)
     for i, ll in enumerate(all_combinations(k, len(phi))):
         mltp += ltp[i, x, y] * dist.pmf(ll)
@@ -27,6 +29,10 @@ def _marginal_ltp(x, y, k, phi, ltp):
 @jit(nopython=True)
 def _numba_marginal_ltp(x, y, k, phi, ltp):
     mltp = 0
+    phi /= phi.sum()
+    if k == 0:
+        return ltp[0, x, y]
+
     for i, ll in enumerate(numba_all_combinations(k, len(phi))):
         mltp += ltp[i, x, y] * numba_multinomial(k, ll, phi)
     return mltp
@@ -88,6 +94,7 @@ class Meanfield(ABC):
 
         for k, i, j in product(self.k, range(self.num_states), range(self.num_states)):
             y[k][i] += self.marginal_ltp(j, i, k, phi) * x[k][j]
+        y = self.normalize_state(y)
         return y
 
     @property
