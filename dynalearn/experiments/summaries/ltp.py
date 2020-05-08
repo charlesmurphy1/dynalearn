@@ -21,27 +21,17 @@ class LTPSummary(Summary):
 
     def initialize(self, experiment):
         self.metrics = self.get_metrics(experiment)
-
         for u, v in self.transitions:
-            self.get_data[f"all/{u}-{v}"] = lambda: self._get_summary_("ltp", u, v)
-            self.names.append(f"all/{u}-{v}")
-            self.get_data[f"train/{u}-{v}"] = lambda: self._get_summary_(
-                "train_ltp", u, v
-            )
-            self.names.append(f"train/{u}-{v}")
+            self.data[f"all/{u}-{v}"] = self._get_summary_("ltp", u, v)
+            self.data[f"train/{u}-{v}"] = self._get_summary_("train_ltp", u, v)
             if "val_ltp" in self.metrics.data:
-                self.get_data[f"val/{u}-{v}"] = lambda: self._get_summary_(
-                    "val_ltp", u, v
-                )
-                self.names.append(f"val/{u}-{v}")
+                self.data[f"val/{u}-{v}"] = self._get_summary_("val_ltp", u, v)
             if "test_ltp" in self.metrics.data:
-                self.get_data[f"test/{u}-{v}"] = lambda: self._get_summary_(
-                    "test_ltp", u, v
-                )
-                self.names.append(f"test/{u}-{v}")
+                self.data[f"test/{u}-{v}"] = self._get_summary_("test_ltp", u, v)
 
     def _get_summary_(self, name, in_s, out_s):
         summaries = self.metrics.summaries
+        print(in_s, out_s)
         x, y, yl, yh = LTPMetrics.aggregate(
             self.metrics.data[name],
             self.metrics.data["summaries"],
@@ -74,8 +64,7 @@ class StarLTPSummary(LTPSummary):
         self.metrics = self.get_metrics(experiment)
 
         for u, v in self.transitions:
-            self.get_data[f"{u}-{v}"] = lambda: self._get_summary_("ltp", u, v)
-            self.names.append(f"{u}-{v}")
+            self.data[f"{u}-{v}"] = self._get_summary_("ltp", u, v)
 
 
 class TrueStarLTPSummary(StarLTPSummary):

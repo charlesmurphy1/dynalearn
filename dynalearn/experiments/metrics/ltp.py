@@ -152,20 +152,21 @@ class LTPMetrics(Metrics):
         reduce="mean",
         err_reduce="std",
     ):
-        if reduce is "mean":
+        # print(in_state, out_state)
+        if reduce == "mean":
             op = np.nanmean
-            if err_reduce is "std":
+            if err_reduce == "std":
                 err_op = lambda xx: (
                     np.nanmean(xx) - np.nanstd(xx),
                     np.nanmean(xx) + np.nanstd(xx),
                 )
-            elif err_reduce is "percentile":
+            elif err_reduce == "percentile":
                 err_op = lambda xx: (np.nanpercentile(xx, 16), np.nanpercentile(xx, 84))
             else:
                 raise ValueError(
-                    "Invalid error reduction, valid options are ['std', 'percentile']"
+                    f"{err_reduce} is an invalid reduction, valid options are ['std', 'percentile']"
                 )
-        elif reduce is "sum":
+        elif reduce == "sum":
             op = np.nansum
             err_op = lambda x: np.nan
         else:
