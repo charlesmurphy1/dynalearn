@@ -1,4 +1,6 @@
 import dynalearn as dl
+import numpy as np
+import time
 import os
 
 from dynalearn.config import *
@@ -94,6 +96,7 @@ class ExperimentConfig(Config):
         path_to_best="./",
         path_to_summary="./",
         mode="fast",
+        seed=None,
     ):
         cls = cls()
         if dynamics not in dynamics_config:
@@ -136,7 +139,56 @@ class ExperimentConfig(Config):
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
-        cls.seed = 0
+        if seed is None:
+            cls.seed = int(time.time())
+        else:
+            cls.seed = seed
+
+        return cls
+
+    @classmethod
+    def rtn_forcast(
+        cls,
+        name,
+        dynamics,
+        path_to_edgelist,
+        path_to_model,
+        path_to_data="./",
+        path_to_summary="./",
+        seed=None,
+    ):
+        cls = cls()
+        if name is None:
+            cls.name = f"{dynamics}-rtn"
+        else:
+            cls.name = name
+
+        cls.path_to_data = os.path.join(path_to_data, cls.name)
+        if not os.path.exists(cls.path_to_data):
+            os.makedirs(cls.path_to_data)
+
+        cls.path_to_best = path_to_model
+        cls.fname_best = f"{dynamics}-ba-ns10000.pt"
+
+        cls.path_to_summary = path_to_summary
+        if not os.path.exists(cls.path_to_summary):
+            os.makedirs(cls.path_to_summary)
+
+        cls.dataset = DatasetConfig.plain_default()
+        cls.networks = NetworkConfig.realtemporalnetwork(path_to_edgelist)
+        cls.dynamics = dynamics_config[dynamics]
+        cls.model = model_config[dynamics]
+
+        cls.train_details = TrainingConfig.default()
+        cls.metrics = MetricsConfig.rtn_forecast()
+        cls.summaries = SummariesConfig.rtn_forecast()
+        cls.train_metrics = []
+        cls.callbacks = CallbackConfig.empty()
+
+        if seed is None:
+            cls.seed = int(time.time())
+        else:
+            cls.seed = seed
 
         return cls
 
@@ -163,88 +215,6 @@ class ExperimentConfig(Config):
         cls.summaries = SummariesConfig.test()
         cls.train_metrics = []
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
-
-        cls.seed = 0
-
-        return cls
-
-    @classmethod
-    def sisrtn_forcast(
-        cls,
-        name,
-        path_to_edgelist,
-        path_to_model,
-        path_to_data="./",
-        path_to_summary="./",
-    ):
-        cls = cls()
-        if name is None:
-            cls.name = "sis-rtn"
-        else:
-            cls.name = name
-
-        cls.path_to_data = os.path.join(path_to_data, cls.name)
-        if not os.path.exists(cls.path_to_data):
-            os.makedirs(cls.path_to_data)
-
-        cls.path_to_best = path_to_model
-        cls.fname_best = "sis-ba-ns1000.pt"
-
-        cls.path_to_summary = path_to_summary
-        if not os.path.exists(cls.path_to_summary):
-            os.makedirs(cls.path_to_summary)
-
-        cls.dataset = DatasetConfig.plain_default()
-        cls.networks = NetworkConfig.realtemporalnetwork(path_to_edgelist)
-        cls.dynamics = DynamicsConfig.sis_default()
-        cls.model = DynamicsConfig.sis_gnn_default()
-
-        cls.train_details = TrainingConfig.default()
-        cls.post_metrics = MetricsConfig.rtn_forecast()
-        cls.summaries = SummariesConfig.rtn_forecast()
-        cls.train_metrics = []
-        cls.callbacks = CallbackConfig.empty()
-
-        cls.seed = 0
-
-        return cls
-
-    @classmethod
-    def plancksisrtn_forcast(
-        cls,
-        name,
-        path_to_edgelist,
-        path_to_model,
-        path_to_data="./",
-        path_to_summary="./",
-    ):
-        cls = cls()
-        if name is None:
-            cls.name = "plancksis-rtn"
-        else:
-            cls.name = name
-
-        cls.path_to_data = os.path.join(path_to_data, cls.name)
-        if not os.path.exists(cls.path_to_data):
-            os.makedirs(cls.path_to_data)
-
-        cls.path_to_best = path_to_model
-        cls.fname_best = "plancksis-ba-ns1000.pt"
-
-        cls.path_to_summary = path_to_summary
-        if not os.path.exists(cls.path_to_summary):
-            os.makedirs(cls.path_to_summary)
-
-        cls.dataset = DatasetConfig.plain_default()
-        cls.networks = NetworkConfig.realtemporalnetwork(path_to_edgelist)
-        cls.dynamics = DynamicsConfig.plancksis_default()
-        cls.model = DynamicsConfig.plancksis_gnn_default()
-
-        cls.train_details = TrainingConfig.default()
-        cls.post_metrics = MetricsConfig.rtn_forecast()
-        cls.summaries = SummariesConfig.rtn_forecast()
-        cls.train_metrics = []
-        cls.callbacks = CallbackConfig.empty()
 
         cls.seed = 0
 

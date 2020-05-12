@@ -15,6 +15,8 @@ __metrics__ = {
     "StatisticsMetrics": StatisticsMetrics,
     "TrueSSMetrics": TrueSSMetrics,
     "GNNSSMetrics": GNNSSMetrics,
+    "TrueESSMetrics": TrueESSMetrics,
+    "GNNESSMetrics": GNNESSMetrics,
     "TruePESSMetrics": TruePESSMetrics,
     "GNNPESSMetrics": GNNPESSMetrics,
     "TruePEMFMetrics": TruePEMFMetrics,

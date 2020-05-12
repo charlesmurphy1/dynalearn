@@ -22,7 +22,6 @@ class LearnableEpidemics(DynamicsModel):
         self.nn = GeneralEpidemicsGNN(config)
         if torch.cuda.is_available():
             self.nn = self.nn.cuda()
-        self._edge_index = None
         DynamicsModel.__init__(self, config, config.num_states)
 
     def initial_state(self):
@@ -45,24 +44,24 @@ class LearnableEpidemics(DynamicsModel):
             edge_index = self.edge_index.cuda()
         return self.nn.forward(x, edge_index).cpu().detach().numpy()
 
-    @property
-    def network(self):
-        if self._network is None:
-            raise ValueError("No network has been parsed to the dynamics.")
-        else:
-            return self._network
-
-    @network.setter
-    def network(self, network):
-        self._network = network
-        if not network.is_directed():
-            network = nx.to_directed(network)
-        self._edge_index = to_edge_index(network)
-        self._num_nodes = self._network.number_of_nodes()
-
-    @property
-    def edge_index(self):
-        if self._edge_index is None:
-            raise ValueError("No network has been parsed to the dynamics.")
-        else:
-            return self._edge_index
+    # @property
+    # def network(self):
+    #     if self._network is None:
+    #         raise ValueError("No network has been parsed to the dynamics.")
+    #     else:
+    #         return self._network
+    #
+    # @network.setter
+    # def network(self, network):
+    #     self._network = network
+    #     if not network.is_directed():
+    #         network = nx.to_directed(network)
+    #     self._edge_index = to_edge_index(network)
+    #     self._num_nodes = self._network.number_of_nodes()
+    #
+    # @property
+    # def edge_index(self):
+    #     if self._edge_index is None:
+    #         raise ValueError("No network has been parsed to the dynamics.")
+    #     else:
+    #         return self._edge_index

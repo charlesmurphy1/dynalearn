@@ -19,6 +19,8 @@ __summaries__ = {
     "StatisticsSummary": StatisticsSummary,
     "TrueSSSummary": TrueSSSummary,
     "GNNSSSummary": GNNSSSummary,
+    "TrueESSSummary": TrueESSSummary,
+    "GNNESSSummary": GNNESSSummary,
     "TruePESSSummary": TruePESSSummary,
     "GNNPESSSummary": GNNPESSSummary,
     "TruePEMFSummary": TruePEMFSummary,

@@ -34,8 +34,8 @@ class MetricsConfig(Config):
             "GNNStarLTPMetrics",
             "UniformStarLTPMetrics",
             "StatisticsMetrics",
-            "TruePESSMetrics",
-            "GNNPESSMetrics",
+            # "TruePESSMetrics",
+            # "GNNPESSMetrics",
             "TruePEMFMetrics",
             "GNNPEMFMetrics",
         ]
@@ -96,8 +96,8 @@ class MetricsConfig(Config):
             "GNNStarLTPMetrics",
             "UniformStarLTPMetrics",
             "StatisticsMetrics",
-            "TruePESSMetrics",
-            "GNNPESSMetrics",
+            # "TruePESSMetrics",
+            # "GNNPESSMetrics",
             "TruePEMFMetrics",
             "GNNPEMFMetrics",
         ]
@@ -158,8 +158,8 @@ class MetricsConfig(Config):
             "GNNStarLTPMetrics",
             "UniformStarLTPMetrics",
             "StatisticsMetrics",
-            "TruePESSMetrics",
-            "GNNPESSMetrics",
+            # "TruePESSMetrics",
+            # "GNNPESSMetrics",
             "TruePEMFMetrics",
             "GNNPEMFMetrics",
         ]
@@ -193,8 +193,8 @@ class MetricsConfig(Config):
     def rtn_forecast(cls):
         cls = cls()
         cls.names = [
-            "TrueSSMetrics",
-            "GNNSSMetrics",
+            "TrueESSMetrics",
+            "GNNESSMetrics",
             "TrueRTNForecastMetrics",
             "GNNRTNForecastMetrics",
         ]
@@ -203,7 +203,7 @@ class MetricsConfig(Config):
         cls.num_samples = 100
         cls.epsilon = 1e-2
         cls.full_data = True
-        cls.burn = 100
+        cls.burn = 200
 
         # forecast metrics
         cls.num_forecasts = 10

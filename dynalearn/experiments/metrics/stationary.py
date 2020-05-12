@@ -73,7 +73,7 @@ class StationaryStateMetrics(Metrics):
             self.change_param(param)
         samples = np.zeros((self.num_samples, self.networks.num_nodes))
         for i in range(self.num_samples):
-            if issubclass(self.networks, RealTemporalNetwork):
+            if issubclass(self.networks.__class__, RealTemporalNetwork):
                 g = self.networks.complete_network
             elif hasattr(self.networks, "generate"):
                 g = self.networks.generate()
@@ -83,7 +83,8 @@ class StationaryStateMetrics(Metrics):
             self.model.network = g
             x0 = self.dynamics.initial_state(epsilon)
             samples[i] = self.burning(x0, self.burn)
-            epsilon = 1 - samples[i, 0]
+            if epsilon != None:
+                epsilon = 1 - samples[i, 0]
             if self.verbose and pb is not None:
                 pb.update()
         avg_samples = self.avg(samples, axis=-1)
@@ -92,6 +93,10 @@ class StationaryStateMetrics(Metrics):
     def burning(self, x, burn=1):
         for b in range(burn):
             x = self.model.sample(x)
+            # avg_x = self.avg(x, axis=-1)
+            # avg_y = self.avg(y, axis=-1)
+            # print(np.abs(avg_x - avg_y))
+            # x = y * 1
         return x
 
     def avg(self, x, axis=None):
@@ -185,6 +190,18 @@ class EpidemicSSMetrics(StationaryStateMetrics):
             return np.array(stationary_states)
         else:
             return np.array(stationary_states)[::-1]
+
+
+class TrueESSMetrics(TrueSSMetrics, EpidemicSSMetrics):
+    def __init__(self, config, verbose=0):
+        TrueSSMetrics.__init__(self, config, verbose)
+        EpidemicSSMetrics.__init__(self, config, verbose)
+
+
+class GNNESSMetrics(GNNSSMetrics, EpidemicSSMetrics):
+    def __init__(self, config, verbose=0):
+        GNNSSMetrics.__init__(self, config, verbose)
+        EpidemicSSMetrics.__init__(self, config, verbose)
 
 
 class PoissonESSMetrics(EpidemicSSMetrics):

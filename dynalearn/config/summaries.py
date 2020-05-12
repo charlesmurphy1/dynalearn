@@ -112,11 +112,12 @@ class SummariesConfig(Config):
     def rtn_forecast(cls):
         cls = cls()
         cls.names = [
-            "TrueSSSummary",
-            "GNNSSSummary",
+            "TrueESSSummary",
+            "GNNESSSummary",
             "TrueRTNForecastSummary",
             "GNNRTNForecastSummary",
         ]
+        return cls
 
     def test(cls):
         cls = cls()

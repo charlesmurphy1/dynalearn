@@ -14,12 +14,22 @@ class StationaryStateSummary(Summary):
 
 class TrueSSSummary(StationaryStateSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["TrueSSMetrics"]
+        return experiment.metrics["TrueSSMetrics"]
 
 
 class GNNSSSummary(StationaryStateSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["GNNSSMetrics"]
+        return experiment.metrics["GNNSSMetrics"]
+
+
+class TrueESSSummary(StationaryStateSummary):
+    def get_metrics(self, experiment):
+        return experiment.metrics["TrueESSMetrics"]
+
+
+class GNNESSSummary(StationaryStateSummary):
+    def get_metrics(self, experiment):
+        return experiment.metrics["GNNESSMetrics"]
 
 
 class TruePESSSummary(StationaryStateSummary):

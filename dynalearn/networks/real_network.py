@@ -28,13 +28,14 @@ class RealTemporalNetwork(Network):
         self.window = config.window
         self.dt = config.dt
         self.all_edges = [(int(e[1]), int(e[2])) for e in self.edges]
-        self.complete_network = nx.from_edgelist(self.all_edges)
-        self.all_nodes = list(self.complete_network.nodes())
+        complete_network = nx.from_edgelist(self.all_edges)
+        self.all_nodes = list(complete_network.nodes())
         self.node_map = {n: i for i, n in enumerate(self.all_nodes)}
         self._num_nodes = len(self.all_nodes)
         self.edgelist, self.times = RealTemporalNetwork.format_edgelist(
             self.edges, self.dt, lambda i: self.node_map[i]
         )
+        self.complete_network = nx.relabel_nodes(complete_network, self.node_map)
         self.data = self.get_network_list()
         self.time = 0
 

@@ -14,19 +14,19 @@ class ForecastSummary(Summary):
 
 class TrueForecastSummary(ForecastSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["TrueForecastMetrics"]
+        return experiment.metrics["TrueForecastMetrics"]
 
 
 class GNNForecastSummary(ForecastSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["GNNForecastMetrics"]
+        return experiment.metrics["GNNForecastMetrics"]
 
 
 class TrueRTNForecastSummary(ForecastSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["TrueRTNForecastMetrics"]
+        return experiment.metrics["TrueRTNForecastMetrics"]
 
 
 class GNNRTNForecastSummary(ForecastSummary):
     def get_metrics(self, experiment):
-        return experiment.post_metrics["GNNRTNForecastMetrics"]
+        return experiment.metrics["GNNRTNForecastMetrics"]
