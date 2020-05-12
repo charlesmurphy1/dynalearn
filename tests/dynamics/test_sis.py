@@ -1,7 +1,8 @@
 import unittest
-from dynalearn.dynamics import SIS, DynamicsConfig
 import networkx as nx
 import numpy as np
+from dynalearn.dynamics import SIS
+from dynalearn.config import DynamicsConfig
 
 
 class SISTest(unittest.TestCase):

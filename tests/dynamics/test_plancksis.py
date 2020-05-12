@@ -1,8 +1,10 @@
 import unittest
-from dynalearn.dynamics import PlanckSIS, DynamicsConfig
-from dynalearn.dynamics.activation import planck
 import networkx as nx
 import numpy as np
+
+from dynalearn.dynamics import PlanckSIS
+from dynalearn.dynamics.activation import planck
+from dynalearn.config import DynamicsConfig
 
 
 class PlanckSISTest(unittest.TestCase):
@@ -29,7 +31,7 @@ class PlanckSISTest(unittest.TestCase):
         ltp = self.model.predict(x)
         ref_ltp = np.zeros((self.n, 2))
         ref_ltp[:, 0] = 1
-        self.assertTrue(np.all(abs(ref_ltp - ltp) < 1e-10))
+        np.testing.assert_array_almost_equal(ltp, ref_ltp)
 
     def test_predict_inf(self):
         x = np.zeros(self.n)
@@ -40,7 +42,7 @@ class PlanckSISTest(unittest.TestCase):
         ref_ltp[0, 1] = 1 - self.recovery
         ref_ltp[1:, 0] = 1 - planck(np.ones(self.n - 1), self.temperature)
         ref_ltp[1:, 1] = planck(np.ones(self.n - 1), self.temperature)
-        self.assertTrue(np.all(abs(ref_ltp - ltp) < 1e-10))
+        np.testing.assert_array_almost_equal(ltp, ref_ltp)
 
     def test_predict_rec(self):
         x = np.ones(self.n)
@@ -48,7 +50,7 @@ class PlanckSISTest(unittest.TestCase):
         ref_ltp = np.zeros((self.n, 2))
         ref_ltp[:, 0] = self.recovery
         ref_ltp[:, 1] = 1 - self.recovery
-        self.assertTrue(np.all(abs(ref_ltp - ltp) < 1e-10))
+        np.testing.assert_array_almost_equal(ltp, ref_ltp)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,9 @@
-from dynalearn.dynamics import DynamicsConfig, LearnableEpidemics
-
 import unittest
 import networkx as nx
 import numpy as np
+
+from dynalearn.dynamics import LearnableEpidemics
+from dynalearn.config import DynamicsConfig
 from torch_geometric.nn.inits import ones
 
 

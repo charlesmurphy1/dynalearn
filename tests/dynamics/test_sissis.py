@@ -1,7 +1,9 @@
 import unittest
-from dynalearn.dynamics import SISSIS, DynamicsConfig
 import networkx as nx
 import numpy as np
+
+from dynalearn.dynamics import SISSIS
+from dynalearn.config import DynamicsConfig
 
 
 class SISSISTest(unittest.TestCase):
@@ -34,7 +36,7 @@ class SISSISTest(unittest.TestCase):
         ltp = self.model.predict(x)
         ref_ltp = np.zeros((self.n, 4))
         ref_ltp[:, 0] = 1
-        self.assertTrue(np.all(abs(ref_ltp - ltp) < 1e-10))
+        np.testing.assert_array_almost_equal(ltp, ref_ltp)
 
     def test_predict_infIS(self):
         x = np.zeros(self.n)
@@ -45,7 +47,7 @@ class SISSISTest(unittest.TestCase):
         ref_ltp[0, 1] = 1 - self.recovery1
         ref_ltp[1:, 0] = 1 - self.infection1
         ref_ltp[1:, 1] = self.infection1
-        self.assertTrue(np.all(abs(ref_ltp - ltp) < 1e-10))
+        np.testing.assert_array_almost_equal(ltp, ref_ltp)
 
     def test_predict_infSI(self):
         x = np.zeros(self.n)
@@ -56,7 +58,7 @@ class SISSISTest(unittest.TestCase):
         ref_ltp[0, 2] = 1 - self.recovery2
         ref_ltp[1:, 0] = 1 - self.infection2
         ref_ltp[1:, 2] = self.infection2
-        self.assertTrue(np.all(abs(ref_ltp - ltp) < 1e-10))
+        np.testing.assert_array_almost_equal(ltp, ref_ltp)
 
     def test_predict_infII(self):
         x = np.zeros(self.n)
@@ -74,7 +76,7 @@ class SISSISTest(unittest.TestCase):
         ref_ltp[1:, 1] = (c * p1) * (1 - c * p2)
         ref_ltp[1:, 2] = (1 - c * p1) * (c * p2)
         ref_ltp[1:, 3] = (c * p1) * (c * p2)
-        self.assertTrue(np.all(abs(ref_ltp - ltp) < 1e-10))
+        np.testing.assert_array_almost_equal(ltp, ref_ltp)
 
     def test_predict_recIS(self):
         x = np.ones(self.n) * 1
@@ -82,7 +84,7 @@ class SISSISTest(unittest.TestCase):
         ref_ltp = np.zeros((self.n, 4))
         ref_ltp[:, 0] = self.recovery1
         ref_ltp[:, 1] = 1 - self.recovery1
-        self.assertTrue(np.all(abs(ref_ltp - ltp) < 1e-10))
+        np.testing.assert_array_almost_equal(ltp, ref_ltp)
 
     def test_predict_recSI(self):
         x = np.ones(self.n) * 2
@@ -90,7 +92,7 @@ class SISSISTest(unittest.TestCase):
         ref_ltp = np.zeros((self.n, 4))
         ref_ltp[:, 0] = self.recovery2
         ref_ltp[:, 2] = 1 - self.recovery2
-        self.assertTrue(np.all(abs(ref_ltp - ltp) < 1e-10))
+        np.testing.assert_array_almost_equal(ltp, ref_ltp)
 
     def test_predict_recII(self):
         x = np.ones(self.n) * 3
@@ -100,7 +102,7 @@ class SISSISTest(unittest.TestCase):
         ref_ltp[:, 1] = (1 - self.recovery1) * (self.recovery2)
         ref_ltp[:, 2] = (self.recovery1) * (1 - self.recovery2)
         ref_ltp[:, 3] = (1 - self.recovery1) * (1 - self.recovery2)
-        self.assertTrue(np.all(abs(ref_ltp - ltp) < 1e-10))
+        np.testing.assert_array_almost_equal(ltp, ref_ltp)
 
     def test_initialstate(self):
         g = nx.empty_graph(1000)
