@@ -3,6 +3,7 @@ import numpy as np
 import dynalearn as dl
 import argparse
 import os
+import time
 
 from os.path import exists, join
 
@@ -32,9 +33,12 @@ def unmark_path_as_finished(path):
 
 
 def get_config(args):
+    if args.seed == -1:
+        args.seed = int(time.time())
+
     if args.config == "test":
         return dl.ExperimentConfig.test(
-            args.path, args.path_to_best, args.path_to_summary,
+            args.path, args.path_to_best, args.path_to_summary
         )
     else:
         dynamics, network = args.config.split("-")
@@ -46,13 +50,13 @@ def get_config(args):
             args.path_to_best,
             args.path_to_summary,
             args.mode,
+            args.seed,
         )
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--config",
-    "-c",
     type=str,
     metavar="CONFIG",
     help="Configuration of the experiment.",
@@ -68,16 +72,10 @@ parser.add_argument(
     required=True,
 )
 parser.add_argument(
-    "--name",
-    "-na",
-    type=str,
-    metavar="NAME",
-    help="Name of the experiment.",
-    required=True,
+    "--name", type=str, metavar="NAME", help="Name of the experiment.", required=True
 )
 parser.add_argument(
     "--num_samples",
-    "-s",
     type=int,
     metavar="NUM_SAMPLES",
     help="Number of samples to train from.",
@@ -85,7 +83,6 @@ parser.add_argument(
 )
 parser.add_argument(
     "--num_nodes",
-    "-n",
     type=int,
     metavar="NUM_NODES",
     help="Number of nodes to train from.",
@@ -93,7 +90,6 @@ parser.add_argument(
 )
 parser.add_argument(
     "--resampling_time",
-    "-r",
     type=int,
     metavar="RESAMPLING_TIME",
     help="Resampling time to generate the data.",
@@ -101,7 +97,6 @@ parser.add_argument(
 )
 parser.add_argument(
     "--batch_size",
-    "-bs",
     type=int,
     metavar="BATCH_SIZE",
     help="Size of the batches during training.",
@@ -109,7 +104,6 @@ parser.add_argument(
 )
 parser.add_argument(
     "--with_truth",
-    "-wt",
     type=int,
     choices=[0, 1],
     metavar="BOOL",
@@ -118,7 +112,6 @@ parser.add_argument(
 )
 parser.add_argument(
     "--mode",
-    "-mm",
     type=str,
     choices=["fast", "complete"],
     metavar="MODE",
@@ -127,7 +120,6 @@ parser.add_argument(
 )
 parser.add_argument(
     "--path",
-    "-pa",
     type=str,
     metavar="PATH",
     help="Path to the directory where to save the experiment.",
@@ -135,7 +127,6 @@ parser.add_argument(
 )
 parser.add_argument(
     "--path_to_best",
-    "-pb",
     type=str,
     metavar="PATH",
     help="Path to the model directory.",
@@ -143,15 +134,16 @@ parser.add_argument(
 )
 parser.add_argument(
     "--path_to_summary",
-    "-ps",
     type=str,
     metavar="PATH",
     help="Path to the summaries directory.",
     default="./",
 )
 parser.add_argument(
+    "--seed", type=int, metavar="SEED", help="Seed of the experiment.", default=-1
+)
+parser.add_argument(
     "--verbose",
-    "-v",
     type=int,
     choices=[0, 1, 2],
     metavar="VERBOSE",
@@ -171,3 +163,21 @@ config.dataset.with_truth = bool(args.with_truth)
 
 experiment = dl.Experiment(config, verbose=args.verbose)
 experiment.run()
+
+# if args.verbose != 0:
+#     print("---Experiment {0}---".format(args.name))
+#
+# if args.verbose != 0:
+#     print("\n---Generating data---")
+# experiment.generate_data()
+# experiment.save_data()
+#
+# if args.verbose != 0:
+#     print("\n---Computing metrics---")
+# experiment.compute_metrics()
+# experiment.save_metrics()
+#
+# if args.verbose != 0:
+#     print("\n---Summarizing---")
+# experiment.compute_summaries()
+# experiment.save_summaries()

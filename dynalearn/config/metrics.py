@@ -34,8 +34,8 @@ class MetricsConfig(Config):
             "GNNStarLTPMetrics",
             "UniformStarLTPMetrics",
             "StatisticsMetrics",
-            # "TruePESSMetrics",
-            # "GNNPESSMetrics",
+            "TruePESSMetrics",
+            "GNNPESSMetrics",
             "TruePEMFMetrics",
             "GNNPEMFMetrics",
         ]
@@ -50,7 +50,7 @@ class MetricsConfig(Config):
         cls.num_nodes = 2000
         cls.epsilon = 1e-2
         cls.full_data = False
-        cls.burn = 100
+        cls.burn = 500
         cls.parameters = np.concatenate(
             (np.linspace(0.1, 3, 30), np.linspace(3.1, 10, 20))
         )
@@ -96,8 +96,8 @@ class MetricsConfig(Config):
             "GNNStarLTPMetrics",
             "UniformStarLTPMetrics",
             "StatisticsMetrics",
-            # "TruePESSMetrics",
-            # "GNNPESSMetrics",
+            "TruePESSMetrics",
+            "GNNPESSMetrics",
             "TruePEMFMetrics",
             "GNNPEMFMetrics",
         ]
@@ -112,7 +112,7 @@ class MetricsConfig(Config):
         cls.num_nodes = 2000
         cls.epsilon = 1e-2
         cls.full_data = False
-        cls.burn = 100
+        cls.burn = 500
         cls.parameters = np.concatenate(
             (np.linspace(0.1, 2, 10), np.linspace(2.1, 6, 50), np.linspace(6.1, 10, 10))
         )
@@ -158,8 +158,8 @@ class MetricsConfig(Config):
             "GNNStarLTPMetrics",
             "UniformStarLTPMetrics",
             "StatisticsMetrics",
-            # "TruePESSMetrics",
-            # "GNNPESSMetrics",
+            "TruePESSMetrics",
+            "GNNPESSMetrics",
             "TruePEMFMetrics",
             "GNNPEMFMetrics",
         ]
@@ -174,7 +174,7 @@ class MetricsConfig(Config):
         cls.num_nodes = 2000
         cls.epsilon = 1e-2
         cls.full_data = False
-        cls.burn = 100
+        cls.burn = 500
         cls.parameters = np.concatenate(
             (np.linspace(0.1, 5, 40), np.linspace(5.1, 10, 10))
         )
@@ -238,7 +238,7 @@ class MetricsConfig(Config):
         cls.num_nodes = 100
         cls.epsilon = 1e-2
         cls.full_data = False
-        cls.burn = 100
+        cls.burn = 500
         cls.parameters = np.linspace(0.01, 10.0, 10)
 
         cls.finder = "RecurrenceFPF"
