@@ -16,8 +16,10 @@ import numpy as np
 import pickle
 import torch as pt
 import os
+
 from abc import ABC, abstractmethod
 from math import ceil
+from dynalearn.utilities import to_edge_index
 
 
 class DynamicsModel(ABC):
@@ -25,8 +27,7 @@ class DynamicsModel(ABC):
         self._config = config
         self._num_states = num_states
         self._network = None
-        self._adj = None
-        self._edgelist = None
+        self._edge_index = None
         self._num_nodes = None
 
     @abstractmethod
@@ -59,7 +60,17 @@ class DynamicsModel(ABC):
     @network.setter
     def network(self, network):
         self._network = network
+        if not network.is_directed():
+            network = nx.to_directed(network)
+        self._edge_index = to_edge_index(network)
         self._num_nodes = self._network.number_of_nodes()
+
+    @property
+    def edge_index(self):
+        if self._edge_index is None:
+            raise ValueError("No network has been parsed to the dynamics.")
+        else:
+            return self._edge_index
 
     @property
     def num_nodes(self):

@@ -43,11 +43,10 @@ class GraphAttention(MessagePassing):
                 None if x[0] is None else self.linear(x[0]),
                 None if x[1] is None else self.linear(x[1]),
             )
-        row, col = edge_index
         agg_features = self.propagate(edge_index, x=x)
         return x + agg_features
 
-    def message(self, edge_index_i, x_i, x_j):
+    def message(self, x_i, x_j):
         x_j = x_j.view(-1, self.heads, self.out_channels)
         if x_i is None:
             alpha = (x_j * self.att_weight[:, :, self.out_channels :]).sum(dim=-1)

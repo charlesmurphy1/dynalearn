@@ -1,14 +1,17 @@
-from dynalearn.dynamics.base import DynamicsModel
-from dynalearn.utilities import from_binary
 import networkx as nx
 import numpy as np
 import torch as pt
+
+from dynalearn.dynamics.base import DynamicsModel
+from dynalearn.nn.models import Propagator
+from dynalearn.utilities import from_binary
 
 
 class Epidemics(DynamicsModel):
     def __init__(self, config, num_states):
         DynamicsModel.__init__(self, config, num_states)
         self.initial_infected = config.initial_infected
+        self.propagator = Propagator(num_states)
 
     def sample(self, x):
         p = self.predict(x)
@@ -21,10 +24,12 @@ class Epidemics(DynamicsModel):
                 f"Invalid shape, expected shape of size 1 and got ({x.shape})"
             )
 
-        l = np.zeros((self.num_states, self.num_nodes))
-        for u, v in self.network.edges():
-            l[int(x[u]), v] += 1
-            l[int(x[v]), u] += 1
+        # l = np.zeros((self.num_states, self.num_nodes))
+        # for u, v in self.network.edges():
+        #     l[int(x[u]), v] += 1
+        #     l[int(x[v]), u] += 1
+        l = self.propagator.forward(x, self.edge_index)
+        l = l.cpu().numpy()
         return l
 
 
@@ -46,6 +51,12 @@ class MultiEpidemics(Epidemics):
         elif initial_infected >= 0 and initial_infected <= 1:
             p = np.ones(self.num_diseases) * (
                 1 - (1 - initial_infected) ** (1.0 / self.num_diseases)
+            )
+        else:
+            raise ValueError(
+                "Value for 'initial_infected'"
+                + "must be between [0, 1] or equal to -1:"
+                + f"Received {initial_infected}."
             )
 
         n_infected = [np.random.binomial(self.num_nodes, pp) for pp in p]
