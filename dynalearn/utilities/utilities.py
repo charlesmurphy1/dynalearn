@@ -11,6 +11,7 @@ color_dark = {
     "purple": "#9A80B9",
     "red": "#d73027",
     "grey": "#525252",
+    "green": "#33b050",
 }
 
 color_pale = {
@@ -19,6 +20,7 @@ color_pale = {
     "purple": "#c3b4d6",
     "red": "#e78580",
     "grey": "#999999",
+    "green": "#9fdaac",
 }
 
 colormap = "bone"

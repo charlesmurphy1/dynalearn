@@ -24,10 +24,6 @@ class Epidemics(DynamicsModel):
                 f"Invalid shape, expected shape of size 1 and got ({x.shape})"
             )
 
-        # l = np.zeros((self.num_states, self.num_nodes))
-        # for u, v in self.network.edges():
-        #     l[int(x[u]), v] += 1
-        #     l[int(x[v]), u] += 1
         l = self.propagator.forward(x, self.edge_index)
         l = l.cpu().numpy()
         return l

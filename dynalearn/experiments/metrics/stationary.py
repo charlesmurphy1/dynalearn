@@ -83,7 +83,7 @@ class StationaryStateMetrics(Metrics):
             self.model.network = g
             x0 = self.dynamics.initial_state(epsilon)
             samples[i] = self.burning(x0, self.burn)
-            if epsilon != None:
+            if epsilon != None and epsilon != -1:
                 epsilon = 1 - samples[i, 0]
             if self.verbose and pb is not None:
                 pb.update()
@@ -93,10 +93,6 @@ class StationaryStateMetrics(Metrics):
     def burning(self, x, burn=1):
         for b in range(burn):
             x = self.model.sample(x)
-            # avg_x = self.avg(x, axis=-1)
-            # avg_y = self.avg(y, axis=-1)
-            # print(np.abs(avg_x - avg_y))
-            # x = y * 1
         return x
 
     def avg(self, x, axis=None):
