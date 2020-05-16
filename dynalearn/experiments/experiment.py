@@ -49,11 +49,6 @@ class Experiment:
         self.fname_model = (
             config.fname_model if "fname_model" in config.__dict__ else "model.pt"
         )
-        self.fname_best = (
-            config.fname_best
-            if "fname_best" in config.__dict__
-            else "{self.name}_best.pt"
-        )
         self.fname_optim = (
             config.fname_optim if "fname_optim" in config.__dict__ else "optim.pt"
         )
@@ -152,6 +147,9 @@ class Experiment:
         if exists(join(self.path_to_data, self.fname_data)):
             with h5py.File(join(self.path_to_data, self.fname_data), "r") as f:
                 self.dataset.load(f)
+        else:
+            if self.verbose != 0:
+                print("Loading data: Did not find data to load.")
 
     def train_model(self):
         self.model.nn.fit(
@@ -172,20 +170,30 @@ class Experiment:
     def load_model(self, restore_best=True):
         if exists(join(self.path_to_data, self.fname_history)):
             self.model.nn.load_history(join(self.path_to_data, self.fname_history))
+        else:
+            if self.verbose != 0:
+                print("Loading model: Did not find history to load.")
+
         if exists(join(self.path_to_data, self.fname_optim)):
             self.model.nn.load_optimizer(join(self.path_to_data, self.fname_optim))
+        else:
+            if self.verbose != 0:
+                print("Loading model: Did not find optimizer to load.")
 
-        if restore_best and exists(join(self.path_to_best, self.fname_best)):
-            self.model.nn.load_weights(join(self.path_to_best, self.fname_best))
+        if restore_best and exists(self.path_to_best):
+            self.model.nn.load_weights(self.path_to_best)
         elif exists(join(self.path_to_data, self.fname_model)):
             self.model.nn.load_weights(join(self.path_to_data, self.fname_model))
+        else:
+            if self.verbose != 0:
+                print("Loading model: Did not find model to load.")
 
     def compute_metrics(self):
         for k, m in self.metrics.items():
             m.compute(self, verbose=self.verbose)
 
     def save_metrics(self):
-        with h5py.File(join(self.path_to_data, self.fname_metrics), "w") as f:
+        with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
             for k, m in self.metrics.items():
                 m.save(f)
 
@@ -194,13 +202,16 @@ class Experiment:
             with h5py.File(join(self.path_to_data, self.fname_metrics), "r") as f:
                 for k in self.metrics.keys():
                     self.metrics[k].load(f)
+        else:
+            if self.verbose != 0:
+                print("Loading metrics: Did not find metrics to load.")
 
     def compute_summaries(self):
         for k, m in self.summaries.items():
             m.compute(self, verbose=self.verbose)
 
     def save_summaries(self):
-        with h5py.File(join(self.path_to_summary, self.name + ".h5"), "w") as f:
+        with h5py.File(join(self.path_to_summary, self.name + ".h5"), "a") as f:
             for k, m in self.summaries.items():
                 m.save(f)
 
@@ -209,6 +220,9 @@ class Experiment:
             with h5py.File(join(self.path_to_summary, self.name + ".h5"), "r") as f:
                 for k in self.summaries.keys():
                     self.summaries[k].load(f)
+        else:
+            if self.verbose != 0:
+                print("Loading summaries: Did not find summaries to load.")
 
     def save_config(self):
         with open(join(self.path_to_data, self.fname_config), "wb") as f:
@@ -218,3 +232,6 @@ class Experiment:
         if exists(join(self.path_to_data, self.fname_config)):
             with open(join(self.path_to_data, self.fname_config), "rb") as f:
                 self.config = pickle.load(f)
+        else:
+            if self.verbose != 0:
+                print("Loading config: Did not find config to load.")

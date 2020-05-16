@@ -175,7 +175,7 @@ class ExperimentConfig(Config):
             os.makedirs(cls.path_to_summary)
 
         cls.dataset = DatasetConfig.plain_default()
-        cls.networks = NetworkConfig.realtemporalnetwork(path_to_edgelist)
+        cls.networks = NetworkConfig.realtemporalnetwork(path_to_edgelist, window=12)
         cls.dynamics = dynamics_config[dynamics]
         cls.model = model_config[dynamics]
 

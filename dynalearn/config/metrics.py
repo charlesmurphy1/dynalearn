@@ -48,11 +48,15 @@ class MetricsConfig(Config):
         # stationary and meanfield metrics
         cls.num_samples = 100
         cls.num_nodes = 2000
-        cls.epsilon = 1e-2
+        cls.epsilon = 1e-3
         cls.full_data = False
-        cls.burn = 500
+        cls.burn = 300
         cls.parameters = np.concatenate(
-            (np.linspace(0.1, 3, 30), np.linspace(3.1, 10, 20))
+            (
+                np.linspace(0.1, 1.4, 5),
+                np.linspace(1.5, 3.5, 50),
+                np.linspace(3.6, 7, 15),
+            )
         )
 
         cls.finder = "RecurrenceFPF"
@@ -110,12 +114,17 @@ class MetricsConfig(Config):
         # stationary and meanfield metrics
         cls.num_samples = 100
         cls.num_nodes = 2000
-        cls.epsilon = 1e-2
+        cls.epsilon = 2e-3
         cls.full_data = False
-        cls.burn = 500
+        cls.burn = 300
         cls.parameters = np.concatenate(
-            (np.linspace(0.1, 2, 10), np.linspace(2.1, 6, 50), np.linspace(6.1, 10, 10))
+            (
+                np.linspace(0.1, 3.0, 10),
+                np.linspace(3.1, 4.5, 50),
+                np.linspace(4.6, 6, 10),
+            )
         )
+        # cls.parameters = np.linspace(3.25, 4.5, 50)
 
         cls.finder = "RecurrenceFPF"
         cls.num_k = 7
@@ -172,12 +181,17 @@ class MetricsConfig(Config):
         # stationary and meanfield metrics
         cls.num_samples = 100
         cls.num_nodes = 2000
-        cls.epsilon = 1e-2
+        cls.epsilon = 2e-3
         cls.full_data = False
-        cls.burn = 500
+        cls.burn = 300
         cls.parameters = np.concatenate(
-            (np.linspace(0.1, 5, 40), np.linspace(5.1, 10, 10))
+            (
+                np.linspace(0.1, 1.0, 5),
+                np.linspace(1.0, 4.5, 50),
+                np.linspace(4.6, 7, 10),
+            )
         )
+        # cls.parameters = np.linspace(1.0, 4.5, 50)
 
         cls.finder = "RecurrenceFPF"
         cls.num_k = 7
@@ -201,9 +215,9 @@ class MetricsConfig(Config):
 
         # stationary and meanfield metrics
         cls.num_samples = 100
-        cls.epsilon = 1e-2
+        cls.epsilon = 1e-1
         cls.full_data = True
-        cls.burn = 200
+        cls.burn = 500
 
         # forecast metrics
         cls.num_forecasts = 10

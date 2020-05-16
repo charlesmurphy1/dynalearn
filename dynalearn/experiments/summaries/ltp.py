@@ -31,7 +31,6 @@ class LTPSummary(Summary):
 
     def _get_summary_(self, name, in_s, out_s):
         summaries = self.metrics.summaries
-        print(in_s, out_s)
         x, y, yl, yh = LTPMetrics.aggregate(
             self.metrics.data[name],
             self.metrics.data["summaries"],

@@ -166,6 +166,8 @@ experiment.run()
 
 # if args.verbose != 0:
 #     print("---Experiment {0}---".format(args.name))
+# experiment.load_model()
+# experiment.save_config()
 #
 # if args.verbose != 0:
 #     print("\n---Generating data---")
