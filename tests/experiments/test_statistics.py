@@ -1,8 +1,9 @@
 import networkx as nx
 import numpy as np
 from unittest import TestCase
-from dynalearn.dynamics import SIS, DynamicsConfig
+from dynalearn.dynamics import SIS
 from dynalearn.experiments.metrics import StatisticsMetrics, MetricsConfig
+from dynalearn.config import DynamicsConfig
 
 
 class TestStatisticsMetrics(TestCase):

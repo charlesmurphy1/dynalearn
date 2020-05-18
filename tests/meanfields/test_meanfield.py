@@ -1,7 +1,7 @@
 import numpy as np
 import unittest
 
-from dynalearn.dynamics import SIS, DynamicsConfig
+from dynalearn.dynamics import SIS
 from dynalearn.meanfields import SISMeanfield, GenericMeanfield
 from dynalearn.utilities import (
     kronecker_distribution,
@@ -10,6 +10,7 @@ from dynalearn.utilities import (
 )
 from itertools import product
 from scipy.special import binom
+from dynalearn.config import DynamicsConfig
 
 
 class TestMeanfield(unittest.TestCase):
@@ -48,7 +49,7 @@ class TestMeanfield(unittest.TestCase):
         neighbor_states = np.array(all_combinations(self.k, 2))
         index = np.where(np.prod(ns == neighbor_states, axis=-1))[0][0]
         ltp = self.mf.ltp[self.k][index]
-        np.testing.assert_array_equal(ref_ltp, ltp)
+        np.testing.assert_array_almost_equal(ref_ltp, ltp)
 
     def test_update(self):
         self.scenario_uni1()
@@ -85,10 +86,10 @@ class TestMeanfield(unittest.TestCase):
     def test_phi(self):
         self.scenario_uni1()
         ref_phi = self.x[self.k]
-        np.testing.assert_array_equal(ref_phi, self.mf.phi(self.x))
-        np.testing.assert_array_equal(ref_phi, self.ref_mf.phi(self.x))
+        np.testing.assert_array_almost_equal(ref_phi, self.mf.phi(self.x))
+        np.testing.assert_array_almost_equal(ref_phi, self.ref_mf.phi(self.x))
 
         self.scenario_uni2()
         ref_phi = self.x[self.k]
-        np.testing.assert_array_equal(ref_phi, self.mf.phi(self.x))
-        np.testing.assert_array_equal(ref_phi, self.ref_mf.phi(self.x))
+        np.testing.assert_array_almost_equal(ref_phi, self.mf.phi(self.x))
+        np.testing.assert_array_almost_equal(ref_phi, self.ref_mf.phi(self.x))

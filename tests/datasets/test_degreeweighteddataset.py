@@ -1,6 +1,7 @@
 import networkx as nx
 import numpy as np
-from dynalearn.datasets import DegreeWeightedDataset, DatasetConfig, Sampler
+from dynalearn.datasets import DegreeWeightedDataset, Sampler
+from dynalearn.config import DatasetConfig
 from unittest import TestCase
 
 

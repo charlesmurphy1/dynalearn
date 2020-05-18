@@ -2,7 +2,8 @@ import networkx as nx
 import numpy as np
 import torch
 
-from dynalearn.datasets import Dataset, DatasetConfig, Sampler
+from dynalearn.datasets import Dataset, Sampler
+from dynalearn.config import DatasetConfig
 from unittest import TestCase
 
 

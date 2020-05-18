@@ -1,7 +1,8 @@
 import unittest
-from dynalearn.networks import ERNetwork, NetworkConfig
+from dynalearn.networks import ERNetwork
 import networkx as nx
 import numpy as np
+from dynalearn.config import NetworkConfig
 
 
 class ERNetworkTest(unittest.TestCase):

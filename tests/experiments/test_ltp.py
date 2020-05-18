@@ -1,9 +1,10 @@
 import networkx as nx
 import numpy as np
 from unittest import TestCase
-from dynalearn.dynamics import SIS, DynamicsConfig
+from dynalearn.dynamics import SIS
 from dynalearn.experiments.metrics import TrueLTPMetrics, MetricsConfig
-from dynalearn.networks import ERNetwork, NetworkConfig
+from dynalearn.networks import ERNetwork
+from dynalearn.config import DynamicsConfig, NetworkConfig
 
 
 class TestLTPMetrics(TestCase):

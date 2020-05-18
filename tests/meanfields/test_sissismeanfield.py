@@ -1,7 +1,7 @@
 import numpy as np
 import unittest
 
-from dynalearn.dynamics import SISSIS, DynamicsConfig
+from dynalearn.dynamics import SISSIS
 from dynalearn.meanfields import SISSISMeanfield, GenericMeanfield
 from dynalearn.utilities import (
     kronecker_distribution,
@@ -11,6 +11,7 @@ from dynalearn.utilities import (
 )
 from itertools import product
 from scipy.special import binom
+from dynalearn.config import DynamicsConfig
 
 
 class TestMeanfield(unittest.TestCase):

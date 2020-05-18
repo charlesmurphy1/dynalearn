@@ -1,7 +1,8 @@
 import unittest
-from dynalearn.networks import BANetwork, NetworkConfig
+from dynalearn.networks import BANetwork
 import networkx as nx
 import numpy as np
+from dynalearn.config import NetworkConfig
 
 
 class BANetworkTest(unittest.TestCase):
