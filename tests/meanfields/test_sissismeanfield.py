@@ -107,7 +107,7 @@ class TestMeanfield(unittest.TestCase):
 
             phi = self.mf.phi(self.x)
             mltp = self.mf.marginal_ltp(i, j, self.k, phi)
-            self.assertAlmostEqual(ref_mltp, mltp)
+            self.assertAlmostEqual(ref_mltp, mltp, places=6)
 
         self.scenario_uni2()
         for i, j in product(range(self.mf.num_states), range(self.mf.num_states)):
@@ -116,7 +116,7 @@ class TestMeanfield(unittest.TestCase):
 
             phi = self.mf.phi(self.x)
             mltp = self.mf.marginal_ltp(i, j, self.k, phi)
-            self.assertAlmostEqual(ref_mltp, mltp)
+            self.assertAlmostEqual(ref_mltp, mltp, places=6)
 
     def test_phi(self):
         self.scenario_uni1()

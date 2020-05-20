@@ -9,7 +9,7 @@ from torch_geometric.nn.inits import ones
 
 class LearnableEpidemicsTest(unittest.TestCase):
     def setUp(self):
-        self.config = DynamicsConfig.sis_gnn_default()
+        self.config = DynamicsConfig.sissis_gnn_default()
         self.model = LearnableEpidemics(self.config)
         self.num_nodes = 5
         self.num_states = self.config.num_states
@@ -17,6 +17,11 @@ class LearnableEpidemicsTest(unittest.TestCase):
     def scenario_1(self):
         self.model.network = nx.empty_graph(self.num_nodes)
         x = np.ones((self.num_nodes, 1))
+        return x
+
+    def scenario_2(self):
+        self.model.network = nx.barabasi_albert_graph(self.num_nodes, 1)
+        x = np.random.randint(self.model.num_states, size=self.num_nodes)
         return x
 
     def test_predict(self):
@@ -27,6 +32,14 @@ class LearnableEpidemicsTest(unittest.TestCase):
         np.testing.assert_array_almost_equal(y.sum(-1), np.ones(self.num_nodes))
         self.assertFalse(np.any(y == np.nan))
         self.model.nn.reset_parameter()
+
+    def test_predict_random(self):
+        for i in range(10):
+            self.model.nn.reset_parameter()
+            x = self.scenario_2()
+            y = self.model.predict(x)
+            if np.any(y == np.nan):
+                print(x)
 
     def test_sample(self):
         x = self.scenario_1()

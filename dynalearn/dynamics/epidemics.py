@@ -42,7 +42,7 @@ class MultiEpidemics(Epidemics):
         if initial_infected is None:
             initial_infected = self.initial_infected
 
-        if initial_infected == -1:
+        if initial_infected == -1.0:
             p = [np.random.rand() for i in range(self.num_diseases)]
         elif initial_infected >= 0 and initial_infected <= 1:
             p = np.ones(self.num_diseases) * (
@@ -51,8 +51,8 @@ class MultiEpidemics(Epidemics):
         else:
             raise ValueError(
                 "Value for 'initial_infected'"
-                + "must be between [0, 1] or equal to -1:"
-                + f"Received {initial_infected}."
+                + f" must be between [0, 1] or equal to -1:"
+                + f" Received {initial_infected}."
             )
 
         n_infected = [np.random.binomial(self.num_nodes, pp) for pp in p]

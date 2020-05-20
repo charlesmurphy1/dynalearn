@@ -81,10 +81,8 @@ class StationaryStateMetrics(Metrics):
                 g = sample(self.networks.data, 1)[0]
             self.dynamics.network = g
             self.model.network = g
-            x0 = self.dynamics.initial_state(epsilon)
+            x0 = self.dynamics.initial_state(initial_infected=epsilon)
             samples[i] = self.burning(x0, self.burn)
-            if epsilon != None and epsilon != -1:
-                epsilon = 1 - samples[i, 0]
             if self.verbose and pb is not None:
                 pb.update()
         avg_samples = self.avg(samples, axis=-1)

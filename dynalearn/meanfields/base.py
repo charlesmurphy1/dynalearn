@@ -32,7 +32,6 @@ def _numba_marginal_ltp(x, y, k, phi, ltp):
     phi /= phi.sum()
     if k == 0:
         return ltp[0, x, y]
-
     for i, ll in enumerate(numba_all_combinations(k, len(phi))):
         mltp += ltp[i, x, y] * numba_multinomial(k, ll, phi)
     return mltp
