@@ -13,6 +13,8 @@ def weighted_cross_entropy(y_pred, y_true, weights=None):
         if torch.cuda.is_available():
             weights = weights.cuda()
     weights /= weights.sum()
+    y_pred[y_pred <= 0.] = 1e-15
+    y_pred[y_pred >= 1.] = 1 - 1e-15
     loss = weights * (-y_true * torch.log(y_pred)).sum(-1)
     return loss.sum()
 

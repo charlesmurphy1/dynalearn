@@ -164,22 +164,22 @@ config.dataset.with_truth = bool(args.with_truth)
 experiment = dl.Experiment(config, verbose=args.verbose)
 experiment.run()
 
-# if args.verbose != 0:
-#     print("---Experiment {0}---".format(args.name))
-# experiment.load_model()
-# experiment.save_config()
-#
-# if args.verbose != 0:
-#     print("\n---Generating data---")
-# experiment.generate_data()
-# experiment.save_data()
-#
-# if args.verbose != 0:
-#     print("\n---Computing metrics---")
-# experiment.compute_metrics()
-# experiment.save_metrics()
-#
-# if args.verbose != 0:
-#     print("\n---Summarizing---")
-# experiment.compute_summaries()
-# experiment.save_summaries()
+#if args.verbose != 0:
+#    print("---Experiment {0}---".format(args.name))
+#experiment.load_model()
+#experiment.save_config()
+
+#if args.verbose != 0:
+#    print("\n---Generating data---")
+#experiment.generate_data()
+#experiment.save_data()
+
+#if args.verbose != 0:
+#    print("\n---Computing metrics---")
+#experiment.compute_metrics()
+#experiment.save_metrics()
+
+#if args.verbose != 0:
+#    print("\n---Summarizing---")
+#experiment.compute_summaries()
+#experiment.save_summaries()

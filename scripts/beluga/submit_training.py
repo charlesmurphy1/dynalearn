@@ -25,11 +25,11 @@ if not os.path.exists(path_to_outputs):
 num_nodes = 1000
 num_samples_array = [10000]
 config_array = [
-    "sis-er",
+#    "sis-er",
     "sis-ba",
-    "plancksis-er",
+#    "plancksis-er",
     "plancksis-ba",
-    "sissis-er",
+#    "sissis-er",
     "sissis-ba",
 ]
 
@@ -38,8 +38,9 @@ for num_samples, config in product(num_samples_array, config_array):
 
     suffix = "ns" + str(num_samples)
     name = config + "-" + suffix
-    seed = int(time.time()) + i
-    i += 1
+#    seed = int(time.time()) + i
+#    i += 1
+    seed = 0
     script = "#!/bin/bash\n"
     script += "#SBATCH --account=def-aallard\n"
     script += "#SBATCH --time=48:00:00\n"
