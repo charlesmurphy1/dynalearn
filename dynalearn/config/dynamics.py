@@ -63,7 +63,7 @@ class DynamicsConfig(Config):
         cls.num_states = 2
 
         cls.loss = "weighted_cross_entropy"
-        cls.optimizer = OptimizerConfig.radam_default()
+        cls.optimizer = OptimizerConfig.adam_default()
 
         cls.in_activation = "relu"
         cls.att_activation = "relu"
@@ -85,7 +85,7 @@ class DynamicsConfig(Config):
         cls.num_states = 2
 
         cls.loss = "weighted_cross_entropy"
-        cls.optimizer = OptimizerConfig.radam_default()
+        cls.optimizer = OptimizerConfig.adam_default()
 
         cls.in_activation = "relu"
         cls.att_activation = "relu"
@@ -107,7 +107,7 @@ class DynamicsConfig(Config):
         cls.num_states = 4
 
         cls.loss = "weighted_cross_entropy"
-        cls.optimizer = OptimizerConfig.radam_default()
+        cls.optimizer = OptimizerConfig.adam_default()
 
         cls.in_activation = "relu"
         cls.att_activation = "relu"
