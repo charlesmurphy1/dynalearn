@@ -6,6 +6,7 @@ import pickle
 import random
 import torch
 
+from datetime import datetime
 from dynalearn.datasets.getter import get as get_datasets
 from dynalearn.dynamics.getter import get as get_dynamics
 from dynalearn.experiments.metrics.getter import get as get_metrics
@@ -80,7 +81,8 @@ class Experiment:
 
     def run(self):
         if self.verbose != 0:
-            print("---Experiment {0}---".format(self.name))
+            begin = datetime.now()
+            print(f"---Experiment {self.name} {begin.strftime('%Y-%m-%d %H:%M:%S')}---")
 
         if self.verbose != 0:
             print("\n---Generating data---")
@@ -94,6 +96,7 @@ class Experiment:
 
         if self.verbose != 0:
             print("\n---Computing metrics---")
+        self.load_model(restore_best=True)
         self.compute_metrics()
         self.save_metrics()
 
@@ -101,6 +104,16 @@ class Experiment:
             print("\n---Summarizing---")
         self.compute_summaries()
         self.save_summaries()
+
+        if self.verbose != 0:
+            end = datetime.now()
+            print(f"\n---Finished {self.name} {end.strftime('%Y-%m-%d %H:%M:%S')}---")
+            dt = end - begin
+            days = dt.days
+            hours = dt.seconds // 3600
+            mins = dt.seconds // 60
+            secs = dt.seconds
+            print("Computation time: {days:0=2d}-{hours:0=2d}:{mins:0=2d}:{secs:0=2d}")
 
     def save(self):
         self.save_data()
