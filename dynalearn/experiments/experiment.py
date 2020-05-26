@@ -142,6 +142,8 @@ class Experiment:
                 pb = tqdm.tqdm(
                     range(len(self.dataset)), "Partitioning for validation set"
                 )
+            else:
+                pb = None
             p = self.train_details.val_fraction
             b = self.train_details.val_bias
             self.val_dataset = self.dataset.partition(p, bias=b, pb=pb)
@@ -155,6 +157,8 @@ class Experiment:
                 print("Partitioning for test set")
             elif self.verbose == 1:
                 pb = tqdm.tqdm(range(len(self.dataset)), "Partitioning for test set")
+            else:
+                pb = None
             p = self.train_details.test_fraction
             b = self.train_details.test_bias
             self.test_dataset = self.dataset.partition(p, bias=b, pb=pb)
