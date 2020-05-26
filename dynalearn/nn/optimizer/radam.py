@@ -1,4 +1,5 @@
 import math
+import numpy as np
 import torch
 from torch.optim.optimizer import Optimizer, required
 
@@ -50,7 +51,6 @@ class RAdam(Optimizer):
         loss = None
         if closure is not None:
             loss = closure()
-
         for group in self.param_groups:
 
             for p in group["params"]:
@@ -121,6 +121,15 @@ class RAdam(Optimizer):
                             -group["weight_decay"] * group["lr"], p_data_fp32
                         )
                     p_data_fp32.add_(-step_size * group["lr"], exp_avg)
+                is_nan = np.any(np.isnan(p_data_fp32.detach().cpu().numpy()) == 1)
+
+                if (N_sma >= 5 or step_size > 0) and not is_nan:
                     p.data.copy_(p_data_fp32)
+                elif is_nan:
+                    print(f"Encountered Nan in {group} update:")
+                    print(f"N_sma = {N_sma}")
+                    print(f"step_size = {step_size}")
+                    print(f"exp_avg = {exp_avg}")
+                    print(f"exp_avg_sq = {exp_avg_sq}")
 
         return loss

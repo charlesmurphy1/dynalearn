@@ -5,6 +5,7 @@ import os
 import pickle
 import random
 import torch
+import tqdm
 
 from datetime import datetime
 from dynalearn.datasets.getter import get as get_datasets
@@ -82,7 +83,8 @@ class Experiment:
     def run(self):
         if self.verbose != 0:
             begin = datetime.now()
-            print(f"---Experiment {self.name} {begin.strftime('%Y-%m-%d %H:%M:%S')}---")
+            print(f"---Experiment {self.name}---")
+            print(f"Current time: {begin.strftime('%Y-%m-%d %H:%M:%S')}")
 
         if self.verbose != 0:
             print("\n---Generating data---")
@@ -107,13 +109,14 @@ class Experiment:
 
         if self.verbose != 0:
             end = datetime.now()
-            print(f"\n---Finished {self.name} {end.strftime('%Y-%m-%d %H:%M:%S')}---")
+            print(f"\n---Finished {self.name}---")
+            print(f"Current time: {end.strftime('%Y-%m-%d %H:%M:%S')}")
             dt = end - begin
-            days = dt.days
-            hours = dt.seconds // 3600
-            mins = dt.seconds // 60
-            secs = dt.seconds
-            print("Computation time: {days:0=2d}-{hours:0=2d}:{mins:0=2d}:{secs:0=2d}")
+            days = dt.seconds // (24 * 60 * 60)
+            hours = dt.seconds // (60 * 60) - (days * 24)
+            mins = dt.seconds // 60 - (days * 24 + hours) * 60
+            secs = dt.seconds - ((days * 24 + hours) * 60 + mins) * 60
+            print(f"Computation time: {days:0=2d}-{hours:0=2d}:{mins:0=2d}:{secs:0=2d}")
 
     def save(self):
         self.save_data()
@@ -131,22 +134,30 @@ class Experiment:
 
     def generate_data(self):
         self.dataset.generate(self)
+
         if "val_fraction" in self.train_details.__dict__:
-            if self.verbose != 0:
+            if self.verbose != 0 and self.verbose != 1:
                 print("Partitioning for validation set")
+            elif self.verbose == 1:
+                pb = tqdm.tqdm(
+                    range(len(self.dataset)), "Partitioning for validation set"
+                )
             p = self.train_details.val_fraction
             b = self.train_details.val_bias
-            self.val_dataset = self.dataset.partition(p, bias=b)
+            self.val_dataset = self.dataset.partition(p, bias=b, pb=pb)
             if np.sum(self.val_dataset.network_weights) == 0:
                 if self.verbose != 0:
                     print("After partitioning, validation set is still empty.")
                 self.val_dataset = None
+
         if "test_fraction" in self.train_details.__dict__:
-            if self.verbose != 0:
+            if self.verbose != 0 and self.verbose != 1:
                 print("Partitioning for test set")
+            elif self.verbose == 1:
+                pb = tqdm.tqdm(range(len(self.dataset)), "Partitioning for test set")
             p = self.train_details.test_fraction
             b = self.train_details.test_bias
-            self.test_dataset = self.dataset.partition(p, bias=b)
+            self.test_dataset = self.dataset.partition(p, bias=b, pb=pb)
             if np.sum(self.val_dataset.network_weights) == 0:
                 if self.verbose != 0:
                     print("After partitioning, test set is still empty.")

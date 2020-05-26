@@ -54,12 +54,14 @@ class GraphNeuralNetwork(torch.nn.Module):
             self._do_epoch_(
                 dataset, batch_size=batch_size, callbacks=callbacks, verbose=verbose
             )
-            t1 = time.time()
 
-            logs = {"epoch": self.history.epoch + 1, "time": t1 - t0}
-            logs.update(self.evaluate(dataset, metrics))
+            train_metrics = self.evaluate(dataset, metrics)
             if val_dataset is not None:
-                logs.update(self.evaluate(val_dataset, metrics, "val"))
+                val_metrics = self.evaluate(val_dataset, metrics, "val")
+            t1 = time.time()
+            logs = {"epoch": self.history.epoch + 1, "time": t1 - t0}
+            logs.update(train_metrics)
+            logs.update(val_metrics)
             self.history.update_epoch(logs)
             callbacks.on_epoch_end(self.history.epoch, logs)
             if verbose != 0:

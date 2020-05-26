@@ -77,7 +77,10 @@ class Dataset(object):
         gt_targets = {}
 
         if experiment.verbose == 1:
-            pb = tqdm.tqdm(range(details.num_networks * details.num_samples))
+            pb = tqdm.tqdm(
+                range(details.num_networks * details.num_samples),
+                "Generating training set",
+            )
         for i in range(details.num_networks):
             g = m_network.generate()
             networks[i] = g
@@ -107,7 +110,7 @@ class Dataset(object):
         data["networks"] = networks
         self.data = data
 
-    def partition(self, node_fraction, bias=0):
+    def partition(self, node_fraction, bias=0, pb=None):
         dataset = type(self)(self.config, self._data)
         weights = {i: np.zeros(w.shape) for i, w in self.weights.items()}
         for i in self.networks.keys():
@@ -121,6 +124,8 @@ class Dataset(object):
                 weights[i][j] *= 0
                 weights[i][j][remove_nodes] = self._weights[i][j][remove_nodes] * 1
                 self._weights[i][j][remove_nodes] = 0
+                if pb is not None:
+                    pb.update()
         dataset.weights = weights
         return dataset
 
