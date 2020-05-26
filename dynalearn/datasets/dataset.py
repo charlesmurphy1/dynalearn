@@ -76,7 +76,9 @@ class Dataset(object):
         targets = {}
         gt_targets = {}
 
-        if experiment.verbose == 1:
+        if experiment.verbose != 0 and experiment.verbose != 1:
+            print("Generating training set")
+        elif experiment.verbose == 1:
             pb = tqdm.tqdm(
                 range(details.num_networks * details.num_samples),
                 "Generating training set",
