@@ -124,6 +124,7 @@ class EpidemicSSMetrics(StationaryStateMetrics):
     def __init__(self, config, verbose=0):
         StationaryStateMetrics.__init__(self, config, verbose)
         self.epsilon = config.epsilon
+        self.adaptive = config.adaptive
 
         if self.parameters is None:
             self.names = ["absorbing_stationary_state", "epidemic_stationary_state"]
@@ -171,15 +172,16 @@ class EpidemicSSMetrics(StationaryStateMetrics):
         for p in params:
             stats = self._stationary_state_(p, epsilon, pb)
             stationary_states.append(stats)
-            if self.full_data:
-                epsilon = 1 - np.mean(stats, axis=-1)[0]
-            else:
-                epsilon = 1 - stats[0, 0]
+            if self.adaptive:
+                if self.full_data:
+                    epsilon = 1 - np.mean(stats, axis=-1)[0]
+                else:
+                    epsilon = 1 - stats[0, 0]
 
-            if epsilon < self.epsilon:
-                epsilon = self.epsilon
-            elif epsilon > 1 - self.epsilon:
-                epsilon = 1 - self.epsilon
+                if epsilon < self.epsilon:
+                    epsilon = self.epsilon
+                elif epsilon > 1 - self.epsilon:
+                    epsilon = 1 - self.epsilon
         if ascend:
             return np.array(stationary_states)
         else:

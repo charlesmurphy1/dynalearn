@@ -46,11 +46,12 @@ class MetricsConfig(Config):
         cls.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
 
         # stationary and meanfield metrics
-        cls.num_samples = 100
+        cls.num_samples = 20
+        cls.burn = 1000
+        cls.adaptive = False
         cls.num_nodes = 2000
         cls.epsilon = 1e-3
         cls.full_data = False
-        cls.burn = 300
         cls.parameters = np.concatenate(
             (
                 np.linspace(0.1, 1.4, 5),
@@ -112,11 +113,12 @@ class MetricsConfig(Config):
         cls.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
 
         # stationary and meanfield metrics
-        cls.num_samples = 100
+        cls.num_samples = 20
+        cls.burn = 1000
+        cls.adaptive = False
         cls.num_nodes = 2000
         cls.epsilon = 2e-3
         cls.full_data = False
-        cls.burn = 300
         cls.parameters = np.concatenate(
             (
                 np.linspace(0.1, 3.0, 10),
@@ -179,11 +181,12 @@ class MetricsConfig(Config):
         cls.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
 
         # stationary and meanfield metrics
-        cls.num_samples = 100
+        cls.num_samples = 20
+        cls.burn = 1000
+        cls.adaptive = False
         cls.num_nodes = 2000
         cls.epsilon = 2e-3
         cls.full_data = False
-        cls.burn = 300
         cls.parameters = np.concatenate(
             (
                 np.linspace(0.1, 1.0, 5),
