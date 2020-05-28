@@ -25,21 +25,22 @@ if not os.path.exists(path_to_outputs):
 num_nodes = 1000
 num_samples_array = [10000]
 config_array = [
-#    "sis-er",
+    #    "sis-er",
     "sis-ba",
-#    "plancksis-er",
+    #    "plancksis-er",
     "plancksis-ba",
-#    "sissis-er",
+    #    "sissis-er",
     "sissis-ba",
 ]
+tasks = ["generate_data", "compute_metrics", "compute_summaries"]
 
 i = 0
 for num_samples, config in product(num_samples_array, config_array):
 
     suffix = "ns" + str(num_samples)
     name = config + "-" + suffix
-#    seed = int(time.time()) + i
-#    i += 1
+    #    seed = int(time.time()) + i
+    #    i += 1
     seed = 0
     script = "#!/bin/bash\n"
     script += "#SBATCH --account=def-aallard\n"
@@ -60,6 +61,7 @@ for num_samples, config in product(num_samples_array, config_array):
     script += " --batch_size {0}".format(1)
     script += " --with_truth {0}".format(0)
     script += " --mode {0}".format("complete")
+    script += " --tasks {0}".format(" ".join(tasks))
     script += " --path {0}".format(path_to_data)
     script += " --path_to_best {0}".format(path_to_best)
     script += " --path_to_summary {0}".format(path_to_summary)
