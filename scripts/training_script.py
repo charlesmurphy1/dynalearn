@@ -119,6 +119,9 @@ parser.add_argument(
     default="fast",
 )
 parser.add_argument(
+    "--tasks", type=str, metavar="TASKS", help="Experiment tasks.", nargs="+"
+)
+parser.add_argument(
     "--path",
     type=str,
     metavar="PATH",
@@ -153,6 +156,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 config = get_config(args)
+
 config.train_details.num_samples = int(args.num_samples)
 config.train_details.batch_size = args.batch_size
 config.networks.num_nodes = args.num_nodes
@@ -162,24 +166,24 @@ config.dataset.resampling_time = int(args.resampling_time)
 config.dataset.with_truth = bool(args.with_truth)
 
 experiment = dl.Experiment(config, verbose=args.verbose)
-experiment.run()
+experiment.run(args.tasks)
 
-#if args.verbose != 0:
+# if args.verbose != 0:
 #    print("---Experiment {0}---".format(args.name))
-#experiment.load_model()
-#experiment.save_config()
+# experiment.load_model()
+# experiment.save_config()
 
-#if args.verbose != 0:
+# if args.verbose != 0:
 #    print("\n---Generating data---")
-#experiment.generate_data()
-#experiment.save_data()
+# experiment.generate_data()
+# experiment.save_data()
 
-#if args.verbose != 0:
+# if args.verbose != 0:
 #    print("\n---Computing metrics---")
-#experiment.compute_metrics()
-#experiment.save_metrics()
+# experiment.compute_metrics()
+# experiment.save_metrics()
 
-#if args.verbose != 0:
+# if args.verbose != 0:
 #    print("\n---Summarizing---")
-#experiment.compute_summaries()
-#experiment.save_summaries()
+# experiment.compute_summaries()
+# experiment.save_summaries()

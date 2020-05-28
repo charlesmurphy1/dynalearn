@@ -74,65 +74,69 @@ class Experiment:
             np.random.seed(config.seed)
             torch.manual_seed(config.seed)
 
+        self.__all_tasks__ = [
+            "generate_data",
+            "train_model",
+            "compute_metrics",
+            "compute_summaries",
+        ]
+
     @classmethod
     def from_file(cls, path_to_config):
         with open(path_to_config, "rb") as config_file:
             config = pickle.load(config_file)
         return cls(config)
 
-    def run(self):
+    def run(self, tasks=None):
         if self.verbose != 0:
             begin = datetime.now()
             print(f"---Experiment {self.name}---")
             print(f"Current time: {begin.strftime('%Y-%m-%d %H:%M:%S')}")
 
-        if self.verbose != 0:
-            print("\n---Generating data---")
-        self.generate_data()
-        self.save_data()
+        tasks = tasks or self.__all_tasks__
 
-        if self.verbose != 0:
-            print("\n---Training model---")
-        self.train_model()
-        self.save_model()
-
-        if self.verbose != 0:
-            print("\n---Computing metrics---")
-        self.load_model(restore_best=True)
-        self.compute_metrics()
-        self.save_metrics()
-
-        if self.verbose != 0:
-            print("\n---Summarizing---")
-        self.compute_summaries()
-        self.save_summaries()
+        for t in tasks:
+            if t in self.__all_tasks__:
+                f = getattr(self, t)
+                f()
+            else:
+                raise ValueError(
+                    f"{t} is an invalid task, possible tasks are {self.__all_tasks__}"
+                )
 
         if self.verbose != 0:
             end = datetime.now()
             print(f"\n---Finished {self.name}---")
             print(f"Current time: {end.strftime('%Y-%m-%d %H:%M:%S')}")
             dt = end - begin
-            days = dt.seconds // (24 * 60 * 60)
-            hours = dt.seconds // (60 * 60) - (days * 24)
-            mins = dt.seconds // 60 - (days * 24 + hours) * 60
-            secs = dt.seconds - ((days * 24 + hours) * 60 + mins) * 60
+            days = dt.days
+            hours, r = divmod(dt.seconds, 60 * 60)
+            mins, r = divmod(r, 60)
+            secs = r
             print(f"Computation time: {days:0=2d}-{hours:0=2d}:{mins:0=2d}:{secs:0=2d}")
 
-    def save(self):
-        self.save_data()
-        self.save_model()
-        self.save_metrics()
-        self.save_summaries()
-        self.save_config()
+    def train_model(self, save=True):
+        if self.verbose != 0:
+            print("\n---Training model---")
+        self.model.nn.fit(
+            self.dataset,
+            epochs=self.train_details.epochs,
+            batch_size=self.train_details.batch_size,
+            val_dataset=self.val_dataset,
+            metrics=self.train_metrics,
+            callbacks=self.callbacks,
+            verbose=self.verbose,
+        )
 
-    def load(self):
-        self.load_data()
-        self.load_model()
-        self.load_metrics()
-        self.load_summaries()
-        self.load_config()
+        if save:
+            self.save_model()
 
-    def generate_data(self):
+        if restore_best:
+            self.load_model()
+
+    def generate_data(self, save=True):
+        if self.verbose != 0:
+            print("\n---Generating data---")
         self.dataset.generate(self)
 
         if "val_fraction" in self.train_details.__dict__:
@@ -165,9 +169,71 @@ class Experiment:
                     print("After partitioning, test set is still empty.")
                 self.val_dataset = None
 
+        if save:
+            self.save_data()
+
+    def compute_metrics(self, save=True, restore_best=True):
+        if self.verbose != 0:
+            print("\n---Computing metrics---")
+
+        if restore_best:
+            self.load_model()
+
+        if save:
+            with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
+                for k, m in self.metrics.items():
+                    m.compute(self, verbose=self.verbose)
+                    m.save(f)
+        else:
+            for k, m in self.metrics.items():
+                m.compute(self, verbose=self.verbose)
+
+    def compute_summaries(self, save=True):
+        if save:
+            with h5py.File(join(self.path_to_summary, self.name + ".h5"), "a") as f:
+                for k, m in self.summaries.items():
+                    m.compute(self, verbose=self.verbose)
+                    m.save(f)
+        else:
+            for k, m in self.summaries.items():
+                m.compute(self, verbose=self.verbose)
+
+    def save(self):
+        self.save_data()
+        self.save_model()
+        self.save_metrics()
+        self.save_summaries()
+        self.save_config()
+
     def save_data(self):
         with h5py.File(join(self.path_to_data, self.fname_data), "w") as f:
             self.dataset.save(f)
+
+    def save_model(self):
+        self.model.nn.save_history(join(self.path_to_data, self.fname_history))
+        self.model.nn.save_optimizer(join(self.path_to_data, self.fname_optim))
+        self.model.nn.save_weights(join(self.path_to_data, self.fname_model))
+
+    def save_metrics(self):
+        with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
+            for k, m in self.metrics.items():
+                m.save(f)
+
+    def save_summaries(self):
+        with h5py.File(join(self.path_to_summary, self.name + ".h5"), "a") as f:
+            for k, m in self.summaries.items():
+                m.save(f)
+
+    def save_config(self):
+        with open(join(self.path_to_data, self.fname_config), "wb") as f:
+            pickle.dump(self.config, f)
+
+    def load(self):
+        self.load_data()
+        self.load_model()
+        self.load_metrics()
+        self.load_summaries()
+        self.load_config()
 
     def load_data(self):
         if exists(join(self.path_to_data, self.fname_data)):
@@ -176,22 +242,6 @@ class Experiment:
         else:
             if self.verbose != 0:
                 print("Loading data: Did not find data to load.")
-
-    def train_model(self):
-        self.model.nn.fit(
-            self.dataset,
-            epochs=self.train_details.epochs,
-            batch_size=self.train_details.batch_size,
-            val_dataset=self.val_dataset,
-            metrics=self.train_metrics,
-            callbacks=self.callbacks,
-            verbose=self.verbose,
-        )
-
-    def save_model(self):
-        self.model.nn.save_history(join(self.path_to_data, self.fname_history))
-        self.model.nn.save_optimizer(join(self.path_to_data, self.fname_optim))
-        self.model.nn.save_weights(join(self.path_to_data, self.fname_model))
 
     def load_model(self, restore_best=True):
         if exists(join(self.path_to_data, self.fname_history)):
@@ -214,15 +264,6 @@ class Experiment:
             if self.verbose != 0:
                 print("Loading model: Did not find model to load.")
 
-    def compute_metrics(self):
-        for k, m in self.metrics.items():
-            m.compute(self, verbose=self.verbose)
-
-    def save_metrics(self):
-        with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
-            for k, m in self.metrics.items():
-                m.save(f)
-
     def load_metrics(self):
         if exists(join(self.path_to_data, self.fname_metrics)):
             with h5py.File(join(self.path_to_data, self.fname_metrics), "r") as f:
@@ -232,15 +273,6 @@ class Experiment:
             if self.verbose != 0:
                 print("Loading metrics: Did not find metrics to load.")
 
-    def compute_summaries(self):
-        for k, m in self.summaries.items():
-            m.compute(self, verbose=self.verbose)
-
-    def save_summaries(self):
-        with h5py.File(join(self.path_to_summary, self.name + ".h5"), "a") as f:
-            for k, m in self.summaries.items():
-                m.save(f)
-
     def load_summaries(self):
         if exists(join(self.path_to_summary, self.name + ".h5")):
             with h5py.File(join(self.path_to_summary, self.name + ".h5"), "r") as f:
@@ -249,10 +281,6 @@ class Experiment:
         else:
             if self.verbose != 0:
                 print("Loading summaries: Did not find summaries to load.")
-
-    def save_config(self):
-        with open(join(self.path_to_data, self.fname_config), "wb") as f:
-            pickle.dump(self.config, f)
 
     def load_config(self, best=True):
         if exists(join(self.path_to_data, self.fname_config)):
