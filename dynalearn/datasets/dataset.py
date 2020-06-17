@@ -2,9 +2,9 @@ import copy
 import h5py
 import networkx as nx
 import numpy as np
-import torch
 import tqdm
 
+from abc import abstractmethod
 from itertools import islice, chain
 from .sampler import Sampler
 from dynalearn.utilities import to_edge_index
@@ -12,15 +12,13 @@ from dynalearn.config import Config
 
 
 class Dataset(object):
-    def __init__(self, config=None, data=None, **kwargs):
+    def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
         self.config = config
         self.sampler = Sampler(self)
         self.bias = config.bias
-        self.resampling_time = config.resampling_time
-        self.with_truth = config.with_truth
         if data is not None:
             self.data = data
         else:
@@ -29,18 +27,13 @@ class Dataset(object):
             self.num_states = None
             self.indices = {}
 
+    @abstractmethod
+    def _generate_sequence_(self, m_network, m_dynamics, details, pb=None):
+        raise NotImplemented()
+
+    @abstractmethod
     def __getitem__(self, index):
-        i, j = self.indices[index]
-        edge_index = to_edge_index(self.networks[i])
-        x = torch.FloatTensor(self.inputs[i][j])
-        if self.with_truth:
-            y = torch.FloatTensor(self.gt_targets[i][j])
-        else:
-            y = torch.LongTensor(self.targets[i][j])
-        w = torch.FloatTensor(self.weights[i][j])
-        w[w > 0] = w[w > 0] ** (-self.bias)
-        w /= w.sum()
-        return (x, edge_index), y, w
+        raise NotImplemented()
 
     def __len__(self):
         return np.sum([s.shape[0] for i, s in self.data["inputs"].items()])
@@ -71,46 +64,21 @@ class Dataset(object):
         m_dynamics = experiment.dynamics
         details = experiment.train_details
         self.num_states = int(m_dynamics.num_states)
-        networks = {}
-        inputs = {}
-        targets = {}
-        gt_targets = {}
 
         if experiment.verbose != 0 and experiment.verbose != 1:
             print("Generating training set")
-        elif experiment.verbose == 1:
+
+        if experiment.verbose == 1:
             pb = tqdm.tqdm(
                 range(details.num_networks * details.num_samples),
                 "Generating training set",
             )
-        for i in range(details.num_networks):
-            g = m_network.generate()
-            networks[i] = g
-            m_dynamics.network = g
-            x = m_dynamics.initial_state()
-            inputs[i] = np.zeros((details.num_samples, m_network.num_nodes))
-            targets[i] = np.zeros((details.num_samples, m_network.num_nodes))
-            gt_targets[i] = np.zeros(
-                (details.num_samples, m_network.num_nodes, self.num_states)
-            )
-            for j in range(details.num_samples):
-                inputs[i][j] = x
-                targets[i][j] = m_dynamics.sample(x)
-                gt_targets[i][j] = m_dynamics.predict(x)
-                if j % self.resampling_time == 0:
-                    x = m_dynamics.initial_state()
-                else:
-                    x = targets[i][j]
-                if experiment.verbose == 1:
-                    pb.update()
+        else:
+            pb = None
+
+        self.data = self._generate_sequence(m_network, m_dynamics, details, pb=pb)
         if experiment.verbose == 1:
             pb.close()
-        data = {}
-        data["inputs"] = inputs
-        data["targets"] = targets
-        data["gt_targets"] = gt_targets
-        data["networks"] = networks
-        self.data = data
 
     def partition(self, node_fraction, bias=0, pb=None):
         dataset = type(self)(self.config, self._data)
@@ -247,38 +215,4 @@ class DegreeWeightedDataset(Dataset):
         for i in self.networks.keys():
             for j, k in enumerate(degrees[i]):
                 weights[i][:, j] = counts[k]
-        return weights
-
-
-class StateWeightedDataset(Dataset):
-    def _get_weights_(self):
-        weights = {}
-        counts = {}
-        degrees = []
-        for i, g in self.networks.items():
-            adj = nx.to_numpy_array(g)
-            for j, s in enumerate(self.inputs[i]):
-                ns = np.zeros((s.shape[0], self.num_states))
-                for k in range(self.num_states):
-                    ns[:, k] = adj @ (s == k)
-
-                for k in range(s.shape[0]):
-                    ss = (s[k], *ns[k])
-                    if ss in counts:
-                        counts[ss] += 1
-                    else:
-                        counts[ss] = 1
-
-        for i, g in self.networks.items():
-            weights[i] = np.zeros(self.inputs[i].shape)
-            adj = nx.to_numpy_array(g)
-            for j, s in enumerate(self.inputs[i]):
-                ns = np.zeros((s.shape[0], self.num_states))
-                for k in range(self.num_states):
-                    ns[:, k] = adj @ (s == k)
-
-                for k in range(s.shape[0]):
-                    ss = (s[k], *ns[k])
-                    weights[i][j, k] = counts[ss]
-
         return weights

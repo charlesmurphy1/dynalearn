@@ -8,8 +8,6 @@ class DatasetConfig(Config):
         cls.name = "Dataset"
         cls.bias = 0
         cls.replace = True
-        cls.with_truth = False
-        cls.resampling_time = 2
         return cls
 
     @classmethod
@@ -18,8 +16,6 @@ class DatasetConfig(Config):
         cls.name = "DegreeWeightedDataset"
         cls.bias = 0.5
         cls.replace = True
-        cls.with_truth = False
-        cls.resampling_time = 2
         return cls
 
     @classmethod
@@ -28,6 +24,4 @@ class DatasetConfig(Config):
         cls.name = "StateWeightedDataset"
         cls.bias = 0.5
         cls.replace = True
-        cls.with_truth = True
-        cls.resampling_time = 2
         return cls

@@ -50,6 +50,8 @@ class TrainingConfig(Config):
         cls.num_nodes = 1000
         cls.num_networks = 1
         cls.num_samples = 10000
+        cls.resampling_time = 2
+        cls.with_truth = False
 
         return cls
 
@@ -64,6 +66,7 @@ class TrainingConfig(Config):
         cls.num_networks = 1
         cls.num_samples = 10
         cls.resampling_time = 2
+        cls.with_truth = True
 
         return cls
 
