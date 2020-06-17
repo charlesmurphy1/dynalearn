@@ -14,7 +14,7 @@ import time
 import torch
 
 
-class LearnableEpidemics(DynamicsModel):
+class TrainableEpidemics(DynamicsModel):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
@@ -43,25 +43,3 @@ class LearnableEpidemics(DynamicsModel):
             x = x.cuda()
             edge_index = self.edge_index.cuda()
         return self.nn.forward(x, edge_index).cpu().detach().numpy()
-
-    # @property
-    # def network(self):
-    #     if self._network is None:
-    #         raise ValueError("No network has been parsed to the dynamics.")
-    #     else:
-    #         return self._network
-    #
-    # @network.setter
-    # def network(self, network):
-    #     self._network = network
-    #     if not network.is_directed():
-    #         network = nx.to_directed(network)
-    #     self._edge_index = to_edge_index(network)
-    #     self._num_nodes = self._network.number_of_nodes()
-    #
-    # @property
-    # def edge_index(self):
-    #     if self._edge_index is None:
-    #         raise ValueError("No network has been parsed to the dynamics.")
-    #     else:
-    #         return self._edge_index
