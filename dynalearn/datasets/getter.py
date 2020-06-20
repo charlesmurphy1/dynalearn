@@ -1,10 +1,20 @@
-from dynalearn.datasets import Dataset, DegreeWeightedDataset, StateWeightedDataset
+from dynalearn.datasets import (
+    MarkovDataset,
+    DegreeWeightedMarkovDataset,
+    StateWeightedMarkovDataset,
+    GeneralMarkovDataset,
+    DegreeWeightedGeneralMarkovDataset,
+    StateWeightedGeneralMarkovDataset,
+)
 
 
 __datasets__ = {
-    "Dataset": Dataset,
-    "DegreeWeightedDataset": DegreeWeightedDataset,
-    "StateWeightedDataset": StateWeightedDataset,
+    "MarkovDataset": MarkovDataset,
+    "DegreeWeightedMarkovDataset": DegreeWeightedMarkovDataset,
+    "StateWeightedMarkovDataset": StateWeightedMarkovDataset,
+    "GeneralMarkovDataset": GeneralMarkovDataset,
+    "DegreeWeightedGeneralMarkovDataset": DegreeWeightedGeneralMarkovDataset,
+    "StateWeightedGeneralMarkovDataset": StateWeightedGeneralMarkovDataset,
 }
 
 

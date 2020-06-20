@@ -1,17 +1,19 @@
 import networkx as nx
 import numpy as np
-from dynalearn.datasets import DegreeWeightedDataset, Sampler
+from dynalearn.datasets import StateWeightedMarkovDataset, Sampler
 from dynalearn.config import DatasetConfig
 from unittest import TestCase
 
 
 class DegreeWeightedDatasetTest(TestCase):
     def setUp(self):
-        self.config = DatasetConfig.state_weighted_default()
-        self.dataset = DegreeWeightedDataset(self.config)
+        self.config = DatasetConfig.state_weighted_markov_default()
+        self.dataset = StateWeightedMarkovDataset(self.config)
+        self.num_states = 2
         self.num_networks = 5
         self.num_samples = 6
         self.num_nodes = 10
+        self.dataset.num_states = self.num_states
         return
 
     def scenario_1(self):
@@ -28,7 +30,7 @@ class DegreeWeightedDatasetTest(TestCase):
         data["networks"] = networks
         data["inputs"] = inputs
         data["targets"] = targets
-        self.dataset.data = data
+        self.dataset._data = data
 
     def scenario_2(self):
         networks = {
@@ -46,12 +48,12 @@ class DegreeWeightedDatasetTest(TestCase):
         data["networks"] = networks
         data["inputs"] = inputs
         data["targets"] = targets
-        self.dataset.data = data
+        self.dataset._data = data
 
     def test_get_weights(self):
         self.scenario_1()
         weights = self.dataset._get_weights_()
-        x = self.num_networks * self.num_nodes
+        x = self.num_networks * self.num_nodes * self.num_samples
 
         for i in range(self.num_networks):
             ref_weights = np.ones((self.num_samples, self.num_nodes)) * x
@@ -59,7 +61,7 @@ class DegreeWeightedDatasetTest(TestCase):
 
         self.scenario_2()
         weights = self.dataset._get_weights_()
-        x = self.num_networks * self.num_nodes
+        x = self.num_networks * self.num_nodes * self.num_samples
 
         for i in range(self.num_networks):
             ref_weights = np.ones((self.num_samples, self.num_nodes)) * x

@@ -4,6 +4,7 @@ import torch
 import matplotlib.pyplot as plt
 from numba import jit
 from cmath import exp, log
+from math import log as mlog
 
 color_dark = {
     "blue": "#1f77b4",
@@ -53,13 +54,30 @@ def from_binary(x):
     return (x * 2 ** (n)).sum()
 
 
-def to_binary(x, max_val):
+def to_binary(x, max_val=None):
+    max_val = max_val or 2 ** np.floor(np.log2(x) + 1)
     r = np.zeros(np.log2(max_val).astype("int"))
     r0 = x
     while r0 > 0:
         y = np.floor(np.log2(r0)).astype("int")
         r[y] = 1
         r0 -= 2 ** y
+    return r[::-1]
+
+
+def from_nary(x, base=2):
+    n = np.arange(x.shape[0])[::-1]
+    return (x * base ** (n)).sum()
+
+
+def to_nary(x, base=2, max_val=None):
+    max_val = max_val or base ** np.floor(log(x, base) + 1)
+    r = np.zeros(int(log(max_val, base)))
+    r0 = x
+    while r0 > 0:
+        y = int(np.floor(log(r0, base)))
+        r[y] += 1
+        r0 -= base ** y
     return r[::-1]
 
 
@@ -142,14 +160,36 @@ def k_l_grid(k_arr, l_arr, s_dim):
 
 
 def onehot(x, num_class=None, dim=-1):
+    if type(x) == np.ndarray:
+        return onehot_numpy(x, num_class, dim)
+    elif type(x) == torch.Tensor:
+        return onehot_torch(x, num_class, dim)
+    else:
+        raise ValueError(
+            f"{type(x)} is an invalid type, valid types are [np.array, torch.Tensor]"
+        )
+
+
+def onehot_torch(x, num_class=None, dim=-1):
     if num_class is None:
-        num_class = int(x.max())
+        num_class = num_class or int(x.max()) + 1
     x_onehot = torch.zeros(*tuple(x.size()), num_class).float()
     if torch.cuda.is_available():
         x_onehot = x_onehot.cuda()
     x = x.long().view(-1, 1)
     x_onehot.scatter_(dim, x, 1)
     return x_onehot
+
+
+def onehot_numpy(x, num_class=None, dim=-1):
+    num_class = num_class or int(x.max()) + 1
+    y = np.zeros((*x.shape, num_class))
+    i_shape = x.shape
+    x = x.reshape(-1)
+    y = y.reshape(-1, num_class)
+    y[np.arange(x.size), x.astype("int")] = 1
+    y = y.reshape((*i_shape, num_class))
+    return y
 
 
 def to_edge_index(g):

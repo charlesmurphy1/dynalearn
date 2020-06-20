@@ -4,9 +4,10 @@ import torch
 from dynalearn.datasets import MarkovDataset, DegreeWeightedDataset
 from dynalearn.config import Config
 from dynalearn.utilities import from_nary
+from dynalearn.utilities import to_edge_index, onehot
 
 
-class NonMarkovDataset(MarkovDataset):
+class GeneralMarkovDataset(MarkovDataset):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
@@ -18,26 +19,27 @@ class NonMarkovDataset(MarkovDataset):
         i, j = self.indices[index]
         edge_index = to_edge_index(self.networks[i])
         x = torch.FloatTensor(self.inputs[i][j : j + self.window])
-        if self.with_truth:
-            y = torch.FloatTensor(self.gt_targets[i][j + self.window])
+        if len(self.targets[i][j].shape) == 1:
+            y = onehot(self.targets[i][j + self.window])
         else:
-            y = torch.LongTensor(self.targets[i][j + self.window])
+            y = self.targets[i][j + self.window]
+        y = torch.FloatTensor(y)
         w = torch.FloatTensor(self.weights[i][j + self.window])
         w[w > 0] = w[w > 0] ** (-self.bias)
         w /= w.sum()
         return (x, edge_index), y, w
 
 
-class DegreeWeightedNonMarkovDataset(NonMarkovDataset, DegreeWeightedDataset):
+class DegreeWeightedGeneralMarkovDataset(GeneralMarkovDataset, DegreeWeightedDataset):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
-        NonMarkovDataset.__init__(self, config)
+        GeneralMarkovDataset.__init__(self, config)
         DegreeWeightedDataset.__init__(self, config)
 
 
-class StateWeightedNonMarkovDataset(MarkovNonDataset):
+class StateWeightedGeneralMarkovDataset(GeneralMarkovDataset):
     def _get_counts_(self):
         counts = {}
         degrees = []

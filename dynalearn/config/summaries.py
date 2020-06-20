@@ -109,6 +109,48 @@ class SummariesConfig(Config):
         return cls
 
     @classmethod
+    def hidden_sissis_fast(cls):
+        cls = cls()
+        cls.names = [
+            "TrueLTPSummary",
+            "GNNLTPSummary",
+            "MLELTPSummary",
+            # "TrueStarLTPSummary",
+            # "GNNStarLTPSummary",
+            # "TrueGNNStarJSDErrorSummary",
+            # "TrueMLEJSDErrorSummary",
+            # "TrueUniformStarJSDErrorSummary",
+            "StatisticsSummary",
+        ]
+        cls.axis = 1
+        cls.transitions = [(0, 1), (1, 0)]
+        cls.err_reduce = "percentile"
+        return cls
+
+    @classmethod
+    def hidden_sissis_complete(cls):
+        cls = cls()
+        cls.names = [
+            "TrueLTPSummaries",
+            "GNNLTPSummaries",
+            "MLELTPSummaries",
+            # "TrueStarLTPSummary",
+            # "GNNStarLTPSummary",
+            # "TrueGNNStarJSDErrorSummary",
+            # "TrueMLEJSDErrorSummary",
+            # "TrueUniformStarJSDErrorSummary",
+            "StatisticsSummary",
+            "TruePESSSummary",
+            "GNNPESSSummary",
+            "TruePEMFSummary",
+            "GNNPEMFSummary",
+        ]
+        cls.axis = 1
+        cls.transitions = [(0, 1), (1, 0)]
+        cls.err_reduce = "percentile"
+        return cls
+
+    @classmethod
     def rtn_forecast(cls):
         cls = cls()
         cls.names = [

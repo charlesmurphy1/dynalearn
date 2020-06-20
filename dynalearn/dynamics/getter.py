@@ -1,7 +1,7 @@
 from .simple import *
 from .complex import *
 from .interacting import *
-from .learnable import *
+from .trainable import *
 
 
 __dynamics__ = {
@@ -16,7 +16,8 @@ __dynamics__ = {
     "PlanckSIS": PlanckSIS,
     "PlanckSIR": PlanckSIR,
     "SISSIS": SISSIS,
-    "LearnableEpidemics": LearnableEpidemics,
+    "HiddenSISSIS": HiddenSISSIS,
+    "TrainableEpidemics": TrainableEpidemics,
 }
 
 

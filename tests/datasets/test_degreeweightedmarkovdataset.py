@@ -1,14 +1,14 @@
 import networkx as nx
 import numpy as np
-from dynalearn.datasets import DegreeWeightedDataset, Sampler
+from dynalearn.datasets import DegreeWeightedMarkovDataset, Sampler
 from dynalearn.config import DatasetConfig
 from unittest import TestCase
 
 
 class DegreeWeightedDatasetTest(TestCase):
     def setUp(self):
-        self.config = DatasetConfig.degree_weighted_default()
-        self.dataset = DegreeWeightedDataset(self.config)
+        self.config = DatasetConfig.degree_weighted_markov_default()
+        self.dataset = DegreeWeightedMarkovDataset(self.config)
         self.num_networks = 5
         self.num_samples = 6
         self.num_nodes = 10

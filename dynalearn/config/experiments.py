@@ -10,31 +10,37 @@ dynamics_config = {
     "sis": DynamicsConfig.sis_default(),
     "plancksis": DynamicsConfig.plancksis_default(),
     "sissis": DynamicsConfig.sissis_default(),
+    "hiddensissis": DynamicsConfig.hidden_sissis_default(),
 }
 model_config = {
     "sis": DynamicsConfig.sis_gnn_default(),
     "plancksis": DynamicsConfig.plancksis_gnn_default(),
     "sissis": DynamicsConfig.sissis_gnn_default(),
+    "hiddensissis": DynamicsConfig.hidden_sissis_gnn_default(),
 }
 fast_metrics_config = {
     "sis": MetricsConfig.sis_fast(),
     "plancksis": MetricsConfig.plancksis_fast(),
     "sissis": MetricsConfig.sissis_fast(),
+    "hiddensissis": MetricsConfig.hidden_sissis_fast(),
 }
 complete_metrics_config = {
     "sis": MetricsConfig.sis_complete(),
     "plancksis": MetricsConfig.plancksis_complete(),
     "sissis": MetricsConfig.sissis_complete(),
+    "hiddensissis": MetricsConfig.hidden_sissis_complete(),
 }
 fast_summary_config = {
     "sis": SummariesConfig.sis_fast(),
     "plancksis": SummariesConfig.plancksis_fast(),
     "sissis": SummariesConfig.sissis_fast(),
+    "hiddensissis": SummariesConfig.hidden_sissis_fast(),
 }
 complete_summary_config = {
     "sis": SummariesConfig.sis_complete(),
     "plancksis": SummariesConfig.plancksis_complete(),
     "sissis": SummariesConfig.sissis_complete(),
+    "hiddensissis": SummariesConfig.hidden_sissis_complete(),
 }
 
 
@@ -51,7 +57,6 @@ class TrainingConfig(Config):
         cls.num_networks = 1
         cls.num_samples = 10000
         cls.resampling_time = 2
-        cls.with_truth = False
 
         return cls
 
@@ -66,7 +71,6 @@ class TrainingConfig(Config):
         cls.num_networks = 1
         cls.num_samples = 10
         cls.resampling_time = 2
-        cls.with_truth = True
 
         return cls
 
@@ -123,7 +127,10 @@ class ExperimentConfig(Config):
         cls.path_to_summary = path_to_summary
         if not os.path.exists(path_to_summary):
             os.makedirs(path_to_summary)
-        cls.dataset = DatasetConfig.state_weighted_default()
+        if dynamics == "hiddensissis":
+            cls.dataset = DatasetConfig.state_weighted_markov_default()
+        else:
+            cls.dataset = DatasetConfig.state_weighted_markov_hidden_sissis_default()
         cls.dynamics = dynamics_config[dynamics]
         cls.model = model_config[dynamics]
         cls.networks = network_config[network]

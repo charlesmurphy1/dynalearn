@@ -16,9 +16,6 @@ class LTPMetrics(Metrics):
         self.max_num_points = config.max_num_points
 
         self.model = None
-        self.networks = {}
-        self.inputs = {}
-        self.targets = {}
 
         self.all_nodes = {}
         self.summaries = set()
@@ -30,56 +27,54 @@ class LTPMetrics(Metrics):
         raise NotImplementedError()
 
     @abstractmethod
-    def predict(self, x, y):
+    def predict(self, real_x, obs_x, real_y, obs_y):
         raise NotImplementedError()
 
     def initialize(self, experiment):
         self.model = self.get_model(experiment)
-        self.networks = experiment.dataset.networks
-        self.inputs = experiment.dataset.inputs
-        self.targets = experiment.dataset.targets
+        self.dataset = experiment.dataset
 
         self.num_points = {}
         self.num_updates = 0
-        for k, g in self.networks.items():
+
+        for k, g in self.dataset.networks.items():
             if (
-                self.max_num_points < self.inputs[k].shape[0]
+                self.max_num_points < self.dataset.inputs[k].shape[0]
                 and self.max_num_points > 1
             ):
                 self.num_points[k] = self.max_num_points
             else:
-                self.num_points[k] = self.inputs[k].shape[0]
+                self.num_points[k] = self.dataset.inputs[k].shape[0]
                 self.num_updates += self.num_points[k]
+
         self.get_data["summaries"] = self._get_summaries_
-
         self.all_nodes = self._get_nodes_(experiment.dataset, all=True)
-
         self.get_data["ltp"] = lambda pb: self._get_ltp_(self.all_nodes, pb=pb)
 
         train_nodes = self._get_nodes_(experiment.dataset)
         self.get_data["train_ltp"] = lambda pb: self._get_ltp_(train_nodes, pb=pb)
-        factor = 2
+        update_factor = 2
 
         if experiment.val_dataset is not None:
             val_nodes = self._get_nodes_(experiment.val_dataset)
             self.get_data["val_ltp"] = lambda pb: self._get_ltp_(val_nodes, pb=pb)
             self.names.append("val_ltp")
-            factor += 1
+            update_factor += 1
+
         if experiment.test_dataset is not None:
             test_nodes = self._get_nodes_(experiment.test_dataset)
+            self.get_data["test_ltp"] = lambda pb: self._get_ltp_(test_nodes, pb=pb)
             self.names.append("test_ltp")
-            factor += 1
-        self.num_updates *= factor
+            update_factor += 1
+        self.num_updates *= update_factor
 
     def _get_summaries_(self, pb=None):
-        for k, g in self.networks.items():
+        for k, g in self.dataset.networks.items():
             self.model.network = g
             adj = nx.to_numpy_array(g)
             for t in range(self.num_points[k]):
-                x = self.inputs[k][t]
-                l = np.array(
-                    [np.matmul(adj, x == i) for i in range(self.model.num_states)]
-                ).T
+                x = self.dataset.inputs[k][t]
+                l = np.array([np.matmul(adj, x == i) for i in range(self.num_states)]).T
                 for i in self.all_nodes[k][t]:
                     s = (x[i], *list(l[i]))
                     if s not in self.summaries:
@@ -90,19 +85,22 @@ class LTPMetrics(Metrics):
         ltp = {}
         counter = {}
 
-        for k, g in self.networks.items():
-            self.model.network = g
-            adj = nx.to_numpy_array(g)
+        for k in self.dataset.networks.keys():
+            real_g = self.dataset._data["networks"][k]
+            obs_g = self.dataset.data["networks"][k]
+            self._set_network_(real_g, obs_g)
+            adj = nx.to_numpy_array(obs_g)
             for t in range(self.num_points[k]):
-                x = self.inputs[k][t]
+                real_x = self.dataset._data["inputs"][k][t]
+                obs_x = self.dataset.inputs[k][t]
                 l = np.array(
-                    [np.matmul(adj, x == i) for i in range(self.model.num_states)]
+                    [np.matmul(adj, obs_x == i) for i in range(self.num_states)]
                 ).T
-
-                y = self.targets[k][t]
-                pred = self.predict(x, y)
+                real_y = self.dataset._data["targets"][k][t]
+                obs_y = self.dataset.targets[k][t]
+                pred = self.predict(real_x, obs_x, real_y, obs_y)
                 for i in nodes[k][t]:
-                    s = (x[i], *list(l[i]))
+                    s = (obs_x[i], *list(l[i]))
                     if s in ltp:
                         if counter[s] == self.max_num_sample:
                             continue
@@ -110,14 +108,13 @@ class LTPMetrics(Metrics):
                         counter[s] += 1
                     else:
                         ltp[s] = (
-                            np.ones((self.max_num_sample, self.model.num_states))
-                            * np.nan
+                            np.ones((self.max_num_sample, self.num_states)) * np.nan
                         )
                         ltp[s][0] = pred[i]
                         counter[s] = 1
                 if pb is not None:
                     pb.update()
-        ltp_array = np.ones((len(self.summaries), self.model.num_states)) * np.nan
+        ltp_array = np.ones((len(self.summaries), self.num_states)) * np.nan
         for i, s in enumerate(self.summaries):
             index = np.nansum(ltp[s], axis=-1) > 0
             if np.sum(index) > 0:
@@ -142,6 +139,9 @@ class LTPMetrics(Metrics):
                     )[0]
         return nodes
 
+    def _set_network_(self, real_g, obs_g):
+        return obs_g
+
     @staticmethod
     def aggregate(
         data,
@@ -152,7 +152,6 @@ class LTPMetrics(Metrics):
         reduce="mean",
         err_reduce="std",
     ):
-        # print(in_state, out_state)
         if reduce == "mean":
             op = np.nanmean
             if err_reduce == "std":
@@ -176,9 +175,15 @@ class LTPMetrics(Metrics):
 
         if axis == -1:
             all_summ = summaries[:, 1:].sum(-1)
+        elif type(axis) == list:
+            all_summ = np.zeros(summaries.shape[0])
+
+            for i, a in enumerate(axis):
+                all_summ += summaries[:, a + 1]
         else:
             all_summ = summaries[:, axis + 1]
         agg_summ = np.unique(np.sort(all_summ))
+
         agg_ltp = np.zeros(agg_summ.shape)
         agg_ltp_low = np.zeros(agg_summ.shape)
         agg_ltp_high = np.zeros(agg_summ.shape)
@@ -218,10 +223,14 @@ class TrueLTPMetrics(LTPMetrics):
         LTPMetrics.__init__(self, config, verbose)
 
     def get_model(self, experiment):
+        self.num_states = experiment.model.num_states
         return experiment.dynamics
 
-    def predict(self, x, y):
-        return self.model.predict(x)
+    def predict(self, real_x, obs_x, real_y, obs_y):
+        return self.model.predict(real_x)
+
+    def _set_network_(self, real_g, obs_g):
+        return real_g
 
 
 class GNNLTPMetrics(LTPMetrics):
@@ -229,10 +238,11 @@ class GNNLTPMetrics(LTPMetrics):
         LTPMetrics.__init__(self, config, verbose)
 
     def get_model(self, experiment):
+        self.num_states = experiment.model.num_states
         return experiment.model
 
-    def predict(self, x, y):
-        return self.model.predict(x)
+    def predict(self, real_x, obs_x, real_y, obs_y):
+        return self.model.predict(obs_x)
 
 
 class MLELTPMetrics(LTPMetrics):
@@ -242,12 +252,11 @@ class MLELTPMetrics(LTPMetrics):
             self.num_points = config.mle_num_points
 
     def get_model(self, experiment):
+        self.num_states = experiment.model.num_states
         return experiment.dynamics
 
-    def predict(self, x, y):
-        one_hot_target = np.zeros((y.shape[0], self.model.num_states), dtype="int")
-        one_hot_target[np.arange(y.shape[0]), y.astype("int")] = 1
-        return one_hot_target
+    def predict(self, real_x, obs_x, real_y, obs_y):
+        return obs_y
 
 
 class UniformLTPMetrics(LTPMetrics):
@@ -255,7 +264,8 @@ class UniformLTPMetrics(LTPMetrics):
         LTPMetrics.__init__(self, config, verbose)
 
     def get_model(self, experiment):
+        self.num_states = experiment.model.num_states
         return experiment.dynamics
 
-    def predict(self, x, y):
-        return np.ones((x.shape[0], self.model.num_states)) / self.model.num_states
+    def predict(self, real_x, obs_x, real_y, obs_y):
+        return np.ones((obs_x.shape[0], self.num_states)) / self.num_states

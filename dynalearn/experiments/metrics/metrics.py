@@ -17,6 +17,9 @@ class Metrics(ABC):
     def initialize(self, experiment):
         raise NotImplementedError("initialize must be implemented.")
 
+    def exit(self, experiment):
+        return
+
     def compute(self, experiment, verbose=None):
         self.verbose = verbose or self.verbose
         self.initialize(experiment)
@@ -36,6 +39,8 @@ class Metrics(ABC):
 
         if self.verbose == 1:
             pb.close()
+
+        self.exit(experiment)
 
     def save(self, h5file, name=None):
         if type(h5file) is not h5py.File:

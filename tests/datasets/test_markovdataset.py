@@ -2,18 +2,20 @@ import networkx as nx
 import numpy as np
 import torch
 
-from dynalearn.datasets import Dataset, Sampler
+from dynalearn.datasets import MarkovDataset, Sampler
 from dynalearn.config import DatasetConfig
 from unittest import TestCase
 
 
 class DatasetTest(TestCase):
     def setUp(self):
-        self.config = DatasetConfig.plain_default()
-        self.dataset = Dataset(self.config)
+        self.config = DatasetConfig.plain_markov_default()
+        self.dataset = MarkovDataset(self.config)
+        self.num_states = 2
         self.num_networks = 5
         self.num_samples = 6
         self.num_nodes = 10
+        self.dataset.num_states = self.num_states
         return
 
     def scenario_1(self):
@@ -39,11 +41,15 @@ class DatasetTest(TestCase):
             i: nx.complete_graph(self.num_nodes) for i in range(self.num_networks)
         }
         inputs = {
-            i: np.random.randint(2, size=(self.num_samples, self.num_nodes))
+            i: np.random.randint(
+                self.num_states, size=(self.num_samples, self.num_nodes)
+            )
             for i in range(self.num_networks)
         }
         targets = {
-            i: np.random.randint(2, size=(self.num_samples, self.num_nodes))
+            i: np.random.randint(
+                self.num_states, size=(self.num_samples, self.num_nodes)
+            )
             for i in range(self.num_networks)
         }
         data = {}
@@ -91,11 +97,13 @@ class DatasetTest(TestCase):
             i += 1
         self.assertEqual(self.num_samples * self.num_networks, i)
         (x, g), y, w = data
-        np.testing.assert_array_almost_equal(np.zeros(self.num_nodes), x)
-        np.testing.assert_array_almost_equal(np.zeros(self.num_nodes), y)
-        np.testing.assert_array_almost_equal(
-            np.ones(self.num_nodes) / self.num_nodes, w
-        )
+        x_ref = np.zeros(self.num_nodes)
+        y_ref = np.zeros((self.num_nodes, self.num_states))
+        y_ref[:, 0] = 1
+        w_ref = np.ones(self.num_nodes) / self.num_nodes
+        np.testing.assert_array_almost_equal(x_ref, x)
+        np.testing.assert_array_almost_equal(y_ref, y)
+        np.testing.assert_array_almost_equal(w_ref, w)
 
     def test_batch(self):
         self.scenario_2()

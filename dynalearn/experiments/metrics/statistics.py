@@ -14,10 +14,7 @@ class StatisticsMetrics(Metrics):
         self.max_num_sample = config.max_num_sample
         self.max_num_points = config.max_num_points
 
-        self.networks = {}
-        self.inputs = {}
-        self.targets = {}
-
+        self.dataset = None
         self.all_nodes = {}
 
         self.names = [
@@ -33,15 +30,13 @@ class StatisticsMetrics(Metrics):
         self.summaries = set()
 
     def initialize(self, experiment):
-        self.networks = experiment.dataset.networks
-        self.inputs = experiment.dataset.inputs
-        self.targets = experiment.dataset.targets
-        self.num_states = experiment.dynamics.num_states
+        self.dataset = experiment.dataset
+        self.num_states = experiment.model.num_states
 
         self.num_points = {}
         self.num_updates = 0
-        for k, g in self.networks.items():
-            self.num_points[k] = self.inputs[k].shape[0]
+        for k, g in self.dataset.networks.items():
+            self.num_points[k] = self.dataset.inputs[k].shape[0]
             self.num_updates += self.num_points[k]
         self.get_data["summaries"] = self._get_summaries_
 
@@ -75,10 +70,10 @@ class StatisticsMetrics(Metrics):
         self.num_updates *= factor
 
     def _get_summaries_(self, pb=None):
-        for k, g in self.networks.items():
+        for k, g in self.dataset.networks.items():
             adj = nx.to_numpy_array(g)
             for t in range(self.num_points[k]):
-                x = self.inputs[k][t]
+                x = self.dataset.inputs[k][t]
                 l = np.array([np.matmul(adj, x == i) for i in range(self.num_states)]).T
                 for i in self.all_nodes[k][t]:
                     s = (x[i], *list(l[i]))
@@ -89,12 +84,11 @@ class StatisticsMetrics(Metrics):
     def _get_stats_(self, nodes, pb=None):
         stats = {}
 
-        for k, g in self.networks.items():
+        for k, g in self.dataset.networks.items():
             adj = nx.to_numpy_array(g)
             for t in range(self.num_points[k]):
-                x = self.inputs[k][t]
+                x = self.dataset.inputs[k][t]
                 l = np.array([np.matmul(adj, x == i) for i in range(self.num_states)]).T
-                y = self.targets[k][t]
                 for i in nodes[k][t]:
                     s = (x[i], *list(l[i]))
                     if s in stats:

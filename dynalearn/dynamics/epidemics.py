@@ -1,6 +1,6 @@
 import networkx as nx
 import numpy as np
-import torch as pt
+import torch
 
 from dynalearn.dynamics.base import DynamicsModel
 from dynalearn.nn.models import Propagator
@@ -12,11 +12,13 @@ class Epidemics(DynamicsModel):
         DynamicsModel.__init__(self, config, num_states)
         self.initial_infected = config.initial_infected
         self.propagator = Propagator(num_states)
+        self.state_map = {i: i for i in range(num_states)}
 
     def sample(self, x):
         p = self.predict(x)
-        dist = pt.distributions.Categorical(pt.tensor(p))
-        return np.array(dist.sample())
+        dist = torch.distributions.Categorical(torch.tensor(p))
+        x = np.array(dist.sample())
+        return x
 
     def neighbors_state(self, x):
         if len(x.shape) > 1:

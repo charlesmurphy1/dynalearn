@@ -1,6 +1,6 @@
 import h5py
 import numpy as np
-import dynalearn as dl
+import dynalearn
 import argparse
 import os
 import time
@@ -37,12 +37,12 @@ def get_config(args):
         args.seed = int(time.time())
 
     if args.config == "test":
-        return dl.ExperimentConfig.test(
+        return dynalearn.config.ExperimentConfig.test(
             args.path, args.path_to_best, args.path_to_summary
         )
     else:
         dynamics, network = args.config.split("-")
-        return dl.ExperimentConfig.base(
+        return dynalearn.config.ExperimentConfig.base(
             args.name,
             dynamics,
             network,
@@ -68,6 +68,8 @@ parser.add_argument(
         "plancksis-ba",
         "sissis-er",
         "sissis-ba",
+        "hiddensissis-er",
+        "hiddensissis-ba",
     ],
     required=True,
 )
@@ -103,7 +105,7 @@ parser.add_argument(
     default=2,
 )
 parser.add_argument(
-    "--with_truth",
+    "--use_groundtruth",
     type=int,
     choices=[0, 1],
     metavar="BOOL",
@@ -162,10 +164,10 @@ config.train_details.batch_size = args.batch_size
 config.networks.num_nodes = args.num_nodes
 if config.networks.name is "ERNetwork":
     config.networks.p = np.min([1, 4 / int(args.num_nodes - 1)])
-config.dataset.resampling_time = int(args.resampling_time)
-config.dataset.with_truth = bool(args.with_truth)
+config.train_details.resampling_time = int(args.resampling_time)
+config.dataset.use_groundtruth = bool(args.use_groundtruth)
 
-experiment = dl.Experiment(config, verbose=args.verbose)
+experiment = dynalearn.experiments.Experiment(config, verbose=args.verbose)
 experiment.run(args.tasks)
 
 # if args.verbose != 0:

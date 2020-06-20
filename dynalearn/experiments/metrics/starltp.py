@@ -14,10 +14,11 @@ class StarLTPMetrics(LTPMetrics):
 
     def initialize(self, experiment):
         self.model = self.get_model(experiment)
-        self.num_states = self.model.num_states
         self.num_updates = np.sum(
-            binom(self.degree_class + self.num_states - 1, self.num_states - 1)
-            * self.num_states
+            binom(
+                self.degree_class + self.model.num_states - 1, self.model.num_states - 1
+            )
+            * self.model.num_states
         ).astype("int")
 
         self.get_data["ltp"] = lambda pb: self._get_ltp_(pb=pb)
@@ -43,7 +44,7 @@ class StarLTPMetrics(LTPMetrics):
                 inputs[1 : k + 1] = np.concatenate(
                     [j * np.ones(l) for j, l in enumerate(ns)]
                 )
-                ltp[i] = self.predict(inputs, None)[0]
+                ltp[i] = self.predict(inputs, inputs, None, None)[0]
                 self.summaries.add((s, *ns))
                 i += 1
                 if pb is not None:

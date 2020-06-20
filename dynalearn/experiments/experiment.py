@@ -75,6 +75,8 @@ class Experiment:
             torch.manual_seed(config.seed)
 
         self.__all_tasks__ = [
+            "load",
+            "save",
             "generate_data",
             "train_model",
             "compute_metrics",
@@ -88,6 +90,7 @@ class Experiment:
         return cls(config)
 
     def run(self, tasks=None):
+        self.save_config()
         if self.verbose != 0:
             begin = datetime.now()
             print(f"---Experiment {self.name}---")
@@ -115,7 +118,7 @@ class Experiment:
             secs = r
             print(f"Computation time: {days:0=2d}-{hours:0=2d}:{mins:0=2d}:{secs:0=2d}")
 
-    def train_model(self, save=True):
+    def train_model(self, save=True, restore_best=True):
         if self.verbose != 0:
             print("\n---Training model---")
         self.model.nn.fit(
@@ -172,12 +175,9 @@ class Experiment:
         if save:
             self.save_data()
 
-    def compute_metrics(self, save=True, restore_best=True):
+    def compute_metrics(self, save=True):
         if self.verbose != 0:
             print("\n---Computing metrics---")
-
-        if restore_best:
-            self.load_model()
 
         if save:
             with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
@@ -189,6 +189,8 @@ class Experiment:
                 m.compute(self, verbose=self.verbose)
 
     def compute_summaries(self, save=True):
+        if self.verbose != 0:
+            print("\n---Computing summaries---")
         if save:
             with h5py.File(join(self.path_to_summary, self.name + ".h5"), "a") as f:
                 for k, m in self.summaries.items():
@@ -199,11 +201,11 @@ class Experiment:
                 m.compute(self, verbose=self.verbose)
 
     def save(self):
+        self.save_config()
         self.save_data()
         self.save_model()
         self.save_metrics()
         self.save_summaries()
-        self.save_config()
 
     def save_data(self):
         with h5py.File(join(self.path_to_data, self.fname_data), "w") as f:
@@ -229,11 +231,11 @@ class Experiment:
             pickle.dump(self.config, f)
 
     def load(self):
+        self.load_config()
         self.load_data()
         self.load_model()
         self.load_metrics()
         self.load_summaries()
-        self.load_config()
 
     def load_data(self):
         if exists(join(self.path_to_data, self.fname_data)):

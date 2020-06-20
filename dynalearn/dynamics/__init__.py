@@ -1,7 +1,7 @@
 from .simple import *
 from .complex import *
 from .interacting import *
-from .learnable import *
+from .trainable import *
 from .getter import *
 
 # import dynalearn.dynamics.base

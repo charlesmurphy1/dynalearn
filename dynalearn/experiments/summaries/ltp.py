@@ -44,16 +44,31 @@ class LTPSummary(Summary):
 
 
 class TrueLTPSummary(LTPSummary):
+    def __init__(self, config, verbose=0):
+        if "true_axis" in config.__dict__:
+            config.axis = config.true_axis
+        LTPSummary.__init__(self, config, verbose)
+
     def get_metrics(self, experiment):
         return experiment.metrics["TrueLTPMetrics"]
 
 
 class GNNLTPSummary(LTPSummary):
+    def __init__(self, config, verbose=0):
+        if "obs_axis" in config.__dict__:
+            config.axis = config.obs_axis
+        LTPSummary.__init__(self, config, verbose)
+
     def get_metrics(self, experiment):
         return experiment.metrics["GNNLTPMetrics"]
 
 
 class MLELTPSummary(LTPSummary):
+    def __init__(self, config, verbose=0):
+        if "obs_axis" in config.__dict__:
+            config.axis = config.obs_axis
+        LTPSummary.__init__(self, config, verbose)
+
     def get_metrics(self, experiment):
         return experiment.metrics["MLELTPMetrics"]
 
@@ -67,15 +82,30 @@ class StarLTPSummary(LTPSummary):
 
 
 class TrueStarLTPSummary(StarLTPSummary):
+    def __init__(self, config, verbose=0):
+        if "true_axis" in config.__dict__:
+            config.axis = config.true_axis
+        LTPSummary.__init__(self, config, verbose)
+
     def get_metrics(self, experiment):
         return experiment.metrics["TrueStarLTPMetrics"]
 
 
 class GNNStarLTPSummary(StarLTPSummary):
+    def __init__(self, config, verbose=0):
+        if "obs_axis" in config.__dict__:
+            config.axis = config.obs_axis
+        LTPSummary.__init__(self, config, verbose)
+
     def get_metrics(self, experiment):
         return experiment.metrics["GNNStarLTPMetrics"]
 
 
 class UniformStarLTPSummary(StarLTPSummary):
+    def __init__(self, config, verbose=0):
+        if "obs_axis" in config.__dict__:
+            config.axis = config.obs_axis
+        LTPSummary.__init__(self, config, verbose)
+
     def get_metrics(self, experiment):
         return experiment.metrics["UniformStarLTPMetrics"]
