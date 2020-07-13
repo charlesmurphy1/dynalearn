@@ -65,20 +65,35 @@ def to_binary(x, max_val=None):
     return r[::-1]
 
 
-def from_nary(x, base=2):
-    n = np.arange(x.shape[0])[::-1]
-    return (x * base ** (n)).sum()
+def logbase(x, base=np.e):
+    return np.log(x) / np.log(base)
 
 
-def to_nary(x, base=2, max_val=None):
-    max_val = max_val or base ** np.floor(log(x, base) + 1)
-    r = np.zeros(int(log(max_val, base)))
-    r0 = x
-    while r0 > 0:
-        y = int(np.floor(log(r0, base)))
-        r[y] += 1
-        r0 -= base ** y
-    return r[::-1]
+def from_nary(x, axis=0, base=2):
+    if type(x) is int or type(x) is float:
+        x = np.array([x])
+    n = np.arange(x.shape[axis])[::-1]
+    n = n.reshape(*[s if i == axis else 1 for i, s in enumerate(x.shape)])
+    return (x * base ** (n)).sum(axis)
+
+
+def to_nary(x, base=2, dim=None):
+    if type(x) is int or type(x) is float:
+        x = np.array([x])
+    if dim is None:
+        max_val = base ** np.floor(logbase(np.max(x), base) + 1)
+        dim = int(logbase(max_val, base))
+    y = np.zeros([dim, *x.shape])
+    for idx, xx in np.ndenumerate(x):
+        r = np.zeros(dim)
+        r0 = xx
+        while r0 > 0:
+            b = int(np.floor(logbase(r0, base)))
+            r[b] += 1
+            r0 -= base ** b
+        y.T[idx] = r[::-1]
+    # return y.squeeze()
+    return y
 
 
 def all_combinations(n, k):
