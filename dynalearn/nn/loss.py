@@ -16,9 +16,22 @@ def weighted_cross_entropy(y_pred, y_true, weights=None):
     return loss.sum()
 
 
+def weighted_mse(y_pred, y_true, weights=None):
+    num_nodes = y_pred.size(0)
+    if weights is None:
+        weights = torch.ones([y_true.size(i) for i in range(y_true.dim() - 1)])
+        if torch.cuda.is_available():
+            weights = weights.cuda()
+    weights /= weights.sum()
+    loss = weights * torch.sum((y_true - y_pred) ** 2, axis=-1)
+    return loss.sum()
+
+
 __losses__ = {
     "weighted_cross_entropy": weighted_cross_entropy,
+    "weighted_mse": weighted_mse,
     "cross_entropy": torch.nn.CrossEntropyLoss(),
+    "cross_entropy": torch.nn.MSELoss(),
 }
 
 

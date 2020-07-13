@@ -9,15 +9,14 @@ from dynalearn.nn.activation import get as get_activation
 from torch.nn.init import kaiming_normal_
 
 
-class EpidemicsGNN(GraphNeuralNetwork):
+class MetaPopGNN(GraphNeuralNetwork):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
         GraphNeuralNetwork.__init__(self, config=config, **kwargs)
         self.num_states = config.num_states
-        self.window_size = config.window_size
-        # self.window_size = 1
+        self.window = config.window
         self.in_channels = config.in_channels
         self.att_channels = config.att_channels
         self.out_channels = config.out_channels
@@ -28,7 +27,7 @@ class EpidemicsGNN(GraphNeuralNetwork):
         self.att_activation = get_activation(config.att_activation)
         self.out_activation = get_activation(config.out_activation)
 
-        in_layer_channels = [self.window_size, *self.in_channels]
+        in_layer_channels = [self.window * self.num_states, *self.in_channels]
         self.in_layers = self._build_layer(
             in_layer_channels, self.in_activation, bias=self.bias
         )
@@ -56,13 +55,20 @@ class EpidemicsGNN(GraphNeuralNetwork):
         if torch.cuda.is_available():
             self = self.cuda()
 
+        self._in_data_mean = torch.zeros(self.num_states)
+        self._in_data_var = torch.ones(self.num_states)
+        self._out_data_mean = torch.zeros(self.num_states)
+        self._out_data_var = torch.ones(self.num_states)
+
     def forward(self, x, edge_index):
-        x = x.T
+        # x = (x - self._in_data_mean) / self._in_data_var ** (0.5)
+        x = x.view(-1, self.window * self.num_state)
         x = self.in_layers(x)
         x = self.att_layer(x, edge_index)
         x = self.out_layers(x)
         x = self.last_layer(x)
-        return torch.softmax(x, dim=-1)
+        # return x * self._out_data_var ** (0.5) + self._out_data_mean
+        return x
 
     def reset_parameter(self, initialize_inplace=None):
         if initialize_inplace is None:
@@ -89,3 +95,20 @@ class EpidemicsGNN(GraphNeuralNetwork):
             layers.append(activation)
 
         return nn.Sequential(*layers)
+
+    def normalize(self, dataset):
+        self._in_data_mean = np.zeros(self.num_states)
+        self._in_data_var = np.zeros(self.num_states)
+        self._out_data_mean = np.zeros(self.num_states)
+        self._out_data_var = np.zeros(self.num_states)
+        n = len(dataset)
+        for data in dataset:
+            (x, edge_index), y, w = data
+            self._in_data_mean += np.sum(x, axis=0) / n
+            self._in_data_var += np.sum(x ** 2, axis=0) / n
+            self._in_data_mean += np.sum(y, axis=0) / n
+            self._in_data_var += np.sum(y ** 2, axis=0) / n
+        self._in_data_mean = torch.tensor(self._in_data_mean)
+        self._in_data_var = torch.tensor(self._in_data_var - self._in_data_mean ** 2)
+        self._out_data_mean = torch.tensor(self._out_data_mean)
+        self._out_data_var = torch.tensor(self._out_data_var - self._out_data_mean ** 2)

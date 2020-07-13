@@ -48,6 +48,7 @@ class GraphNeuralNetwork(torch.nn.Module):
         callbacks.set_params(self)
         callbacks.set_model(self)
         callbacks.on_train_begin()
+        self.normalize(dataset)
         for i in range(epochs):
             callbacks.on_epoch_begin(self.history.epoch)
             t0 = time.time()
@@ -135,6 +136,7 @@ class GraphNeuralNetwork(torch.nn.Module):
             logs[prefix + m] = 0
 
         self.eval()
+        i = 0
         for data in dataset:
             (x, edge_index), y_true, w = data
             if torch.cuda.is_available():
@@ -150,6 +152,9 @@ class GraphNeuralNetwork(torch.nn.Module):
 
     def get_weights(self):
         return self.state_dict()
+
+    def normalize(self, dataset):
+        return
 
     def save_weights(self, path):
         state_dict = self.state_dict()
