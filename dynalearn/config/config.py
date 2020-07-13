@@ -3,12 +3,11 @@ class Config:
         return self.to_string()
 
     def to_string(self, prefix=""):
-        string = prefix
-        for k, v in self.__dict__:
+        string = ""
+        for k, v in self.__dict__.items():
             if issubclass(v.__class__, Config):
-                string += f"{k}: {v.__class__}\n"
-
+                string += prefix + f"{k}:\n"
                 string += "{0}\n".format(v.to_string(prefix=prefix + "\t"))
             else:
-                string += f"{k}: {v}\n"
+                string += prefix + f"{k}: {v.__str__()}\n"
         return string

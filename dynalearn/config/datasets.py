@@ -3,36 +3,36 @@ from .config import Config
 
 class DatasetConfig(Config):
     @classmethod
-    def plain_markov_default(cls):
+    def plain_discrete_default(cls):
         cls = cls()
-        cls.name = "Dataset"
+        cls.name = "DiscreteDataset"
         cls.bias = 0
         cls.replace = True
         cls.use_groundtruth = False
         return cls
 
     @classmethod
-    def degree_weighted_markov_default(cls):
+    def degree_weighted_discrete_default(cls):
         cls = cls()
-        cls.name = "DegreeWeightedMarkovDataset"
+        cls.name = "DegreeWeightedDiscreteDataset"
         cls.bias = 0.5
         cls.replace = True
         cls.use_groundtruth = False
         return cls
 
     @classmethod
-    def state_weighted_markov_default(cls):
+    def state_weighted_discrete_default(cls):
         cls = cls()
-        cls.name = "StateWeightedMarkovDataset"
+        cls.name = "StateWeightedDiscreteDataset"
         cls.bias = 0.5
         cls.replace = True
         cls.use_groundtruth = False
         return cls
 
     @classmethod
-    def state_weighted_markov_hidden_sissis_default(cls):
+    def state_weighted_hidden_sissis(cls):
         cls = cls()
-        cls.name = "StateWeightedMarkovDataset"
+        cls.name = "StateWeightedDiscreteDataset"
         cls.bias = 0.5
         cls.replace = True
         cls.use_groundtruth = False
@@ -45,3 +45,4 @@ class TransformConfig(Config):
     def hidden_sissis_default(cls):
         cls = cls()
         cls.names = ["RemapStateTransform"]
+        return cls

@@ -18,29 +18,11 @@ model_config = {
     "sissis": DynamicsConfig.sissis_gnn_default(),
     "hiddensissis": DynamicsConfig.hidden_sissis_gnn_default(),
 }
-fast_metrics_config = {
-    "sis": MetricsConfig.sis_fast(),
-    "plancksis": MetricsConfig.plancksis_fast(),
-    "sissis": MetricsConfig.sissis_fast(),
-    "hiddensissis": MetricsConfig.hidden_sissis_fast(),
-}
-complete_metrics_config = {
-    "sis": MetricsConfig.sis_complete(),
-    "plancksis": MetricsConfig.plancksis_complete(),
-    "sissis": MetricsConfig.sissis_complete(),
-    "hiddensissis": MetricsConfig.hidden_sissis_complete(),
-}
-fast_summary_config = {
-    "sis": SummariesConfig.sis_fast(),
-    "plancksis": SummariesConfig.plancksis_fast(),
-    "sissis": SummariesConfig.sissis_fast(),
-    "hiddensissis": SummariesConfig.hidden_sissis_fast(),
-}
-complete_summary_config = {
-    "sis": SummariesConfig.sis_complete(),
-    "plancksis": SummariesConfig.plancksis_complete(),
-    "sissis": SummariesConfig.sissis_complete(),
-    "hiddensissis": SummariesConfig.hidden_sissis_complete(),
+metrics_config = {
+    "sis": MetricsConfig.sis(),
+    "plancksis": MetricsConfig.plancksis(),
+    "sissis": MetricsConfig.sissis(),
+    "hiddensissis": MetricsConfig.hidden_sissis(),
 }
 
 
@@ -56,7 +38,7 @@ class TrainingConfig(Config):
         cls.num_nodes = 1000
         cls.num_networks = 1
         cls.num_samples = 10000
-        cls.resampling_time = 2
+        cls.resampling = 2
 
         return cls
 
@@ -70,7 +52,7 @@ class TrainingConfig(Config):
         cls.batch_size = 10
         cls.num_networks = 1
         cls.num_samples = 10
-        cls.resampling_time = 2
+        cls.resampling = 2
 
         return cls
 
@@ -94,7 +76,7 @@ class CallbackConfig(Config):
 
 class ExperimentConfig(Config):
     @classmethod
-    def base(
+    def discrete_experiment(
         cls,
         name,
         dynamics,
@@ -128,24 +110,15 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_summary):
             os.makedirs(path_to_summary)
         if dynamics == "hiddensissis":
-            cls.dataset = DatasetConfig.state_weighted_markov_default()
+            cls.dataset = DatasetConfig.state_weighted_hidden_sissis()
         else:
-            cls.dataset = DatasetConfig.state_weighted_markov_hidden_sissis_default()
+            cls.dataset = DatasetConfig.state_weighted_discrete_default()
         cls.dynamics = dynamics_config[dynamics]
         cls.model = model_config[dynamics]
         cls.networks = network_config[network]
 
         cls.train_details = TrainingConfig.default()
-        if mode == "fast":
-            cls.metrics = fast_metrics_config[dynamics]
-            cls.summaries = fast_summary_config[dynamics]
-        elif mode == "complete":
-            cls.metrics = complete_metrics_config[dynamics]
-            cls.summaries = complete_summary_config[dynamics]
-        else:
-            raise ValueError(
-                f"{mode} is invalid, valid entries are ['fast', 'complete']."
-            )
+        cls.metrics = metrics_config[dynamics]
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
@@ -191,7 +164,6 @@ class ExperimentConfig(Config):
 
         cls.train_details = TrainingConfig.default()
         cls.metrics = MetricsConfig.rtn_forecast()
-        cls.summaries = SummariesConfig.rtn_forecast()
         cls.train_metrics = []
         cls.callbacks = CallbackConfig.empty()
 
@@ -215,14 +187,13 @@ class ExperimentConfig(Config):
         cls.path_to_summary = path_to_summary
         if not os.path.exists(path_to_summary):
             os.makedirs(path_to_summary)
-        cls.dataset = DatasetConfig.state_weighted_default()
+        cls.dataset = DatasetConfig.state_weighted_discrete_default()
         cls.networks = NetworkConfig.erdosrenyi(1000, 4.0 / 999.0)
         cls.dynamics = DynamicsConfig.sis_default()
         cls.model = DynamicsConfig.sis_gnn_default()
 
         cls.train_details = TrainingConfig.test()
         cls.metrics = MetricsConfig.test()
-        cls.summaries = SummariesConfig.test()
         cls.train_metrics = []
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 

@@ -15,10 +15,14 @@ class NetworkConfig(Config):
 
     @classmethod
     def er_default(cls):
-        return NetworkConfig.erdosrenyi(1000, 0.004)
+        cls = cls()
+        for k, v in NetworkConfig.erdosrenyi(1000, 0.004).__dict__.items():
+            cls.__dict__[k] = v
+        return cls
 
     @classmethod
     def barabasialbert(cls, num_nodes, m):
+        cls = cls()
         cls.name = "BANetwork"
         cls.num_nodes = num_nodes
         cls.m = m
@@ -26,10 +30,14 @@ class NetworkConfig(Config):
 
     @classmethod
     def ba_default(cls):
-        return NetworkConfig.barabasialbert(1000, 2)
+        cls = cls()
+        for k, v in NetworkConfig.barabasialbert(1000, 2).__dict__.items():
+            cls.__dict__[k] = v
+        return cls
 
     @classmethod
     def configuration(cls, num_nodes, p_k):
+        cls = cls()
         cls.name = "ConfigurationNetwork"
         cls.num_nodes = num_nodes
         cls.p_k = p_k

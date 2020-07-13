@@ -47,10 +47,25 @@ class DynamicsConfig(Config):
         return cls
 
     @classmethod
+    def metasis_default(cls):
+        cls = cls()
+        cls.name = "MetaSIS"
+        cls.infection_prob = 0.04
+        cls.recovery_prob = 0.08
+        cls.infection_type = 2
+        cls.diffusion_susceptible = 0.1
+        cls.diffusion_infected = 0.1
+        cls.initial_density = 1000
+        cls.initial_state_dist = -1
+        return cls
+
+    @classmethod
     def gnn_test(cls):
         cls = cls()
         cls.name = "TrainableEpidemics"
         cls.num_states = 2
+        cls.window_size = 1
+        cls.window_step = 1
 
         cls.loss = "weighted_cross_entropy"
         cls.optimizer = OptimizerConfig.radam_default()
@@ -73,6 +88,8 @@ class DynamicsConfig(Config):
         cls = cls()
         cls.name = "TrainableEpidemics"
         cls.num_states = 2
+        cls.window_size = 1
+        cls.window_step = 1
 
         cls.loss = "weighted_cross_entropy"
         cls.optimizer = OptimizerConfig.radam_default()
@@ -95,6 +112,8 @@ class DynamicsConfig(Config):
         cls = cls()
         cls.name = "TrainableEpidemics"
         cls.num_states = 2
+        cls.window_size = 1
+        cls.window_step = 1
 
         cls.loss = "weighted_cross_entropy"
         cls.optimizer = OptimizerConfig.radam_default()
@@ -117,6 +136,8 @@ class DynamicsConfig(Config):
         cls = cls()
         cls.name = "TrainableEpidemics"
         cls.num_states = 4
+        cls.window_size = 1
+        cls.window_step = 1
 
         cls.loss = "weighted_cross_entropy"
         cls.optimizer = OptimizerConfig.radam_default()
@@ -139,6 +160,8 @@ class DynamicsConfig(Config):
         cls = cls()
         cls.name = "TrainableEpidemics"
         cls.num_states = 2
+        cls.window_size = 1
+        cls.window_step = 1
 
         cls.loss = "weighted_cross_entropy"
         cls.optimizer = OptimizerConfig.radam_default()
@@ -147,10 +170,10 @@ class DynamicsConfig(Config):
         cls.att_activation = "relu"
         cls.out_activation = "relu"
 
-        cls.in_channels = [32]
+        cls.in_channels = [32, 32]
         cls.att_channels = 32
         cls.heads = 2
-        cls.out_channels = [32]
+        cls.out_channels = [32, 32]
         cls.concat = True
         cls.bias = True
 
