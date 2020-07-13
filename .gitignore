@@ -5,6 +5,7 @@
 *.txt
 *.pickle
 *.edges
+*.zip
 
 # Figure format
 *.pdf
