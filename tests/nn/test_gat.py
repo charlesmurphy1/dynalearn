@@ -28,3 +28,7 @@ class GraphAttentionTest(unittest.TestCase):
 
         y = self.gat.forward(x, edge_index)
         torch.testing.assert_allclose(y, ref_y)
+
+
+if __name__ == "__main__":
+    unittest.main()

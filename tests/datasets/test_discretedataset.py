@@ -2,32 +2,41 @@ import networkx as nx
 import numpy as np
 import torch
 
-from dynalearn.datasets import MarkovDataset, Sampler
-from dynalearn.config import DatasetConfig
+from dynalearn.config import DatasetConfig, DynamicsConfig
+from dynalearn.datasets import DiscreteDataset, Sampler, Data, NetworkData, WindowedData
+from dynalearn.dynamics import SIS
 from unittest import TestCase
 
 
-class DatasetTest(TestCase):
+class DiscreteDatasetTest(TestCase):
     def setUp(self):
-        self.config = DatasetConfig.plain_markov_default()
-        self.dataset = MarkovDataset(self.config)
+        self.config = DatasetConfig.plain_discrete_default()
         self.num_states = 2
         self.num_networks = 5
         self.num_samples = 6
         self.num_nodes = 10
-        self.dataset.num_states = self.num_states
+        self.window_size = 2
+        self.window_step = 2
+        self.config.window_size = self.window_size
+        self.config.window_step = self.window_step
+        self.dataset = DiscreteDataset(self.config)
+        self.dataset.m_dynamics = SIS(DynamicsConfig.sis_default())
         return
 
     def scenario_1(self):
-        networks = {
-            i: nx.complete_graph(self.num_nodes) for i in range(self.num_networks)
-        }
+        networks = NetworkData(
+            data=[nx.complete_graph(self.num_nodes) for i in range(self.num_networks)]
+        )
         inputs = {
-            i: np.zeros((self.num_samples, self.num_nodes))
+            i: WindowedData(
+                data=np.zeros((self.num_samples, self.num_nodes)),
+                window_size=self.window_size,
+                window_step=self.window_step,
+            )
             for i in range(self.num_networks)
         }
         targets = {
-            i: np.zeros((self.num_samples, self.num_nodes))
+            i: Data(data=np.zeros((self.num_samples, self.num_nodes)))
             for i in range(self.num_networks)
         }
         data = {}
@@ -37,18 +46,24 @@ class DatasetTest(TestCase):
         self.dataset.data = data
 
     def scenario_2(self):
-        networks = {
-            i: nx.complete_graph(self.num_nodes) for i in range(self.num_networks)
-        }
+        networks = NetworkData(
+            data=[nx.complete_graph(self.num_nodes) for i in range(self.num_networks)]
+        )
         inputs = {
-            i: np.random.randint(
-                self.num_states, size=(self.num_samples, self.num_nodes)
+            i: WindowedData(
+                data=np.random.randint(
+                    self.num_states, size=(self.num_samples, self.num_nodes)
+                ),
+                window_size=self.window_size,
+                window_step=self.window_step,
             )
             for i in range(self.num_networks)
         }
         targets = {
-            i: np.random.randint(
-                self.num_states, size=(self.num_samples, self.num_nodes)
+            i: Data(
+                data=np.random.randint(
+                    self.num_states, size=(self.num_samples, self.num_nodes)
+                )
             )
             for i in range(self.num_networks)
         }
@@ -79,10 +94,9 @@ class DatasetTest(TestCase):
         self.scenario_1()
         dataset = self.dataset.partition(0.5)
         for i in range(self.num_networks):
-            self.assertEqual(self.dataset.networks[i], dataset.networks[i])
+            np.testing.assert_array_equal(self.dataset.networks[i], dataset.networks[i])
             np.testing.assert_array_equal(self.dataset.inputs[i], dataset.inputs[i])
             np.testing.assert_array_equal(self.dataset.targets[i], dataset.targets[i])
-
             index1 = np.where(self.dataset.weights[i] == 0.0)[0]
             index2 = np.where(dataset.weights[i] > 0.0)[0]
             np.testing.assert_array_equal(index1, index2)
@@ -97,7 +111,7 @@ class DatasetTest(TestCase):
             i += 1
         self.assertEqual(self.num_samples * self.num_networks, i)
         (x, g), y, w = data
-        x_ref = np.zeros(self.num_nodes)
+        x_ref = np.zeros((self.window_size, self.num_nodes))
         y_ref = np.zeros((self.num_nodes, self.num_states))
         y_ref[:, 0] = 1
         w_ref = np.ones(self.num_nodes) / self.num_nodes

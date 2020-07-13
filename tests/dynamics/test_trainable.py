@@ -2,15 +2,15 @@ import unittest
 import networkx as nx
 import numpy as np
 
-from dynalearn.dynamics import LearnableEpidemics
+from dynalearn.dynamics import TrainableEpidemics
 from dynalearn.config import DynamicsConfig
 from torch_geometric.nn.inits import ones
 
 
-class LearnableEpidemicsTest(unittest.TestCase):
+class TrainableEpidemicsTest(unittest.TestCase):
     def setUp(self):
         self.config = DynamicsConfig.sissis_gnn_default()
-        self.model = LearnableEpidemics(self.config)
+        self.model = TrainableEpidemics(self.config)
         self.num_nodes = 5
         self.num_states = self.config.num_states
 

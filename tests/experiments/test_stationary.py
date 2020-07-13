@@ -15,7 +15,6 @@ class StationaryStateMetricsTest(unittest.TestCase):
         self.m_metrics.initialize(self.experiment)
 
     def test_stationary_state(self):
-
         print(self.t_metrics._stationary_state_())
         print(self.m_metrics._stationary_state_())
 

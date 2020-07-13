@@ -21,3 +21,7 @@ class PropagatorTest(unittest.TestCase):
         l = self.propagator.forward(x, self.edge_index)
         l = l.cpu().numpy()
         torch.testing.assert_allclose(l, ref_l)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -20,3 +20,7 @@ class HistoryTest(unittest.TestCase):
         self.history.update_batch(logs)
         self.assertEqual({0: logs, 1: logs}, self.history._batch_logs)
         self.history.reset()
+
+
+if __name__ == "__main__":
+    unittest.main()
