@@ -1,20 +1,20 @@
 from dynalearn.datasets import (
-    MarkovDataset,
-    DegreeWeightedMarkovDataset,
-    StateWeightedMarkovDataset,
-    GeneralMarkovDataset,
-    DegreeWeightedGeneralMarkovDataset,
-    StateWeightedGeneralMarkovDataset,
+    DiscreteDataset,
+    DegreeWeightedDiscreteDataset,
+    StateWeightedDiscreteDataset,
+    ContinuousDataset,
+    DegreeWeightedContinuousDataset,
+    StateWeightedContinuousDataset,
 )
 
 
 __datasets__ = {
-    "MarkovDataset": MarkovDataset,
-    "DegreeWeightedMarkovDataset": DegreeWeightedMarkovDataset,
-    "StateWeightedMarkovDataset": StateWeightedMarkovDataset,
-    "GeneralMarkovDataset": GeneralMarkovDataset,
-    "DegreeWeightedGeneralMarkovDataset": DegreeWeightedGeneralMarkovDataset,
-    "StateWeightedGeneralMarkovDataset": StateWeightedGeneralMarkovDataset,
+    "DiscreteDataset": DiscreteDataset,
+    "DegreeWeightedDiscreteDataset": DegreeWeightedDiscreteDataset,
+    "StateWeightedDiscreteDataset": StateWeightedDiscreteDataset,
+    "ContinuousDataset": ContinuousDataset,
+    "DegreeWeightedContinuousDataset": DegreeWeightedContinuousDataset,
+    "StateWeightedContinuousDataset": StateWeightedContinuousDataset,
 }
 
 

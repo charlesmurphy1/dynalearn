@@ -43,8 +43,9 @@ class StateTransform(Transform):
 
     def __call__(self, x):
         if type(x) == np.ndarray:
-            x = self._transform_state_(x)
-        return x
+            return self._transform_state_(x)
+        else:
+            return x
 
 
 class NetworkTransform(Transform):
@@ -54,5 +55,6 @@ class NetworkTransform(Transform):
 
     def __call__(self, g):
         if type(g) == nx.Graph:
-            g = self._transform_network_(g)
-        return g
+            return self._transform_network_(g)
+        else:
+            return g

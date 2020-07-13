@@ -2,20 +2,19 @@ import networkx as nx
 import numpy as np
 import torch
 
-
-from dynalearn.datasets.transforms import get as get_transforms
 from dynalearn.datasets import Dataset, DegreeWeightedDataset
 from dynalearn.config import Config
+from dynalearn.utilities import from_nary
 from dynalearn.utilities import to_edge_index, onehot
 
 
-class MarkovDataset(Dataset):
+class DiscreteDataset(Dataset):
     def __getitem__(self, index):
         i, j = self.indices[index]
-        edge_index = to_edge_index(self.networks[i])
+        edge_index = self.networks[i]
         x = torch.FloatTensor(self.inputs[i][j])
         if len(self.targets[i][j].shape) == 1:
-            y = onehot(self.targets[i][j], self.num_states)
+            y = onehot(self.targets[i][j], num_class=self.m_dynamics.num_states)
         else:
             y = self.targets[i][j]
         y = torch.FloatTensor(y)
@@ -25,24 +24,32 @@ class MarkovDataset(Dataset):
         return (x, edge_index), y, w
 
 
-class DegreeWeightedMarkovDataset(MarkovDataset, DegreeWeightedDataset):
+class DegreeWeightedDiscreteDataset(DiscreteDataset, DegreeWeightedDataset):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
-        MarkovDataset.__init__(self, config)
+        DiscreteDataset.__init__(self, config)
         DegreeWeightedDataset.__init__(self, config)
 
 
-class StateWeightedMarkovDataset(MarkovDataset):
+class StateWeightedDiscreteDataset(DiscreteDataset):
     def _get_counts_(self):
         counts = {}
         degrees = []
-        for i, g in self.networks.items():
+        eff_num_states = self.m_dynamics.num_states ** self.window_size
+        for i in range(self.networks.size):
+            g = self.networks.data[i]
             adj = nx.to_numpy_array(g)
-            for j, s in enumerate(self.inputs[i]):
-                ns = np.zeros((s.shape[0], self.num_states))
-                for k in range(self.num_states):
+            for j in range(self.inputs[i].size):
+                s = np.array(
+                    [
+                        from_nary(ss, base=self.m_dynamics.num_states)
+                        for ss in self.inputs[i][j].T
+                    ]
+                )
+                ns = np.zeros((s.shape[0], eff_num_states))
+                for k in range(eff_num_states):
                     ns[:, k] = adj @ (s == k)
 
                 for k in range(s.shape[0]):
@@ -56,13 +63,20 @@ class StateWeightedMarkovDataset(MarkovDataset):
     def _get_weights_(self):
         weights = {}
         counts = self._get_counts_()
-
-        for i, g in self.networks.items():
-            weights[i] = np.zeros(self.inputs[i].shape)
+        eff_num_states = self.m_dynamics.num_states ** self.window_size
+        for i in range(self.networks.size):
+            g = self.networks.data[i]
+            weights[i] = np.zeros((self.inputs[i].size, *self.inputs[i].shape[1:]))
             adj = nx.to_numpy_array(g)
-            for j, s in enumerate(self.inputs[i]):
-                ns = np.zeros((s.shape[0], self.num_states))
-                for k in range(self.num_states):
+            for j in range(self.inputs[i].size):
+                s = np.array(
+                    [
+                        from_nary(ss, base=self.m_dynamics.num_states)
+                        for ss in self.inputs[i][j].T
+                    ]
+                )
+                ns = np.zeros((s.shape[0], eff_num_states))
+                for k in range(eff_num_states):
                     ns[:, k] = adj @ (s == k)
 
                 for k in range(s.shape[0]):

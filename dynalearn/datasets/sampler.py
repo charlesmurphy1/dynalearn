@@ -17,8 +17,7 @@ class Sampler:
             g_index = self._get_network_()
             s_index = self._get_state_(g_index)
             self.update(g_index, s_index)
-            index = self.dataset.rev_indices[(g_index, s_index)]
-            return index
+            return (g_index, s_index)
         else:
             self.reset()
             raise StopIteration
@@ -34,7 +33,7 @@ class Sampler:
         self.counter = 0
         self.avail_networks = list(range(self.dataset.network_weights.shape[0]))
         self.avail_states = {
-            i: list(range(self.dataset.state_weights[i].shape[0]))
+            i: list(range(int(self.dataset.state_weights[i].shape[0]),))
             for i in self.avail_networks
         }
 
