@@ -12,7 +12,9 @@ class ComplexSIS(SingleEpidemics):
         self.deactivation = deactivation
 
     def predict(self, x):
-        ltp = np.zeros((x.shape[0], self.num_states))
+        if len(x.shape) > 1:
+            x = x[-1].squeeze()
+        ltp = np.zeros((*x.shape, self.num_states))
         l = self.neighbors_state(x)
         p = self.activation(l)
         q = self.deactivation(l)
@@ -30,6 +32,8 @@ class ComplexSIR(SingleEpidemics):
         self.deactivation = deactivation
 
     def predict(self, x):
+        if len(x.shape) > 1:
+            x = x[-1].squeeze()
         ltp = np.zeros((x.shape[0], self.num_states))
         l = self.neighbors_state(x)
         p = self.activation(l)

@@ -1,7 +1,19 @@
-from .simple import *
-from .complex import *
-from .interacting import *
-from .trainable import *
+from .epidemics import (
+    SIS,
+    SIR,
+    ThresholdSIS,
+    ThresholdSIR,
+    NonLinearSIS,
+    NonLinearSIR,
+    SineSIS,
+    SineSIR,
+    PlanckSIS,
+    PlanckSIR,
+    SISSIS,
+    HiddenSISSIS,
+    TrainableEpidemics,
+)
+from .metapopulation import MetaSIS, TrainableMetapopulation
 
 
 __dynamics__ = {
@@ -18,6 +30,8 @@ __dynamics__ = {
     "SISSIS": SISSIS,
     "HiddenSISSIS": HiddenSISSIS,
     "TrainableEpidemics": TrainableEpidemics,
+    "MetaSIS": MetaSIS,
+    "TrainableMetapopulation": TrainableMetapopulation,
 }
 
 

@@ -1,6 +1,6 @@
 """
 
-dynamical_network.py
+dynamic.py
 
 Created by Charles Murphy on 26-06-18.
 Copyright © 2018 Charles Murphy. All rights reserved.
@@ -22,7 +22,7 @@ from math import ceil
 from dynalearn.utilities import to_edge_index
 
 
-class DynamicsModel(ABC):
+class Dynamics(ABC):
     def __init__(self, config, num_states):
         self._config = config
         self._num_states = num_states

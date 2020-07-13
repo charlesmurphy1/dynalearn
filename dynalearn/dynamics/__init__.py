@@ -1,7 +1,5 @@
-from .simple import *
-from .complex import *
-from .interacting import *
-from .trainable import *
+from .epidemics import *
+from .metapopulation import *
 from .getter import *
 
 # import dynalearn.dynamics.base

@@ -2,28 +2,31 @@ import networkx as nx
 import numpy as np
 import torch
 
-from dynalearn.dynamics.base import DynamicsModel
+from dynalearn.dynamics.dynamics import Dynamics
 from dynalearn.nn.models import Propagator
 from dynalearn.utilities import from_binary
 
 
-class Epidemics(DynamicsModel):
+class Epidemics(Dynamics):
     def __init__(self, config, num_states):
-        DynamicsModel.__init__(self, config, num_states)
-        self.initial_infected = config.initial_infected
+        Dynamics.__init__(self, config, num_states)
+        if "initial_infected" in config.__dict__:
+            self.initial_infected = config.initial_infected
+        else:
+            self.initial_infected = -1
         self.propagator = Propagator(num_states)
         self.state_map = {i: i for i in range(num_states)}
 
     def sample(self, x):
         p = self.predict(x)
         dist = torch.distributions.Categorical(torch.tensor(p))
-        x = np.array(dist.sample())
-        return x
+        y = np.array(dist.sample())
+        return y
 
     def neighbors_state(self, x):
         if len(x.shape) > 1:
             raise ValueError(
-                f"Invalid shape, expected shape of size 1 and got ({x.shape})"
+                f"Invalid shape, expected shape of size 1 and got {x.shape}"
             )
 
         l = self.propagator.forward(x, self.edge_index)
@@ -56,7 +59,6 @@ class MultiEpidemics(Epidemics):
                 + f" must be between [0, 1] or equal to -1:"
                 + f" Received {initial_infected}."
             )
-
         n_infected = [np.random.binomial(self.num_nodes, pp) for pp in p]
         nodeset = np.arange(self.num_nodes)
         index = [np.random.choice(nodeset, size=n, replace=False) for n in n_infected]
@@ -66,8 +68,10 @@ class MultiEpidemics(Epidemics):
         x = np.array([from_binary(b[::-1]) for b in bin_x])
         return x
 
-    def is_dead(self, states):
-        if np.all(states == 0):
+    def is_dead(self, x):
+        if len(x.shape) > 1:
+            x = x[-1]
+        if np.all(x == 0):
             return True
         else:
             return False

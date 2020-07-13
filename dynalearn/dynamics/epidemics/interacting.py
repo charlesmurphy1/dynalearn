@@ -22,6 +22,8 @@ class SISSIS(MultiEpidemics):
         super(SISSIS, self).__init__(config, num_diseases, num_states)
 
     def predict(self, x):
+        if len(x.shape) > 1:
+            x = x[-1].squeeze()
         l = self.neighbors_state(x)
         p0, p1 = self.infection(x, l)
         q0, q1 = self.recovery(x, l)
@@ -51,7 +53,6 @@ class SISSIS(MultiEpidemics):
         ltp[x == 3, 1] = (1 - q0[x == 3]) * q1[x == 3]
         ltp[x == 3, 2] = q0[x == 3] * (1 - q1[x == 3])
         ltp[x == 3, 3] = (1 - q0[x == 3]) * (1 - q1[x == 3])
-
         return ltp
 
     def infection(self, x, l):
@@ -96,18 +97,23 @@ class HiddenSISSIS(SISSIS):
             config.__dict__ = kwargs
         SISSIS.__init__(self, config, **kwargs)
         self.state_map = {0: 0, 1: 1, 2: 0, 3: 1}
+        self.hide = True
 
     def predict(self, x):
+        if len(x.shape) > 1:
+            x = x[-1].squeeze()
         p = SISSIS.predict(self, x)
 
-        ltp = np.zeros((x.shape[0], 2))
-        ltp[:, 0] = p[:, 0] + p[:, 2]
-        ltp[:, 1] = p[:, 1] + p[:, 3]
+        if self.hide:
+            ltp = np.zeros((x.shape[0], 2))
+            ltp[:, 0] = p[:, 0] + p[:, 2]
+            ltp[:, 1] = p[:, 1] + p[:, 3]
+            return ltp
 
-        return ltp
+        return p
 
     def sample(self, x):
         p = SISSIS.predict(self, x)
         dist = torch.distributions.Categorical(torch.tensor(p))
         x = np.array(dist.sample())
-        return np.vectorize(self.state_map.get)(x)
+        return x
