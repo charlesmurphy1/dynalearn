@@ -8,6 +8,7 @@ from dynalearn.utilities import (
     numba_all_combinations,
     numba_logfactorial,
     numba_multinomial,
+    to_nary,
 )
 from itertools import product
 from numba import jit
@@ -117,9 +118,34 @@ class Meanfield(ABC):
 
 
 class GenericMeanfield(Meanfield):
-    def __init__(self, p_k, model, with_numba=False):
+    def __init__(self, p_k, model, with_numba=True):
         self.model = model
-        Meanfield.__init__(self, p_k, model.num_states, with_numba=with_numba)
+        if "window_size" in self.model.__dict__:
+            self.window_size = self.model.window_size
+        else:
+            self.window_size = 1
+        if self.model.__class__.__name__ == "TrainableEpidemics":
+            num_states = self.model.num_states ** self.model.window_size
+        else:
+            num_states = model.num_states
+        Meanfield.__init__(self, p_k, num_states, with_numba=with_numba)
+
+    def update(self, x):
+        y = {k: np.zeros(self.num_states) for k in self.k}
+        phi = self.phi(x)
+
+        for k, i, j in product(self.k, range(self.num_states), range(self.num_states)):
+            b_i = to_nary(i, base=self.model.num_states, dim=self.window_size).squeeze()
+            b_j = to_nary(j, base=self.model.num_states, dim=self.window_size).squeeze()
+            if len(b_j.shape) > 0 and len(b_i.shape) > 0:
+                if np.all(b_j[1:] == b_i[:-1]):
+                    i = int(b_i[-1])
+                    y[k][i] += self.marginal_ltp(j, i, k, phi) * x[k][j]
+            else:
+                y[k][i] += self.marginal_ltp(j, i, k, phi) * x[k][j]
+
+        y = self.normalize_state(y)
+        return y
 
     def compute_ltp(self):
         ltp = {}
@@ -127,17 +153,16 @@ class GenericMeanfield(Meanfield):
         for k in self.p_k.values:
             neighbor_states = np.array(all_combinations(k, self.num_states))
             _ltp = np.zeros(
-                (neighbor_states.shape[0], self.num_states, self.num_states)
+                (neighbor_states.shape[0], self.num_states, self.model.num_states)
             )
             g = nx.star_graph(k + 1)
             self.model.network = g
             for i, ns in enumerate(neighbor_states):
-                state = np.zeros(g.number_of_nodes())
-                state[1:] = np.concatenate(
-                    [ss * np.ones(ll) for ss, ll in enumerate(ns)]
-                )
+                x = np.zeros(g.number_of_nodes())
+                x[1:] = np.concatenate([ss * np.ones(ll) for ss, ll in enumerate(ns)])
                 for s in range(self.num_states):
-                    state[0] = s
-                    _ltp[i, s] = self.model.predict(state)[0]
+                    x[0] = s
+                    bin_x = to_nary(x, base=self.num_states, dim=self.window_size)
+                    _ltp[i, s] = self.model.predict(bin_x)[0]
             ltp[k] = _ltp
         self.ltp = ltp

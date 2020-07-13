@@ -1,4 +1,4 @@
-from .base import *
+from .meanfield import *
 from .complex import *
 from .simple import *
 from .interacting import *
@@ -17,6 +17,7 @@ __meanfields__ = {
     "PlanckSIS": lambda model: lambda p_k: PlanckSISMeanfield(p_k, model),
     "PlanckSIR": lambda model: lambda p_k: PlanckSIRMeanfield(p_k, model),
     "SISSIS": lambda model: lambda p_k: SISSISMeanfield(p_k, model),
+    "HiddenSISSIS": lambda model: lambda p_k: SISSISMeanfield(p_k, model),
 }
 
 

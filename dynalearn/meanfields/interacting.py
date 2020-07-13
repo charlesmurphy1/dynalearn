@@ -1,14 +1,14 @@
 import numpy as np
-from .base import Meanfield
-from dynalearn.dynamics.interacting import SISSIS
+from .meanfield import Meanfield
+from dynalearn.dynamics.epidemics.interacting import SISSIS, HiddenSISSIS
 from dynalearn.meanfields import Meanfield
 
 
 class SISSISMeanfield(Meanfield):
     def __init__(self, p_k, model):
-        if model.__class__ is not SISSIS:
+        if model.__class__ is not SISSIS and model.__class__ is not HiddenSISSIS:
             raise ValueError(
-                f"{model.__class__} is invalid, the model class must be 'SISSIS'."
+                f"{model.__class__} is invalid, the model class must be [SISSIS, HiddenSISSIS]."
             )
         self.model = model
         self.infection1 = model.infection1
