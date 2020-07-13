@@ -3,7 +3,7 @@ import numpy as np
 
 from abc import abstractmethod
 from .metrics import Metrics
-from dynalearn.utilities import all_combinations
+from dynalearn.utilities import all_combinations, from_nary
 from itertools import product
 from scipy.special import binom
 
@@ -37,14 +37,14 @@ class LTPMetrics(Metrics):
         self.num_points = {}
         self.num_updates = 0
 
-        for k, g in self.dataset.networks.items():
+        for k, g in enumerate(self.dataset.networks.data):
             if (
-                self.max_num_points < self.dataset.inputs[k].shape[0]
+                self.max_num_points < self.dataset.inputs[k].size
                 and self.max_num_points > 1
             ):
                 self.num_points[k] = self.max_num_points
             else:
-                self.num_points[k] = self.dataset.inputs[k].shape[0]
+                self.num_points[k] = self.dataset.inputs[k].size
                 self.num_updates += self.num_points[k]
 
         self.get_data["summaries"] = self._get_summaries_
@@ -69,14 +69,19 @@ class LTPMetrics(Metrics):
         self.num_updates *= update_factor
 
     def _get_summaries_(self, pb=None):
-        for k, g in self.dataset.networks.items():
-            self.model.network = g
+        eff_num_states = self.num_states ** self.window_size
+
+        for k in range(self.dataset.networks.size):
+            g = self.dataset.networks.data[k]
             adj = nx.to_numpy_array(g)
             for t in range(self.num_points[k]):
-                x = self.dataset.inputs[k][t]
-                l = np.array([np.matmul(adj, x == i) for i in range(self.num_states)]).T
+                obs_x = self.dataset.data["inputs"][k][t]
+                obs_x = from_nary(obs_x, axis=0, base=self.num_states)
+                l = np.array(
+                    [np.matmul(adj, obs_x == i) for i in range(eff_num_states)]
+                ).T
                 for i in self.all_nodes[k][t]:
-                    s = (x[i], *list(l[i]))
+                    s = (obs_x[i], *list(l[i]))
                     if s not in self.summaries:
                         self.summaries.add(s)
         return np.array(list(self.summaries))
@@ -84,23 +89,26 @@ class LTPMetrics(Metrics):
     def _get_ltp_(self, nodes, pb=None):
         ltp = {}
         counter = {}
+        eff_num_states = self.num_states ** self.window_size
 
-        for k in self.dataset.networks.keys():
-            real_g = self.dataset._data["networks"][k]
-            obs_g = self.dataset.data["networks"][k]
-            self._set_network_(real_g, obs_g)
+        for k in range(self.dataset.networks.size):
+            real_g = self.dataset._data["networks"].data[k]
+            obs_g = self.dataset.data["networks"].data[k]
+            self.model.network = self._set_network_(real_g, obs_g)
             adj = nx.to_numpy_array(obs_g)
             for t in range(self.num_points[k]):
                 real_x = self.dataset._data["inputs"][k][t]
-                obs_x = self.dataset.inputs[k][t]
-                l = np.array(
-                    [np.matmul(adj, obs_x == i) for i in range(self.num_states)]
-                ).T
+                obs_x = self.dataset.data["inputs"][k][t]
                 real_y = self.dataset._data["targets"][k][t]
                 obs_y = self.dataset.targets[k][t]
                 pred = self.predict(real_x, obs_x, real_y, obs_y)
+
+                bin_x = from_nary(obs_x, axis=0, base=self.num_states) * 1
+                l = np.array(
+                    [np.matmul(adj, bin_x == i) for i in range(eff_num_states)]
+                ).T
                 for i in nodes[k][t]:
-                    s = (obs_x[i], *list(l[i]))
+                    s = (bin_x[i], *list(l[i]))
                     if s in ltp:
                         if counter[s] == self.max_num_sample:
                             continue
@@ -126,9 +134,9 @@ class LTPMetrics(Metrics):
         weights = dataset.weights
         nodes = {}
 
-        for g_index in range(len(dataset.networks)):
+        for g_index in range(dataset.networks.size):
             nodes[g_index] = {}
-            for s_index in range(dataset.inputs[g_index].shape[0]):
+            for s_index in range(dataset.inputs[g_index].size):
                 if all:
                     nodes[g_index][s_index] = np.arange(
                         dataset.weights[g_index][s_index].shape[0]
@@ -152,6 +160,8 @@ class LTPMetrics(Metrics):
         reduce="mean",
         err_reduce="std",
     ):
+        if type(in_state) is int:
+            in_state = [in_state]
         if reduce == "mean":
             op = np.nanmean
             if err_reduce == "std":
@@ -192,7 +202,9 @@ class LTPMetrics(Metrics):
             if in_state is None:
                 index = all_summ == x
             else:
-                index = (all_summ == x) * (summaries[:, 0] == in_state)
+                index = (all_summ == x) * np.sum(
+                    [summaries[:, 0] == s for s in in_state]
+                ).astype("bool")
 
             if out_state is None or len(data.shape) == 1:
                 y = data[index]
@@ -224,6 +236,7 @@ class TrueLTPMetrics(LTPMetrics):
 
     def get_model(self, experiment):
         self.num_states = experiment.model.num_states
+        self.window_size = experiment.model.window_size
         return experiment.dynamics
 
     def predict(self, real_x, obs_x, real_y, obs_y):
@@ -239,6 +252,7 @@ class GNNLTPMetrics(LTPMetrics):
 
     def get_model(self, experiment):
         self.num_states = experiment.model.num_states
+        self.window_size = experiment.model.window_size
         return experiment.model
 
     def predict(self, real_x, obs_x, real_y, obs_y):
@@ -253,6 +267,7 @@ class MLELTPMetrics(LTPMetrics):
 
     def get_model(self, experiment):
         self.num_states = experiment.model.num_states
+        self.window_size = experiment.model.window_size
         return experiment.dynamics
 
     def predict(self, real_x, obs_x, real_y, obs_y):
@@ -265,6 +280,7 @@ class UniformLTPMetrics(LTPMetrics):
 
     def get_model(self, experiment):
         self.num_states = experiment.model.num_states
+        self.window_size = experiment.model.window_size
         return experiment.dynamics
 
     def predict(self, real_x, obs_x, real_y, obs_y):

@@ -35,7 +35,7 @@ class Experiment:
         self.test_dataset = None
         self.train_details = config.train_details
         self.metrics = get_metrics(config.metrics)
-        self.summaries = get_summaries(config.summaries)
+        self.summaries = get_summaries(config.metrics)
         self.train_metrics = get_train_metrics(config.train_metrics)
         self.callbacks = get_callbacks(config.callbacks)
 
@@ -150,6 +150,8 @@ class Experiment:
                 pb = tqdm.tqdm(
                     range(len(self.dataset)), "Partitioning for validation set"
                 )
+            else:
+                pb = None
             p = self.train_details.val_fraction
             b = self.train_details.val_bias
             self.val_dataset = self.dataset.partition(p, bias=b, pb=pb)

@@ -14,64 +14,63 @@ class JSDErrorSummary(Summary):
         else:
             self.err_reduce = config.err_reduce
 
-    @abstractmethod
     def get_metrics(self, experiment):
-        raise NotImplemented
+        ref_metrics = experiment.metrics["TrueLTPMetrics"]
+        metrics = {}
+        if "GNNLTPMetrics" in experiment.metrics:
+            metrics["true-gnn"] = experiment.metrics["GNNLTPMetrics"]
+        if "MLELTPMetrics" in experiment.metrics:
+            metrics["true-mle"] = experiment.metrics["MLELTPMetrics"]
+        if "UniformLTPMetrics" in experiment.metrics:
+            metrics["true-uni"] = experiment.metrics["UniformLTPMetrics"]
+        return ref_metrics, metrics
 
     def initialize(self, experiment):
-        self.metrics1, self.metrics2 = self.get_metrics(experiment)
-
-        self.data["all"] = self._get_summary_("ltp")
-        self.data["train"] = self._get_summary_("train_ltp")
-        if "val_ltp" in self.metrics1.data and "val_ltp" in self.metrics2.data:
-            self.data["val"] = self._get_summary_("val_ltp")
-        if "test_ltp" in self.metrics1.data and "test_ltp" in self.metrics2.data:
-            self.data["test"] = self._get_summary_("test_ltp")
+        self.ref_metrics, self.metrics = self.get_metrics(experiment)
+        data_all = self._get_summary_("ltp")
+        data_train = self._get_summary_("train_ltp")
+        for k in data_all:
+            self.data[f"all-{k}"] = data_all[k]
+            self.data[f"train-{k}"] = data_train[k]
+        if "val_ltp" in self.ref_metrics.data:
+            data_val = self._get_summary_("val_ltp")
+            for k in data_val:
+                self.data[f"val-{k}"] = data_val[k]
+        if "test_ltp" in self.ref_metrics.data:
+            data_test = self._get_summary_("test_ltp")
+            for k in data_test:
+                self.data[f"test-{k}"] = data_test[k]
 
     def _get_summary_(self, name):
-        jsd = LTPMetrics.compare(
-            self.metrics1.data[name],
-            self.metrics2.data[name],
-            self.metrics1.data["summaries"],
-            func=jensenshannon,
-        )
-        x, y, el, eh = LTPMetrics.aggregate(
-            jsd, self.metrics1.data["summaries"], err_reduce=self.err_reduce
-        )
-        return np.array([x, y, el, eh]).T
-
-
-class TrueGNNJSDErrorSummary(JSDErrorSummary):
-    def get_metrics(self, experiment):
-        m1 = experiment.metrics["TrueLTPMetrics"]
-        m2 = experiment.metrics["GNNLTPMetrics"]
-
-        return m1, m2
-
-
-class TrueMLEJSDErrorSummary(JSDErrorSummary):
-    def get_metrics(self, experiment):
-        m1 = experiment.metrics["TrueLTPMetrics"]
-        m2 = experiment.metrics["MLELTPMetrics"]
-
-        return m1, m2
+        data = {}
+        for k, m in self.metrics.items():
+            jsd = LTPMetrics.compare(
+                self.ref_metrics.data[name],
+                m.data[name],
+                self.ref_metrics.data["summaries"],
+                func=jensenshannon,
+            )
+            x, y, el, eh = LTPMetrics.aggregate(
+                jsd, self.ref_metrics.data["summaries"], err_reduce=self.err_reduce
+            )
+            data[k] = np.array([x, y, el, eh]).T
+        return data
 
 
 class StarJSDErrorSummary(JSDErrorSummary):
     def initialize(self, experiment):
-        self.metrics1, self.metrics2 = self.get_metrics(experiment)
-        self.data["all"] = self._get_summary_("ltp")
+        self.ref_metrics, self.metrics = self.get_metrics(experiment)
+        data = self._get_summary_("ltp")
+        for k in data:
+            self.data[f"all-{k}"] = data[k]
 
-
-class TrueGNNStarJSDErrorSummary(StarJSDErrorSummary):
     def get_metrics(self, experiment):
-        m1 = experiment.metrics["TrueStarLTPMetrics"]
-        m2 = experiment.metrics["GNNStarLTPMetrics"]
-        return m1, m2
-
-
-class TrueUniformStarJSDErrorSummary(StarJSDErrorSummary):
-    def get_metrics(self, experiment):
-        m1 = experiment.metrics["TrueStarLTPMetrics"]
-        m2 = experiment.metrics["UniformStarLTPMetrics"]
-        return m1, m2
+        ref_metrics = experiment.metrics["TrueStarLTPMetrics"]
+        metrics = {}
+        if "GNNStarLTPMetrics" in experiment.metrics:
+            metrics["true-gnn"] = experiment.metrics["GNNStarLTPMetrics"]
+        if "MLEStarLTPMetrics" in experiment.metrics:
+            metrics["true-mle"] = experiment.metrics["MLEStarLTPMetrics"]
+        if "UniformStarLTPMetrics" in experiment.metrics:
+            metrics["true-uni"] = experiment.metrics["UniformStarLTPMetrics"]
+        return ref_metrics, metrics

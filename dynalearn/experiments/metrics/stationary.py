@@ -3,7 +3,7 @@ import numpy as np
 
 from abc import abstractmethod
 from .metrics import Metrics
-from dynalearn.utilities import poisson_distribution
+from dynalearn.utilities import poisson_distribution, from_nary
 from dynalearn.networks import ConfigurationNetwork, RealTemporalNetwork
 from dynalearn.config import NetworkConfig
 from random import sample
@@ -18,6 +18,8 @@ class StationaryStateMetrics(Metrics):
         else:
             self.parameters = None
         self.num_samples = config.num_samples
+        self.num_windows = config.num_windows
+        self.sample_graph = config.sample_graph
         self.full_data = config.full_data
         self.burn = config.burn
 
@@ -49,18 +51,42 @@ class StationaryStateMetrics(Metrics):
         self.dynamics = experiment.dynamics
         self.networks = self.get_networks(experiment)
         self.model = self.get_model(experiment)
+        self.num_states = self.model.num_states
+        if "window_size" in self.model.__dict__:
+            self.window_size = experiment.model.window_size
+            self.window_step = experiment.model.window_step
+        else:
+            self.window_size = 1
+            self.window_step = 1
 
         if self.parameters is None:
-            self.num_updates = self.num_samples
+            self.num_updates = self.num_windows
             self.get_data["stationary_state"] = lambda pb: self._stationary_state_(
                 pb=pb
             )
         else:
-            self.num_updates = self.num_samples * len(self.parameters)
+            self.num_updates = self.num_windows * len(self.parameters)
             self.get_data["parameters"] = lambda pb=None: self.parameters
             self.get_data["stationary_state"] = lambda pb: self._all_stationary_states_(
                 pb
             )
+
+    def initial_state(self, initial_infected=None):
+        x0 = np.zeros((self.window_size * self.window_step, self.networks.num_nodes))
+        x0[0] = self.dynamics.initial_state(initial_infected=initial_infected)
+        for i in range(1, self.window_size * self.window_step):
+            x0[i] = self.dynamics.sample(x0[i - 1])
+        return x0
+
+    def initial_network(self):
+        if issubclass(self.networks.__class__, RealTemporalNetwork):
+            g = self.networks.complete_network
+        elif hasattr(self.networks, "generate"):
+            g = self.networks.generate()
+        else:
+            g = sample(self.networks.data, 1)[0]
+        self.dynamics.network = g
+        self.model.network = g
 
     def _all_stationary_states_(self, pb=None):
         stationary_states = []
@@ -71,31 +97,50 @@ class StationaryStateMetrics(Metrics):
     def _stationary_state_(self, param=None, epsilon=None, pb=None):
         if param is not None:
             self.change_param(param)
-        samples = np.zeros((self.num_samples, self.networks.num_nodes))
-        for i in range(self.num_samples):
-            if issubclass(self.networks.__class__, RealTemporalNetwork):
-                g = self.networks.complete_network
-            elif hasattr(self.networks, "generate"):
-                g = self.networks.generate()
-            else:
-                g = sample(self.networks.data, 1)[0]
-            self.dynamics.network = g
-            self.model.network = g
-            x0 = self.dynamics.initial_state(initial_infected=epsilon)
-            samples[i] = self.burning(x0, self.burn)
+        samples = []
+        self.initial_network()
+        x = self.initial_state(initial_infected=epsilon)
+
+        for i in range(self.num_windows):
+            if np.random.rand() < self.sample_graph:
+                self.initial_network()
+                x = self.burning(x, self.burn)
+
+            x = self.burning(x, self.burn)
+            avg_x = self.avg(x)
+            if len(samples) == self.num_samples:
+                samples.pop(0)
+            samples.append(x)
+
             if self.verbose and pb is not None:
                 pb.update()
-        avg_samples = self.avg(samples, axis=-1)
+            if self.dynamics.is_dead(x[-1]):
+                x = self.initial_state(initial_infected=epsilon)
+
+        avg_samples = self.avg(samples)
         return self.statistics(avg_samples)
 
     def burning(self, x, burn=1):
         for b in range(burn):
-            x = self.model.sample(x)
+            y = x[:: self.window_step]
+            y = self.model.sample(y)
+            x = np.roll(x, -1, axis=0)
+            x[-1] = y
         return x
 
-    def avg(self, x, axis=None):
+    def avg(self, x, axis=-1):
         avg_x = []
-        for i in range(self.model.num_states):
+
+        if type(x) is list:
+            x = np.array(x)
+
+        if x.shape == (self.window_size * self.window_step, self.networks.num_nodes):
+            x = from_nary(x[:: self.window_step], base=self.num_states)
+        else:
+            x = np.array(
+                [from_nary(xx[:: self.window_step], base=self.num_states) for xx in x]
+            )
+        for i in range(self.num_states ** self.window_size):
             avg_x.append(np.mean(x == i, axis=axis))
         return np.array(avg_x)
 
@@ -139,17 +184,24 @@ class EpidemicSSMetrics(StationaryStateMetrics):
         self.dynamics = experiment.dynamics
         self.networks = self.get_networks(experiment)
         self.model = self.get_model(experiment)
+        self.num_states = self.model.num_states
+        if "window_size" in self.model.__dict__:
+            self.window_size = experiment.model.window_size
+            self.window_step = experiment.model.window_step
+        else:
+            self.window_size = 1
+            self.window_step = 1
 
         if self.parameters is None:
-            self.num_updates = 2 * self.num_samples
-            self.get_data[
-                "absorbing_stationary_state"
-            ] = lambda pb: self._stationary_state_(self.epsilon, pb=pb)
+            self.num_updates = 2 * self.num_windows
             self.get_data[
                 "epidemic_stationary_state"
             ] = lambda pb: self._stationary_state_(1 - self.epsilon, pb=pb)
+            self.get_data[
+                "absorbing_stationary_state"
+            ] = lambda pb: self._stationary_state_(self.epsilon, pb=pb)
         else:
-            self.num_updates = 2 * self.num_samples * len(self.parameters)
+            self.num_updates = 2 * self.num_windows * len(self.parameters)
             self.get_data["parameters"] = lambda pb=None: self.parameters
             self.get_data[
                 "absorbing_stationary_state"

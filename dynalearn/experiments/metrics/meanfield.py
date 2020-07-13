@@ -22,7 +22,6 @@ class MeanfieldMetrics(Metrics):
         self.model = None
         self.mf = None
         self.finder = get_finder(config)
-
         if self.parameters is None:
             self.names = ["fixed_points"]
         else:
@@ -91,6 +90,7 @@ class EpidemicMFMetrics(MeanfieldMetrics):
     def __init__(self, config, verbose=0):
         MeanfieldMetrics.__init__(self, config, verbose)
         self.epsilon = config.epsilon
+        self.adaptive = config.adaptive
 
         if self.parameters is None:
             self.names = ["absorbing_fixed_point", "epidemic_fixed_point"]
@@ -102,7 +102,7 @@ class EpidemicMFMetrics(MeanfieldMetrics):
         if epsilon is None:
             return x
         for k in x:
-            x[k] = np.ones(self.model.num_states) * epsilon / self.model.num_states
+            x[k] = np.ones(self.mf.num_states) * epsilon
             x[k][0] = 1 - epsilon
         return self.mf.normalize_state(x)
 
@@ -139,6 +139,8 @@ class EpidemicMFMetrics(MeanfieldMetrics):
         for p in params:
             fp = self._fixed_point_(param=p, epsilon=epsilon)
             fixed_points.append(fp)
+            # if self.adaptive:
+            #     epsilon = 1 - fp[0]
             epsilon = 1 - fp[0]
 
             if epsilon < self.epsilon:

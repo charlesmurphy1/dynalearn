@@ -1,7 +1,8 @@
 import networkx as nx
 import numpy as np
+
 from .ltp import LTPMetrics, TrueLTPMetrics, GNNLTPMetrics, UniformLTPMetrics
-from dynalearn.utilities import all_combinations
+from dynalearn.utilities import all_combinations, from_nary, to_nary
 from scipy.special import binom
 from itertools import product
 
@@ -14,11 +15,10 @@ class StarLTPMetrics(LTPMetrics):
 
     def initialize(self, experiment):
         self.model = self.get_model(experiment)
+        eff_num_states = self.num_states ** self.window_size
         self.num_updates = np.sum(
-            binom(
-                self.degree_class + self.model.num_states - 1, self.model.num_states - 1
-            )
-            * self.model.num_states
+            binom(self.degree_class + eff_num_states - 1, eff_num_states - 1)
+            * eff_num_states
         ).astype("int")
 
         self.get_data["ltp"] = lambda pb: self._get_ltp_(pb=pb)
@@ -28,6 +28,7 @@ class StarLTPMetrics(LTPMetrics):
         return np.array(list(self.summaries))
 
     def _get_ltp_(self, pb=None):
+        eff_num_states = self.num_states ** self.window_size
         num_nodes = np.max(self.degree_class) + 1
         ltp = np.zeros((self.num_updates, self.num_states))
         i = 0
@@ -35,8 +36,8 @@ class StarLTPMetrics(LTPMetrics):
             g = nx.empty_graph(num_nodes)
             g.add_edges_from(nx.star_graph(k).edges())
             self.model.network = g
-            all_s = range(self.model.num_states)
-            all_ns = all_combinations(k, self.model.num_states)
+            all_s = range(eff_num_states)
+            all_ns = all_combinations(k, eff_num_states)
 
             for s, ns in product(all_s, all_ns):
                 inputs = np.zeros(num_nodes)
@@ -44,6 +45,7 @@ class StarLTPMetrics(LTPMetrics):
                 inputs[1 : k + 1] = np.concatenate(
                     [j * np.ones(l) for j, l in enumerate(ns)]
                 )
+                inputs = to_nary(inputs, base=self.num_states, dim=self.window_size)
                 ltp[i] = self.predict(inputs, inputs, None, None)[0]
                 self.summaries.add((s, *ns))
                 i += 1

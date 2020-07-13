@@ -52,9 +52,7 @@ class Metrics(ABC):
             path = name + "/" + str(k)
             if path in h5file:
                 del h5file[path]
-                h5file.create_dataset(path, data=v)
-            elif path not in h5file:
-                h5file.create_dataset(path, data=v)
+            h5file.create_dataset(path, data=v)
 
     def load(self, h5file, name=None):
         if type(h5file) is not h5py.File:

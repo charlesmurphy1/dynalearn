@@ -6,6 +6,7 @@ from abc import abstractmethod
 from .metrics import Metrics
 from itertools import product
 from scipy.special import binom
+from dynalearn.utilities import from_nary
 
 
 class StatisticsMetrics(Metrics):
@@ -32,11 +33,12 @@ class StatisticsMetrics(Metrics):
     def initialize(self, experiment):
         self.dataset = experiment.dataset
         self.num_states = experiment.model.num_states
+        self.window_size = experiment.model.window_size
 
         self.num_points = {}
         self.num_updates = 0
-        for k, g in self.dataset.networks.items():
-            self.num_points[k] = self.dataset.inputs[k].shape[0]
+        for k, g in enumerate(self.dataset.networks.data):
+            self.num_points[k] = self.dataset.inputs[k].size
             self.num_updates += self.num_points[k]
         self.get_data["summaries"] = self._get_summaries_
 
@@ -70,11 +72,17 @@ class StatisticsMetrics(Metrics):
         self.num_updates *= factor
 
     def _get_summaries_(self, pb=None):
-        for k, g in self.dataset.networks.items():
+        for k, g in enumerate(self.dataset.networks.data):
             adj = nx.to_numpy_array(g)
             for t in range(self.num_points[k]):
-                x = self.dataset.inputs[k][t]
-                l = np.array([np.matmul(adj, x == i) for i in range(self.num_states)]).T
+                x = self.dataset.inputs[k].data[t]
+                x = from_nary(x, axis=0, base=self.num_states)
+                l = np.array(
+                    [
+                        np.matmul(adj, x == i)
+                        for i in range(self.num_states ** self.window_size)
+                    ]
+                ).T
                 for i in self.all_nodes[k][t]:
                     s = (x[i], *list(l[i]))
                     if s not in self.summaries:
@@ -84,11 +92,18 @@ class StatisticsMetrics(Metrics):
     def _get_stats_(self, nodes, pb=None):
         stats = {}
 
-        for k, g in self.dataset.networks.items():
+        for k in range(self.dataset.networks.size):
+            g = self.dataset.networks.data[k]
             adj = nx.to_numpy_array(g)
             for t in range(self.num_points[k]):
-                x = self.dataset.inputs[k][t]
-                l = np.array([np.matmul(adj, x == i) for i in range(self.num_states)]).T
+                x = self.dataset.inputs[k].data[t]
+                x = from_nary(x, axis=0, base=self.num_states)
+                l = np.array(
+                    [
+                        np.matmul(adj, x == i)
+                        for i in range(self.num_states ** self.window_size)
+                    ]
+                ).T
                 for i in nodes[k][t]:
                     s = (x[i], *list(l[i]))
                     if s in stats:
@@ -132,9 +147,9 @@ class StatisticsMetrics(Metrics):
         weights = dataset.weights
         nodes = {}
 
-        for g_index in range(len(dataset.networks)):
+        for g_index in range(dataset.networks.size):
             nodes[g_index] = {}
-            for s_index in range(dataset.inputs[g_index].shape[0]):
+            for s_index in range(dataset.inputs[g_index].size):
                 if all:
                     nodes[g_index][s_index] = np.arange(
                         dataset.weights[g_index][s_index].shape[0]
