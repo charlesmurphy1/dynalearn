@@ -6,9 +6,7 @@ from itertools import product
 path_to_dynalearn = (
     "/home/charles/Documents/ulaval/doctorat/projects/dynalearn-all/dynalearn/"
 )
-path_to_dynalearn_data = (
-    "/home/charles/Documents/ulaval/doctorat/projects/dynalearn-all/dynalearn/data"
-)
+path_to_dynalearn_data = "/home/charles/Documents/ulaval/doctorat/projects/dynalearn-all/dynalearn/data/phase2-data"
 path_to_all = os.path.join(path_to_dynalearn_data, "training")
 path_to_data = os.path.join(path_to_all, "full_data")
 path_to_best = os.path.join(path_to_all, "best")
@@ -27,21 +25,22 @@ if not os.path.exists(path_to_outputs):
 num_nodes = 1000
 # num_samples_array = [100, 500, 1000, 5000, 10000, 20000]
 num_samples_array = [1000]
+wsize_array = [2]
+wstep_array = [1]
 config_array = [
-    # "sis-er",
-    # "sis-ba",
-    # "plancksis-er",
-    # "plancksis-ba",
-    # "sissis-er",
-    "sissis-ba",
-    # "hiddensissis-ba",
+    # "sissis-ba",
+    "hiddensissis-ba",
 ]
-# tasks = ["generate_data", "train_model", "compute_metrics", "compute_summaries"]
-tasks = ["generate_data", "compute_metrics", "compute_summaries"]
+# tasks = ["generate_data", "train_model", "compute_metrics"]
+tasks = ["compute_metrics"]
+# metrics = ["ltp", "star-ltp", "meanfield", "stationary", "stats"]
+metrics = ["stationary"]
 
-for num_samples, config in product(num_samples_array, config_array):
+for num_samples, config, wsize, wstep in product(
+    num_samples_array, config_array, wsize_array, wstep_array
+):
     suffix = "ns" + str(num_samples)
-    name = config + "-" + suffix
+    name = config + "-" + suffix + "-ws" + str(wsize) + "-wt" + str(wstep)
     script = "#!/bin/bash\n"
     # script += "#SBATCH --account=def-aallard\n"
     # script += "#SBATCH --time=12:00:00\n"
@@ -59,11 +58,11 @@ for num_samples, config in product(num_samples_array, config_array):
     script += " --num_nodes {0}".format(num_nodes)
     script += " --resampling_time {0}".format(2)
     script += " --batch_size {0}".format(1)
-    script += " --window_size {0}".format(1)
-    script += " --window_step {0}".format(1)
+    script += " --window_size {0}".format(wsize)
+    script += " --window_step {0}".format(wstep)
     script += " --use_groundtruth {0}".format(1)
-    script += " --mode {0}".format("fast")
     script += " --tasks {0}".format(" ".join(tasks))
+    script += " --metrics {0}".format(" ".join(metrics))
     script += " --path {0}".format(path_to_data)
     script += " --path_to_best {0}".format(path_to_best)
     script += " --path_to_summary {0}".format(path_to_summary)

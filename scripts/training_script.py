@@ -42,16 +42,39 @@ def get_config(args):
         )
     else:
         dynamics, network = args.config.split("-")
-        return dynalearn.config.ExperimentConfig.base(
+        return dynalearn.config.ExperimentConfig.discrete_experiment(
             args.name,
             dynamics,
             network,
             args.path,
             args.path_to_best,
             args.path_to_summary,
-            args.mode,
             args.seed,
         )
+
+
+def get_metrics(args):
+    metrics = args.metrics
+    names = []
+    for m in metrics:
+        if m == "ltp":
+            names.extend(["TrueLTPMetrics", "GNNLTPMetrics", "MLELTPMetrics"])
+        elif m == "star-ltp":
+            names.extend(
+                ["TrueStarLTPMetrics", "GNNStarLTPMetrics", "UniformStarLTPMetrics"]
+            )
+        elif m == "meanfield":
+            names.extend(["TruePEMFMetrics", "GNNPEMFMetrics"])
+        elif m == "stationary":
+            # names.extend(["TruePESSMetrics", "GNNPESSMetrics"])
+            names.extend(["TruePESSMetrics"])
+        elif m == "stats":
+            names.extend(["StatisticsMetrics"])
+        else:
+            raise ValueError(
+                f"{m} is invalid, valid entries are [ltp, star-ltp, meanfield, stationary, stats]."
+            )
+    return names
 
 
 parser = argparse.ArgumentParser()
@@ -102,7 +125,21 @@ parser.add_argument(
     type=int,
     metavar="BATCH_SIZE",
     help="Size of the batches during training.",
-    default=2,
+    default=1,
+)
+parser.add_argument(
+    "--window_size",
+    type=int,
+    metavar="WINDOW_SIZE",
+    help="Size of the windows during training.",
+    default=1,
+)
+parser.add_argument(
+    "--window_step",
+    type=int,
+    metavar="WINDOW_STEP",
+    help="Step between windows during training.",
+    default=1,
 )
 parser.add_argument(
     "--use_groundtruth",
@@ -113,15 +150,10 @@ parser.add_argument(
     default=0,
 )
 parser.add_argument(
-    "--mode",
-    type=str,
-    choices=["fast", "complete"],
-    metavar="MODE",
-    help="Experiment mode.",
-    default="fast",
+    "--tasks", type=str, metavar="TASKS", help="Experiment tasks.", nargs="+"
 )
 parser.add_argument(
-    "--tasks", type=str, metavar="TASKS", help="Experiment tasks.", nargs="+"
+    "--metrics", type=str, metavar="METRICS", help="Metrics to compute.", nargs="+"
 )
 parser.add_argument(
     "--path",
@@ -158,6 +190,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 config = get_config(args)
+config.metrics.names = get_metrics(args)
 
 config.train_details.num_samples = int(args.num_samples)
 config.train_details.batch_size = args.batch_size
@@ -165,27 +198,9 @@ config.networks.num_nodes = args.num_nodes
 if config.networks.name is "ERNetwork":
     config.networks.p = np.min([1, 4 / int(args.num_nodes - 1)])
 config.train_details.resampling_time = int(args.resampling_time)
+config.model.window_size = args.window_size
+config.model.window_step = args.window_step
 config.dataset.use_groundtruth = bool(args.use_groundtruth)
 
 experiment = dynalearn.experiments.Experiment(config, verbose=args.verbose)
 experiment.run(args.tasks)
-
-# if args.verbose != 0:
-#    print("---Experiment {0}---".format(args.name))
-# experiment.load_model()
-# experiment.save_config()
-
-# if args.verbose != 0:
-#    print("\n---Generating data---")
-# experiment.generate_data()
-# experiment.save_data()
-
-# if args.verbose != 0:
-#    print("\n---Computing metrics---")
-# experiment.compute_metrics()
-# experiment.save_metrics()
-
-# if args.verbose != 0:
-#    print("\n---Summarizing---")
-# experiment.compute_summaries()
-# experiment.save_summaries()
