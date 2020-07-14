@@ -115,8 +115,8 @@ class ExperimentConfig(Config):
 
         if dynamics == "hiddensissis":
             cls.dataset = DatasetConfig.state_weighted_hidden_sissis()
-            # if cls.model.window_size > 5:
-            #     cls.dataset = DatasetConfig.degree_weighted_hidden_sissis()
+            #if cls.model.window_size > 5:
+            #    cls.dataset = DatasetConfig.degree_weighted_hidden_sissis()
         else:
             cls.dataset = DatasetConfig.state_weighted_discrete_default()
         cls.train_details = TrainingConfig.default()

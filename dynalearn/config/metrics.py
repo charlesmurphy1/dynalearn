@@ -96,9 +96,11 @@ class MetricsConfig(Config):
         cls.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
 
         # stationary and meanfield metrics
+        cls.num_windows = 100
+        cls.sample_graph = 0.05
         cls.num_samples = 20
         cls.burn = 1000
-        cls.adaptive = False
+        cls.adaptive = True
         cls.num_nodes = 2000
         cls.epsilon = 2e-3
         cls.full_data = False
@@ -111,7 +113,7 @@ class MetricsConfig(Config):
         )
 
         cls.finder = "RecurrenceFPF"
-        cls.num_k = 7
+        cls.num_k = 5
         cls.tol = 1e-6
         cls.max_iter = 5000
         cls.rec_iter = 100
@@ -141,7 +143,7 @@ class MetricsConfig(Config):
         cls.num_samples = 25
         cls.burn = 50
         cls.adaptive = True
-        cls.num_nodes = 1000
+        cls.num_nodes = 2000
         cls.epsilon = 2e-3
         cls.full_data = False
         cls.parameters = np.concatenate(

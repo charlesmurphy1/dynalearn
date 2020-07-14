@@ -26,6 +26,7 @@ class DatasetConfig(Config):
         cls.name = "StateWeightedDiscreteDataset"
         cls.bias = 0.5
         cls.replace = True
+        cls.threshold_window_size = 3
         cls.use_groundtruth = False
         return cls
 
@@ -36,6 +37,7 @@ class DatasetConfig(Config):
         cls.bias = 0.5
         cls.replace = True
         cls.use_groundtruth = False
+        cls.threshold_window_size = 3
         cls.transforms = TransformConfig.hidden_sissis_default()
         return cls
 

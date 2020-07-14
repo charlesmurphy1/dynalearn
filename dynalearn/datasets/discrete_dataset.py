@@ -34,16 +34,24 @@ class DegreeWeightedDiscreteDataset(DiscreteDataset, DegreeWeightedDataset):
 
 
 class StateWeightedDiscreteDataset(DiscreteDataset):
+    def __init__(self, config):
+        DiscreteDataset.__init__(self, config)
+        self.threshold_window_size = config.threshold_window_size
+
     def _get_counts_(self):
         counts = {}
         degrees = []
-        eff_num_states = self.num_states ** self.window_size
+        if self.window_size > self.threshold_window_size:
+            window_size = self.threshold_window_size
+        else:
+            window_size = self.window_size
+        eff_num_states = self.num_states ** window_size
         for i in range(self.networks.size):
             g = self.networks.data[i]
             adj = nx.to_numpy_array(g)
             for j in range(self.inputs[i].size):
                 s = np.array(
-                    [from_nary(ss, base=self.num_states) for ss in self.inputs[i][j].T]
+                    [from_nary(ss[:window_size], base=self.num_states) for ss in self.inputs[i][j].T]
                 )
                 ns = np.zeros((s.shape[0], eff_num_states))
                 for k in range(eff_num_states):
@@ -60,14 +68,18 @@ class StateWeightedDiscreteDataset(DiscreteDataset):
     def _get_weights_(self):
         weights = {}
         counts = self._get_counts_()
-        eff_num_states = self.num_states ** self.window_size
+        if self.window_size > self.threshold_window_size:
+            window_size = self.threshold_window_size
+        else:
+            window_size = self.window_size
+        eff_num_states = self.num_states ** window_size
         for i in range(self.networks.size):
             g = self.networks.data[i]
             weights[i] = np.zeros((self.inputs[i].size, *self.inputs[i].shape[1:]))
             adj = nx.to_numpy_array(g)
             for j in range(self.inputs[i].size):
                 s = np.array(
-                    [from_nary(ss, base=self.num_states) for ss in self.inputs[i][j].T]
+                    [from_nary(ss[:window_size], base=self.num_states) for ss in self.inputs[i][j].T]
                 )
                 ns = np.zeros((s.shape[0], eff_num_states))
                 for k in range(eff_num_states):

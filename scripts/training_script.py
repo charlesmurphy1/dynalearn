@@ -202,6 +202,9 @@ config.train_details.resampling_time = int(args.resampling_time)
 config.model.window_size = args.window_size
 config.model.window_step = args.window_step
 config.dataset.use_groundtruth = bool(args.use_groundtruth)
+config.metrics.num_nodes = 2000
+
+print(config)
 
 experiment = dynalearn.experiments.Experiment(config, verbose=args.verbose)
 experiment.run(args.tasks)
