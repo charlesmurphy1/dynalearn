@@ -34,6 +34,7 @@ class StatisticsMetrics(Metrics):
         self.dataset = experiment.dataset
         self.num_states = experiment.model.num_states
         self.window_size = experiment.model.window_size
+        self.threshold_window_size = experiment.train_details.threshold_window_size
 
         self.num_points = {}
         self.num_updates = 0
@@ -72,17 +73,17 @@ class StatisticsMetrics(Metrics):
         self.num_updates *= factor
 
     def _get_summaries_(self, pb=None):
+        if self.window_size > self.threshold_window_size:
+            window_size = self.threshold_window_size
+        else:
+            window_size = self.window_size
+        eff_num_states = self.num_states ** self.window_size
         for k, g in enumerate(self.dataset.networks.data):
             adj = nx.to_numpy_array(g)
             for t in range(self.num_points[k]):
                 x = self.dataset.inputs[k].data[t]
-                x = from_nary(x, axis=0, base=self.num_states)
-                l = np.array(
-                    [
-                        np.matmul(adj, x == i)
-                        for i in range(self.num_states ** self.window_size)
-                    ]
-                ).T
+                x = from_nary(x[:window_size], axis=0, base=self.num_states)
+                l = np.array([np.matmul(adj, x == i) for i in range(eff_num_states)]).T
                 for i in self.all_nodes[k][t]:
                     s = (x[i], *list(l[i]))
                     if s not in self.summaries:
@@ -91,13 +92,17 @@ class StatisticsMetrics(Metrics):
 
     def _get_stats_(self, nodes, pb=None):
         stats = {}
-
+        if self.window_size > self.threshold_window_size:
+            window_size = self.threshold_window_size
+        else:
+            window_size = self.window_size
+        eff_num_states = self.num_states ** self.window_size
         for k in range(self.dataset.networks.size):
             g = self.dataset.networks.data[k]
             adj = nx.to_numpy_array(g)
             for t in range(self.num_points[k]):
                 x = self.dataset.inputs[k].data[t]
-                x = from_nary(x, axis=0, base=self.num_states)
+                x = from_nary(x[:window_size], axis=0, base=self.num_states)
                 l = np.array(
                     [
                         np.matmul(adj, x == i)
