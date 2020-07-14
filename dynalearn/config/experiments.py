@@ -109,14 +109,16 @@ class ExperimentConfig(Config):
         cls.path_to_summary = path_to_summary
         if not os.path.exists(path_to_summary):
             os.makedirs(path_to_summary)
-        if dynamics == "hiddensissis":
-            cls.dataset = DatasetConfig.state_weighted_hidden_sissis()
-        else:
-            cls.dataset = DatasetConfig.state_weighted_discrete_default()
         cls.dynamics = dynamics_config[dynamics]
         cls.model = model_config[dynamics]
         cls.networks = network_config[network]
 
+        if dynamics == "hiddensissis":
+            cls.dataset = DatasetConfig.state_weighted_hidden_sissis()
+            # if cls.model.window_size > 5:
+            #     cls.dataset = DatasetConfig.degree_weighted_hidden_sissis()
+        else:
+            cls.dataset = DatasetConfig.state_weighted_discrete_default()
         cls.train_details = TrainingConfig.default()
         cls.metrics = metrics_config[dynamics]
         cls.train_metrics = ["jensenshannon", "model_entropy"]

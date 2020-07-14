@@ -4,8 +4,10 @@ import numpy as np
 import os
 import pickle
 import random
+import shutil
 import torch
 import tqdm
+import zipfile
 
 from datetime import datetime
 from dynalearn.datasets.getter import get as get_datasets
@@ -81,13 +83,16 @@ class Experiment:
             "train_model",
             "compute_metrics",
             "compute_summaries",
+            "zip",
         ]
-
-    @classmethod
-    def from_file(cls, path_to_config):
-        with open(path_to_config, "rb") as config_file:
-            config = pickle.load(config_file)
-        return cls(config)
+        self.__all_files__ = [
+            "config.pickle",
+            "data.h5",
+            "metrics.h5",
+            "history.pickle",
+            "model.pt",
+            "optim.pt",
+        ]
 
     def run(self, tasks=None):
         self.save_config()
@@ -201,6 +206,39 @@ class Experiment:
         else:
             for k, m in self.summaries.items():
                 m.compute(self, verbose=self.verbose)
+
+    @classmethod
+    def from_file(cls, path_to_config):
+        with open(path_to_config, "rb") as config_file:
+            config = pickle.load(config_file)
+        return cls(config)
+
+    @classmethod
+    def unzip(cls, path_to_zip, destination=None):
+        zip = zipfile.ZipFile(path_to_zip, mode="r")
+        path_to_data, _ = os.path.split(zip.namelist()[0])
+        destination = destination or "."
+        zip.extractall(path=destination)
+        cls = cls.from_file(os.path.join(path_to_data, "config.pickle"))
+        cls.path_to_data = path_to_data
+        cls.load()
+        shutil.rmtree(path_to_data)
+        return cls
+
+    def zip(self, to_zip=None):
+        to_zip = to_zip or self.__all_files__
+        if "config.pickle" not in to_zip:
+            to_zip.append("config.pickle")
+
+        zip = zipfile.ZipFile(
+            os.path.join(self.path_to_summary, self.name + ".zip"), mode="w"
+        )
+        for root, _, files in os.walk(self.path_to_data):
+            for f in files:
+                if f in to_zip:
+                    p = os.path.basename(root)
+                    zip.write(os.path.join(root, f), os.path.join(p, f))
+        zip.close()
 
     def save(self):
         self.save_config()

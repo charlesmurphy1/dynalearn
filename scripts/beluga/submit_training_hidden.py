@@ -33,7 +33,7 @@ config_array = [
 ]
 
 tasks = ["generate_data", "train_model", "compute_metrics"]
-metrics = ["ltp", "star-ltp", "stationary", "stats"]
+metrics = ["ltp", "stationary", "stats"]
 # tasks = ["compute_metrics"]
 # metrics = ["stationary"]
 
@@ -67,6 +67,7 @@ for num_samples, config, wsize, wstep in product(
     script += " --path {0}".format(path_to_data)
     script += " --path_to_best {0}".format(path_to_best)
     script += " --path_to_summary {0}".format(path_to_summary)
+    script += " --compress {0}".format(1)
     script += " --verbose 1\n"
     # script += "deactivate\n"
 

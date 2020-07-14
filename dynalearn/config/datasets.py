@@ -39,6 +39,16 @@ class DatasetConfig(Config):
         cls.transforms = TransformConfig.hidden_sissis_default()
         return cls
 
+    @classmethod
+    def degree_weighted_hidden_sissis(cls):
+        cls = cls()
+        cls.name = "DegreeWeightedDiscreteDataset"
+        cls.bias = 0.5
+        cls.replace = True
+        cls.use_groundtruth = False
+        cls.transforms = TransformConfig.hidden_sissis_default()
+        return cls
+
 
 class TransformConfig(Config):
     @classmethod

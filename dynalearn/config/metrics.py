@@ -139,13 +139,13 @@ class MetricsConfig(Config):
         cls.num_windows = 100
         cls.sample_graph = 0.05
         cls.num_samples = 25
-        cls.burn = 100
+        cls.burn = 50
         cls.adaptive = True
         cls.num_nodes = 1000
         cls.epsilon = 2e-3
         cls.full_data = False
         cls.parameters = np.concatenate(
-            (np.linspace(1.1, 6.0, 50), np.linspace(6.1, 10, 10),)
+            (np.linspace(0.1, 6.0, 50), np.linspace(6.1, 10, 10),)
         )
         # cls.parameters = np.linspace(1.0, 4.5, 50)
 

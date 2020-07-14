@@ -66,13 +66,13 @@ def get_metrics(args):
         elif m == "meanfield":
             names.extend(["TruePEMFMetrics", "GNNPEMFMetrics"])
         elif m == "stationary":
-            # names.extend(["TruePESSMetrics", "GNNPESSMetrics"])
-            names.extend(["TruePESSMetrics"])
+            names.extend(["TruePESSMetrics", "GNNPESSMetrics"])
         elif m == "stats":
             names.extend(["StatisticsMetrics"])
         else:
             raise ValueError(
-                f"{m} is invalid, valid entries are [ltp, star-ltp, meanfield, stationary, stats]."
+                f"{m} is invalid, valid entries are [ltp, star-ltp, meanfield, \
+                stationary, stats]."
             )
     return names
 
@@ -155,6 +155,7 @@ parser.add_argument(
 parser.add_argument(
     "--metrics", type=str, metavar="METRICS", help="Metrics to compute.", nargs="+"
 )
+parser.add_argument("--to_zip", type=str, metavar="ZIP", help="Data to zip.", nargs="+")
 parser.add_argument(
     "--path",
     type=str,
@@ -204,3 +205,4 @@ config.dataset.use_groundtruth = bool(args.use_groundtruth)
 
 experiment = dynalearn.experiments.Experiment(config, verbose=args.verbose)
 experiment.run(args.tasks)
+experiment.zip(args.to_zip)

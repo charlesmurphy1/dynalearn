@@ -25,16 +25,26 @@ if not os.path.exists(path_to_outputs):
 num_nodes = 1000
 # num_samples_array = [100, 500, 1000, 5000, 10000, 20000]
 num_samples_array = [1000]
-wsize_array = [2]
+wsize_array = [5, 10]
 wstep_array = [1]
 config_array = [
     # "sissis-ba",
     "hiddensissis-ba",
 ]
-# tasks = ["generate_data", "train_model", "compute_metrics"]
-tasks = ["compute_metrics"]
+# tasks = ["generate_data", "train_model", "compute_metrics", "zip"]
+tasks = ["generate_data", "train_model", "compute_metrics"]
+
 # metrics = ["ltp", "star-ltp", "meanfield", "stationary", "stats"]
-metrics = ["stationary"]
+metrics = ["ltp", "stationary", "stats"]
+
+to_zip = [
+    "config.pickle",
+    # "data.h5",
+    "metrics.h5",
+    "history.pickle",
+    "model.pt",
+    "optim.pt",
+]
 
 for num_samples, config, wsize, wstep in product(
     num_samples_array, config_array, wsize_array, wstep_array
@@ -63,6 +73,7 @@ for num_samples, config, wsize, wstep in product(
     script += " --use_groundtruth {0}".format(1)
     script += " --tasks {0}".format(" ".join(tasks))
     script += " --metrics {0}".format(" ".join(metrics))
+    script += " --to_zip {0}".format(" ".join(to_zip))
     script += " --path {0}".format(path_to_data)
     script += " --path_to_best {0}".format(path_to_best)
     script += " --path_to_summary {0}".format(path_to_summary)

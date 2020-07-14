@@ -14,7 +14,7 @@ class DiscreteDataset(Dataset):
         edge_index = self.networks[i]
         x = torch.FloatTensor(self.inputs[i][j])
         if len(self.targets[i][j].shape) == 1:
-            y = onehot(self.targets[i][j], num_class=self.m_dynamics.num_states)
+            y = onehot(self.targets[i][j], num_class=self.num_states)
         else:
             y = self.targets[i][j]
         y = torch.FloatTensor(y)
@@ -37,16 +37,13 @@ class StateWeightedDiscreteDataset(DiscreteDataset):
     def _get_counts_(self):
         counts = {}
         degrees = []
-        eff_num_states = self.m_dynamics.num_states ** self.window_size
+        eff_num_states = self.num_states ** self.window_size
         for i in range(self.networks.size):
             g = self.networks.data[i]
             adj = nx.to_numpy_array(g)
             for j in range(self.inputs[i].size):
                 s = np.array(
-                    [
-                        from_nary(ss, base=self.m_dynamics.num_states)
-                        for ss in self.inputs[i][j].T
-                    ]
+                    [from_nary(ss, base=self.num_states) for ss in self.inputs[i][j].T]
                 )
                 ns = np.zeros((s.shape[0], eff_num_states))
                 for k in range(eff_num_states):
@@ -63,17 +60,14 @@ class StateWeightedDiscreteDataset(DiscreteDataset):
     def _get_weights_(self):
         weights = {}
         counts = self._get_counts_()
-        eff_num_states = self.m_dynamics.num_states ** self.window_size
+        eff_num_states = self.num_states ** self.window_size
         for i in range(self.networks.size):
             g = self.networks.data[i]
             weights[i] = np.zeros((self.inputs[i].size, *self.inputs[i].shape[1:]))
             adj = nx.to_numpy_array(g)
             for j in range(self.inputs[i].size):
                 s = np.array(
-                    [
-                        from_nary(ss, base=self.m_dynamics.num_states)
-                        for ss in self.inputs[i][j].T
-                    ]
+                    [from_nary(ss, base=self.num_states) for ss in self.inputs[i][j].T]
                 )
                 ns = np.zeros((s.shape[0], eff_num_states))
                 for k in range(eff_num_states):

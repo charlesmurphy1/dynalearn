@@ -60,6 +60,7 @@ class Dataset(object):
         self.m_dynamics = experiment.dynamics
         self.window_size = experiment.model.window_size
         self.window_step = experiment.model.window_step
+        self.num_states = experiment.model.num_states
         self.transforms.setup(experiment)
 
         if experiment.verbose != 0 and experiment.verbose != 1:
