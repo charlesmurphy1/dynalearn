@@ -34,10 +34,6 @@ class DegreeWeightedDiscreteDataset(DiscreteDataset, DegreeWeightedDataset):
 
 
 class StateWeightedDiscreteDataset(DiscreteDataset):
-    def __init__(self, config):
-        DiscreteDataset.__init__(self, config)
-        self.threshold_window_size = config.threshold_window_size
-
     def _get_counts_(self):
         counts = {}
         degrees = []
@@ -51,7 +47,10 @@ class StateWeightedDiscreteDataset(DiscreteDataset):
             adj = nx.to_numpy_array(g)
             for j in range(self.inputs[i].size):
                 s = np.array(
-                    [from_nary(ss[:window_size], base=self.num_states) for ss in self.inputs[i][j].T]
+                    [
+                        from_nary(ss[:window_size], base=self.num_states)
+                        for ss in self.inputs[i][j].T
+                    ]
                 )
                 ns = np.zeros((s.shape[0], eff_num_states))
                 for k in range(eff_num_states):
@@ -79,7 +78,10 @@ class StateWeightedDiscreteDataset(DiscreteDataset):
             adj = nx.to_numpy_array(g)
             for j in range(self.inputs[i].size):
                 s = np.array(
-                    [from_nary(ss[:window_size], base=self.num_states) for ss in self.inputs[i][j].T]
+                    [
+                        from_nary(ss[:window_size], base=self.num_states)
+                        for ss in self.inputs[i][j].T
+                    ]
                 )
                 ns = np.zeros((s.shape[0], eff_num_states))
                 for k in range(eff_num_states):

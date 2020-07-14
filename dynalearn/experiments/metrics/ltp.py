@@ -33,6 +33,9 @@ class LTPMetrics(Metrics):
     def initialize(self, experiment):
         self.model = self.get_model(experiment)
         self.dataset = experiment.dataset
+        self.num_states = experiment.model.num_states
+        self.window_size = experiment.model.window_size
+        self.threshold_window_size = experiment.train_details.threshold_window_size
 
         self.num_points = {}
         self.num_updates = 0
@@ -69,14 +72,18 @@ class LTPMetrics(Metrics):
         self.num_updates *= update_factor
 
     def _get_summaries_(self, pb=None):
-        eff_num_states = self.num_states ** self.window_size
+        if self.window_size > self.threshold_window_size:
+            window_size = self.threshold_window_size
+        else:
+            window_size = self.window_size
+        eff_num_states = self.num_states ** window_size
 
         for k in range(self.dataset.networks.size):
             g = self.dataset.networks.data[k]
             adj = nx.to_numpy_array(g)
             for t in range(self.num_points[k]):
                 obs_x = self.dataset.data["inputs"][k][t]
-                obs_x = from_nary(obs_x, axis=0, base=self.num_states)
+                obs_x = from_nary(obs_x[:window_size], axis=0, base=self.num_states)
                 l = np.array(
                     [np.matmul(adj, obs_x == i) for i in range(eff_num_states)]
                 ).T
@@ -89,7 +96,11 @@ class LTPMetrics(Metrics):
     def _get_ltp_(self, nodes, pb=None):
         ltp = {}
         counter = {}
-        eff_num_states = self.num_states ** self.window_size
+        if self.window_size > self.threshold_window_size:
+            window_size = self.threshold_window_size
+        else:
+            window_size = self.window_size
+        eff_num_states = self.num_states ** window_size
 
         for k in range(self.dataset.networks.size):
             real_g = self.dataset._data["networks"].data[k]
@@ -103,7 +114,7 @@ class LTPMetrics(Metrics):
                 obs_y = self.dataset.targets[k][t]
                 pred = self.predict(real_x, obs_x, real_y, obs_y)
 
-                bin_x = from_nary(obs_x, axis=0, base=self.num_states) * 1
+                bin_x = from_nary(obs_x[:window_size], axis=0, base=self.num_states) * 1
                 l = np.array(
                     [np.matmul(adj, bin_x == i) for i in range(eff_num_states)]
                 ).T
@@ -235,8 +246,6 @@ class TrueLTPMetrics(LTPMetrics):
         LTPMetrics.__init__(self, config, verbose)
 
     def get_model(self, experiment):
-        self.num_states = experiment.model.num_states
-        self.window_size = experiment.model.window_size
         return experiment.dynamics
 
     def predict(self, real_x, obs_x, real_y, obs_y):
@@ -251,8 +260,6 @@ class GNNLTPMetrics(LTPMetrics):
         LTPMetrics.__init__(self, config, verbose)
 
     def get_model(self, experiment):
-        self.num_states = experiment.model.num_states
-        self.window_size = experiment.model.window_size
         return experiment.model
 
     def predict(self, real_x, obs_x, real_y, obs_y):
@@ -266,8 +273,6 @@ class MLELTPMetrics(LTPMetrics):
             self.num_points = config.mle_num_points
 
     def get_model(self, experiment):
-        self.num_states = experiment.model.num_states
-        self.window_size = experiment.model.window_size
         return experiment.dynamics
 
     def predict(self, real_x, obs_x, real_y, obs_y):
@@ -279,8 +284,6 @@ class UniformLTPMetrics(LTPMetrics):
         LTPMetrics.__init__(self, config, verbose)
 
     def get_model(self, experiment):
-        self.num_states = experiment.model.num_states
-        self.window_size = experiment.model.window_size
         return experiment.dynamics
 
     def predict(self, real_x, obs_x, real_y, obs_y):

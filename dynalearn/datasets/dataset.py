@@ -60,6 +60,7 @@ class Dataset(object):
         self.m_dynamics = experiment.dynamics
         self.window_size = experiment.model.window_size
         self.window_step = experiment.model.window_step
+        self.threshold_window_size = experiment.train_details.threshold_window_size
         self.num_states = experiment.model.num_states
         self.transforms.setup(experiment)
 
@@ -107,6 +108,7 @@ class Dataset(object):
         dataset.indices = self.indices
         dataset.window_size = self.window_size
         dataset.window_step = self.window_step
+        dataset.threshold_window_size = self.threshold_window_size
         dataset.sampler.reset()
         return dataset
 

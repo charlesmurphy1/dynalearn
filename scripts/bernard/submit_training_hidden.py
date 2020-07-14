@@ -25,14 +25,14 @@ if not os.path.exists(path_to_outputs):
 num_nodes = 1000
 # num_samples_array = [100, 500, 1000, 5000, 10000, 20000]
 num_samples_array = [1000]
-wsize_array = [5, 10]
+wsize_array = [10]
 wstep_array = [1]
 config_array = [
     # "sissis-ba",
     "hiddensissis-ba",
 ]
 # tasks = ["generate_data", "train_model", "compute_metrics", "zip"]
-tasks = ["generate_data", "train_model", "compute_metrics"]
+tasks = ["load", "generate_data", "compute_metrics"]
 
 # metrics = ["ltp", "star-ltp", "meanfield", "stationary", "stats"]
 metrics = ["ltp", "stationary", "stats"]
