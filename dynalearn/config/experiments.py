@@ -11,18 +11,21 @@ dynamics_config = {
     "plancksis": DynamicsConfig.plancksis_default(),
     "sissis": DynamicsConfig.sissis_default(),
     "hiddensissis": DynamicsConfig.hidden_sissis_default(),
+    "partiallyhiddensissis": DynamicsConfig.partially_hidden_sissis_default(),
 }
 model_config = {
     "sis": DynamicsConfig.sis_gnn_default(),
     "plancksis": DynamicsConfig.plancksis_gnn_default(),
     "sissis": DynamicsConfig.sissis_gnn_default(),
     "hiddensissis": DynamicsConfig.hidden_sissis_gnn_default(),
+    "partiallyhiddensissis": DynamicsConfig.partially_hidden_sissis_gnn_default(),
 }
 metrics_config = {
     "sis": MetricsConfig.sis(),
     "plancksis": MetricsConfig.plancksis(),
     "sissis": MetricsConfig.sissis(),
     "hiddensissis": MetricsConfig.hidden_sissis(),
+    "partiallyhiddensissis": MetricsConfig.partially_hidden_sissis(),
 }
 
 

@@ -171,8 +171,6 @@ class LTPMetrics(Metrics):
         reduce="mean",
         err_reduce="std",
     ):
-        if type(in_state) is int:
-            in_state = [in_state]
         if reduce == "mean":
             op = np.nanmean
             if err_reduce == "std":
@@ -196,13 +194,13 @@ class LTPMetrics(Metrics):
 
         if axis == -1:
             all_summ = summaries[:, 1:].sum(-1)
-        elif type(axis) == list:
+        elif isinstance(axis, int):
+            all_summ = summaries[:, axis + 1]
+        elif isinstance(axis, list):
             all_summ = np.zeros(summaries.shape[0])
 
             for i, a in enumerate(axis):
                 all_summ += summaries[:, a + 1]
-        else:
-            all_summ = summaries[:, axis + 1]
         agg_summ = np.unique(np.sort(all_summ))
 
         agg_ltp = np.zeros(agg_summ.shape)
@@ -220,7 +218,11 @@ class LTPMetrics(Metrics):
             if out_state is None or len(data.shape) == 1:
                 y = data[index]
             else:
-                y = data[index, out_state]
+                if isinstance(out_state, int):
+                    y = data[index, out_state]
+                elif isinstance(out_state, list):
+                    y = np.array([data[index, o] for o in out_state])
+                    y = y.sum(0)
 
             if len(y) > 0:
                 agg_ltp[i] = op(y)

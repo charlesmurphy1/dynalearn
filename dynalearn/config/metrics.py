@@ -167,6 +167,45 @@ class MetricsConfig(Config):
         return cls
 
     @classmethod
+    def partially_hidden_sissis(cls):
+        cls = cls()
+        cls.names = []
+
+        # ltp and statistcs metrics
+        cls.max_num_sample = 1000
+        cls.max_num_points = 1000
+        cls.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
+
+        # stationary and meanfield metrics
+        cls.num_windows = 100
+        cls.sample_graph = 0.0
+        cls.num_samples = 25
+        cls.burn = 50
+        cls.adaptive = True
+        cls.num_nodes = 2000
+        cls.epsilon = 2e-3
+        cls.full_data = False
+        cls.parameters = np.concatenate(
+            (np.linspace(0.1, 6.0, 50), np.linspace(6.1, 10, 10),)
+        )
+        # cls.parameters = np.linspace(1.0, 4.5, 50)
+
+        cls.finder = "RecurrenceFPF"
+        cls.num_k = 5
+        cls.tol = 1e-6
+        cls.max_iter = 5000
+        cls.rec_iter = 100
+        cls.initial_iter = 100
+        cls.with_numba = True
+
+        # summaries
+        cls.axis = [1, 3]
+        cls.transitions = [(0, 1), (1, 0)]
+        cls.err_reduce = "percentile"
+
+        return cls
+
+    @classmethod
     def rtn_forecast(cls):
         cls = cls()
         cls.names = [

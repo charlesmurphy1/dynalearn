@@ -93,6 +93,8 @@ parser.add_argument(
         "sissis-ba",
         "hiddensissis-er",
         "hiddensissis-ba",
+        "partiallyhiddensissis-er",
+        "partiallyhiddensissis-ba",
     ],
     required=True,
 )
@@ -140,6 +142,13 @@ parser.add_argument(
     metavar="WINDOW_STEP",
     help="Step between windows during training.",
     default=1,
+)
+parser.add_argument(
+    "--hide_prob",
+    type=float,
+    metavar="HIDE_PROB",
+    help="Probability to hide a state (only for partially hidden sissis).",
+    default=0.0,
 )
 parser.add_argument(
     "--use_groundtruth",
@@ -201,6 +210,8 @@ if config.networks.name is "ERNetwork":
 config.train_details.resampling_time = int(args.resampling_time)
 config.model.window_size = args.window_size
 config.model.window_step = args.window_step
+if "hide_prob" in config.dynamics.__dict__:
+    config.dynamics.hide_prob = args.hide_prob
 config.dataset.use_groundtruth = bool(args.use_groundtruth)
 config.metrics.num_nodes = 2000
 

@@ -90,6 +90,73 @@ class SISSIS(MultiEpidemics):
         return rec0, rec1
 
 
+class AsymmetricSISSIS(SISSIS):
+    def __init__(self, config=None, **kwargs):
+        if config is None:
+            config = Config()
+            config.__dict__ = kwargs
+        SISSIS.__init__(self, config, **kwargs)
+        boost = config.boost
+        if boost == "source":
+            self.infection = self._source_infection_
+        elif boost == "target":
+            self.infection = self._target_infection_
+        else:
+            raise ValueError(
+                f"{boost} is invalid, valid entries are ['source', 'target']"
+            )
+
+    def _source_infection_(self, x, l):
+        inf0 = np.zeros(x.shape)
+        inf1 = np.zeros(x.shape)
+
+        # Node SS
+        inf0[x == 0] = 1 - (1 - self.infection1) ** (l[1, x == 0] + l[3, x == 0])
+        inf1[x == 0] = 1 - (1 - self.infection2) ** (l[2, x == 0] + l[3, x == 0])
+
+        # Node IS
+        inf1[x == 1] = 1 - (1 - self.coupling * self.infection2) ** (
+            l[2, x == 1] + l[3, x == 1]
+        )
+
+        # Node SI
+        inf0[x == 2] = 1 - (1 - self.coupling * self.infection1) ** (
+            l[1, x == 2] + l[3, x == 2]
+        )
+        return inf0, inf1
+
+    def _target_infection_(self, x, l):
+        inf0 = np.zeros(x.shape)
+        inf1 = np.zeros(x.shape)
+
+        # Node SS
+        inf0[x == 0] = (
+            1
+            - (1 - self.infection1) ** l[1, x == 0]
+            * (1 - self.coupling * self.infection1) ** l[3, x == 0]
+        )
+        inf1[x == 0] = (
+            1
+            - (1 - self.infection2) ** l[2, x == 0]
+            * (1 - self.coupling * self.infection2) ** l[3, x == 0]
+        )
+
+        # Node IS
+        inf1[x == 1] = (
+            1
+            - (1 - self.infection2) ** l[2, x == 0]
+            * (1 - self.coupling * self.infection2) ** l[3, x == 0]
+        )
+
+        # Node SI
+        inf0[x == 2] = (
+            1
+            - (1 - self.infection1) ** l[1, x == 0]
+            * (1 - self.coupling * self.infection1) ** l[3, x == 0]
+        )
+        return inf0, inf1
+
+
 class HiddenSISSIS(SISSIS):
     def __init__(self, config=None, **kwargs):
         if config is None:
@@ -117,3 +184,25 @@ class HiddenSISSIS(SISSIS):
         dist = torch.distributions.Categorical(torch.tensor(p))
         x = np.array(dist.sample())
         return x
+
+
+class PartiallyHiddenSISSIS(SISSIS):
+    def __init__(self, config=None, **kwargs):
+        if config is None:
+            config = Config()
+            config.__dict__ = kwargs
+        SISSIS.__init__(self, config, **kwargs)
+        self.state_map = {0: 0, 1: 1, 2: 0, 3: 1}
+        self.hide_prob = config.hide_prob
+        self.hide = True
+
+    def predict(self, x):
+        if len(x.shape) > 1:
+            x = x[-1].squeeze()
+        p = SISSIS.predict(self, x)
+
+        if self.hide:
+            p[:, 2] = self.hide_prob * p[:, 0] + (1 - self.hide_prob) * p[:, 2]
+            p[:, 3] = self.hide_prob * p[:, 1] + (1 - self.hide_prob) * p[:, 3]
+
+        return p

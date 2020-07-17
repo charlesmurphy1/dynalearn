@@ -6,8 +6,7 @@ from itertools import product
 path_to_dynalearn = (
     "/home/charles/Documents/ulaval/doctorat/projects/dynalearn-all/dynalearn/"
 )
-path_to_dynalearn_data = "/home/charles/Documents/ulaval/doctorat/projects/\
-                          dynalearn-all/dynalearn/data/phase2-data"
+path_to_dynalearn_data = "/home/charles/Documents/ulaval/doctorat/projects/dynalearn-all/dynalearn/data/phase2-data"
 path_to_all = os.path.join(path_to_dynalearn_data, "training")
 path_to_data = os.path.join(path_to_all, "full_data")
 path_to_best = os.path.join(path_to_all, "best")
@@ -28,10 +27,11 @@ num_nodes = 1000
 num_samples_array = [1000]
 wsize_array = [1]
 wstep_array = [1]
+# hide_prob_array = [0.0, 0.25, 0.5, 0.75 1.0]
+hide_prob_array = [0.5]
 config_array = [
     # "sissis-ba",
-    # "hiddensissis-ba",
-    "partaillyhiddensissis-ba",
+    "partiallyhiddensissis-ba",
 ]
 tasks = ["generate_data", "train_model", "compute_metrics"]
 # tasks = ["load", "generate_data", "compute_metrics"]
@@ -48,8 +48,8 @@ to_zip = [
     "optim.pt",
 ]
 
-for num_samples, config, wsize, wstep in product(
-    num_samples_array, config_array, wsize_array, wstep_array
+for num_samples, config, wsize, wstep, hp in product(
+    num_samples_array, config_array, wsize_array, wstep_array, hide_prob_array
 ):
     suffix = "ns" + str(num_samples)
     name = config + "-" + suffix + "-ws" + str(wsize) + "-wt" + str(wstep)
@@ -72,6 +72,7 @@ for num_samples, config, wsize, wstep in product(
     script += " --batch_size {0}".format(1)
     script += " --window_size {0}".format(wsize)
     script += " --window_step {0}".format(wstep)
+    script += " --hide_prob {0}".format(hp)
     script += " --use_groundtruth {0}".format(1)
     script += " --tasks {0}".format(" ".join(tasks))
     script += " --metrics {0}".format(" ".join(metrics))
