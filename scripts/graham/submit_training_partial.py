@@ -54,15 +54,15 @@ for num_samples, config, wsize, wstep, hp in product(
     suffix = "ns" + str(num_samples)
     name = config + "-" + suffix + "-ws" + str(wsize) + "-wt" + str(wstep)
     script = "#!/bin/bash\n"
-    # script += "#SBATCH --account=def-aallard\n"
-    # script += "#SBATCH --time=12:00:00\n"
-    # script += "#SBATCH --job-name={0}\n".format(name)
-    # script += "#SBATCH --output={0}.out\n".format(os.path.join(path_to_outputs, name))
-    # script += "#SBATCH --gres=gpu:1\n"
-    # script += "#SBATCH --mem=24G\n"
+    script += "#SBATCH --account=def-aallard\n"
+    script += "#SBATCH --time=12:00:00\n"
+    script += "#SBATCH --job-name={0}\n".format(name)
+    script += "#SBATCH --output={0}.out\n".format(os.path.join(path_to_outputs, name))
+    script += "#SBATCH --gres=gpu:1\n"
+    script += "#SBATCH --mem=24G\n"
     script += "\n"
-    # script += "module load python/3.6 scipy-stack mpi4py\n"
-    # script += "source /home/murphy9/.dynalearn-env/bin/activate\n"
+    script += "module load python/3.6 scipy-stack mpi4py\n"
+    script += "source /home/murphy9/.dynalearn-env/bin/activate\n"
     script += "python {0}scripts/training_script.py".format(path_to_dynalearn)
     script += " --config {0}".format(config)
     script += " --name {0}".format(name)
@@ -80,8 +80,8 @@ for num_samples, config, wsize, wstep, hp in product(
     script += " --path {0}".format(path_to_data)
     script += " --path_to_best {0}".format(path_to_best)
     script += " --path_to_summary {0}".format(path_to_summary)
-    script += " --verbose 1\n"
-    # script += "deactivate\n"
+    script += " --verbose 2\n"
+    script += "deactivate\n"
 
     path_to_script = "{0}/train-{1}.sh".format(
         os.path.join(path_to_dynalearn, "scripts/graham/launch_scripts"), name
