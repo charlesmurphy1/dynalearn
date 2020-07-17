@@ -202,7 +202,11 @@ class PartiallyHiddenSISSIS(SISSIS):
         p = SISSIS.predict(self, x)
 
         if self.hide:
-            p[:, 2] = self.hide_prob * p[:, 0] + (1 - self.hide_prob) * p[:, 2]
-            p[:, 3] = self.hide_prob * p[:, 1] + (1 - self.hide_prob) * p[:, 3]
+            ltp = np.zeros(p.shape)
+            ltp[:, 0] = p[:, 0] + self.hide_prob * p[:, 2]
+            ltp[:, 1] = p[:, 1] + self.hide_prob * p[:, 3]
+            ltp[:, 2] = (1 - self.hide_prob) * p[:, 2]
+            ltp[:, 3] = (1 - self.hide_prob) * p[:, 3]
+            return ltp
 
         return p

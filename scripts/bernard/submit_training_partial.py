@@ -28,7 +28,7 @@ num_samples_array = [1000]
 wsize_array = [1]
 wstep_array = [1]
 # hide_prob_array = [0.0, 0.25, 0.5, 0.75 1.0]
-hide_prob_array = [0.5]
+hide_prob_array = [0.0]
 config_array = [
     # "sissis-ba",
     "partiallyhiddensissis-ba",
