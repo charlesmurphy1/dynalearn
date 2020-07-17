@@ -17,19 +17,29 @@ class EpidemicsGNN(GraphNeuralNetwork):
         GraphNeuralNetwork.__init__(self, config=config, **kwargs)
         self.num_states = config.num_states
         self.window_size = config.window_size
-        # self.window_size = 1
         self.in_channels = config.in_channels
         self.att_channels = config.att_channels
         self.out_channels = config.out_channels
         self.heads = config.heads
         self.concat = config.concat
         self.bias = config.bias
+        self.attn_bias = config.attn_bias if "attn_bias" in config.__dict__ else False
+        self.self_attention = (
+            config.self_attention if "self_attention" in config.__dict__ else False
+        )
+        self.with_non_edge = (
+            config.with_non_edge if "with_non_edge" in config.__dict__ else False
+        )
         self.in_activation = get_activation(config.in_activation)
         self.att_activation = get_activation(config.att_activation)
         self.out_activation = get_activation(config.out_activation)
 
         in_layer_channels = [self.window_size, *self.in_channels]
         self.in_layers = self._build_layer(
+            in_layer_channels, self.in_activation, bias=self.bias
+        )
+        in_layer_channels = [self.window_size, *self.in_channels]
+        self.in_edge_layers = self._build_layer(
             in_layer_channels, self.in_activation, bias=self.bias
         )
 
@@ -39,7 +49,13 @@ class EpidemicsGNN(GraphNeuralNetwork):
             heads=self.heads,
             concat=self.concat,
             bias=self.bias,
+            attn_bias=self.attn_bias,
+            self_attention=self.self_attention,
         )
+        if self.with_non_edge:
+            self.non_edge_layer = nn.Linear(self.in_channels[-1], 1, bias=self.bias)
+        else:
+            self.register_parameter("non_edge_layer", None)
 
         if self.concat:
             out_layer_channels = [self.heads * self.att_channels, *self.out_channels]
@@ -56,10 +72,15 @@ class EpidemicsGNN(GraphNeuralNetwork):
         if torch.cuda.is_available():
             self = self.cuda()
 
-    def forward(self, x, edge_index):
+    def forward(self, x, edge_index, edge_attr=None):
         x = x.T
         x = self.in_layers(x)
-        x = self.att_layer(x, edge_index)
+        if self.with_non_edge:
+            a = self.non_edge_layer(x)
+            a = torch.relu(a)
+            a = torch.softmax(a, dim=0)
+            x = x + torch.sum(a * x, 0)
+        x = self.att_layer(x, edge_index, edge_attr=edge_attr)
         x = self.out_layers(x)
         x = self.last_layer(x)
         return torch.softmax(x, dim=-1)
