@@ -62,6 +62,7 @@ class Dataset(object):
         self.window_step = experiment.model.window_step
         self.threshold_window_size = experiment.train_details.threshold_window_size
         self.num_states = experiment.model.num_states
+
         self.transforms.setup(experiment)
 
         if experiment.verbose != 0 and experiment.verbose != 1:
@@ -109,6 +110,7 @@ class Dataset(object):
         dataset.window_size = self.window_size
         dataset.window_step = self.window_step
         dataset.threshold_window_size = self.threshold_window_size
+        dataset.num_states = self.num_states
         dataset.sampler.reset()
         return dataset
 

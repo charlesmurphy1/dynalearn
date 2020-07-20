@@ -210,3 +210,9 @@ class PartiallyHiddenSISSIS(SISSIS):
             return ltp
 
         return p
+
+    def sample(self, x):
+        p = SISSIS.predict(self, x)
+        dist = torch.distributions.Categorical(torch.tensor(p))
+        x = np.array(dist.sample())
+        return x
