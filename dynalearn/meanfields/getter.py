@@ -18,6 +18,7 @@ __meanfields__ = {
     "PlanckSIR": lambda model: lambda p_k: PlanckSIRMeanfield(p_k, model),
     "SISSIS": lambda model: lambda p_k: SISSISMeanfield(p_k, model),
     "HiddenSISSIS": lambda model: lambda p_k: SISSISMeanfield(p_k, model),
+    "PartiallyHiddenSISSIS": lambda model: lambda p_k: SISSISMeanfield(p_k, model),
 }
 
 

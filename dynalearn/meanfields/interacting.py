@@ -1,12 +1,14 @@
 import numpy as np
 from .meanfield import Meanfield
-from dynalearn.dynamics.epidemics.interacting import SISSIS, HiddenSISSIS
+from dynalearn.dynamics.epidemics.interacting import SISSIS
 from dynalearn.meanfields import Meanfield
+
+allowed_types = [SISSIS]
 
 
 class SISSISMeanfield(Meanfield):
     def __init__(self, p_k, model):
-        if model.__class__ is not SISSIS and model.__class__ is not HiddenSISSIS:
+        if not issubclass(model.__class__, SISSIS):
             raise ValueError(
                 f"{model.__class__} is invalid, the model class must be [SISSIS, HiddenSISSIS]."
             )

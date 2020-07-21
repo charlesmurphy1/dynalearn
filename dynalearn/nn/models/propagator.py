@@ -16,7 +16,6 @@ class Propagator(MessagePassing):
         if torch.cuda.is_available():
             x = x.cuda()
             edge_index = edge_index.cuda()
-
         x = onehot(x, num_class=self.num_states)
         return self.propagate(edge_index, x=x).T
 

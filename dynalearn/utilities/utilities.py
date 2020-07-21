@@ -92,7 +92,6 @@ def to_nary(x, base=2, dim=None):
             r[b] += 1
             r0 -= base ** b
         y.T[idx] = r[::-1]
-    # return y.squeeze()
     return y
 
 

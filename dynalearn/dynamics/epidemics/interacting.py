@@ -198,7 +198,8 @@ class PartiallyHiddenSISSIS(SISSIS):
 
     def predict(self, x):
         if len(x.shape) > 1:
-            x = x[-1].squeeze()
+            x = x[-1]
+
         p = SISSIS.predict(self, x)
 
         if self.hide:
