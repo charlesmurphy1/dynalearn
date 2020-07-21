@@ -6,8 +6,9 @@ from torch.nn import Parameter
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.nn.inits import glorot, zeros
 from torch_geometric.utils import degree
-from torch_geometric.typing import OptPairTensor, Adj, Size, NoneType, OptTensor
-from typing import Union, Tuple, Optional
+
+# from torch_geometric.typing import OptPairTensor, Adj, Size, NoneType, OptTensor
+# from typing import Union, Tuple, Optional
 
 
 class MultiHeadLinear(nn.Module):
@@ -43,15 +44,15 @@ class MultiHeadLinear(nn.Module):
 class GraphAttention(MessagePassing):
     def __init__(
         self,
-        in_channels: Union[int, Tuple[int, int]],
-        out_channels: int,
-        heads: int = 1,
-        concat: bool = True,
-        bias: bool = True,
-        attn_bias: bool = True,
-        edge_in_channels: int = 0,
-        edge_out_channels: int = 0,
-        self_attention: bool = True,
+        in_channels,
+        out_channels,
+        heads=1,
+        concat=True,
+        bias=True,
+        attn_bias=True,
+        edge_in_channels=0,
+        edge_out_channels=0,
+        self_attention=True,
         **kwargs,
     ):
         super(GraphAttention, self).__init__(aggr="add", **kwargs)
@@ -133,11 +134,7 @@ class GraphAttention(MessagePassing):
             self.self_attn_target.reset_parameter()
 
     def forward(
-        self,
-        x: Union[Tensor, OptPairTensor],
-        edge_index: Adj,
-        edge_attr: Union[Tensor, NoneType] = None,
-        return_attention_weights: bool = False,
+        self, x, edge_index, edge_attr=None, return_attention_weights=False,
     ):
         H, C = self.heads, self.out_channels
         x_s: OptTensor = None
@@ -225,8 +222,8 @@ class GraphAttention(MessagePassing):
                 return out
 
     def message(
-        self, x_j: Tensor, alpha_j: Tensor, alpha_i: OptTensor, edge_attn: OptTensor,
-    ) -> Tensor:
+        self, x_j, alpha_j, alpha_i, edge_attn,
+    ):
         alpha = alpha_j if alpha_i is None else alpha_j + alpha_i
         alpha = alpha if edge_attn is None else alpha + edge_attn
         alpha = torch.sigmoid(alpha)
