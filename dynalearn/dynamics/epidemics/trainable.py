@@ -15,6 +15,7 @@ from dynalearn.config import Config
 
 class TrainableEpidemics(Epidemics):
     def __init__(self, config=None, **kwargs):
+        Epidemics.__init__(self, config, config.num_states)
         if config is None:
             config = Config()
             config.__dict__ = kwagrs
@@ -23,7 +24,6 @@ class TrainableEpidemics(Epidemics):
         self.nn = EpidemicsGNN(config)
         if torch.cuda.is_available():
             self.nn = self.nn.cuda()
-        Epidemics.__init__(self, config, config.num_states)
 
     def initial_state(self):
         return np.random.randint(

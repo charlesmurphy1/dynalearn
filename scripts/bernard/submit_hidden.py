@@ -6,7 +6,10 @@ from itertools import product
 path_to_dynalearn = (
     "/home/charles/Documents/ulaval/doctorat/projects/dynalearn-all/dynalearn/"
 )
-path_to_dynalearn_data = "/home/charles/Documents/ulaval/doctorat/projects/dynalearn-all/dynalearn/data/phase2-data"
+path_to_dynalearn_data = (
+    "/home/charles/Documents/ulaval/doctorat/projects/"
+    + "dynalearn-all/dynalearn/data/phase2-data"
+)
 path_to_all = os.path.join(path_to_dynalearn_data, "training")
 path_to_data = os.path.join(path_to_all, "full_data")
 path_to_best = os.path.join(path_to_all, "best")
@@ -24,20 +27,18 @@ if not os.path.exists(path_to_outputs):
 
 num_nodes = 1000
 # num_samples_array = [100, 500, 1000, 5000, 10000, 20000]
-num_samples_array = [1000]
+num_samples_array = [10000]
 wsize_array = [1]
 wstep_array = [1]
-hide_prob_array = [0.0, 0.25, 0.5, 0.75, 1.0]
-# hide_prob_array = [1.0]
 config_array = [
     # "sissis-ba",
-    "partiallyhiddensissis-ba",
+    "hiddensissis-ba",
 ]
 tasks = ["generate_data", "train_model", "compute_metrics"]
 # tasks = ["load", "generate_data", "compute_metrics"]
 
 # metrics = ["ltp", "star-ltp", "meanfield", "stationary", "stats"]
-metrics = ["ltp", "meanfield", "stats"]
+metrics = ["ltp", "stationary", "meanfield", "stats"]
 
 to_zip = [
     "config.pickle",
@@ -48,11 +49,11 @@ to_zip = [
     "optim.pt",
 ]
 
-for num_samples, config, wsize, wstep, hp in product(
-    num_samples_array, config_array, wsize_array, wstep_array, hide_prob_array
+for num_samples, config, wsize, wstep in product(
+    num_samples_array, config_array, wsize_array, wstep_array
 ):
     suffix = "ns" + str(num_samples)
-    name = config + "-" + suffix + "-hp" + str(hp)
+    name = config + "-" + suffix + "-ws" + str(wsize) + "-wt" + str(wstep)
     script = "#!/bin/bash\n"
     # script += "#SBATCH --account=def-aallard\n"
     # script += "#SBATCH --time=12:00:00\n"
@@ -72,8 +73,8 @@ for num_samples, config, wsize, wstep, hp in product(
     script += " --batch_size {0}".format(1)
     script += " --window_size {0}".format(wsize)
     script += " --window_step {0}".format(wstep)
-    script += " --hide_prob {0}".format(hp)
-    script += " --use_groundtruth {0}".format(1)
+    script += " --hide_prob {0}".format(0.0)
+    script += " --use_groundtruth {0}".format(0)
     script += " --tasks {0}".format(" ".join(tasks))
     script += " --metrics {0}".format(" ".join(metrics))
     script += " --to_zip {0}".format(" ".join(to_zip))

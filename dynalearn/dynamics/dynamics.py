@@ -36,14 +36,14 @@ class Dynamics(ABC):
 
     @abstractmethod
     def predict(self, x):
-        raise NotImplementedError("self.transition() has not been impletemented")
+        raise NotImplementedError("self.predict() has not been impletemented")
+
+    @abstractmethod
+    def likelihood(self, x):
+        raise NotImplementedError("self.likelihood() has not been impletemented")
 
     @abstractmethod
     def sample(self, x):
-        """
-		Computes the next activity states. (virtual) (private)
-
-		"""
         raise NotImplementedError("sample has not been impletemented")
 
     @abstractmethod

@@ -18,9 +18,23 @@ class PartiallyRemapStateTransform(StateTransform):
         self.hide_prob = experiment.dynamics.hide_prob
 
     def _transform_state_(self, x):
+        if x.ndim == 1:
+            window_size = 0
+            num_nodes = x.shape[0]
+            resqueeze = True
+        elif x.ndim == 2:
+            window_size = x.shape[0]
+            num_nodes = x.shape[1]
+            resqueeze = False
         _x = np.vectorize(self.state_map.get)(x.copy())
         y = x.copy()
-        n_remap = np.random.binomial(_x.shape[0], self.hide_prob)
-        index = np.random.choice(range(_x.shape[0]), size=n_remap, replace=False)
-        y[index] = _x[index]
+        if window_size > 0:
+            for i in range(window_size):
+                n_remap = np.random.binomial(num_nodes, self.hide_prob)
+                index = np.random.choice(range(num_nodes), size=n_remap, replace=False)
+                y[i, index] = _x[i, index]
+        else:
+            n_remap = np.random.binomial(num_nodes, self.hide_prob)
+            index = np.random.choice(range(num_nodes), size=n_remap, replace=False)
+            y[index] = _x[index]
         return y

@@ -16,12 +16,31 @@ class Epidemics(Dynamics):
             self.initial_infected = -1
         self.propagator = Propagator(num_states)
         self.state_map = {i: i for i in range(num_states)}
+        self.window_size = 1
+        self.window_step = 1
 
     def sample(self, x):
         p = self.predict(x)
         dist = torch.distributions.Categorical(torch.tensor(p))
         y = np.array(dist.sample())
         return y
+
+    def likelihood(self, x, y=None):
+        if y is None:
+            y = np.roll(x, 1, axis=0)[:-1]
+            x = x[:-1]
+
+        if x.shape == (self.window_size, self.num_nodes) or x.shape == (self.num_nodes):
+            x = x.reshape(1, self.window_size, self.num_nodes)
+            y = y.reshape(1, self.num_nodes)
+
+        loglikelihood = 0
+        for i in range(x.shape[0]):
+            p = self.predict(x[i])
+            onehot_y = onehot(y[i], num_class=self.num_states)
+            logp = np.log((onehot_y * p).sum(-1))
+            loglikelihood += logp.sum()
+        return loglikelihood
 
     def neighbors_state(self, x):
         if len(x.shape) > 1:
