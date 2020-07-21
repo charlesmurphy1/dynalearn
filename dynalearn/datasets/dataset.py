@@ -22,9 +22,7 @@ class Dataset(object):
         self.config = config
         self.bias = config.bias
         self.use_groundtruth = config.use_groundtruth
-
         self.sampler = Sampler(self)
-
         if "transforms" in config.__dict__:
             self.transforms = get_transforms(config.transforms)
         else:
@@ -252,7 +250,6 @@ class Dataset(object):
 
     def _generate_groundtruth_(self, data):
         ground_truth = {}
-
         for i, g in enumerate(data["networks"].data):
             self.m_dynamics.network = g
             num_samples = data["inputs"][i].size

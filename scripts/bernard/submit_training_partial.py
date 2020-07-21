@@ -27,8 +27,8 @@ num_nodes = 1000
 num_samples_array = [1000]
 wsize_array = [1]
 wstep_array = [1]
-# hide_prob_array = [0.0, 0.25, 0.5, 0.75 1.0]
-hide_prob_array = [0.0]
+hide_prob_array = [0.0, 0.25, 0.5, 0.75, 1.0]
+# hide_prob_array = [1.0]
 config_array = [
     # "sissis-ba",
     "partiallyhiddensissis-ba",
@@ -37,7 +37,7 @@ tasks = ["generate_data", "train_model", "compute_metrics"]
 # tasks = ["load", "generate_data", "compute_metrics"]
 
 # metrics = ["ltp", "star-ltp", "meanfield", "stationary", "stats"]
-metrics = ["ltp", "stationary", "stats"]
+metrics = ["ltp", "meanfield", "stats"]
 
 to_zip = [
     "config.pickle",
@@ -52,7 +52,7 @@ for num_samples, config, wsize, wstep, hp in product(
     num_samples_array, config_array, wsize_array, wstep_array, hide_prob_array
 ):
     suffix = "ns" + str(num_samples)
-    name = config + "-" + suffix + "-ws" + str(wsize) + "-wt" + str(wstep)
+    name = config + "-" + suffix + "-hp" + str(hp)
     script = "#!/bin/bash\n"
     # script += "#SBATCH --account=def-aallard\n"
     # script += "#SBATCH --time=12:00:00\n"

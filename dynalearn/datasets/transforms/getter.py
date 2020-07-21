@@ -1,10 +1,11 @@
 from .transform import TransformList
 from .random_flip import RandomFlipStateTransform
-from .remap import RemapStateTransform
+from .remap import RemapStateTransform, PartiallyRemapStateTransform
 
 __transforms__ = {
     "RandomFlipStateTransform": RandomFlipStateTransform,
     "RemapStateTransform": RemapStateTransform,
+    "PartiallyRemapStateTransform": PartiallyRemapStateTransform,
 }
 
 
