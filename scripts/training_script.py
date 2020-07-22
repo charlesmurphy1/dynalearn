@@ -93,8 +93,10 @@ parser.add_argument(
         "sissis-ba",
         "hiddensissis-er",
         "hiddensissis-ba",
+        "hiddensissis-treeba",
         "partiallyhiddensissis-er",
         "partiallyhiddensissis-ba",
+        "partiallyhiddensissis-treeba",
     ],
     required=True,
 )

@@ -5,7 +5,11 @@ import os
 
 from dynalearn.config import *
 
-network_config = {"er": NetworkConfig.er_default(), "ba": NetworkConfig.ba_default()}
+network_config = {
+    "er": NetworkConfig.er_default(),
+    "ba": NetworkConfig.ba_default(),
+    "treeba": NetworkConfig.treeba_default(),
+}
 dynamics_config = {
     "sis": DynamicsConfig.sis_default(),
     "plancksis": DynamicsConfig.plancksis_default(),

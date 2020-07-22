@@ -36,6 +36,13 @@ class NetworkConfig(Config):
         return cls
 
     @classmethod
+    def treeba_default(cls):
+        cls = cls()
+        for k, v in NetworkConfig.barabasialbert(1000, 1).__dict__.items():
+            cls.__dict__[k] = v
+        return cls
+
+    @classmethod
     def configuration(cls, num_nodes, p_k):
         cls = cls()
         cls.name = "ConfigurationNetwork"
