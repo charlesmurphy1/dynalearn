@@ -7,7 +7,8 @@ from .gnn import GraphNeuralNetwork
 from dynalearn.config import Config
 from dynalearn.nn.activation import get as get_activation
 from torch.nn.init import kaiming_normal_
-from torch_geometric.nn import GATConv, SAGEConv, GCNConv, GraphConv
+
+# from torch_geometric.nn import GATConv, SAGEConv, GCNConv, GraphConv
 
 
 class EpidemicsGNN(GraphNeuralNetwork):
@@ -43,42 +44,51 @@ class EpidemicsGNN(GraphNeuralNetwork):
         self.in_edge_layers = self._build_layer(
             in_layer_channels, self.in_activation, bias=self.bias
         )
-        if "gnn_layer_name" not in config.__dict__:
-            config.gnn_layer_name = "DynamicsGAT"
-        if config.gnn_layer_name == "GAT":
-            self.att_layer = GATConv(
-                self.in_channels[-1],
-                self.att_channels,
-                heads=self.heads,
-                concat=self.concat,
-                add_self_loops=self.self_attention,
-                bias=self.bias,
-            )
-        elif config.gnn_layer_name == "SAGE":
-            self.att_layer = SAGEConv(
-                self.in_channels[-1], self.att_channels, bias=self.bias
-            )
-        elif config.gnn_layer_name == "GCN":
-            self.att_layer = GCNConv(
-                self.in_channels[-1],
-                self.att_channels,
-                bias=self.bias,
-                add_self_loops=self.self_attention,
-            )
-        elif config.gnn_layer_name == "GraphConv":
-            self.att_layer = GraphConv(
-                self.in_channels[-1], self.att_channels, bias=self.bias, aggr="add"
-            )
-        else:
-            self.att_layer = DynamicsGATConv(
-                self.in_channels[-1],
-                self.att_channels,
-                heads=self.heads,
-                concat=self.concat,
-                bias=self.bias,
-                attn_bias=self.attn_bias,
-                self_attention=self.self_attention,
-            )
+        # if "gnn_layer_name" not in config.__dict__:
+        #     config.gnn_layer_name = "DynamicsGAT"
+        # if config.gnn_layer_name == "GAT":
+        #     self.att_layer = GATConv(
+        #         self.in_channels[-1],
+        #         self.att_channels,
+        #         heads=self.heads,
+        #         concat=self.concat,
+        #         add_self_loops=self.self_attention,
+        #         bias=self.bias,
+        #     )
+        # elif config.gnn_layer_name == "SAGE":
+        #     self.att_layer = SAGEConv(
+        #         self.in_channels[-1], self.att_channels, bias=self.bias
+        #     )
+        # elif config.gnn_layer_name == "GCN":
+        #     self.att_layer = GCNConv(
+        #         self.in_channels[-1],
+        #         self.att_channels,
+        #         bias=self.bias,
+        #         add_self_loops=self.self_attention,
+        #     )
+        # elif config.gnn_layer_name == "GraphConv":
+        #     self.att_layer = GraphConv(
+        #         self.in_channels[-1], self.att_channels, bias=self.bias, aggr="add"
+        #     )
+        # else:
+        #     self.att_layer = DynamicsGATConv(
+        #         self.in_channels[-1],
+        #         self.att_channels,
+        #         heads=self.heads,
+        #         concat=self.concat,
+        #         bias=self.bias,
+        #         attn_bias=self.attn_bias,
+        #         self_attention=self.self_attention,
+        #     )
+        self.att_layer = DynamicsGATConv(
+            self.in_channels[-1],
+            self.att_channels,
+            heads=self.heads,
+            concat=self.concat,
+            bias=self.bias,
+            attn_bias=self.attn_bias,
+            self_attention=self.self_attention,
+        )
 
         if self.with_non_edge:
             self.non_edge_layer = nn.Linear(self.in_channels[-1], 1, bias=self.bias)
