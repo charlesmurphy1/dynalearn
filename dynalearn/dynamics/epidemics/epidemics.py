@@ -4,7 +4,7 @@ import torch
 
 from dynalearn.dynamics.dynamics import Dynamics
 from dynalearn.nn.models import Propagator
-from dynalearn.utilities import from_binary
+from dynalearn.utilities import from_binary, onehot
 
 
 class Epidemics(Dynamics):
@@ -25,9 +25,11 @@ class Epidemics(Dynamics):
         y = np.array(dist.sample())
         return y
 
-    def likelihood(self, x, y=None):
+    def loglikelihood(self, x, y=None, g=None):
+        if g is not None:
+            self.network = g
         if y is None:
-            y = np.roll(x, 1, axis=0)[:-1]
+            y = np.roll(x, -1, axis=0)[:-1]
             x = x[:-1]
 
         if x.shape == (self.window_size, self.num_nodes) or x.shape == (self.num_nodes):
@@ -38,7 +40,9 @@ class Epidemics(Dynamics):
         for i in range(x.shape[0]):
             p = self.predict(x[i])
             onehot_y = onehot(y[i], num_class=self.num_states)
-            logp = np.log((onehot_y * p).sum(-1))
+            p = (onehot_y * p).sum(-1)
+            p[p <= 1e-15] = 1e-15
+            logp = np.log(p)
             loglikelihood += logp.sum()
         return loglikelihood
 

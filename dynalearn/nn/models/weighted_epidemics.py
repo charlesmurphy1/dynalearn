@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch_geometric
 
 from torch.nn import Parameter
-from .gat import GraphAttention
+from .gat import DynamicsGATConv
 from .gnn import GraphNeuralNetwork
 from dynalearn.config import Config
 from dynalearn.nn.activation import get as get_activation
@@ -57,7 +57,7 @@ class WeightedEpidemicsGNN(GraphNeuralNetwork):
             edge_layer_channels, self.edge_activation, bias=self.bias
         )
 
-        self.att_layer = GraphAttention(
+        self.att_layer = DynamicsGATConv(
             self.in_channels[-1],
             self.att_channels,
             heads=self.heads,

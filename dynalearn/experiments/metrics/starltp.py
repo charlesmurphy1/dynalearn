@@ -15,6 +15,15 @@ class StarLTPMetrics(LTPMetrics):
 
     def initialize(self, experiment):
         self.model = self.get_model(experiment)
+        self.num_states = experiment.model.num_states
+        self.num_states = experiment.model.num_states
+        if (
+            experiment.model.window_size
+            > experiment.train_details.threshold_window_size
+        ):
+            self.window_size = experiment.train_details.threshold_window_size
+        else:
+            self.window_size = experiment.model.window_size
         eff_num_states = self.num_states ** self.window_size
         self.num_updates = np.sum(
             binom(self.degree_class + eff_num_states - 1, eff_num_states - 1)

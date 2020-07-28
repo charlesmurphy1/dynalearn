@@ -1,8 +1,11 @@
 import numpy as np
 import torch
 
+from dynalearn.datasets.transforms import RemapStateTransform
 from dynalearn.dynamics.epidemics import MultiEpidemics
+from dynalearn.dynamics.activation import independent
 from dynalearn.config import Config
+from dynalearn.utilities import onehot
 
 
 class SISSIS(MultiEpidemics):
@@ -217,3 +220,82 @@ class PartiallyHiddenSISSIS(SISSIS):
         dist = torch.distributions.Categorical(torch.tensor(p))
         x = np.array(dist.sample())
         return x
+
+    def loglikelihood(self, x, real_x, y=None, real_y=None, g=None):
+        if g is not None:
+            self.network = g
+        if y is None:
+            y = np.roll(x, -1, axis=0)[:-1]
+            x = x[:-1]
+        if real_y is None:
+            real_y = np.roll(real_x, -1, axis=0)[:-1]
+            real_x = real_x[:-1]
+
+        if x.shape == (self.window_size, self.num_nodes) or x.shape == (self.num_nodes):
+            x = x.reshape(1, self.window_size, self.num_nodes)
+            real_x = real_x.reshape(1, self.window_size, self.num_nodes)
+            y = y.reshape(1, self.num_nodes)
+
+        loglikelihood = 0
+        for i in range(x.shape[0]):
+            p = SISSIS.predict(self, real_x[i])
+            onehot_y = onehot(real_y[i], num_class=self.num_states)
+            p = (onehot_y * p).sum(-1)
+
+            real_si = np.where(real_y[i] == 2)[0]
+            real_ii = np.where(real_y[i] == 3)[0]
+            si = np.where((y[i] == 2) * (real_y[i] == 2))[0]
+            ii = np.where((y[i] == 3) * (real_y[i] == 3))[0]
+            q = np.ones(self.num_nodes)
+            q[real_si] = self.hide_prob
+            q[real_ii] = self.hide_prob
+            q[si] = 1 - self.hide_prob
+            q[ii] = 1 - self.hide_prob
+            p *= q
+
+            p[p <= 1e-15] = 1e-15
+
+            logp = np.log(p)
+            loglikelihood += logp.sum()
+        return loglikelihood
+
+
+class SISnoise(MultiEpidemics):
+    def __init__(self, config=None, **kwargs):
+        if config is None:
+            config = Config()
+            config.__dict__ = kwargs
+        num_diseases = 2
+        num_states = 4
+        self.infection1 = config.infection1
+        self.recovery = config.recovery
+        self.noise = config.noise
+        self.transform = RemapStateTransform()
+        self.transform.state_map = {0: 0, 1: 1, 2: 0, 3: 1}
+
+        MultiEpidemics.__init__(self, config, num_diseases, num_states)
+
+    def predict(self, x):
+        if len(x.shape) > 1:
+            x = x[-1].squeeze()
+        y = self.transform(x)
+        ltp = np.zeros((x.shape[0], self.num_states))
+        p = independent(self.neighbors_state(y)[1], self.infection1)
+        q = self.recovery
+        ltp[x == 0, 0] = (1 - p[x == 0]) * (1 - self.noise)
+        ltp[x == 0, 1] = (p[x == 0]) * (1 - self.noise)
+        ltp[x == 0, 2] = (1 - p[x == 0]) * self.noise
+        ltp[x == 0, 3] = (p[x == 0]) * self.noise
+        ltp[x == 1, 0] = (q) * (1 - self.noise)
+        ltp[x == 1, 1] = (1 - q) * (1 - self.noise)
+        ltp[x == 1, 2] = q * self.noise
+        ltp[x == 1, 3] = (1 - q) * self.noise
+        ltp[x == 2, 0] = (1 - p[x == 2]) * (1 - self.noise)
+        ltp[x == 2, 1] = (p[x == 2]) * (1 - self.noise)
+        ltp[x == 2, 2] = (1 - p[x == 2]) * self.noise
+        ltp[x == 2, 3] = (p[x == 2]) * self.noise
+        ltp[x == 1, 0] = (q) * (1 - self.noise)
+        ltp[x == 1, 1] = (1 - q) * (1 - self.noise)
+        ltp[x == 1, 2] = q * self.noise
+        ltp[x == 1, 3] = (1 - q) * self.noise
+        return ltp

@@ -121,6 +121,7 @@ class DynamicsConfig(Config):
     def sis_gnn_default(cls):
         cls = cls()
         cls.name = "TrainableEpidemics"
+        cls.gnn_layer_name = "DynamicsGAT"
         cls.num_states = 2
         cls.window_size = 1
         cls.window_step = 1
@@ -153,6 +154,7 @@ class DynamicsConfig(Config):
     def plancksis_gnn_default(cls):
         cls = cls()
         cls.name = "TrainableEpidemics"
+        cls.gnn_layer_name = "DynamicsGAT"
         cls.num_states = 2
         cls.window_size = 1
         cls.window_step = 1
@@ -185,6 +187,7 @@ class DynamicsConfig(Config):
     def sissis_gnn_default(cls):
         cls = cls()
         cls.name = "TrainableEpidemics"
+        cls.gnn_layer_name = "DynamicsGAT"
         cls.num_states = 4
         cls.window_size = 1
         cls.window_step = 1
@@ -217,6 +220,7 @@ class DynamicsConfig(Config):
     def hidden_sissis_gnn_default(cls):
         cls = cls()
         cls.name = "TrainableEpidemics"
+        cls.gnn_layer_name = "DynamicsGAT"
         cls.num_states = 2
         cls.window_size = 1
         cls.window_step = 1
@@ -250,6 +254,7 @@ class DynamicsConfig(Config):
     def partially_hidden_sissis_gnn_default(cls):
         cls = cls()
         cls.name = "TrainableEpidemics"
+        cls.gnn_layer_name = "DynamicsGAT"
         cls.num_states = 4
         cls.window_size = 1
         cls.window_step = 1

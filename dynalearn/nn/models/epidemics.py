@@ -2,11 +2,12 @@ import torch
 import torch.nn as nn
 
 from torch.nn import Parameter
-from .gat import GraphAttention
+from .gat import DynamicsGATConv
 from .gnn import GraphNeuralNetwork
 from dynalearn.config import Config
 from dynalearn.nn.activation import get as get_activation
 from torch.nn.init import kaiming_normal_
+from torch_geometric.nn import GATConv, SAGEConv, GCNConv, GraphConv
 
 
 class EpidemicsGNN(GraphNeuralNetwork):
@@ -42,16 +43,43 @@ class EpidemicsGNN(GraphNeuralNetwork):
         self.in_edge_layers = self._build_layer(
             in_layer_channels, self.in_activation, bias=self.bias
         )
+        if "gnn_layer_name" not in config.__dict__:
+            config.gnn_layer_name = "DynamicsGAT"
+        if config.gnn_layer_name == "GAT":
+            self.att_layer = GATConv(
+                self.in_channels[-1],
+                self.att_channels,
+                heads=self.heads,
+                concat=self.concat,
+                add_self_loops=self.self_attention,
+                bias=self.bias,
+            )
+        elif config.gnn_layer_name == "SAGE":
+            self.att_layer = SAGEConv(
+                self.in_channels[-1], self.att_channels, bias=self.bias
+            )
+        elif config.gnn_layer_name == "GCN":
+            self.att_layer = GCNConv(
+                self.in_channels[-1],
+                self.att_channels,
+                bias=self.bias,
+                add_self_loops=self.self_attention,
+            )
+        elif config.gnn_layer_name == "GraphConv":
+            self.att_layer = GraphConv(
+                self.in_channels[-1], self.att_channels, bias=self.bias, aggr="add"
+            )
+        else:
+            self.att_layer = DynamicsGATConv(
+                self.in_channels[-1],
+                self.att_channels,
+                heads=self.heads,
+                concat=self.concat,
+                bias=self.bias,
+                attn_bias=self.attn_bias,
+                self_attention=self.self_attention,
+            )
 
-        self.att_layer = GraphAttention(
-            self.in_channels[-1],
-            self.att_channels,
-            heads=self.heads,
-            concat=self.concat,
-            bias=self.bias,
-            attn_bias=self.attn_bias,
-            self_attention=self.self_attention,
-        )
         if self.with_non_edge:
             self.non_edge_layer = nn.Linear(self.in_channels[-1], 1, bias=self.bias)
         else:
@@ -67,12 +95,12 @@ class EpidemicsGNN(GraphNeuralNetwork):
         self.last_layer = nn.Linear(
             self.out_channels[-1], self.num_states, bias=self.bias
         )
-        self.reset_parameter()
+        self.reset_parameters()
         self.optimizer = self.optimizer(self.parameters())
         if torch.cuda.is_available():
             self = self.cuda()
 
-    def forward(self, x, edge_index, edge_attr=None):
+    def forward(self, x, edge_index):
         x = x.T
         x = self.in_layers(x)
         if self.with_non_edge:
@@ -80,12 +108,12 @@ class EpidemicsGNN(GraphNeuralNetwork):
             a = torch.relu(a)
             a = torch.softmax(a, dim=0)
             x = x + torch.sum(a * x, 0)
-        x = self.att_layer(x, edge_index, edge_attr=edge_attr)
+        x = self.att_layer(x, edge_index)
         x = self.out_layers(x)
         x = self.last_layer(x)
         return torch.softmax(x, dim=-1)
 
-    def reset_parameter(self, initialize_inplace=None):
+    def reset_parameters(self, initialize_inplace=None):
         if initialize_inplace is None:
             initialize_inplace = kaiming_normal_
 
@@ -101,7 +129,7 @@ class EpidemicsGNN(GraphNeuralNetwork):
                 if self.bias:
                     layer.bias.data.fill_(0)
 
-        self.att_layer.reset_parameter()
+        self.att_layer.reset_parameters()
 
     def _build_layer(self, channels, activation, bias=True):
         layers = []

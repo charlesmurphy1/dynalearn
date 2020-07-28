@@ -10,7 +10,7 @@ path_to_dynalearn_data = (
     "/home/charles/Documents/ulaval/doctorat/projects/"
     + "dynalearn-all/dynalearn/data/phase2-data"
 )
-path_to_all = os.path.join(path_to_dynalearn_data, "training")
+path_to_all = os.path.join(path_to_dynalearn_data, "partial")
 path_to_data = os.path.join(path_to_all, "full_data")
 path_to_best = os.path.join(path_to_all, "best")
 path_to_summary = os.path.join(path_to_all, "summary")
@@ -35,7 +35,7 @@ hide_prob_array = [0.25]
 config_array = [
     # "sissis-ba",
     # "hiddensissis-ba",
-    "partiallyhiddensissis-ba",
+    "partiallyhiddensissis-treeba",
 ]
 tasks = ["generate_data", "train_model", "compute_metrics"]
 # tasks = ["load", "compute_metrics"]

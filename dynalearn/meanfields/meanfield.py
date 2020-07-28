@@ -155,11 +155,13 @@ class GenericMeanfield(Meanfield):
             _ltp = np.zeros(
                 (neighbor_states.shape[0], self.num_states, self.model.num_states)
             )
-            g = nx.star_graph(k + 1)
+            g = nx.empty_graph(self.p_k.values.max() + 1)
+            g.add_edges_from(nx.star_graph(k + 1).edges())
             self.model.network = g
             for i, ns in enumerate(neighbor_states):
                 x = np.zeros(g.number_of_nodes())
-                x[1:] = np.concatenate([ss * np.ones(ll) for ss, ll in enumerate(ns)])
+                y = np.concatenate([ss * np.ones(ll) for ss, ll in enumerate(ns)])
+                x[1 : y.shape[0] + 1] = y * 1
                 for s in range(self.num_states):
                     x[0] = s
                     bin_x = to_nary(x, base=self.num_states, dim=self.window_size)

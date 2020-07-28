@@ -39,8 +39,8 @@ class Dynamics(ABC):
         raise NotImplementedError("self.predict() has not been impletemented")
 
     @abstractmethod
-    def likelihood(self, x):
-        raise NotImplementedError("self.likelihood() has not been impletemented")
+    def loglikelihood(self, x):
+        raise NotImplementedError("self.loglikelihood() has not been impletemented")
 
     @abstractmethod
     def sample(self, x):

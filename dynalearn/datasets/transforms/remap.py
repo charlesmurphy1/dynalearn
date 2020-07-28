@@ -21,11 +21,9 @@ class PartiallyRemapStateTransform(StateTransform):
         if x.ndim == 1:
             window_size = 0
             num_nodes = x.shape[0]
-            resqueeze = True
         elif x.ndim == 2:
             window_size = x.shape[0]
             num_nodes = x.shape[1]
-            resqueeze = False
         _x = np.vectorize(self.state_map.get)(x.copy())
         y = x.copy()
         if window_size > 0:

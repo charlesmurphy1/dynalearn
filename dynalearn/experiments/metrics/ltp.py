@@ -34,8 +34,13 @@ class LTPMetrics(Metrics):
         self.model = self.get_model(experiment)
         self.dataset = experiment.dataset
         self.num_states = experiment.model.num_states
-        self.window_size = experiment.model.window_size
-        self.threshold_window_size = experiment.train_details.threshold_window_size
+        if (
+            experiment.model.window_size
+            > experiment.train_details.threshold_window_size
+        ):
+            self.window_size = experiment.train_details.threshold_window_size
+        else:
+            self.window_size = experiment.model.window_size
 
         self.num_points = {}
         self.num_updates = 0
@@ -72,18 +77,16 @@ class LTPMetrics(Metrics):
         self.num_updates *= update_factor
 
     def _get_summaries_(self, pb=None):
-        if self.window_size > self.threshold_window_size:
-            window_size = self.threshold_window_size
-        else:
-            window_size = self.window_size
-        eff_num_states = self.num_states ** window_size
+        eff_num_states = self.num_states ** self.window_size
 
         for k in range(self.dataset.networks.size):
             g = self.dataset.networks.data[k]
             adj = nx.to_numpy_array(g)
             for t in range(self.num_points[k]):
                 obs_x = self.dataset.data["inputs"][k][t]
-                obs_x = from_nary(obs_x[:window_size], axis=0, base=self.num_states)
+                obs_x = from_nary(
+                    obs_x[: self.window_size], axis=0, base=self.num_states
+                )
                 l = np.array(
                     [np.matmul(adj, obs_x == i) for i in range(eff_num_states)]
                 ).T
@@ -96,11 +99,7 @@ class LTPMetrics(Metrics):
     def _get_ltp_(self, nodes, pb=None):
         ltp = {}
         counter = {}
-        if self.window_size > self.threshold_window_size:
-            window_size = self.threshold_window_size
-        else:
-            window_size = self.window_size
-        eff_num_states = self.num_states ** window_size
+        eff_num_states = self.num_states ** self.window_size
 
         for k in range(self.dataset.networks.size):
             real_g = self.dataset._data["networks"].data[k]
@@ -114,7 +113,10 @@ class LTPMetrics(Metrics):
                 obs_y = self.dataset.targets[k][t]
                 pred = self.predict(real_x, obs_x, real_y, obs_y)
 
-                bin_x = from_nary(obs_x[:window_size], axis=0, base=self.num_states) * 1
+                bin_x = (
+                    from_nary(obs_x[: self.window_size], axis=0, base=self.num_states)
+                    * 1
+                )
                 l = np.array(
                     [np.matmul(adj, bin_x == i) for i in range(eff_num_states)]
                 ).T
@@ -194,8 +196,8 @@ class LTPMetrics(Metrics):
 
         if axis == -1:
             all_summ = summaries[:, 1:].sum(-1)
-        elif isinstance(axis, int):
-            all_summ = summaries[:, axis + 1]
+        elif isinstance(axis, int) or isinstance(axis, float):
+            all_summ = summaries[:, int(axis + 1)]
         elif isinstance(axis, list):
             all_summ = np.zeros(summaries.shape[0])
 
@@ -207,13 +209,15 @@ class LTPMetrics(Metrics):
         agg_ltp_low = np.zeros(agg_summ.shape)
         agg_ltp_high = np.zeros(agg_summ.shape)
         for i, x in enumerate(agg_summ):
+            cond1 = all_summ == x
 
             if in_state is None:
-                index = all_summ == x
-            else:
-                index = (all_summ == x) * np.sum(
-                    [summaries[:, 0] == s for s in in_state]
-                ).astype("bool")
+                cond2 = cond1
+            elif isinstance(in_state, int) or isinstance(in_state, float):
+                cond2 = summaries[:, 0] == in_state
+            elif isinstance(in_state, list):
+                cond2 = np.logical_or(*[summaries[:, 0] == s for s in in_state])
+            index = np.logical_and(cond1, cond2)
 
             if out_state is None or len(data.shape) == 1:
                 y = data[index]

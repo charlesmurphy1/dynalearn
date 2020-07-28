@@ -118,6 +118,13 @@ parser.add_argument(
     default=1000,
 )
 parser.add_argument(
+    "--epochs",
+    type=int,
+    metavar="EPOCHS",
+    help="Number of epochs to train.",
+    default=30,
+)
+parser.add_argument(
     "--resampling_time",
     type=int,
     metavar="RESAMPLING_TIME",
@@ -166,6 +173,27 @@ parser.add_argument(
 parser.add_argument(
     "--metrics", type=str, metavar="METRICS", help="Metrics to compute.", nargs="+"
 )
+parser.add_argument(
+    "--gnn_layer",
+    type=str,
+    metavar="GNN_LAYER",
+    help="GNN layer to use.",
+    default="DynamicsGATConv",
+)
+parser.add_argument(
+    "--train_bias",
+    type=float,
+    metavar="TRAIN_BIAS",
+    help="Training exponent bias to use.",
+    default=0.5,
+)
+parser.add_argument(
+    "--val_bias",
+    type=float,
+    metavar="VAL_BIAS",
+    help="Validation exponent bias to use.",
+    default=0.8,
+)
 parser.add_argument("--to_zip", type=str, metavar="ZIP", help="Data to zip.", nargs="+")
 parser.add_argument(
     "--path",
@@ -206,6 +234,7 @@ config.metrics.names = get_metrics(args)
 
 config.train_details.num_samples = int(args.num_samples)
 config.train_details.batch_size = args.batch_size
+config.train_details.epochs = args.epochs
 config.networks.num_nodes = args.num_nodes
 if config.networks.name is "ERNetwork":
     config.networks.p = np.min([1, 4 / int(args.num_nodes - 1)])
@@ -215,7 +244,10 @@ config.model.window_step = args.window_step
 if "hide_prob" in config.dynamics.__dict__:
     config.dynamics.hide_prob = args.hide_prob
 config.dataset.use_groundtruth = bool(args.use_groundtruth)
-config.metrics.num_nodes = 2000
+config.metrics.num_nodes = 1000
+config.train_details.val_bias = args.val_bias
+config.dataset.bias = args.train_bias
+config.model.gnn_layer_name = args.gnn_layer
 
 print(config)
 

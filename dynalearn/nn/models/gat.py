@@ -31,7 +31,7 @@ class MultiHeadLinear(nn.Module):
         else:
             return x
 
-    def reset_parameter(self):
+    def reset_parameters(self):
         glorot(self.weight)
         zeros(self.bias)
 
@@ -41,7 +41,7 @@ class MultiHeadLinear(nn.Module):
         )
 
 
-class GraphAttention(MessagePassing):
+class DynamicsGATConv(MessagePassing):
     def __init__(
         self,
         in_channels,
@@ -55,7 +55,7 @@ class GraphAttention(MessagePassing):
         self_attention=True,
         **kwargs,
     ):
-        super(GraphAttention, self).__init__(aggr="add", **kwargs)
+        super(DynamicsGATConv, self).__init__(aggr="add", **kwargs)
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -111,9 +111,9 @@ class GraphAttention(MessagePassing):
             self.register_parameter("self_attn_source", None)
             self.register_parameter("self_attn_target", None)
 
-        self.reset_parameter()
+        self.reset_parameters()
 
-    def reset_parameter(self):
+    def reset_parameters(self):
         glorot(self.linear_source.weight)
         zeros(self.linear_source.bias)
         glorot(self.linear_target.weight)
@@ -123,15 +123,15 @@ class GraphAttention(MessagePassing):
             zeros(self.linear_edge.bias)
             glorot(self.edge_combine.weight)
             zeros(self.edge_combine.bias)
-            self.attn_edge.reset_parameter()
+            self.attn_edge.reset_parameters()
 
-        self.attn_source.reset_parameter()
-        self.attn_target.reset_parameter()
+        self.attn_source.reset_parameters()
+        self.attn_target.reset_parameters()
 
         if self.self_attn_source is not None:
-            self.self_attn_source.reset_parameter()
+            self.self_attn_source.reset_parameters()
         if self.self_attn_target is not None:
-            self.self_attn_target.reset_parameter()
+            self.self_attn_target.reset_parameters()
 
     def forward(
         self, x, edge_index, edge_attr=None, return_attention_weights=False,
@@ -145,7 +145,7 @@ class GraphAttention(MessagePassing):
         self_alpha_s: OptTensor = None
         self_alpha_t: OptTensor = None
         if isinstance(x, Tensor):
-            assert x.dim() == 2, "Static graphs not supported in `GraphAttention`."
+            assert x.dim() == 2, "Static graphs not supported in `DynamicsGATConv`."
             x_s = x_t = self.linear_source(x).view(-1, H, C)
             alpha_s = alpha_t = self.attn_source(x_s)
             if self.self_attention:
@@ -154,7 +154,7 @@ class GraphAttention(MessagePassing):
             x_t = x_s.view(-1, H * C)
         else:
             x_s, x_t = x[0], x[1]
-            assert x[0].dim() == 2, "Static graphs not supported in `GATConv`."
+            assert x[0].dim() == 2, "Static graphs not supported in `DynamicsGATConv`."
             x_s = self.linear_source(x_s).view(-1, H, C)
             alpha_s = self.attn_source(x_s)
             if self.self_attention:
