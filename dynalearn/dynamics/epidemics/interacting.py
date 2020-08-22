@@ -26,7 +26,7 @@ class SISSIS(MultiEpidemics):
 
     def predict(self, x):
         if len(x.shape) > 1:
-            x = x[-1].squeeze()
+            x = x[:, -1].squeeze()
         l = self.neighbors_state(x)
         p0, p1 = self.infection(x, l)
         q0, q1 = self.recovery(x, l)
@@ -171,7 +171,7 @@ class HiddenSISSIS(SISSIS):
 
     def predict(self, x):
         if len(x.shape) > 1:
-            x = x[-1].squeeze()
+            x = x[:, -1].squeeze()
         p = SISSIS.predict(self, x)
 
         if self.hide:
@@ -277,7 +277,7 @@ class SISnoise(MultiEpidemics):
 
     def predict(self, x):
         if len(x.shape) > 1:
-            x = x[-1].squeeze()
+            x = x[:, -1].squeeze()
         y = self.transform(x)
         ltp = np.zeros((x.shape[0], self.num_states))
         p = independent(self.neighbors_state(y)[1], self.infection1)

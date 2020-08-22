@@ -14,7 +14,7 @@ from .epidemics import (
     PartiallyHiddenSISSIS,
     TrainableEpidemics,
 )
-from .metapopulation import MetaSIS, TrainableMetapopulation
+from .metapopulation import MetaSIS, MetaSIR, TrainableMetaPop
 
 
 __dynamics__ = {
@@ -33,7 +33,8 @@ __dynamics__ = {
     "PartiallyHiddenSISSIS": PartiallyHiddenSISSIS,
     "TrainableEpidemics": TrainableEpidemics,
     "MetaSIS": MetaSIS,
-    "TrainableMetapopulation": TrainableMetapopulation,
+    "MetaSIR": MetaSIR,
+    "TrainableMetaPop": TrainableMetaPop,
 }
 
 

@@ -15,7 +15,7 @@ class SIS(SingleEpidemics):
 
     def predict(self, x):
         if len(x.shape) > 1:
-            x = x[-1].squeeze()
+            x = x[:, -1].squeeze()
         ltp = np.zeros((x.shape[0], self.num_states))
         p = independent(self.neighbors_state(x)[1], self.infection)
         q = self.recovery
@@ -37,7 +37,7 @@ class SIR(SingleEpidemics):
 
     def predict(self, x):
         if len(x.shape) > 1:
-            x = x[-1].squeeze()
+            x = x[:, -1].squeeze()
         ltp = np.zeros((x.shape[0], self.num_states))
         p = independent(self.neighbors_state(x)[1], self.infection)
         q = self.recovery

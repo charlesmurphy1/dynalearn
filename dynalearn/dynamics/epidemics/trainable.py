@@ -15,10 +15,10 @@ from dynalearn.config import Config
 
 class TrainableEpidemics(Epidemics):
     def __init__(self, config=None, **kwargs):
-        Epidemics.__init__(self, config, config.num_states)
         if config is None:
             config = Config()
             config.__dict__ = kwagrs
+        Epidemics.__init__(self, config, config.num_states)
         self.window_size = config.window_size
         self.window_step = config.window_step
         self.nn = EpidemicsGNN(config)

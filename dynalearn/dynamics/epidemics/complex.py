@@ -13,7 +13,7 @@ class ComplexSIS(SingleEpidemics):
 
     def predict(self, x):
         if len(x.shape) > 1:
-            x = x[-1].squeeze()
+            x = x[:, -1].squeeze()
         ltp = np.zeros((*x.shape, self.num_states))
         l = self.neighbors_state(x)
         p = self.activation(l)
@@ -33,7 +33,7 @@ class ComplexSIR(SingleEpidemics):
 
     def predict(self, x):
         if len(x.shape) > 1:
-            x = x[-1].squeeze()
+            x = x[:, -1].squeeze()
         ltp = np.zeros((x.shape[0], self.num_states))
         l = self.neighbors_state(x)
         p = self.activation(l)
