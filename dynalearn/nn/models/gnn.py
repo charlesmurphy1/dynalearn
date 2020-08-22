@@ -3,15 +3,16 @@ import numpy as np
 import pickle
 import time
 import torch
+import torch.nn as nn
 import tqdm
 
+from abc import abstractmethod
 from dynalearn.config import Config
 from dynalearn.nn.callbacks import CallbackList
 from dynalearn.nn.history import History
 from dynalearn.nn.loss import get as get_loss
 from dynalearn.nn.optimizer import get as get_optimizer
 from dynalearn.utilities import to_edge_index
-from abc import abstractmethod
 
 
 class GraphNeuralNetwork(torch.nn.Module):
@@ -21,8 +22,12 @@ class GraphNeuralNetwork(torch.nn.Module):
             config = Config()
             config.__dict__ = kwargs
         self.loss = get_loss(config.loss)
-        self.optimizer = get_optimizer(config.optimizer)
+        self.get_optimizer = get_optimizer(config.optimizer)
         self.history = History()
+        if "using_log" in config.__dict__:
+            self.using_log = config.using_log
+        else:
+            self.using_log = False
 
     @abstractmethod
     def forward(self, x, edge_index):
@@ -48,7 +53,7 @@ class GraphNeuralNetwork(torch.nn.Module):
         callbacks.set_params(self)
         callbacks.set_model(self)
         callbacks.on_train_begin()
-        self.normalize(dataset)
+        self.setUp(dataset)
         for i in range(epochs):
             callbacks.on_epoch_begin(self.history.epoch)
             t0 = time.time()
@@ -59,6 +64,9 @@ class GraphNeuralNetwork(torch.nn.Module):
             train_metrics = self.evaluate(dataset, metrics)
             if val_dataset is not None:
                 val_metrics = self.evaluate(val_dataset, metrics, "val")
+            else:
+                val_metrics = {}
+
             t1 = time.time()
             logs = {"epoch": self.history.epoch + 1, "time": t1 - t0}
             logs.update(train_metrics)
@@ -114,12 +122,7 @@ class GraphNeuralNetwork(torch.nn.Module):
         num_samples = 0
         for data in batch:
             (x, edge_index), y_true, w = data
-            if torch.cuda.is_available():
-                x = x.cuda()
-                edge_index = edge_index.cuda()
-                y_true = y_true.cuda()
-                w = w.cuda()
-            y_pred = self.forward(x, edge_index)
+            y_pred, y_true = self.get_output(data)
             loss += self.loss(y_pred, y_true, w)
             num_samples += 1
         return loss / num_samples
@@ -138,23 +141,79 @@ class GraphNeuralNetwork(torch.nn.Module):
         self.eval()
         i = 0
         for data in dataset:
-            (x, edge_index), y_true, w = data
-            if torch.cuda.is_available():
-                x = x.cuda()
-                edge_index = edge_index.cuda()
-                y_true = y_true.cuda()
-                w = w.cuda()
-            y_pred = self.forward(x, edge_index)
+            (x, g), y_true, w = data
+            y_pred, y_true = self.get_output(data)
             for m in metrics:
                 val = metrics[m](y_pred, y_true, w).cpu().detach().numpy()
                 logs[prefix + m] += val / len(dataset)
         return logs
 
+    def get_output(self, data):
+        (x, g), y_true, w = data
+        x = self.normalize(x, "input")
+        y_true = self.normalize(y_true, "output")
+        edge_index = to_edge_index(g)
+        if torch.cuda.is_available():
+            x = x.cuda()
+            edge_index = edge_index.cuda()
+            y_true = y_true.cuda()
+            w = w.cuda()
+        return self.forward(x, edge_index), y_true
+
     def get_weights(self):
         return self.state_dict()
 
-    def normalize(self, dataset):
-        return
+    def setUp(self, dataset):
+        self._data_mean = {}
+        self._data_var = {}
+
+    def normalize(self, value, key):
+        if key in self._data_mean:
+            if isinstance(self._data_mean[key], dict):
+                assert isinstance(value, dict)
+                assert value.keys() == self._data_mean[key].keys()
+                for k in value.keys():
+                    m = self._data_mean[key][k]
+                    v = self._data_var[key][k]
+                    if self.using_log:
+                        torch.clamp_(value[k], 1e-15)
+                        value[k] = torch.log(value[k])
+                    value[k] = (value[k] - m) / v ** (0.5)
+                return value
+            else:
+                if self.using_log:
+                    torch.clamp_(value, 1e-15)
+                    value = torch.log(value)
+                return (value - self._data_mean[key]) / self._data_var[key] ** (0.5)
+        else:
+            if self.using_log:
+                torch.clamp_(value, 1e-15)
+                value = torch.log(value)
+            return value
+
+    def unnormalize(self, value, key):
+        # print(self._data_mean)
+        # raise ValueError()
+        if key in self._data_mean:
+            if isinstance(self._data_mean[key], dict):
+                assert isinstance(value, dict)
+                assert value.keys() == self._data_mean.keys()
+                for k in value.keys():
+                    m = self._data_mean[key][k]
+                    v = self._data_var[key][k]
+                    value[k] = value[k] * v ** (0.5) + m
+                    if self.using_log:
+                        value[k] = torch.exp(value[k])
+                return value
+            else:
+                value = value * self._data_var[key] ** (0.5) + self._data_mean[key]
+                if self.using_log:
+                    value = torch.exp(value)
+                return value
+        else:
+            if self.using_log:
+                value = torch.exp(value)
+            return value
 
     def save_weights(self, path):
         state_dict = self.state_dict()
@@ -163,6 +222,34 @@ class GraphNeuralNetwork(torch.nn.Module):
     def load_weights(self, path):
         state_dict = torch.load(path)
         self.load_state_dict(state_dict)
+        self._data_mean = {}
+        self._data_var = {}
+        for k in state_dict.keys():
+            s = k.split("_")
+
+            if len(s) == 4:
+                name, label, key, dkey = s[1], s[2], s[3], None
+            elif len(s) == 5:
+                name, label, key, dkey = s[1], s[2], s[3], s[4]
+            else:
+                name, label, key, dkey = None, None, None, None
+            if name == "data":
+                if label == "mean":
+                    if dkey is None:
+                        self._data_mean[key] = state_dict[k]
+                    else:
+                        if dkey in self._data_mean[key]:
+                            self._data_mean[key][dkey] = state_dict[k]
+                        else:
+                            self._data_mean[key] = {dkey: state_dict[k]}
+                elif label == "var":
+                    if dkey is None:
+                        self._data_var[key] = state_dict[k]
+                    else:
+                        if dkey in self._data_var[key]:
+                            self._data_var[key][dkey] = state_dict[k]
+                        else:
+                            self._data_var[key] = {dkey: state_dict[k]}
 
     def save_optimizer(self, path):
         state_dict = self.optimizer.state_dict()

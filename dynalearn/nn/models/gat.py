@@ -6,39 +6,7 @@ from torch.nn import Parameter
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.nn.inits import glorot, zeros
 from torch_geometric.utils import degree
-
-# from torch_geometric.typing import OptPairTensor, Adj, Size, NoneType, OptTensor
-# from typing import Union, Tuple, Optional
-
-
-class MultiHeadLinear(nn.Module):
-    def __init__(self, in_channels, out_channels, heads=1, bias=False):
-        nn.Module.__init__(self)
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.heads = heads
-
-        self.weight = Parameter(torch.Tensor(out_channels, heads, in_channels))
-        if bias:
-            self.bias = Parameter(torch.Tensor(out_channels, heads))
-        else:
-            self.register_parameter("bias", None)
-
-    def forward(self, x):
-        x = (x * self.weight).sum(dim=-1)
-        if self.bias is not None:
-            return x + self.bias
-        else:
-            return x
-
-    def reset_parameters(self):
-        glorot(self.weight)
-        zeros(self.bias)
-
-    def __repr__(self):
-        return "{}({}, {}, heads={})".format(
-            self.__class__.__name__, self.in_channels, self.out_channels, self.heads
-        )
+from .utils import MultiHeadLinear
 
 
 class DynamicsGATConv(MessagePassing):
@@ -49,7 +17,6 @@ class DynamicsGATConv(MessagePassing):
         heads=1,
         concat=True,
         bias=True,
-        attn_bias=True,
         edge_in_channels=0,
         edge_out_channels=0,
         self_attention=True,
@@ -62,7 +29,6 @@ class DynamicsGATConv(MessagePassing):
         self.heads = heads
         self.concat = concat
         self.bias = bias
-        self.attn_bias = attn_bias
         self.edge_in_channels = edge_in_channels
         self.edge_out_channels = edge_out_channels
         self.self_attention = self_attention
@@ -84,28 +50,24 @@ class DynamicsGATConv(MessagePassing):
                 edge_in_channels, heads * edge_out_channels, bias=bias
             )
             self.edge_combine = nn.Linear(
-                (edge_out_channels + 1) * heads,
-                edge_out_channels * heads,
-                bias=attn_bias,
+                (edge_out_channels + 1) * heads, edge_out_channels * heads, bias=bias,
             )
-            self.attn_edge = MultiHeadLinear(
-                edge_out_channels, 1, heads=heads, bias=attn_bias
-            )
+            self.attn_edge = MultiHeadLinear(edge_out_channels, heads=heads, bias=bias)
 
         else:
             self.register_parameter("linear_edge", None)
             self.register_parameter("edge_combine", None)
             self.register_parameter("attn_edge", None)
 
-        self.attn_source = MultiHeadLinear(out_channels, 1, heads=heads, bias=attn_bias)
-        self.attn_target = MultiHeadLinear(out_channels, 1, heads=heads, bias=attn_bias)
+        self.attn_source = MultiHeadLinear(out_channels, heads=heads, bias=bias)
+        self.attn_target = MultiHeadLinear(out_channels, heads=heads, bias=bias)
 
         if self_attention:
             self.self_attn_source = MultiHeadLinear(
-                out_channels, 1, heads=heads, bias=attn_bias
+                out_channels, heads=heads, bias=bias
             )
             self.self_attn_target = MultiHeadLinear(
-                out_channels, 1, heads=heads, bias=attn_bias
+                out_channels, heads=heads, bias=bias
             )
         else:
             self.register_parameter("self_attn_source", None)

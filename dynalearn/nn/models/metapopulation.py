@@ -1,114 +1,245 @@
+import numpy as np
 import torch
 import torch.nn as nn
 
-from torch.nn import Parameter
+from torch.nn import Parameter, Linear, Sequential
+from torch.nn.init import kaiming_normal_
 from .gat import DynamicsGATConv
-from .gnn import GraphNeuralNetwork
+from .variant import (
+    ContinuousGraphNeuralNetwork,
+    ContinuousWeightedGraphNeuralNetwork,
+    ContinuousMultiplexGraphNeuralNetwork,
+    ContinuousWeightedMultiplexGraphNeuralNetwork,
+)
+from .utils import (
+    get_in_layers,
+    get_out_layers,
+    get_edge_layers,
+    MultiplexLayer,
+    ParallelLayer,
+)
 from dynalearn.config import Config
 from dynalearn.nn.activation import get as get_activation
-from torch.nn.init import kaiming_normal_
+from dynalearn.nn.models.getter import get as get_gnn_layer
+from dynalearn.utilities import get_edge_attr
 
 
-class MetaPopGNN(GraphNeuralNetwork):
+class MetaPopGNN(ContinuousGraphNeuralNetwork):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
-        GraphNeuralNetwork.__init__(self, config=config, **kwargs)
+        self.window_size = config.window_size
         self.num_states = config.num_states
-        self.window = config.window
-        self.in_channels = config.in_channels
-        self.att_channels = config.att_channels
-        self.out_channels = config.out_channels
-        self.heads = config.heads
-        self.concat = config.concat
-        self.bias = config.bias
-        self.in_activation = get_activation(config.in_activation)
-        self.att_activation = get_activation(config.att_activation)
-        self.out_activation = get_activation(config.out_activation)
+        config.input_shape = torch.Size([1, config.num_states, config.window_size])
+        config.target_shape = torch.Size([1, config.num_states])
+        ContinuousGraphNeuralNetwork.__init__(self, config=config, **kwargs)
 
-        in_layer_channels = [self.window * self.num_states, *self.in_channels]
-        self.in_layers = self._build_layer(
-            in_layer_channels, self.in_activation, bias=self.bias
+        # Getting layers
+        self.in_layers = get_in_layers(config, True)
+        self.gnn_layer = get_gnn_layer(
+            config.in_channels[-1], config.gnn_channels, config
         )
-
-        self.att_layer = DynamicsGATConv(
-            self.in_channels[-1],
-            self.att_channels,
-            heads=self.heads,
-            concat=self.concat,
-            bias=self.bias,
-        )
-
-        if self.concat:
-            out_layer_channels = [self.heads * self.att_channels, *self.out_channels]
-        else:
-            out_layer_channels = [self.att_channels, *self.out_channels]
-        self.out_layers = self._build_layer(
-            out_layer_channels, self.out_activation, bias=self.bias
-        )
+        self.gnn_activation = get_activation(config.gnn_activation)
+        self.out_layers = get_out_layers(config)
         self.last_layer = nn.Linear(
-            self.out_channels[-1], self.num_states, bias=self.bias
+            config.out_channels[-1], config.num_states, bias=config.bias
         )
-        self.reset_parameter()
-        self.optimizer = self.optimizer(self.parameters())
+
+        # Finishing initialization
+        MetaPopGNN.reset_parameters(self)
+
+        self.optimizer = self.get_optimizer(self.parameters())
         if torch.cuda.is_available():
             self = self.cuda()
 
-        self._in_data_mean = torch.zeros(self.num_states)
-        self._in_data_var = torch.ones(self.num_states)
-        self._out_data_mean = torch.zeros(self.num_states)
-        self._out_data_var = torch.ones(self.num_states)
-
-    def forward(self, x, edge_index):
-        # x = (x - self._in_data_mean) / self._in_data_var ** (0.5)
-        x = x.view(-1, self.window * self.num_state)
+    def forward(self, x, edge_index, edge_attr=None):
+        x = x.view(-1, self.window_size * self.num_states)
         x = self.in_layers(x)
-        x = self.att_layer(x, edge_index)
+        x, _ = self.gnn_layer(x, edge_index)
+        x = self.gnn_activation(x)
         x = self.out_layers(x)
         x = self.last_layer(x)
-        # return x * self._out_data_var ** (0.5) + self._out_data_mean
         return x
 
-    def reset_parameter(self, initialize_inplace=None):
+    def reset_parameters(self, initialize_inplace=None):
         if initialize_inplace is None:
             initialize_inplace = kaiming_normal_
 
-        for layer in self.in_layers:
-            if type(layer) == torch.nn.Linear:
-                initialize_inplace(layer.weight)
-                if self.bias:
-                    layer.bias.data.fill_(0)
+        self.reset_layer(self.in_layers, initialize_inplace=initialize_inplace)
+        self.reset_layer(self.out_layers, initialize_inplace=initialize_inplace)
+        self.gnn_layer.reset_parameters()
+        self.last_layer.reset_parameters()
 
-        for layer in self.out_layers:
-            if type(layer) == torch.nn.Linear:
-                initialize_inplace(layer.weight)
-                if self.bias:
-                    layer.bias.data.fill_(0)
+    def reset_layer(self, layer, initialize_inplace=None):
+        if initialize_inplace is None:
+            initialize_inplace = kaiming_normal_
+        assert isinstance(layer, Sequential)
+        for l in layer:
+            if type(l) == Linear:
+                initialize_inplace(l.weight)
+                if l.bias is not None:
+                    l.bias.data.fill_(0)
 
-        self.att_layer.reset_parameter()
 
-    def _build_layer(self, channels, activation, bias=True):
-        layers = []
-        for i in range(len(channels) - 1):
-            layers.append(nn.Linear(channels[i], channels[i + 1], bias=bias))
-            layers.append(activation)
+class MetaPopWGNN(MetaPopGNN, ContinuousWeightedGraphNeuralNetwork):
+    def __init__(self, config=None, **kwargs):
+        if config is None:
+            config = Config()
+            config.__dict__ = kwargs
 
-        return nn.Sequential(*layers)
+        config.edgeattr_shape = torch.Size([1, 1])
+        ContinuousWeightedGraphNeuralNetwork.__init__(self, config=config, **kwargs)
+        MetaPopGNN.__init__(self, config=config, **kwargs)
 
-    def normalize(self, dataset):
-        self._in_data_mean = np.zeros(self.num_states)
-        self._in_data_var = np.zeros(self.num_states)
-        self._out_data_mean = np.zeros(self.num_states)
-        self._out_data_var = np.zeros(self.num_states)
-        n = len(dataset)
-        for data in dataset:
-            (x, edge_index), y, w = data
-            self._in_data_mean += np.sum(x, axis=0) / n
-            self._in_data_var += np.sum(x ** 2, axis=0) / n
-            self._in_data_mean += np.sum(y, axis=0) / n
-            self._in_data_var += np.sum(y ** 2, axis=0) / n
-        self._in_data_mean = torch.tensor(self._in_data_mean)
-        self._in_data_var = torch.tensor(self._in_data_var - self._in_data_mean ** 2)
-        self._out_data_mean = torch.tensor(self._out_data_mean)
-        self._out_data_var = torch.tensor(self._out_data_var - self._out_data_mean ** 2)
+        # Getting layers
+        self.edge_layers = get_edge_layers(config)
+        self.gnn_layer = DynamicsGATConv(
+            config.in_channels[-1],
+            config.gnn_channels,
+            heads=config.heads,
+            concat=config.concat,
+            bias=config.bias,
+            edge_in_channels=config.edge_channels[-1],
+            edge_out_channels=config.edge_gnn_channels,
+            self_attention=config.self_attention,
+        )
+
+        # Finishing initialization
+        MetaPopWGNN.reset_parameters(self)
+        self.optimizer = self.get_optimizer(self.parameters())
+        if torch.cuda.is_available():
+            self = self.cuda()
+
+    def forward(self, x, edge_index, edge_attr=None):
+        x = x.view(-1, self.window_size * self.num_states)
+        x = self.in_layers(x)
+        edge_attr = self.edge_layers(edge_attr)
+        x, _ = self.gnn_layer(x, edge_index, edge_attr=edge_attr)
+        x = self.gnn_activation(x)
+        x = self.out_layers(x)
+        x = self.last_layer(x)
+        return x
+
+    def reset_parameters(self, initialize_inplace=None):
+        if initialize_inplace is None:
+            initialize_inplace = kaiming_normal_
+
+        self.reset_layer(self.in_layers, initialize_inplace=initialize_inplace)
+        self.reset_layer(self.edge_layers, initialize_inplace=initialize_inplace)
+        self.reset_layer(self.out_layers, initialize_inplace=initialize_inplace)
+        self.gnn_layer.reset_parameters()
+        self.last_layer.reset_parameters()
+
+
+class MetaPopMGNN(MetaPopGNN, ContinuousMultiplexGraphNeuralNetwork):
+    def __init__(self, config=None, **kwargs):
+        if config is None:
+            config = Config()
+            config.__dict__ = kwargs
+        MetaPopGNN.__init__(self, config=config, **kwargs)
+        ContinuousMultiplexGraphNeuralNetwork.__init__(self, config=config, **kwargs)
+
+        # Getting layers
+        template = lambda: DynamicsGATConv(
+            self.in_channels[-1],
+            self.gnn_channels,
+            heads=self.heads,
+            concat=self.concat,
+            bias=self.bias,
+            self_attention=self.self_attention,
+        )
+        self.gnn_layer = MultiplexLayer(
+            template, network_layers=self.network_layers, merge="mean"
+        )
+        self.merge_layer = Sequential(
+            # Linear(
+            #     config.gnn_channels * len(config.network_layers),
+            #     config.gnn_channels,
+            #     bias=config.bias,
+            # ),
+            get_activation(config.gnn_activation),
+        )
+
+        # Finishing initialization
+        MetaPopMGNN.reset_parameters(self)
+        self.optimizer = self.get_optimizer(self.parameters())
+        if torch.cuda.is_available():
+            self = self.cuda()
+
+    def forward(self, x, edge_index):
+        x = x.view(-1, self.window_size * self.num_states)
+        x = self.in_layers(x)
+        x = self.merge_layer(self.gnn_layer(x, edge_index))
+        x = self.out_layers(x)
+        x = self.last_layer(x)
+        return x
+
+    def reset_parameters(self, initialize_inplace=None):
+        if initialize_inplace is None:
+            initialize_inplace = kaiming_normal_
+
+        self.reset_layer(self.in_layers, initialize_inplace=initialize_inplace)
+        self.reset_layer(self.merge_layer, initialize_inplace=initialize_inplace)
+        self.reset_layer(self.out_layers, initialize_inplace=initialize_inplace)
+        self.gnn_layer.reset_parameters()
+        self.last_layer.reset_parameters()
+
+
+class MetaPopWMGNN(MetaPopGNN, ContinuousWeightedMultiplexGraphNeuralNetwork):
+    def __init__(self, config=None, **kwargs):
+        if config is None:
+            config = Config()
+            config.__dict__ = kwargs
+        config.edgeattr_shape = torch.Size([1, 1])
+
+        ContinuousWeightedMultiplexGraphNeuralNetwork.__init__(
+            self, config=config, **kwargs
+        )
+        MetaPopGNN.__init__(self, config=config, **kwargs)
+
+        # Getting layers
+        self.edge_layers = ParallelLayer(
+            lambda: get_edge_layers(config), keys=self.network_layers
+        )
+        template = lambda: DynamicsGATConv(
+            config.in_channels[-1],
+            config.gnn_channels,
+            heads=config.heads,
+            concat=config.concat,
+            bias=config.bias,
+            edge_in_channels=config.edge_channels[-1],
+            edge_out_channels=config.edge_gnn_channels,
+            self_attention=config.self_attention,
+        )
+        self.gnn_layer = MultiplexLayer(
+            template, keys=self.network_layers, merge="mean"
+        )
+        self.merge_layer = Sequential(get_activation(config.gnn_activation),)
+
+        # Finishing initialization
+        MetaPopWMGNN.reset_parameters(self)
+        self.optimizer = self.get_optimizer(self.parameters())
+        if torch.cuda.is_available():
+            self = self.cuda()
+
+    def forward(self, x, edge_index, edge_attr):
+        x = x.view(-1, self.window_size * self.num_states)
+        x = self.in_layers(x)
+        edge_attr = self.edge_layers(edge_attr)
+        x, _ = self.gnn_layer(x, edge_index, edge_attr=edge_attr)
+        x = self.merge_layer(x)
+        x = self.out_layers(x)
+        x = self.last_layer(x)
+        return x
+
+    def reset_parameters(self, initialize_inplace=None):
+        if initialize_inplace is None:
+            initialize_inplace = kaiming_normal_
+
+        self.reset_layer(self.in_layers, initialize_inplace=initialize_inplace)
+        self.reset_layer(self.merge_layer, initialize_inplace=initialize_inplace)
+        self.reset_layer(self.out_layers, initialize_inplace=initialize_inplace)
+        self.edge_layers.reset_parameters()
+        self.gnn_layer.reset_parameters()
+        self.last_layer.reset_parameters()

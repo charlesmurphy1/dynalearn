@@ -1,5 +1,6 @@
 import torch
 
+from sklearn.metrics import r2_score
 from dynalearn.utilities import onehot
 from .loss import weighted_cross_entropy
 
@@ -44,11 +45,19 @@ def jensenshannon(y_pred, y_true, weights=None):
     return 0.5 * (relative_entropy(y_true, m) + relative_entropy(y_pred, m))
 
 
+def acc(y_pred, y_true, weights=None):
+    x = y_true.cpu().detach().numpy()
+    y = y_pred.cpu().detach().numpy()
+    a = r2_score(x, y, sample_weight=weights)
+    return torch.tensor(a, dtype=torch.float)
+
+
 __metrics__ = {
     "model_entropy": model_entropy,
     "relative_entropy": relative_entropy,
     "approx_relative_entropy": approx_relative_entropy,
     "jensenshannon": jensenshannon,
+    "acc": acc,
 }
 
 
