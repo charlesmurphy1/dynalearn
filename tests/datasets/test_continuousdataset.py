@@ -7,17 +7,18 @@ from dynalearn.experiments import Experiment
 from unittest import TestCase
 
 
-class DiscreteDatasetTest(TestCase):
+class ContinuousDatasetTest(TestCase):
     def setUp(self):
-        self.config = ExperimentConfig.test(config="discrete")
+        self.config = ExperimentConfig.test(config="continuous")
         self.num_networks = 2
         self.num_samples = 10
         self.num_nodes = 10
+        self.p = 10
         self.batch_size = 5
         self.config.train_details.num_networks = self.num_networks
         self.config.train_details.num_samples = self.num_samples
         self.config.networks.num_nodes = self.num_nodes
-        self.config.networks.p = 0.5
+        self.config.networks.p = self.p
         self.exp = Experiment(self.config, verbose=0)
         self.dataset = self.exp.dataset
         self.dataset.setup(self.exp)
@@ -37,13 +38,18 @@ class DiscreteDatasetTest(TestCase):
 
     def test_partition(self):
         dataset = self.dataset.partition(0.5)
-        self.assertTrue(self.dataset.networks == dataset.networks)
-        self.assertTrue(self.dataset.inputs == dataset.inputs)
-        self.assertTrue(self.dataset.targets == dataset.targets)
         for i in range(self.num_networks):
+            np.testing.assert_array_equal(self.dataset.networks[i], dataset.networks[i])
+            np.testing.assert_array_equal(
+                self.dataset.inputs[i].data, dataset.inputs[i].data
+            )
+            np.testing.assert_array_equal(
+                self.dataset.targets[i].data, dataset.targets[i].data
+            )
             index1 = self.dataset.weights[i] == 0.0
             index2 = dataset.weights[i] > 0.0
             np.testing.assert_array_equal(index1, index2)
+        return
 
     def test_next(self):
         it = iter(self.dataset)
@@ -53,7 +59,7 @@ class DiscreteDatasetTest(TestCase):
             i += 1
         self.assertEqual(self.num_samples * self.num_networks, i)
         (x, g), y, w = data
-        x_ref = np.zeros((self.num_nodes, self.dataset.window_size))
+        x_ref = np.zeros((self.num_nodes, self.dataset.num_states, self.dataset.window_size))
         y_ref = np.zeros((self.num_nodes, self.dataset.num_states))
         y_ref[:, 0] = 1
         w_ref = np.ones(self.num_nodes) / self.num_nodes

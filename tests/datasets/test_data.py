@@ -1,41 +1,37 @@
 import numpy as np
 
 from unittest import TestCase
-from dynalearn.datasets import Data, WindowedData
+from dynalearn.datasets import DataCollection, StateData
 
 
 class TestData(TestCase):
     def setUp(self):
-        self.name = "data0"
-        self.x = np.random.rand(10, 5, 6)
-        self.window_size = 2
-        self.window_step = 2
-        self.data = Data(name=self.name, data=self.x)
-        self.w_data = WindowedData(
+        self.name = "data"
+        self.size = 10
+        self.shape = (5, 6)
+        self.num_points = 14
+        self.data = DataCollection(
             name=self.name,
-            data=self.x,
-            window_size=self.window_size,
-            window_step=self.window_step,
+            data_list=[
+                StateData(
+                    name=self.name,
+                    data=np.random.rand(self.size, *self.shape),
+                    shape=(5, 6),
+                )
+                for i in range(self.num_points)
+            ],
         )
 
-    def test_call(self):
-        index = 4
-        back = (self.window_size - 1) * self.window_step
-        np.testing.assert_array_equal(self.data[index], self.x[index])
-        np.testing.assert_array_equal(
-            self.w_data[index], self.x[index - back : index + 1 : self.window_step]
-        )
+    def test_get(self):
+        index = np.random.randint(self.num_points)
+        self.assertEqual(self.data[index].shape, self.shape)
 
-    def test_copy(self):
-        data_copy = self.data.copy()
-        self.assertEqual(data_copy.__dict__, self.data.__dict__)
-        data_copy = self.w_data.copy()
-        self.assertEqual(data_copy.__dict__, self.w_data.__dict__)
+    def test_size(self):
+        index = np.random.randint(self.num_points)
+        self.assertEqual(self.data[index].size, self.size)
 
-    def test_add(self):
-        data = Data(name="new_data")
-        data.add(self.x)
-        np.testing.assert_array_equal(data.data, self.data.data)
+    def test_num_points(self):
+        self.assertEqual(self.data.size, self.num_points)
 
 
 if __name__ == "__main__":
