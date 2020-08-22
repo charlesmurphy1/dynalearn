@@ -1,8 +1,11 @@
+import h5py
 import networkx as nx
 import numpy as np
 
-from dynalearn.networks.base import Network
+from random import sample
+from dynalearn.networks.network import Network
 from dynalearn.config import Config
+from dynalearn.utilities import set_edge_attr
 
 
 class RealNetwork(Network):
@@ -11,11 +14,41 @@ class RealNetwork(Network):
             config = Config()
             config.__dict__ = kwargs
         Network.__init__(self, config)
-        self.data = [nx.from_edgelist(config.edgelist)]
-        self._num_nodes = self.data[0].number_of_nodes()
+        path, ext = config.edgelist.split(".")
+        if ext == "txt":
+            self.data = RealNetwork.load_from_txt(config.path)
+            self._num_nodes = self.data[0].number_of_nodes()
+        elif ext == "h5":
+            self.data = RealNetwork.load_from_h5(config.path)
+            self._num_nodes = self.data[0].number_of_nodes()
+        else:
+            self.data = []
+            self._num_nodes = None
 
     def generate(self):
-        return self.data[0]
+        if len(self.data) > 0:
+            return sample(self.data, 1)[0]
+
+    @staticmethod
+    def load_from_txt(path):
+        edge_list = np.loadtxt(path, dtype=np.int)
+        return [nx.from_edgelist(edge_list)]
+
+    @staticmethod
+    def load_from_h5(path):
+        h5file = h5py.File(path, "r")["data/networks"]
+        data = []
+        for k in h5file.keys():
+            group = h5file[k]
+            g = nx.DiGraph()
+            edge_list = h5file[k]["edge_list"][...]
+            edge_attr = {}
+            g.add_edges_from(edge_list)
+            for l in group.keys():
+                if l != "edge_list":
+                    edge_attr[l] = group[l][...]
+            data.append(set_edge_attr(g, edge_attr))
+        return data
 
 
 class RealTemporalNetwork(Network):
