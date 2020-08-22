@@ -207,7 +207,8 @@ def onehot_numpy(x, num_class=None, dim=-1):
 
 
 def to_edge_index(g):
-    g = g.to_directed()
+    if not nx.is_directed(g):
+        g = g.to_directed()
 
     if len(list(g.edges())) == 0:
         edge_index = torch.empty((2, 0), dtype=torch.long)
@@ -216,3 +217,89 @@ def to_edge_index(g):
         edge_index = torch.LongTensor(edge_index)
 
     return edge_index
+
+
+def collapse_networks(g_dict):
+    if not isinstance(g_dict, dict):
+        return g_dict
+    g = nx.empty_graph()
+    for k, v in g_dict.items():
+        edge_list = to_edge_index(v).numpy().T
+        edge_attr = get_edge_attr(v)
+        g.add_edges_from(edge_list)
+        for i, (u, v) in enumerate(edge_list):
+            if "weight" in g.edges[u, v]:
+                g.edges[u, v]["weight"] += edge_attr["weight"][i]
+            else:
+                g.edges[u, v]["weight"] = edge_attr["weight"][i]
+    return g
+
+
+def get_edge_weights(g):
+    if not nx.is_directed(g):
+        g = g.to_directed()
+
+    edge_index = to_edge_index(g).numpy().T
+    weights = np.zeros((edge_index.shape[0], 1))
+
+    for i, (u, v) in enumerate(edge_index):
+        if "weight" in g.edges[u, v]:
+            weights[i] = g.edges[u, v]["weight"]
+        else:
+            weights[i] = 1
+
+    return weights
+
+
+def get_edge_attr(g, to_data=False):
+    if not nx.is_directed(g):
+        g = g.to_directed()
+
+    edge_index = to_edge_index(g).numpy().T
+    attributes = {}
+
+    for i, (u, v) in enumerate(edge_index):
+        attr = g.edges[u, v]
+        for k, a in attr.items():
+            if k not in attributes:
+                attributes[k] = np.zeros(edge_index.shape[0])
+            attributes[k][i] = a
+    if to_data:
+        return np.concatenate(
+            [v.reshape(-1, 1) for k, v in attributes.items()], axis=-1,
+        )
+    return attributes
+
+
+def set_edge_attr(g, edge_attr_dict):
+
+    edge_index = to_edge_index(g).numpy().T
+    for k, attr in edge_attr_dict.items():
+        for i, (u, v) in enumerate(edge_index):
+            g.edges[u, v][k] = attr[i]
+    return g
+
+
+def get_node_strength(g):
+    if not nx.is_directed(g):
+        g = g.to_directed()
+
+    strength = {}
+
+    for u, v in g.edges():
+        for key, val in g.edges[u, v].items():
+            if key not in strength:
+                strength[key] = np.zeros(g.number_of_nodes())
+            strength[key][u] += val
+
+    return strength
+
+
+def from_weighted_edgelist(edge_list, create_using=None):
+    g = create_using or nx.Graph()
+    for edge in edge_list:
+        if len(edge) == 3:
+            g.add_edge(int(edge[0]), int(edge[1]), weight=edge[2])
+        else:
+            g.add_edge(int(edge[0]), int(edge[1]))
+    return g
