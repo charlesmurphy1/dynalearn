@@ -1,9 +1,11 @@
 from dynalearn.datasets import (
     DiscreteDataset,
     DegreeWeightedDiscreteDataset,
+    StrengthWeightedDiscreteDataset,
     StateWeightedDiscreteDataset,
     ContinuousDataset,
     DegreeWeightedContinuousDataset,
+    StrengthWeightedContinuousDataset,
     StateWeightedContinuousDataset,
 )
 
@@ -11,9 +13,11 @@ from dynalearn.datasets import (
 __datasets__ = {
     "DiscreteDataset": DiscreteDataset,
     "DegreeWeightedDiscreteDataset": DegreeWeightedDiscreteDataset,
+    "StrengthWeightedDiscreteDataset": StrengthWeightedDiscreteDataset,
     "StateWeightedDiscreteDataset": StateWeightedDiscreteDataset,
     "ContinuousDataset": ContinuousDataset,
     "DegreeWeightedContinuousDataset": DegreeWeightedContinuousDataset,
+    "StrengthWeightedContinuousDataset": StrengthWeightedContinuousDataset,
     "StateWeightedContinuousDataset": StateWeightedContinuousDataset,
 }
 

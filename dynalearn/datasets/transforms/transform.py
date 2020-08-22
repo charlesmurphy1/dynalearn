@@ -3,6 +3,7 @@ import numpy as np
 
 from abc import abstractmethod
 from dynalearn.config import Config
+from dynalearn.datasets.data.data import Data
 
 
 class Transform:
@@ -26,7 +27,7 @@ class TransformList(Transform):
     def __call__(self, x):
         for t in self.transforms:
             x = t(x)
-            return x
+        return x
 
     def __len__(self):
         return len(self.transforms)
@@ -42,10 +43,11 @@ class StateTransform(Transform):
         raise NotImplemented()
 
     def __call__(self, x):
-        if type(x) == np.ndarray:
-            return self._transform_state_(x)
-        else:
-            return x
+        assert issubclass(type(x), StateData)
+        data = x.data
+        assert isinstance(data, (np.ndarray, torch.Tensor))
+        x.data = self._transform_state_(states)
+        return x
 
 
 class NetworkTransform(Transform):
@@ -54,7 +56,8 @@ class NetworkTransform(Transform):
         raise NotImplemented()
 
     def __call__(self, g):
-        if type(g) == nx.Graph:
-            return self._transform_network_(g)
-        else:
-            return g
+        assert issubclass(type(x), NetworkData)
+        g = x.data
+        assert isinstance(g, nx.Graph)
+        x.data = self._transform_network_(g)
+        return x

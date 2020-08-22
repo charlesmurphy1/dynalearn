@@ -33,7 +33,7 @@ class Sampler:
         self.counter = 0
         self.avail_networks = list(range(self.dataset.network_weights.shape[0]))
         self.avail_states = {
-            i: list(range(int(self.dataset.state_weights[i].shape[0]),))
+            i: list(range(int(self.dataset.state_weights[i].shape[0])))
             for i in self.avail_networks
         }
 
