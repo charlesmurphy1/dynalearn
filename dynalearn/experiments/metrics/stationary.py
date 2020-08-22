@@ -4,7 +4,13 @@ import numpy as np
 from abc import abstractmethod
 from .metrics import Metrics
 from dynalearn.utilities import poisson_distribution, from_nary
-from dynalearn.networks import ConfigurationNetwork, RealTemporalNetwork
+from dynalearn.networks import (
+    Network,
+    GenerativeNetwork,
+    ConfigurationNetwork,
+    RealNetwork,
+    RealTemporalNetwork,
+)
 from dynalearn.config import NetworkConfig
 from random import sample
 
@@ -41,6 +47,14 @@ class StationaryStateMetrics(Metrics):
     def get_model(self, experiment):
         raise NotImplementedError()
 
+    @abstractmethod
+    def initial_state(self, initial_infected=None):
+        raise NotImplementedError()
+
+    @abstractmethod
+    def avg(self, x, axis=-1):
+        raise NotImplementedError()
+
     def get_networks(self, experiment):
         return experiment.networks
 
@@ -71,13 +85,6 @@ class StationaryStateMetrics(Metrics):
                 pb
             )
 
-    def initial_state(self, initial_infected=None):
-        x0 = np.zeros((self.window_size * self.window_step, self.networks.num_nodes))
-        x0[0] = self.dynamics.initial_state(initial_infected=initial_infected)
-        for i in range(1, self.window_size * self.window_step):
-            x0[i] = self.dynamics.sample(x0[i - 1])
-        return x0
-
     def initial_network(self):
         if issubclass(self.networks.__class__, RealTemporalNetwork):
             g = self.networks.complete_network
@@ -87,6 +94,14 @@ class StationaryStateMetrics(Metrics):
             g = sample(self.networks.data, 1)[0]
         self.dynamics.network = g
         self.model.network = g
+
+    def burning(self, x, burn=1):
+        for b in range(burn):
+            y = x[:: self.window_step]
+            y = self.model.sample(y)
+            x = np.roll(x, -1, axis=0)
+            x[-1] = y
+        return x
 
     def _all_stationary_states_(self, pb=None):
         stationary_states = []
@@ -114,35 +129,11 @@ class StationaryStateMetrics(Metrics):
 
             if self.verbose and pb is not None:
                 pb.update()
-            if self.dynamics.is_dead(x[-1]):
+            if self.dynamics.is_dead(x):
                 x = self.initial_state(initial_infected=epsilon)
-
-        avg_samples = self.avg(samples)
+        # print(type(samples), np.array(samples).shape)
+        avg_samples = self.avg(np.array(samples))
         return self.statistics(avg_samples)
-
-    def burning(self, x, burn=1):
-        for b in range(burn):
-            y = x[:: self.window_step]
-            y = self.model.sample(y)
-            x = np.roll(x, -1, axis=0)
-            x[-1] = y
-        return x
-
-    def avg(self, x, axis=-1):
-        avg_x = []
-
-        if type(x) is list:
-            x = np.array(x)
-
-        if x.shape == (self.window_size * self.window_step, self.networks.num_nodes):
-            x = from_nary(x[:: self.window_step], base=self.num_states)
-        else:
-            x = np.array(
-                [from_nary(xx[:: self.window_step], base=self.num_states) for xx in x]
-            )
-        for i in range(self.num_states ** self.window_size):
-            avg_x.append(np.mean(x == i, axis=axis))
-        return np.array(avg_x)
 
     def _statistics_meanstd(self, avg_samples):
         data = np.zeros((2, avg_samples.shape[0]))
@@ -214,6 +205,26 @@ class EpidemicSSMetrics(StationaryStateMetrics):
                 epsilon=1 - self.epsilon, pb=pb, ascend=False
             )
 
+    def initial_state(self, initial_infected=None):
+        x0 = np.zeros((self.window_size * self.window_step, self.networks.num_nodes))
+        x0[0] = self.dynamics.initial_state(initial_infected=initial_infected)
+        for i in range(1, self.window_size * self.window_step):
+            x0[i] = self.dynamics.sample(x0[i - 1])
+        return x0
+
+    def avg(self, x, axis=-1):
+        avg_x = []
+
+        if x.shape == (self.window_size * self.window_step, self.networks.num_nodes):
+            x = from_nary(x[:: self.window_step], base=self.num_states)
+        else:
+            x = np.array(
+                [from_nary(xx[:: self.window_step], base=self.num_states) for xx in x]
+            )
+        for i in range(self.num_states ** self.window_size):
+            avg_x.append(np.mean(x == i, axis=axis))
+        return np.array(avg_x)
+
     def _all_stationary_states_(self, epsilon=None, pb=None, ascend=True):
         stationary_states = []
         if ascend:
@@ -279,3 +290,84 @@ class GNNPESSMetrics(GNNSSMetrics, PoissonESSMetrics):
     def __init__(self, config, verbose=0):
         GNNSSMetrics.__init__(self, config, verbose)
         PoissonESSMetrics.__init__(self, config, verbose)
+
+
+class MetaPopSSMetrics(EpidemicSSMetrics):
+    def __init__(self, config, verbose=0):
+        EpidemicSSMetrics.__init__(self, config, verbose)
+        self.window_size = 1
+        self.window_step = 1
+
+    def initial_state(self, initial_infected=None):
+        state_dist = np.zeros(self.dynamics.num_states)
+        state_dist[0] = 1 - initial_infected
+        state_dist[1] = initial_infected
+        x0 = self.dynamics.initial_state(state_dist=state_dist)
+        return x0.reshape(*x0.shape, 1)
+
+    def avg(self, x, axis=-1):
+        if x.ndim == 2 and x.shape[-1] == self.dynamics.num_states:
+            x = x.reshape(1, *x.shape)
+        elif x.ndim != 3:
+            raise ValueError("Wrong shape")
+        avg_x = []
+        for i in range(self.dynamics.num_states):
+            avg_x.append(np.mean(x[:, :, i], axis=axis))
+        return np.array(avg_x).squeeze()
+
+    def burning(self, x, burn=1):
+        for b in range(burn):
+            x = self.model.sample(x)
+        return x
+
+
+class WeightDecayMPSSMetrics(MetaPopSSMetrics):
+    def __init__(self, config, verbose=0):
+        MetaPopSSMetrics.__init__(self, config, verbose)
+        if "targets" in config.__dict__:
+            self.targets = config.targets
+        else:
+            self.targets = None
+
+    def get_networks(self, experiment):
+        assert experiment.config.networks.is_weighted
+        network = Network()
+        network_copy = Network()
+        if issubclass(experiment.networks.__class__, GenerativeNetwork):
+            for i in range(experiment.train_details.num_networks):
+                g = experiment.networks.generate()
+                network.data.append(g)
+                network_copy.data.append(g.copy())
+        else:
+            network.data = experiment.networks.data
+            network_copy.data = experiment.networks.data
+        self._unaltered_networks = network_copy
+        return network
+
+    def change_param(self, decay):
+        for i, g in enumerate(self._unaltered_networks.data):
+            if isinstance(g, dict):
+                for k, v in g.items():
+                    self.networks.data[i][k] = self._decay_weight_(v, decay)
+
+            else:
+                self.networks.data[i] = self._decay_weight_(g, decay)
+
+    def _decay_weight_(self, g, decay):
+        assert isinstance(g, (nx.Graph, nx.DiGraph))
+        _g = g.copy()
+        for u, v in g.edges():
+            _g.edges[u, v]["weight"] *= decay
+        return _g
+
+
+class TrueWDMPSSMetrics(TrueSSMetrics, WeightDecayMPSSMetrics):
+    def __init__(self, config, verbose=0):
+        TrueSSMetrics.__init__(self, config, verbose=verbose)
+        WeightDecayMPSSMetrics.__init__(self, config, verbose=verbose)
+
+
+class GNNWDMPSSMetrics(GNNSSMetrics, WeightDecayMPSSMetrics):
+    def __init__(self, config, verbose=0):
+        GNNSSMetrics.__init__(self, config, verbose=verbose)
+        WeightDecayMPSSMetrics.__init__(self, config, verbose=verbose)

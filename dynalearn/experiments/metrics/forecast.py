@@ -7,12 +7,15 @@ from abc import abstractmethod
 class ForecastMetrics(Metrics):
     def __init__(self, config, verbose=0):
         Metrics.__init__(self, config, verbose)
-        self.epsilon = config.epsilon
         self.num_forecasts = config.num_forecasts
         self.num_steps = config.num_steps
 
     @abstractmethod
     def get_model(self, experiment):
+        raise NotImplemented
+
+    @abstractmethod
+    def initial_state(self):
         raise NotImplemented
 
     def initialize(self, experiment):
@@ -29,7 +32,7 @@ class ForecastMetrics(Metrics):
 
     def _get_forecast_(self, pb=None):
         timeseries = np.zeros((self.num_steps, self.num_states))
-        x = self.dynamics.initial_state(self.epsilon)
+        x = self.initial_state()
         self.model.network = self.networks.generate()
         for i in range(self.num_steps):
             timeseries[i] = self.avg(x)
@@ -43,6 +46,27 @@ class ForecastMetrics(Metrics):
         for i in range(self.num_states):
             avg_x[i] = np.mean(x == i)
         return avg_x
+
+
+class EpidemicsForecastMetrics(ForecastMetrics):
+    def __init__(self, config, verbose=0):
+        ForecastMetrics.__init__(self, config, verbose=verbose)
+        self.initial_infected = config.epsilon
+
+    def initial_state(self):
+        return self.dynamics.initial_state(self.initial_infected)
+
+
+class MetaPopForecastMetrics(ForecastMetrics):
+    def __init__(self, config, verbose=0):
+        ForecastMetrics.__init__(self, config, verbose=verbose)
+        self.initial_infected = config.epsilon
+
+    def initial_state(self):
+        state_dist = np.zeros(self.dynamics.num_states)
+        state_dist[0] = self.initial_infected
+        state_dist[1] = 1 - self.initial_infected
+        return self.dynamics.initial_state(state_dist=state_dist)
 
 
 class RTNForecastMetrics(ForecastMetrics):
@@ -91,6 +115,42 @@ class TrueForecastMetrics(ForecastMetrics):
 
 
 class GNNForecastMetrics(ForecastMetrics):
+    def get_model(self, experiment):
+        return experiment.model
+
+
+class TrueEpidemicsForecastMetrics(TrueForecastMetrics, EpidemicsForecastMetrics):
+    def __init__(self, config, verbose=0):
+        TrueForecastMetrics.__init__(self, config, verbose=verbose)
+        EpidemicsForecastMetrics.__init__(self, config, verbose=verbose)
+
+    def get_model(self, experiment):
+        return experiment.dynamics
+
+
+class GNNEpidemicsForecastMetrics(GNNForecastMetrics, EpidemicsForecastMetrics):
+    def __init__(self, config, verbose=0):
+        GNNForecastMetrics.__init__(self, config, verbose=verbose)
+        EpidemicsForecastMetrics.__init__(self, config, verbose=verbose)
+
+    def get_model(self, experiment):
+        return experiment.model
+
+
+class TrueMetaPopForecastMetrics(TrueForecastMetrics, MetaPopForecastMetrics):
+    def __init__(self, config, verbose=0):
+        TrueForecastMetrics.__init__(self, config, verbose=verbose)
+        MetaPopForecastMetrics.__init__(self, config, verbose=verbose)
+
+    def get_model(self, experiment):
+        return experiment.dynamics
+
+
+class GNNMetaPopForecastMetrics(GNNForecastMetrics, MetaPopForecastMetrics):
+    def __init__(self, config, verbose=0):
+        GNNForecastMetrics.__init__(self, config, verbose=verbose)
+        MetaPopForecastMetrics.__init__(self, config, verbose=verbose)
+
     def get_model(self, experiment):
         return experiment.model
 

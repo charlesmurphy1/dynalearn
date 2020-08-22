@@ -27,6 +27,21 @@ class MeanfieldMetrics(Metrics):
         else:
             self.names = ["parameters", "fixed_points"]
 
+    def display(
+        self, ax=None, data_name=None, states=[], colors=None, axis=None, **kwargs,
+    ):
+        if isinstance(states, int):
+            states = [states]
+
+        ax = ax or plt.gca()
+        data_name = data_name or self.names[0]
+
+        x = self.parameters
+        y = np.sum()
+        # ax.plot(x, y, color=c, **kwargs)
+        # ax.fill_between(x, yl, yh, color=fill_color, alpha=0.2)
+        return ax
+
     @abstractmethod
     def get_model(self, experiment):
         raise NotImplementedError()

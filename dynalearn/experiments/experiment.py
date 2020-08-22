@@ -10,7 +10,7 @@ import tqdm
 import zipfile
 
 from datetime import datetime
-from dynalearn.datasets.getter import get as get_datasets
+from dynalearn.datasets.getter import get as get_dataset
 from dynalearn.dynamics.getter import get as get_dynamics
 from dynalearn.experiments.metrics.getter import get as get_metrics
 from dynalearn.experiments.summaries.getter import get as get_summaries
@@ -27,17 +27,20 @@ class Experiment:
         self.name = config.name
 
         # Main objects
-        self.dataset = get_datasets(config.dataset)
+        self._dataset = {"main": get_dataset(config.dataset)}
+        if "pretrain" in config.__dict__:
+            self._dataset["pretrain"] = get_dataset(config.pretrain_dataset)
+        self._val_dataset = {}
+        self._test_dataset = {}
+        self._mode = "main"
+
         self.networks = get_network(config.networks)
         self.dynamics = get_dynamics(config.dynamics)
         self.model = get_dynamics(config.model)
 
         # Training related
-        self.val_dataset = None
-        self.test_dataset = None
         self.train_details = config.train_details
         self.metrics = get_metrics(config.metrics)
-        self.summaries = get_summaries(config.metrics)
         self.train_metrics = get_train_metrics(config.train_metrics)
         self.callbacks = get_callbacks(config.callbacks)
 
@@ -76,16 +79,18 @@ class Experiment:
             np.random.seed(config.seed)
             torch.manual_seed(config.seed)
 
-        self.__all_tasks__ = [
+        self.__tasks__ = [
             "load",
             "save",
             "generate_data",
+            "partition_val_dataset",
+            "partition_test_dataset",
             "train_model",
             "compute_metrics",
             "compute_summaries",
             "zip",
         ]
-        self.__all_files__ = [
+        self.__files__ = [
             "config.pickle",
             "data.h5",
             "metrics.h5",
@@ -101,15 +106,15 @@ class Experiment:
             print(f"---Experiment {self.name}---")
             print(f"Current time: {begin.strftime('%Y-%m-%d %H:%M:%S')}")
 
-        tasks = tasks or self.__all_tasks__
+        tasks = tasks or self.__tasks__
 
         for t in tasks:
-            if t in self.__all_tasks__:
+            if t in self.__tasks__:
                 f = getattr(self, t)
                 f()
             else:
                 raise ValueError(
-                    f"{t} is an invalid task, possible tasks are {self.__all_tasks__}"
+                    f"{t} is an invalid task, possible tasks are {self.__tasks__}"
                 )
 
         if self.verbose != 0:
@@ -121,11 +126,14 @@ class Experiment:
             hours, r = divmod(dt.seconds, 60 * 60)
             mins, r = divmod(r, 60)
             secs = r
-            print(f"Computation time: {days:0=2d}-{hours:0=2d}:{mins:0=2d}:{secs:0=2d}")
+            print(
+                f"Computation time: {days:0=2d}-{hours:0=2d}:{mins:0=2d}:{secs:0=2d}\n"
+            )
 
     def train_model(self, save=True, restore_best=True):
         if self.verbose != 0:
             print("\n---Training model---")
+
         self.model.nn.fit(
             self.dataset,
             epochs=self.train_details.epochs,
@@ -147,40 +155,29 @@ class Experiment:
             print("\n---Generating data---")
         self.dataset.generate(self)
 
-        if "val_fraction" in self.train_details.__dict__:
-            if self.verbose != 0 and self.verbose != 1:
-                pb = None
-                print("Partitioning for validation set")
-            elif self.verbose == 1:
-                pb = tqdm.tqdm(
-                    range(len(self.dataset)), "Partitioning for validation set"
-                )
-            else:
-                pb = None
-            p = self.train_details.val_fraction
-            b = self.train_details.val_bias
-            self.val_dataset = self.dataset.partition(p, bias=b, pb=pb)
-            if np.sum(self.val_dataset.network_weights) == 0:
-                if self.verbose != 0:
-                    print("After partitioning, validation set is still empty.")
-                self.val_dataset = None
-
-        if "test_fraction" in self.train_details.__dict__:
-            if self.verbose != 0 and self.verbose != 1:
-                print("Partitioning for test set")
-                pb = None
-            elif self.verbose == 1:
-                pb = tqdm.tqdm(range(len(self.dataset)), "Partitioning for test set")
-            p = self.train_details.test_fraction
-            b = self.train_details.test_bias
-            self.test_dataset = self.dataset.partition(p, bias=b, pb=pb)
-            if np.sum(self.val_dataset.network_weights) == 0:
-                if self.verbose != 0:
-                    print("After partitioning, test set is still empty.")
-                self.val_dataset = None
-
         if save:
             self.save_data()
+
+    def partition_dataset(self, fraction=0.1, bias=0.0, name="val"):
+        if self.verbose != 0:
+            print(f"\n---Partitioning {name}-data---")
+
+        if f"{name}_fraction" in self.train_details.__dict__:
+            fraction = self.train_details.__dict__[f"{name}_fraction"]
+        if f"{name}_bias" in self.train_details.__dict__:
+            bias = self.train_details.__dict__[f"{name}_bias"]
+        partition = self.dataset.partition(fraction, bias=bias)
+        if np.sum(partition.network_weights) == 0:
+            if self.verbose != 0:
+                print("After partitioning, partition is still empty.")
+            partition = None
+        return partition
+
+    def partition_val_dataset(self, fraction=0.1, bias=0.0):
+        self.val_dataset = self.partition_dataset(fraction, bias, name="val")
+
+    def partition_test_dataset(self, fraction=0.1, bias=0.0):
+        self.test_dataset = self.partition_dataset(fraction, bias, name="test")
 
     def compute_metrics(self, save=True):
         if self.verbose != 0:
@@ -193,18 +190,6 @@ class Experiment:
                     m.save(f)
         else:
             for k, m in self.metrics.items():
-                m.compute(self, verbose=self.verbose)
-
-    def compute_summaries(self, save=True):
-        if self.verbose != 0:
-            print("\n---Computing summaries---")
-        if save:
-            with h5py.File(join(self.path_to_summary, self.name + ".h5"), "a") as f:
-                for k, m in self.summaries.items():
-                    m.compute(self, verbose=self.verbose)
-                    m.save(f)
-        else:
-            for k, m in self.summaries.items():
                 m.compute(self, verbose=self.verbose)
 
     @classmethod
@@ -226,7 +211,7 @@ class Experiment:
         return cls
 
     def zip(self, to_zip=None):
-        to_zip = to_zip or self.__all_files__
+        to_zip = to_zip or self.__files__
         if "config.pickle" not in to_zip:
             to_zip.append("config.pickle")
 
@@ -331,3 +316,39 @@ class Experiment:
         else:
             if self.verbose != 0:
                 print("Loading config: Did not find config to load.")
+
+    @property
+    def dataset(self):
+        return self._dataset[self._mode]
+
+    @dataset.setter
+    def dataset(self, dataset):
+        self._dataset[self._mode] = dataset
+
+    @property
+    def val_dataset(self):
+        if self._mode in self._val_dataset:
+            return self._val_dataset[self._mode]
+        else:
+            return None
+
+    @val_dataset.setter
+    def val_dataset(self, val_dataset):
+        self._val_dataset[self._mode] = val_dataset
+
+    @property
+    def test_dataset(self):
+        if self._mode in self._test_dataset:
+            return self._test_dataset[self._mode]
+        else:
+            return None
+
+    @test_dataset.setter
+    def test_dataset(self, test_dataset):
+        self._test_dataset[self._mode] = test_dataset
+
+    def mode(self, mode):
+        if mode in self._dataset:
+            self._mode = mode
+        else:
+            raise ValueError(f"Dataset mode {mode} not available.")

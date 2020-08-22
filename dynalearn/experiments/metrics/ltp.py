@@ -1,8 +1,10 @@
+import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
 from abc import abstractmethod
 from .metrics import Metrics
+from dynalearn.dynamics import Epidemics
 from dynalearn.utilities import all_combinations, from_nary
 from itertools import product
 from scipy.special import binom
@@ -22,6 +24,44 @@ class LTPMetrics(Metrics):
 
         self.names = ["summaries", "ltp", "train_ltp"]
 
+    def display(
+        self,
+        ax=None,
+        data_name=None,
+        in_states=[],
+        out_states=[],
+        colors=None,
+        fill_color=None,
+        fill_alpha=0.2,
+        axis=None,
+        **kwargs,
+    ):
+        if isinstance(in_states, int) or isinstance(in_states, tuple):
+            in_states = [in_states]
+
+        if isinstance(out_states, int) or isinstance(out_states, tuple):
+            out_states = [out_states]
+
+        ax = ax or plt.gca()
+        data_name = data_name or "ltp"
+        colors = colors or {(i, j): "k" for (i, j) in product(in_states, out_states)}
+        fill_color = "k"
+
+        for i, j in product(in_states, out_states):
+            x, y, yl, yh = LTPMetrics.aggregate(
+                self.data[data_name],
+                self.data["summaries"],
+                in_state=i,
+                out_state=i,
+                axis=axis,
+                reduce="mean",
+                err_reduce="percentile",
+            )
+            c = colors[(i, j)]
+            ax.plot(x, y, color=c, **kwargs)
+            ax.fill_between(x, yl, yh, color=fill_color, alpha=0.2)
+        return ax
+
     @abstractmethod
     def get_model(self, experiment):
         raise NotImplementedError()
@@ -32,6 +72,8 @@ class LTPMetrics(Metrics):
 
     def initialize(self, experiment):
         self.model = self.get_model(experiment)
+        if not issubclass(Epidemics, self.model.__class__):
+            raise ValueError(f"{self.model} is an invalid model for LTPMetrics.")
         self.dataset = experiment.dataset
         self.num_states = experiment.model.num_states
         if (
@@ -107,14 +149,16 @@ class LTPMetrics(Metrics):
             self.model.network = self._set_network_(real_g, obs_g)
             adj = nx.to_numpy_array(obs_g)
             for t in range(self.num_points[k]):
-                real_x = self.dataset._data["inputs"][k][t]
-                obs_x = self.dataset.data["inputs"][k][t]
-                real_y = self.dataset._data["targets"][k][t]
+                real_x = self.dataset._data["inputs"][k].data[t]
+                obs_x = self.dataset.data["inputs"][k].data[t]
+                real_y = self.dataset._data["targets"][k].data[t]
                 obs_y = self.dataset.targets[k][t]
                 pred = self.predict(real_x, obs_x, real_y, obs_y)
 
                 bin_x = (
-                    from_nary(obs_x[: self.window_size], axis=0, base=self.num_states)
+                    from_nary(
+                        obs_x[:, -self.window_size :], axis=0, base=self.num_states
+                    )
                     * 1
                 )
                 l = np.array(
@@ -143,7 +187,7 @@ class LTPMetrics(Metrics):
 
         return ltp_array
 
-    def _get_nodes_(self, dataset, all=True):
+    def _get_nodes_(self, dataset, all=False):
         weights = dataset.weights
         nodes = {}
 
@@ -198,7 +242,7 @@ class LTPMetrics(Metrics):
             all_summ = summaries[:, 1:].sum(-1)
         elif isinstance(axis, int) or isinstance(axis, float):
             all_summ = summaries[:, int(axis + 1)]
-        elif isinstance(axis, list):
+        elif isinstance(axis, tuple):
             all_summ = np.zeros(summaries.shape[0])
 
             for i, a in enumerate(axis):
@@ -215,7 +259,7 @@ class LTPMetrics(Metrics):
                 cond2 = cond1
             elif isinstance(in_state, int) or isinstance(in_state, float):
                 cond2 = summaries[:, 0] == in_state
-            elif isinstance(in_state, list):
+            elif isinstance(in_state, tuple):
                 cond2 = np.logical_or(*[summaries[:, 0] == s for s in in_state])
             index = np.logical_and(cond1, cond2)
 
@@ -224,7 +268,7 @@ class LTPMetrics(Metrics):
             else:
                 if isinstance(out_state, int):
                     y = data[index, out_state]
-                elif isinstance(out_state, list):
+                elif isinstance(out_state, tuple):
                     y = np.array([data[index, o] for o in out_state])
                     y = y.sum(0)
 
