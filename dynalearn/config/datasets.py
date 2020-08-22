@@ -21,6 +21,45 @@ class DatasetConfig(Config):
         return cls
 
     @classmethod
+    def degree_weighted_continuous_default(cls):
+        cls = cls()
+        cls.name = "DegreeWeightedContinuousDataset"
+        cls.bias = 0.5
+        cls.replace = True
+        cls.use_groundtruth = False
+        return cls
+
+    @classmethod
+    def strength_weighted_Discrete_default(cls):
+        cls = cls()
+        cls.name = "StrengthWeightedDiscreteDataset"
+        cls.bias = 0.5
+        cls.replace = True
+        cls.use_groundtruth = False
+        cls.max_num_points = 1000
+        return cls
+
+    @classmethod
+    def strength_weighted_continuous_default(cls):
+        cls = cls()
+        cls.name = "StrengthWeightedContinuousDataset"
+        cls.bias = 0.5
+        cls.replace = True
+        cls.use_groundtruth = False
+        cls.max_num_points = 1000
+        return cls
+
+    @classmethod
+    def strength_weighted_continuous_default(cls):
+        cls = cls()
+        cls.name = "StrengthWeightedContinuousDataset"
+        cls.bias = 0.5
+        cls.replace = True
+        cls.use_groundtruth = False
+        cls.max_num_points = 1000
+        return cls
+
+    @classmethod
     def state_weighted_discrete_default(cls):
         cls = cls()
         cls.name = "StateWeightedDiscreteDataset"
@@ -28,6 +67,16 @@ class DatasetConfig(Config):
         cls.replace = True
         cls.threshold_window_size = 3
         cls.use_groundtruth = False
+        return cls
+
+    @classmethod
+    def state_weighted_continuous_default(cls):
+        cls = cls()
+        cls.name = "StateWeightedContinuousDataset"
+        cls.bias = 0.5
+        cls.replace = True
+        cls.use_groundtruth = False
+        cls.max_num_points = 1000
         return cls
 
     @classmethod

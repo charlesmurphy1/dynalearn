@@ -7,7 +7,27 @@ from dynalearn.config import *
 
 network_config = {
     "er": NetworkConfig.er_default(),
+    "uni_er": NetworkConfig.er_default(weights=NetworkWeightConfig.uniform()),
+    "norm_er": NetworkConfig.er_default(weights=NetworkWeightConfig.normal()),
+    "loguni_er": NetworkConfig.er_default(weights=NetworkWeightConfig.loguniform()),
+    "lognorm_er": NetworkConfig.er_default(weights=NetworkWeightConfig.lognormal()),
     "ba": NetworkConfig.ba_default(),
+    "uni_ba": NetworkConfig.ba_default(weights=NetworkWeightConfig.uniform()),
+    "norm_ba": NetworkConfig.ba_default(weights=NetworkWeightConfig.normal()),
+    "loguni_ba": NetworkConfig.ba_default(weights=NetworkWeightConfig.loguniform()),
+    "lognorm_ba": NetworkConfig.ba_default(weights=NetworkWeightConfig.lognormal()),
+    "uni_multi_ba": NetworkConfig.ba_default(
+        weights=NetworkWeightConfig.uniform(), num_layers=2
+    ),
+    "norm_multi_ba": NetworkConfig.ba_default(
+        weights=NetworkWeightConfig.normal(), num_layers=2
+    ),
+    "loguni_multi_ba": NetworkConfig.ba_default(
+        weights=NetworkWeightConfig.loguniform(), num_layers=2
+    ),
+    "lognorm_multi_ba": NetworkConfig.ba_default(
+        weights=NetworkWeightConfig.lognormal(), num_layers=2
+    ),
     "treeba": NetworkConfig.treeba_default(),
 }
 dynamics_config = {
@@ -16,6 +36,8 @@ dynamics_config = {
     "sissis": DynamicsConfig.sissis_default(),
     "hiddensissis": DynamicsConfig.hidden_sissis_default(),
     "partiallyhiddensissis": DynamicsConfig.partially_hidden_sissis_default(),
+    "metasis": DynamicsConfig.metasis_default(),
+    "metasir": DynamicsConfig.metasir_default(),
 }
 model_config = {
     "sis": DynamicsConfig.sis_gnn_default(),
@@ -23,6 +45,8 @@ model_config = {
     "sissis": DynamicsConfig.sissis_gnn_default(),
     "hiddensissis": DynamicsConfig.hidden_sissis_gnn_default(),
     "partiallyhiddensissis": DynamicsConfig.partially_hidden_sissis_gnn_default(),
+    "metasis": DynamicsConfig.metasis_gnn_default(),
+    "metasir": DynamicsConfig.metasir_gnn_default(),
 }
 metrics_config = {
     "sis": MetricsConfig.sis(),
@@ -30,6 +54,8 @@ metrics_config = {
     "sissis": MetricsConfig.sissis(),
     "hiddensissis": MetricsConfig.hidden_sissis(),
     "partiallyhiddensissis": MetricsConfig.partially_hidden_sissis(),
+    "metasis": MetricsConfig.metasis(),
+    "metasir": MetricsConfig.metasir(),
 }
 
 
@@ -40,6 +66,38 @@ class TrainingConfig(Config):
 
         cls.val_fraction = 0.01
         cls.val_bias = 0.8
+        cls.epochs = 30
+        cls.batch_size = 32
+        cls.num_nodes = 1000
+        cls.num_networks = 1
+        cls.num_samples = 10000
+        cls.resampling = 2
+        cls.threshold_window_size = 3
+
+        return cls
+
+    @classmethod
+    def discrete(cls,):
+        cls = cls()
+
+        cls.val_fraction = 0.01
+        cls.val_bias = 0.8
+        cls.epochs = 30
+        cls.batch_size = 32
+        cls.num_nodes = 1000
+        cls.num_networks = 1
+        cls.num_samples = 10000
+        cls.resampling = 2
+        cls.threshold_window_size = 3
+
+        return cls
+
+    @classmethod
+    def continuous(cls,):
+        cls = cls()
+
+        cls.val_fraction = 0.1
+        cls.val_bias = 0.5
         cls.epochs = 30
         cls.batch_size = 32
         cls.num_nodes = 1000
@@ -85,7 +143,7 @@ class CallbackConfig(Config):
 
 class ExperimentConfig(Config):
     @classmethod
-    def discrete_experiment(
+    def discrete(
         cls,
         name,
         dynamics,
@@ -119,20 +177,137 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_summary):
             os.makedirs(path_to_summary)
         cls.dynamics = dynamics_config[dynamics]
-        cls.model = model_config[dynamics]
         cls.networks = network_config[network]
+        cls.model = model_config[dynamics]
 
         if dynamics == "hiddensissis":
             cls.dataset = DatasetConfig.state_weighted_hidden_sissis()
-            # if cls.model.window_size > 5:
-            #    cls.dataset = DatasetConfig.degree_weighted_hidden_sissis()
         elif dynamics == "partiallyhiddensissis":
             cls.dataset = DatasetConfig.state_weighted_partially_hidden_sissis()
         else:
             cls.dataset = DatasetConfig.state_weighted_discrete_default()
-        cls.train_details = TrainingConfig.default()
+        cls.train_details = TrainingConfig.discrete()
         cls.metrics = metrics_config[dynamics]
         cls.train_metrics = ["jensenshannon", "model_entropy"]
+        cls.callbacks = CallbackConfig.default(cls.path_to_best)
+
+        if seed is None:
+            cls.seed = int(time.time())
+        else:
+            cls.seed = seed
+
+        return cls
+
+    @classmethod
+    def continuous(
+        cls,
+        name,
+        dynamics,
+        network,
+        path_to_data="./",
+        path_to_best="./",
+        path_to_summary="./",
+        mode="fast",
+        seed=None,
+    ):
+        cls = cls()
+        if dynamics not in dynamics_config:
+            raise ValueError(
+                f"{dynamics} is invalid, valid entries are {list(dynamics_config.keys())}"
+            )
+        if network not in network_config:
+            raise ValueError(
+                f"{network} is invalid, valid entries are {list(network_config.keys())}"
+            )
+        cls.name = name
+
+        cls.path_to_data = os.path.join(path_to_data, cls.name)
+        if not os.path.exists(cls.path_to_data):
+            os.makedirs(cls.path_to_data)
+
+        cls.path_to_best = os.path.join(path_to_best, cls.name + ".pt")
+        if not os.path.exists(path_to_best):
+            os.makedirs(path_to_best)
+
+        cls.path_to_summary = path_to_summary
+        if not os.path.exists(path_to_summary):
+            os.makedirs(path_to_summary)
+        cls.dynamics = dynamics_config[dynamics]
+        cls.networks = network_config[network]
+        cls.model = model_config[dynamics]
+        if cls.networks.is_weighted:
+            cls.dynamics.is_weighted = True
+            cls.model.is_weighted = True
+        else:
+            cls.dynamics.is_weighted = False
+            cls.model.is_weighted = False
+
+        if cls.networks.is_multiplex:
+            cls.dynamics.is_multiplex = True
+            cls.model.is_multiplex = True
+            cls.model.network_layers = cls.networks.layers
+        else:
+            cls.dynamics.is_multiplex = False
+            cls.model.is_multiplex = False
+
+        cls.dataset = DatasetConfig.state_weighted_continuous_default()
+        cls.train_details = TrainingConfig.continuous()
+        cls.metrics = metrics_config[dynamics]
+        cls.train_metrics = ["acc"]
+        cls.callbacks = CallbackConfig.default(cls.path_to_best)
+
+        if seed is None:
+            cls.seed = int(time.time())
+        else:
+            cls.seed = seed
+
+        return cls
+
+    @classmethod
+    def spain_covid19(
+        cls,
+        path_to_data="./",
+        path_to_best="./",
+        path_to_summary="./",
+        weighted=False,
+        multiplex=False,
+        seed=None,
+    ):
+        cls = cls()
+        if dynamics not in dynamics_config:
+            raise ValueError(
+                f"{dynamics} is invalid, valid entries are {list(dynamics_config.keys())}"
+            )
+        if network not in network_config:
+            raise ValueError(
+                f"{network} is invalid, valid entries are {list(network_config.keys())}"
+            )
+        cls.name = "spain_covid19"
+
+        cls.path_to_data = os.path.join(path_to_data, cls.name)
+        if not os.path.exists(cls.path_to_data):
+            os.makedirs(cls.path_to_data)
+
+        cls.path_to_best = os.path.join(path_to_best, cls.name + ".pt")
+        if not os.path.exists(path_to_best):
+            os.makedirs(path_to_best)
+
+        cls.path_to_summary = path_to_summary
+        if not os.path.exists(path_to_summary):
+            os.makedirs(path_to_summary)
+        cls.dynamics = DynamicsConfig.metasir_covid19()
+        cls.networks = NetworkConfig.spain_mobility(path_to_data)
+        cls.model = DynamicsConfig.metasir_gnn_covid19()
+        cls.dynamics.is_weighted = weighted
+        cls.model.is_weighted = weighted
+
+        cls.dynamics.is_multiplex = multiplex
+        cls.model.is_multiplex = multiplex
+
+        cls.dataset = DatasetConfig.strength_weighted_continuous_default()
+        cls.train_details = TrainingConfig.continuous()
+        cls.metrics = MetricsConfig.covid19()
+        cls.train_metrics = ["acc"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
         if seed is None:
@@ -188,7 +363,13 @@ class ExperimentConfig(Config):
         return cls
 
     @classmethod
-    def test(cls, path_to_data="./", path_to_best="./", path_to_summary="./"):
+    def test(
+        cls,
+        config="discrete",
+        path_to_data="./",
+        path_to_best="./",
+        path_to_summary="./",
+    ):
         cls = cls()
         cls.name = "test"
         cls.path_to_data = os.path.join(path_to_data, cls.name)
@@ -200,11 +381,16 @@ class ExperimentConfig(Config):
         cls.path_to_summary = path_to_summary
         if not os.path.exists(path_to_summary):
             os.makedirs(path_to_summary)
-        cls.dataset = DatasetConfig.state_weighted_discrete_default()
-        cls.networks = NetworkConfig.erdosrenyi(1000, 4.0 / 999.0)
-        cls.dynamics = DynamicsConfig.sis_default()
-        cls.model = DynamicsConfig.sis_gnn_default()
-
+        if config == "discrete":
+            cls.dataset = DatasetConfig.state_weighted_discrete_default()
+            cls.networks = NetworkConfig.erdosrenyi(1000, 4.0 / 999.0)
+            cls.dynamics = DynamicsConfig.sis_default()
+            cls.model = DynamicsConfig.sis_gnn_default()
+        elif config == "continuous":
+            cls.dataset = DatasetConfig.state_weighted_continuous_default()
+            cls.networks = NetworkConfig.erdosrenyi(1000, 4.0 / 999.0)
+            cls.dynamics = DynamicsConfig.metasis_default()
+            cls.model = DynamicsConfig.metasis_gnn_default()
         cls.train_details = TrainingConfig.test()
         cls.metrics = MetricsConfig.test()
         cls.train_metrics = []
