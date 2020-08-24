@@ -15,9 +15,11 @@ from dynalearn.datasets.data import (
     DataCollection,
     NetworkData,
     StateData,
+    WeightData,
+    DegreeWeightData,
+    NodeStrengthWeightData,
 )
 from dynalearn.datasets.transforms.getter import get as get_transforms
-from dynalearn.utilities import to_edge_index, get_node_strength, collapse_networks
 
 
 class Dataset(object):
@@ -39,6 +41,7 @@ class Dataset(object):
 
         self._data = {}
         self._transformed_data = {}
+        self._weights = None
         self._state_weights = None
         self._network_weights = None
         self._indices = None
@@ -83,24 +86,29 @@ class Dataset(object):
         dataset._data = self._data
         if self.use_transformed:
             dataset._transformed_data = self._transformed_data
-        weights = {i: np.zeros(w.shape) for i, w in self.weights.items()}
+        weights = self.weights.copy()
         for i in range(self.networks.size):
             for j in range(self.inputs[i].size):
-                index = np.where(self.weights[i][j] > 0)[0]
+                index = np.where(self.weights[i].data[j] > 0)[0]
                 n = np.random.binomial(index.shape[0], node_fraction)
-                p = self.weights[i][j, index] ** (-bias)
+                if n == 0:
+                    n = 1
+                p = self.weights[i].data[j, index] ** (-bias)
                 p /= p.sum()
                 remove_nodes = np.random.choice(index, p=p, size=n, replace=False)
-                weights[i][j] *= 0
-                weights[i][j][remove_nodes] = self.weights[i][j][remove_nodes] * 1
-                self.weights[i][j][remove_nodes] = 0
+                weights[i].data[j] *= 0
+                weights[i].data[j, remove_nodes] = (
+                    self.weights[i].data[j, remove_nodes] * 1
+                )
+                self.weights[i].data[j, remove_nodes] = 0
                 if pb is not None:
                     pb.update()
+
         dataset.weights = weights
         dataset.indices = self.indices
         dataset.window_size = self.window_size
         dataset.window_step = self.window_step
-        dataset.threshold_window_size = self.threshold_window_size
+        dataset.max_window_size = self.max_window_size
         dataset.num_states = self.num_states
         dataset.sampler.reset()
         return dataset
@@ -110,7 +118,7 @@ class Dataset(object):
         self.m_dynamics = experiment.dynamics
         self.window_size = experiment.model.window_size
         self.window_step = experiment.model.window_step
-        self.threshold_window_size = experiment.train_details.threshold_window_size
+        self.max_window_size = experiment.train_details.max_window_size
         self.num_states = experiment.model.num_states
         self.verbose = experiment.verbose
         return experiment.train_details
@@ -196,11 +204,10 @@ class Dataset(object):
 
     @weights.setter
     def weights(self, weights):
+        assert isinstance(weights, DataCollection)
         self._weights = weights
-        self._state_weights = {i: w.sum(-1) for i, w in self._weights.items()}
-        self._network_weights = np.array(
-            [w.sum(-1).sum(-1) for w in self._weights.values()]
-        )
+        self._state_weights = weights.to_state_weights()
+        self._network_weights = weights.to_network_weights()
 
     @property
     def indices(self):
@@ -304,10 +311,9 @@ class Dataset(object):
         return indices_dict
 
     def _get_weights_(self, data):
-        return {
-            i: np.ones((data["inputs"][i].size, g.number_of_nodes()))
-            for i, g in enumerate(data["networks"].data)
-        }
+        weights = WeightData()
+        weights.compute(self, verbose=self.verbose)
+        return weights
 
     def _save_data_(self, data, h5file):
         data["networks"].save(h5file)
@@ -339,80 +345,13 @@ class Dataset(object):
 
 class DegreeWeightedDataset(Dataset):
     def _get_weights_(self, data):
-        weights = {}
-        counts = {}
-        degrees = []
-        for i in range(data["networks"].size):
-            g = data["networks"][i].data
-            n = g.number_of_nodes()
-            weights[i] = np.zeros((data["inputs"][i].size, n))
-            degrees.append(list(dict(g.degree()).values()))
-            for k in degrees:
-                if k in counts:
-                    counts[k] += 1
-                else:
-                    counts[k] = 1
-        for i in range(data["networks"].size):
-            for j, k in enumerate(degrees[i]):
-                weights[i][:, j] = counts[k]
+        weights = DegreeWeightData()
+        weights.compute(self, verbose=self.verbose)
         return weights
 
 
 class StrengthWeightedDataset(Dataset):
-    def _get_distribution_(self, data):
-        degrees = []
-        samples = {}
-        counts = {}
-        z = 0
-        for i in range(data["networks"].size):
-            g = data["networks"][i].data
-            if isinstance(g, dict):
-                g = collapse_networks(g)
-            s = get_node_strength(g)["weight"]
-            degrees = list(dict(g.degree()).values())
-            z += g.number_of_nodes()
-            for j, k in enumerate(degrees):
-                if k in counts:
-                    counts[k] += 1
-                    samples[k].append(s[j])
-                else:
-                    counts[k] = 1
-                    samples[k] = [s[j]]
-
-        kde_dict = {}
-        mean_dict = {}
-        std_dict = {}
-        p_k = {}
-        for k, c in counts.items():
-            x = np.array(samples[k])
-            mean = np.mean(x)
-            std = np.std(x)
-            if std > 0:
-                x = (x - mean) / std
-                kde_dict[k] = gaussian_kde(x)
-            else:
-                kde_dict[k] = lambda x: 1.0
-            mean_dict[k] = mean
-            std_dict[k] = std
-            p_k[k] = c / z
-        return p_k, kde_dict, mean_dict, std_dict
-
     def _get_weights_(self, data):
-        weights = {}
-        p_k, kde, mean, std = self._get_distribution_(data)
-        for i in range(data["networks"].size):
-            g = data["networks"][i].data
-            if isinstance(g, dict):
-                g = collapse_networks(g)
-            weights[i] = np.zeros((data["inputs"][i].size, g.number_of_nodes()))
-            degrees = list(dict(g.degree()).values())
-
-            s = get_node_strength(g)["weight"]
-            for j, ss in enumerate(s):
-                k = degrees[j]
-                if std[k] == 0:
-                    weights[i][:, j] = p_k[k]
-                else:
-                    ss = (ss - mean[k]) / std[k]
-                    weights[i][:, j] = p_k[k] * kde[k](ss)
+        weights = NodeStrengthWeightData()
+        weights.compute(self, verbose=self.verbose)
         return weights

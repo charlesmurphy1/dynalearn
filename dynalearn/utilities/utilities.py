@@ -284,13 +284,11 @@ def get_node_strength(g):
     if not nx.is_directed(g):
         g = g.to_directed()
 
-    strength = {}
+    strength = np.zeros(g.number_of_nodes())
 
     for u, v in g.edges():
-        for key, val in g.edges[u, v].items():
-            if key not in strength:
-                strength[key] = np.zeros(g.number_of_nodes())
-            strength[key][u] += val
+        if "weight" in g.edges[u, v]:
+            strength[u] += g.edges[u, v]["weight"]
 
     return strength
 
@@ -301,5 +299,5 @@ def from_weighted_edgelist(edge_list, create_using=None):
         if len(edge) == 3:
             g.add_edge(int(edge[0]), int(edge[1]), weight=edge[2])
         else:
-            g.add_edge(int(edge[0]), int(edge[1]))
+            g.add_edge(int(edge[0]), int(edge[1]), weight=1)
     return g

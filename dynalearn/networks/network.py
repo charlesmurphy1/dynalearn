@@ -19,6 +19,7 @@ class Network(ABC):
             self.layers = config.layers
         else:
             self.layers = None
+        self.is_weighted = False
 
     @property
     def config(self):

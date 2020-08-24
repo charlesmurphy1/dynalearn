@@ -24,6 +24,13 @@ def weighted_mse(y_pred, y_true, weights=None):
             weights = weights.cuda()
     weights /= weights.sum()
     loss = weights * torch.sum((y_true - y_pred) ** 2, axis=-1)
+    w = weights.cpu().detach().numpy()
+    if np.isnan(loss.sum().cpu().detach().numpy()):
+        print("y_true", y_true)
+        print("y_pred", y_pred)
+        print("w", w)
+        print("loss", loss)
+
     return loss.sum()
 
 

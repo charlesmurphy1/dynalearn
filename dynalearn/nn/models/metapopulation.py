@@ -56,7 +56,7 @@ class MetaPopGNN(ContinuousGraphNeuralNetwork):
     def forward(self, x, edge_index, edge_attr=None):
         x = x.view(-1, self.window_size * self.num_states)
         x = self.in_layers(x)
-        x, _ = self.gnn_layer(x, edge_index)
+        x = self.gnn_layer(x, edge_index)
         x = self.gnn_activation(x)
         x = self.out_layers(x)
         x = self.last_layer(x)

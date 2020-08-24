@@ -13,6 +13,8 @@ class GenerativeNetwork(Network):
             config.__dict__ = kwargs
         self.weight_gen = weight_gen
         Network.__init__(self, config)
+        if self.weight_gen is not None:
+            self.is_weighted = True
 
     def generate(self, seed=None):
         if seed is None:

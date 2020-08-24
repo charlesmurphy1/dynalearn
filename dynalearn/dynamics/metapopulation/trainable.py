@@ -37,7 +37,8 @@ class SimpleTrainableMetaPop(MetaPop):
         return x
 
     def initial_state(self):
-        return np.random.randint(self.num_states, size=(self.num_nodes,))
+        x = np.random.randn(self.num_nodes, self.num_states, self.window_size)
+        return self.nn.unnormalize(x, "inputs")
 
     def is_dead(self):
         return False
@@ -48,6 +49,10 @@ class SimpleTrainableMetaPop(MetaPop):
     def predict(self, x):
         if isinstance(x, np.ndarray):
             x = torch.Tensor(x)
+
+        assert x.ndim == 3
+        assert x.shape[1] == self.num_states
+        assert x.shape[2] == self.window_size
         edge_index = self.edge_index
         if torch.cuda.is_available():
             x = x.cuda()
@@ -70,6 +75,9 @@ class WeightedTrainableMetaPop(SimpleTrainableMetaPop, WeightedMetaPop):
     def predict(self, x):
         if isinstance(x, np.ndarray):
             x = torch.Tensor(x)
+        assert x.ndim == 3
+        assert x.shape[1] == self.num_states
+        assert x.shape[2] == self.window_size
         edge_index = self.edge_index
         edge_weight = torch.Tensor(self.edge_weight)
         if torch.cuda.is_available():
@@ -80,6 +88,7 @@ class WeightedTrainableMetaPop(SimpleTrainableMetaPop, WeightedMetaPop):
         edge_weight = self.nn.normalize(edge_weight, "edge_attr")
         y = self.nn.forward(x, edge_index, edge_attr=edge_weight)
         y = self.nn.unnormalize(y, "targets")
+        torch.clamp_(y, min=0)
         return y.cpu().detach().numpy()
 
 
@@ -109,6 +118,9 @@ class WeightedMultiplexTrainableMetaPop(
     def predict(self, x):
         if isinstance(x, np.ndarray):
             x = torch.Tensor(x)
+        assert x.ndim == 3
+        assert x.shape[1] == self.num_states
+        assert x.shape[2] == self.window_size
         edge_index = self.edge_index
         edge_weight = {
             k: torch.Tensor(w).reshape(-1, 1) for k, w in self.edge_weight.items()

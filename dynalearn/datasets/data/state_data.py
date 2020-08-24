@@ -21,8 +21,14 @@ class StateData(Data):
 
     @property
     def size(self):
-        return self._data.shape[0]
+        if len(self._data.shape) > 1:
+            return self._data.shape[0]
+        else:
+            return 1
 
     @property
     def shape(self):
-        return self._data.shape[1:]
+        if len(self._data.shape) > 1:
+            return self._data.shape[1:]
+        else:
+            return (0,)

@@ -47,6 +47,8 @@ class RealNetwork(Network):
             for l in group.keys():
                 if l != "edge_list":
                     edge_attr[l] = group[l][...]
+                elif l == "weight" and not self.is_weighted:
+                    self.is_weighted = True
             data.append(set_edge_attr(g, edge_attr))
         return data
 

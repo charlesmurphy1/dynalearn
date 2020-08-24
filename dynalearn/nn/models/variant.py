@@ -42,7 +42,7 @@ class ContinuousGraphNeuralNetwork(GraphNeuralNetwork):
                 self._data_mean["inputs"] += (
                     torch.mean(x, (0, 1, 3)) / dataset.networks.size
                 ).view(1, -1, 1)
-                self._data_var["inputs"] += (
+                self._data_var["inpget_preduts"] += (
                     torch.var(x, (0, 1, 3)) / dataset.networks.size
                 ).view(1, -1, 1)
         self._data_mean_inputs = self._data_mean["inputs"]

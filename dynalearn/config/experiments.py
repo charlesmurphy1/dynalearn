@@ -72,7 +72,7 @@ class TrainingConfig(Config):
         cls.num_networks = 1
         cls.num_samples = 10000
         cls.resampling = 2
-        cls.threshold_window_size = 3
+        cls.max_window_size = 3
 
         return cls
 
@@ -88,7 +88,7 @@ class TrainingConfig(Config):
         cls.num_networks = 1
         cls.num_samples = 10000
         cls.resampling = 2
-        cls.threshold_window_size = 3
+        cls.max_window_size = 3
 
         return cls
 
@@ -104,7 +104,7 @@ class TrainingConfig(Config):
         cls.num_networks = 1
         cls.num_samples = 10000
         cls.resampling = 2
-        cls.threshold_window_size = 3
+        cls.max_window_size = 3
 
         return cls
 
@@ -119,7 +119,7 @@ class TrainingConfig(Config):
         cls.num_networks = 1
         cls.num_samples = 10
         cls.resampling = 2
-        cls.threshold_window_size = 3
+        cls.max_window_size = 3
 
         return cls
 

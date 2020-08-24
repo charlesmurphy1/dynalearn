@@ -97,10 +97,10 @@ class StationaryStateMetrics(Metrics):
 
     def burning(self, x, burn=1):
         for b in range(burn):
-            y = x[:: self.window_step]
-            y = self.model.sample(y)
-            x = np.roll(x, -1, axis=0)
-            x[-1] = y
+            y = x.T[:: self.window_step]
+            y = self.model.sample(y.T)
+            x = np.roll(x, -1, axis=-1)
+            x.T[-1] = y.T
         return x
 
     def _all_stationary_states_(self, pb=None):
@@ -131,7 +131,6 @@ class StationaryStateMetrics(Metrics):
                 pb.update()
             if self.dynamics.is_dead(x):
                 x = self.initial_state(initial_infected=epsilon)
-        # print(type(samples), np.array(samples).shape)
         avg_samples = self.avg(np.array(samples))
         return self.statistics(avg_samples)
 
@@ -206,20 +205,23 @@ class EpidemicSSMetrics(StationaryStateMetrics):
             )
 
     def initial_state(self, initial_infected=None):
-        x0 = np.zeros((self.window_size * self.window_step, self.networks.num_nodes))
-        x0[0] = self.dynamics.initial_state(initial_infected=initial_infected)
+        x0 = np.zeros((self.networks.num_nodes, self.window_size * self.window_step))
+        x0[:, 0] = self.dynamics.initial_state(initial_infected=initial_infected)
         for i in range(1, self.window_size * self.window_step):
-            x0[i] = self.dynamics.sample(x0[i - 1])
+            x0[:, i] = self.dynamics.sample(x0[i - 1])
         return x0
 
     def avg(self, x, axis=-1):
         avg_x = []
 
-        if x.shape == (self.window_size * self.window_step, self.networks.num_nodes):
-            x = from_nary(x[:: self.window_step], base=self.num_states)
+        if x.shape == (self.networks.num_nodes, self.window_size * self.window_step):
+            x = from_nary(x[:, :: self.window_step], axis=-1, base=self.num_states)
         else:
             x = np.array(
-                [from_nary(xx[:: self.window_step], base=self.num_states) for xx in x]
+                [
+                    from_nary(xx[:, :: self.window_step], axis=-1, base=self.num_states)
+                    for xx in x
+                ]
             )
         for i in range(self.num_states ** self.window_size):
             avg_x.append(np.mean(x == i, axis=axis))
@@ -302,23 +304,30 @@ class MetaPopSSMetrics(EpidemicSSMetrics):
         state_dist = np.zeros(self.dynamics.num_states)
         state_dist[0] = 1 - initial_infected
         state_dist[1] = initial_infected
-        x0 = self.dynamics.initial_state(state_dist=state_dist)
-        return x0.reshape(*x0.shape, 1)
+        x0 = np.zeros(
+            (
+                self.networks.num_nodes,
+                self.num_states,
+                self.window_size * self.window_step,
+            )
+        )
+        x0[:, :, 0] = self.dynamics.initial_state(state_dist=state_dist)
+        for i in range(1, self.window_size * self.window_step):
+            x0[:, :, i] = self.dynamics.sample(x0[i - 1])
+        return x0
 
     def avg(self, x, axis=-1):
-        if x.ndim == 2 and x.shape[-1] == self.dynamics.num_states:
+        if x.shape == (
+            self.networks.num_nodes,
+            self.num_states,
+            self.window_size * self.window_step,
+        ):
             x = x.reshape(1, *x.shape)
-        elif x.ndim != 3:
-            raise ValueError("Wrong shape")
+        x = x.mean(-1)
         avg_x = []
         for i in range(self.dynamics.num_states):
             avg_x.append(np.mean(x[:, :, i], axis=axis))
         return np.array(avg_x).squeeze()
-
-    def burning(self, x, burn=1):
-        for b in range(burn):
-            x = self.model.sample(x)
-        return x
 
 
 class WeightDecayMPSSMetrics(MetaPopSSMetrics):
@@ -331,8 +340,8 @@ class WeightDecayMPSSMetrics(MetaPopSSMetrics):
 
     def get_networks(self, experiment):
         assert experiment.config.networks.is_weighted
-        network = Network()
-        network_copy = Network()
+        network = Network(config=experiment.config.networks)
+        network_copy = Network(config=experiment.config.networks)
         if issubclass(experiment.networks.__class__, GenerativeNetwork):
             for i in range(experiment.train_details.num_networks):
                 g = experiment.networks.generate()

@@ -89,15 +89,15 @@ class DynamicsConfig(Config):
     def metasir_default(cls):
         cls = cls()
         cls.name = "MetaSIR"
-        cls.infection_prob = 2.5 / 2.3
-        cls.recovery_prob = 1.0 / 7.5
-        # cls.infection_prob = 0.04
-        # cls.recovery_prob = 0.08
+        # cls.infection_prob = 2.5 / 2.3
+        # cls.recovery_prob = 1.0 / 7.5
+        cls.infection_prob = 0.04
+        cls.recovery_prob = 0.08
         cls.infection_type = 2
         cls.diffusion_susceptible = 0.1
         cls.diffusion_infected = 0.1
         cls.diffusion_recovered = 0.1
-        cls.density = 10000
+        cls.density = 100
         cls.state_dist = -1
         return cls
 
@@ -416,12 +416,12 @@ class DynamicsConfig(Config):
         cls.edge_gnn_activation = "relu"
         cls.out_activation = "relu"
 
-        cls.in_channels = [32, 32, 64]
+        cls.in_channels = [32, 32, 32, 32]
         cls.gnn_channels = 64
-        cls.edge_channels = [32, 32]
+        cls.edge_channels = [64, 64]
         cls.edge_gnn_channels = 64
-        cls.out_channels = [64, 32, 32]
-        cls.heads = 4
+        cls.out_channels = [32, 32, 32, 32]
+        cls.heads = 8
         cls.concat = True
         cls.bias = True
         cls.self_attention = True

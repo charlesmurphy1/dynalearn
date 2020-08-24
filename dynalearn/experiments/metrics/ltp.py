@@ -196,11 +196,11 @@ class LTPMetrics(Metrics):
             for s_index in range(dataset.inputs[g_index].size):
                 if all:
                     nodes[g_index][s_index] = np.arange(
-                        dataset.weights[g_index][s_index].shape[0]
+                        dataset.weights[g_index].data[s_index].shape[0]
                     )
                 else:
                     nodes[g_index][s_index] = np.where(
-                        dataset.weights[g_index][s_index] > 0
+                        dataset.weights[g_index].data[s_index] > 0
                     )[0]
         return nodes
 

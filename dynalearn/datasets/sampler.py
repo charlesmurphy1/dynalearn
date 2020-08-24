@@ -31,22 +31,24 @@ class Sampler:
 
     def reset(self):
         self.counter = 0
-        self.avail_networks = list(range(self.dataset.network_weights.shape[0]))
+        self.avail_networks = list(range(self.dataset.network_weights.size))
         self.avail_states = {
-            i: list(range(int(self.dataset.state_weights[i].shape[0])))
+            i: list(range(int(self.dataset.state_weights[i].data.shape[0])))
             for i in self.avail_networks
         }
 
     def _get_network_(self):
         indices = self.avail_networks
-        p = self.dataset.network_weights[indices] ** self.bias
+        p = self.dataset.network_weights.data[indices]
+        p[p > 0] = p[p > 0] ** (-self.bias)
         p /= p.sum()
         index = np.random.choice(self.avail_networks, p=p)
         return index
 
     def _get_state_(self, g_index):
         indices = self.avail_states[g_index]
-        p = self.dataset.state_weights[g_index][indices] ** self.bias
+        p = self.dataset.state_weights[g_index].data[indices]
+        p[p > 0] = p[p > 0] ** (-self.bias)
         p /= p.sum()
         index = np.random.choice(indices, p=p)
 

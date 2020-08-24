@@ -239,7 +239,7 @@ class MetricsConfig(Config):
         cls.sample_graph = False
         cls.full_data = False
         cls.burn = 20
-        cls.parameters = np.linspace(0, 1, 50)
+        cls.parameters = np.linspace(0.01, 1, 50)
 
         # forecast metrics
         cls.num_forecasts = 20

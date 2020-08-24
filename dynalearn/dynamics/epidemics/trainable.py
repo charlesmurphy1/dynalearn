@@ -27,15 +27,18 @@ class TrainableEpidemics(Epidemics):
 
     def initial_state(self):
         return np.random.randint(
-            self.num_states, size=(self.window_size, self.num_nodes)
+            self.num_states, size=(self.num_nodes, self.window_size)
         ).squeeze()
 
     def is_dead(self):
         return False
 
     def predict(self, x):
-        if type(x) == np.ndarray:
+        if isinstance(x, np.ndarray):
             x = torch.Tensor(x)
+        assert x.ndim == 2
+        assert x.shape[-1] == self.window_size
+
         edge_index = self.edge_index
         if torch.cuda.is_available():
             x = x.cuda()

@@ -48,7 +48,7 @@ def jensenshannon(y_pred, y_true, weights=None):
 def acc(y_pred, y_true, weights=None):
     x = y_true.cpu().detach().numpy()
     y = y_pred.cpu().detach().numpy()
-    a = r2_score(x, y, sample_weight=weights)
+    a = r2_score(x, y)
     return torch.tensor(a, dtype=torch.float)
 
 

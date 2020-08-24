@@ -150,8 +150,8 @@ class GraphNeuralNetwork(torch.nn.Module):
 
     def get_output(self, data):
         (x, g), y_true, w = data
-        x = self.normalize(x, "input")
-        y_true = self.normalize(y_true, "output")
+        x = self.normalize(x, "inputs")
+        y_true = self.normalize(y_true, "targets")
         edge_index = to_edge_index(g)
         if torch.cuda.is_available():
             x = x.cuda()

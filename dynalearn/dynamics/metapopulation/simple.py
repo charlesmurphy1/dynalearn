@@ -40,7 +40,7 @@ class SimpleMetaSIS(MetaPop):
     def diffusion(self, x):
         p = {}
         for i, (u, v) in enumerate(self.edge_index.T):
-            k = self.node_degree[v]
+            k = self.node_degree[int(v)]
             p[int(u), int(v)] = self.diffusion_prob / k
         return p
 
@@ -56,11 +56,15 @@ class WeightedMetaSIS(SimpleMetaSIS, WeightedMetaPop):
     def diffusion(self, x):
         p = {}
         for i, (u, v) in enumerate(self.edge_index.T):
-            s = self.node_strength[v]
+            s = self.node_strength[int(v)]
             w = self.edge_weight[i]
-            diff_prob = w / x[v]
+            diff_prob = w / x[int(v)]
             # p[int(u), int(v)] = diff_prob * w / s
-            p[int(u), int(v)] = self.diffusion_prob * w / s
+            if np.all(s > 0):
+                p[int(u), int(v)] = self.diffusion_prob * w / s
+            else:
+                p[int(u), int(v)] = 0
+
         return p
 
 
@@ -75,7 +79,7 @@ class MultiplexMetaSIS(SimpleMetaSIS, MultiplexMetaPop):
     def diffusion(self, x):
         p = {}
         for i, (u, v) in enumerate(self.edge_index.T):
-            k = self.node_degree["all"][v]
+            k = self.node_degree["all"][int(v)]
             p[int(u), int(v)] = self.diffusion_prob / k
         return p
 
@@ -91,11 +95,14 @@ class WeightedMultiplexMetaSIS(SimpleMetaSIS, WeightedMultiplexMetaPop):
     def diffusion(self, x):
         p = {}
         for i, (u, v) in enumerate(self.edge_index.T):
-            s = self.node_strength["all"][v]
+            s = self.node_strength["all"][int(v)]
             w = self.edge_weight["all"][i]
-            diff_prob = w / x[v]
+            diff_prob = w / x[int(v)]
             # p[int(u), int(v)] = diff_prob * w / s
-            p[int(u), int(v)] = self.diffusion_prob * w / s
+            if np.all(s > 0):
+                p[int(u), int(v)] = self.diffusion_prob * w / s
+            else:
+                p[int(u), int(v)] = 0
         return p
 
 
@@ -140,7 +147,7 @@ class SimpleMetaSIR(MetaPop):
     def diffusion(self, x):
         p = {}
         for i, (u, v) in enumerate(self.edge_index.T):
-            k = self.node_degree["all"][v]
+            k = self.node_degree[int(v)]
             p[int(u), int(v)] = self.diffusion_prob / k
         return p
 
@@ -162,11 +169,14 @@ class WeightedMetaSIR(SimpleMetaSIR, WeightedMetaPop):
     def diffusion(self, x):
         p = {}
         for i, (u, v) in enumerate(self.edge_index.T):
-            s = self.node_strength[v]
+            s = self.node_strength[int(v)]
             w = self.edge_weight[i]
-            # diff_prob = w / x[v].sum(-1)
+            # diff_prob = w / x[int(v)].sum(-1)
             # p[int(u), int(v)] = diff_prob * w / s
-            p[int(u), int(v)] = self.diffusion_prob * w / s
+            if np.all(s > 0):
+                p[int(u), int(v)] = self.diffusion_prob * w / s
+            else:
+                p[int(u), int(v)] = 0
         return p
 
 
@@ -181,7 +191,7 @@ class MultiplexMetaSIR(SimpleMetaSIR, MultiplexMetaPop):
     def diffusion(self, x):
         p = {}
         for i, (u, v) in enumerate(self.edge_index["all"].T):
-            k = self.node_degree["all"][v]
+            k = self.node_degree["all"][int(v)]
             p[int(u), int(v)] = self.diffusion_prob / k
         return p
 
@@ -197,9 +207,9 @@ class WeightedMultiplexMetaSIR(SimpleMetaSIR, WeightedMultiplexMetaPop):
     def diffusion(self, x):
         p = {}
         for i, (u, v) in enumerate(self.edge_index["all"].T):
-            s = self.node_strength["all"][v]
+            s = self.node_strength["all"][int(v)]
             w = self.edge_weight["all"][i]
-            # diff_prob = w / x[v].sum(-1)
+            # diff_prob = w / x[int(v)].sum(-1)
             # p[int(u), int(v)] = diff_prob * w / s
             if s > 0:
                 p[int(u), int(v)] = self.diffusion_prob * w / s
