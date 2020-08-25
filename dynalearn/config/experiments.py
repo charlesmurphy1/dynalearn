@@ -73,6 +73,7 @@ class TrainingConfig(Config):
         cls.num_samples = 10000
         cls.resampling = 2
         cls.max_window_size = 3
+        cls.resample_when_dead = True
 
         return cls
 
@@ -89,6 +90,7 @@ class TrainingConfig(Config):
         cls.num_samples = 10000
         cls.resampling = 2
         cls.max_window_size = 3
+        cls.resample_when_dead = True
 
         return cls
 
@@ -105,6 +107,7 @@ class TrainingConfig(Config):
         cls.num_samples = 10000
         cls.resampling = 2
         cls.max_window_size = 3
+        cls.resample_when_dead = True
 
         return cls
 

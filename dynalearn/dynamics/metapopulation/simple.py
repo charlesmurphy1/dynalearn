@@ -130,10 +130,11 @@ class SimpleMetaSIR(MetaPop):
             p[:, 0, 1] = 1 - (1 - self.infection_prob) ** x[:, 1]
         elif self.infection_type == 2:
             n = x.sum(-1)
-            p[n > 0, 0, 0] = (1 - self.infection_prob / n[n > 0]) ** x[n > 0, 1]
-            p[n > 0, 0, 1] = 1 - (1 - self.infection_prob / n[n > 0]) ** x[n > 0, 1]
-            p[n == 0.0, 0, 0] = 1
-            p[n == 0.0, 0, 1] = 0
+            index = np.where(np.logical_and(n > 1, x[:, 1] > 1))[0]
+            p[:, 0, 0] = 1
+            p[:, 0, 1] = 0
+            p[index, 0, 0] = (1 - self.infection_prob / n[index]) ** x[index, 1]
+            p[index, 0, 1] = 1 - (1 - self.infection_prob / n[index]) ** x[index, 1]
         p[:, 0, 2] = EPSILON
         p[:, 1, 0] = EPSILON
         p[:, 1, 1] = 1 - self.recovery_prob - EPSILON / 2.0
@@ -171,8 +172,6 @@ class WeightedMetaSIR(SimpleMetaSIR, WeightedMetaPop):
         for i, (u, v) in enumerate(self.edge_index.T):
             s = self.node_strength[int(v)]
             w = self.edge_weight[i]
-            # diff_prob = w / x[int(v)].sum(-1)
-            # p[int(u), int(v)] = diff_prob * w / s
             if np.all(s > 0):
                 p[int(u), int(v)] = self.diffusion_prob * w / s
             else:
@@ -209,8 +208,6 @@ class WeightedMultiplexMetaSIR(SimpleMetaSIR, WeightedMultiplexMetaPop):
         for i, (u, v) in enumerate(self.edge_index["all"].T):
             s = self.node_strength["all"][int(v)]
             w = self.edge_weight["all"][i]
-            # diff_prob = w / x[int(v)].sum(-1)
-            # p[int(u), int(v)] = diff_prob * w / s
             if s > 0:
                 p[int(u), int(v)] = self.diffusion_prob * w / s
             else:

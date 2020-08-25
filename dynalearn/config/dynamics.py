@@ -89,16 +89,17 @@ class DynamicsConfig(Config):
     def metasir_default(cls):
         cls = cls()
         cls.name = "MetaSIR"
-        # cls.infection_prob = 2.5 / 2.3
-        # cls.recovery_prob = 1.0 / 7.5
-        cls.infection_prob = 0.04
-        cls.recovery_prob = 0.08
+        cls.infection_prob = 2.5 / 2.3
+        cls.recovery_prob = 1.0 / 7.5
+        # cls.infection_prob = 0.04
+        # cls.recovery_prob = 0.08
         cls.infection_type = 2
         cls.diffusion_susceptible = 0.1
         cls.diffusion_infected = 0.1
         cls.diffusion_recovered = 0.1
-        cls.density = 100
-        cls.state_dist = -1
+        cls.density = 10000
+        epsilon = 5e-5
+        cls.state_dist = np.array([1 - epsilon, epsilon, 0])
         return cls
 
     @classmethod

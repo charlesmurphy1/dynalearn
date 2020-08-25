@@ -72,6 +72,8 @@ class MetaPop(Dynamics):
 
         p_reaction = self.reaction(x)
         for v in range(self.num_nodes):
+            p_reaction[v][p_reaction[v] > 1] = 1 - 1e-8
+            p_reaction[v][p_reaction[v] < 0] = 0 + 1e-8
             y[v] = x[v] @ p_reaction[v]
 
         p_diffusion = self.diffusion(y)
@@ -91,13 +93,19 @@ class MetaPop(Dynamics):
         p_reaction = self.reaction(x)
         for v in range(self.num_nodes):
             for i, j in product(range(self.num_states), range(self.num_states)):
-                n = int(np.random.binomial(int(x[v, j]), p_reaction[v, j, i]))
+                p = p_reaction[v, j, i]
+                if p > 1:
+                    p = 1 - 1e-8
+                elif p < 0:
+                    p = 0 + 1e-8
+                n = int(np.random.binomial(int(x[v, j]), p))
                 y[v, i] += n
                 y[v, j] -= n
 
         p_diffusion = self.diffusion(y)
         for (v1, v2) in self.network.edges():
-            n = np.random.binomial(y[v2], p_diffusion[v1, v2]).astype("int")
+            p = p_diffusion[v1, v2]
+            n = np.random.binomial(y[v2], p).astype("int")
             y[v1] += n
             y[v2] -= n
 

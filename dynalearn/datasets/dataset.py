@@ -269,6 +269,11 @@ class Dataset(object):
                 else:
                     x = self.m_dynamics.sample(x)
 
+                if details.resample_when_dead and self.m_dynamics.is_dead(x):
+                    x = self.m_dynamics.initial_state()
+                    if self.verbose != 0:
+                        print("Resampling because x is dead.")
+
                 t += 1
             inputs.add(StateData(data=inputs_data))
             targets.add(StateData(data=targets_data))

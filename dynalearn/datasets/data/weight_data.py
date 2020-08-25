@@ -13,6 +13,51 @@ from dynalearn.utilities import (
 )
 
 
+class KernelDensityEstimator:
+    def __init__(self, samples):
+        assert isinstance(samples, list)
+        self.samples = samples
+        self.shape = samples[0].shape
+        for s in samples:
+            assert s.shape == self.shape
+        self.kde = None
+        self.mean = None
+        self.std = None
+        self.get_kde()
+
+    def pdf(self, x):
+        if isinstance(x, list):
+            x = np.array(x)
+            x = x.reshape(x.shape[0], -1).T
+        if x.shape == self.shape:
+            x = np.expand_dims(x, -1)
+
+        if self.kde is None:
+            return np.ones(x.shape[-1])
+        else:
+            x = (x - self.mean) / self.std
+            return self.kde.pdf(x)
+
+    def get_kde(self):
+        if len(self.samples) <= 1:
+            return
+        x = np.array(self.samples)
+        x = x.reshape(x.shape[0], -1).T
+        mean = np.expand_dims(x.mean(axis=-1), -1)
+        std = np.expand_dims(x.std(axis=-1), -1)
+        if np.all(std == 0):
+            return
+        std[std == 0] = 1e-8
+        x = (x - mean) / std
+        try:
+            self.kde = gaussian_kde(x)
+            self.mean = mean
+            self.std = std
+            self.samples = []
+        except:
+            pass
+
+
 class WeightData(DataCollection):
     def __init__(self, name="weight_collection", max_num_samples=1000):
         DataCollection.__init__(self, name=name)
@@ -89,16 +134,6 @@ class WeightData(DataCollection):
                 else:
                     self.features[key].append(value)
 
-    def _get_kde_(self, samples):
-        assert isinstance(samples, list)
-        prob = {}
-        x = np.array(samples)
-        x = x.reshape(x.shape[0], -1).T
-        mean = np.expand_dims(x.mean(axis=-1), -1)
-        std = np.expand_dims(x.std(axis=-1), -1)
-        x = (x - mean) / std
-        return gaussian_kde(x), mean, std
-
     def clear(self):
         self.features = {}
 
@@ -171,12 +206,17 @@ class NodeStrengthWeightData(WeightData):
         weights = np.zeros((states.shape[0], states.shape[1]))
 
         z = 0
-        for k, v in self.features:
+        kde = {}
+        mean = {}
+        std = {}
+        for k, v in self.features.items():
             if k[0] == "degree":
                 z += v
+            elif k[0] == "strength":
+                kde[k[1]] = KernelDensityEstimator(v)
+        strength = get_node_strength(network)
         for i, k in enumerate(degree):
-            p = self._get_kde_probability_(self.features[("strength", k)])
-            weights[:, i] = p * self.features[("degree", k)] / z
+            weights[:, i] = kde[k].pdf(s) * self.features[("degree", k)] / z
             if pb is not None:
                 pb.update()
         return weights
@@ -245,12 +285,12 @@ class ContinuousStateWeightData(WeightData):
             states = states[:, :, -1]
         for i, s in enumerate(states):
             for j, (ss, k) in enumerate(zip(s, degree)):
-                compound_state = [
+                cs = [
                     np.concatenate([ss.reshape(-1), s[l].reshape(-1)])
                     for l in network.neighbors(j)
                 ]
                 self._add_features_(("degree", k))
-                self._add_features_(("state-pair", k), compound_state)
+                self._add_features_(("state-pair", k), cs)
             if pb is not None:
                 pb.update()
 
@@ -265,18 +305,14 @@ class ContinuousStateWeightData(WeightData):
             if k[0] == "degree":
                 z += v
             elif k[0] == "state-pair":
-                kde[k[1]], mean[k[1]], std[k[1]] = self._get_kde_(v)
+                kde[k[1]] = KernelDensityEstimator(v)
         for i, s in enumerate(states):
             for j, (ss, k) in enumerate(zip(s, degree)):
                 if k > 0:
-                    compound_state = []
+                    cs = []
                     for l in network.neighbors(j):
-                        compound_state.append(np.concatenate([ss, s[l]]))
-                    compound_state = (
-                        np.array(compound_state).reshape(len(compound_state), -1).T
-                    )
-                    cs = (compound_state - mean[k]) / std[k]
-                    p = np.prod(kde[k](cs)) ** (1.0 / k)
+                        cs.append(np.concatenate([ss, s[l]]))
+                    p = np.prod(kde[k].pdf(cs)) ** (1.0 / k)
                     weights[i, j] = self.features[("degree", k)] / z * p
                 else:
                     weights[i, j] = self.features[("degree", k)] / z
@@ -299,11 +335,11 @@ class NodeStrengthContinuousStateWeightData(WeightData):
             for j, (ss, k) in enumerate(zip(s, degree)):
                 self._add_features_(("degree", k))
 
-                compound_state = []
+                cs = []
                 for l in network.neighbors(j):
                     ew = network.edges[j, l]["weight"]
-                    compound_state.append(np.concatenate([ss, s[l], ew]))
-                self._add_features_(("state-pair", k), compound_state)
+                    cs.append(np.concatenate([ss, s[l], ew]))
+                self._add_features_(("state-pair", k), cs)
             if pb is not None:
                 pb.update()
 
@@ -317,21 +353,16 @@ class NodeStrengthContinuousStateWeightData(WeightData):
         for k, v in self.features.items():
             if k[0] == "degree":
                 z += v
-            elif k[0] == "state-pair":
-                kde[k[1]], mean[k[1]], std[k[1]] = self._get_kde_(v)
+            elif k[0] == "state-pair" and k[1] > 0:
+                kde[k[1]] = KernelDensityEstimator(v)
         for i, s in enumerate(states):
             for j, (ss, k) in enumerate(zip(s, degree)):
                 if k > 0:
-                    compound_state = []
+                    cs = []
                     for l in network.neighbors(j):
                         ew = network.edges[j, l]["weight"]
-                        compound_state.append(np.concatenate([ss, s[l], ew]))
-                    compound_state = (
-                        np.array(compound_state).reshape(len(compound_state), -1).T
-                    )
-                    cs = (compound_state - mean[k]) / std[k]
-                    p = np.prod(kde[k](cs)) ** (1.0 / k)
-
+                        cs.append(np.concatenate([ss, s[l], ew]))
+                    p = np.prod(kde[k].pdf(cs)) ** (1.0 / k)
                     weights[i, j] = self.features[("degree", k)] / z * p
                 else:
                     weights[i, j] = self.features[("degree", k)] / z
