@@ -112,7 +112,7 @@ class MetaPop(Dynamics):
         return y.astype("int")
 
     def is_dead(self, x):
-        if np.all(x[:, 1] == 0):
+        if x[:, 1].sum() < 1:
             return True
         else:
             return False
