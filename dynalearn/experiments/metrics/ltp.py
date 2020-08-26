@@ -72,22 +72,21 @@ class LTPMetrics(Metrics):
 
     def initialize(self, experiment):
         self.model = self.get_model(experiment)
-        if not issubclass(Epidemics, self.model.__class__):
-            raise ValueError(f"{self.model} is an invalid model for LTPMetrics.")
+        if not issubclass(self.model.__class__, Epidemics):
+            raise ValueError(
+                f"{self.model.__class__} is an invalid model for LTPMetrics."
+            )
         self.dataset = experiment.dataset
         self.num_states = experiment.model.num_states
-        if (
-            experiment.model.window_size
-            > experiment.train_details.threshold_window_size
-        ):
-            self.window_size = experiment.train_details.threshold_window_size
+        if experiment.model.window_size > experiment.train_details.max_window_size:
+            self.window_size = experiment.train_details.max_window_size
         else:
             self.window_size = experiment.model.window_size
 
         self.num_points = {}
         self.num_updates = 0
 
-        for k, g in enumerate(self.dataset.networks.data):
+        for k, g in enumerate(self.dataset.networks.data_list):
             if (
                 self.max_num_points < self.dataset.inputs[k].size
                 and self.max_num_points > 1
@@ -122,12 +121,12 @@ class LTPMetrics(Metrics):
         eff_num_states = self.num_states ** self.window_size
 
         for k in range(self.dataset.networks.size):
-            g = self.dataset.networks.data[k]
+            g = self.dataset.networks[k].data
             adj = nx.to_numpy_array(g)
             for t in range(self.num_points[k]):
-                obs_x = self.dataset.data["inputs"][k][t]
+                obs_x = self.dataset.data["inputs"][k].get(t)
                 obs_x = from_nary(
-                    obs_x[: self.window_size], axis=0, base=self.num_states
+                    obs_x[:, : self.window_size], axis=-1, base=self.num_states
                 )
                 l = np.array(
                     [np.matmul(adj, obs_x == i) for i in range(eff_num_states)]
@@ -144,20 +143,20 @@ class LTPMetrics(Metrics):
         eff_num_states = self.num_states ** self.window_size
 
         for k in range(self.dataset.networks.size):
-            real_g = self.dataset._data["networks"].data[k]
-            obs_g = self.dataset.data["networks"].data[k]
+            real_g = self.dataset._data["networks"][k].data
+            obs_g = self.dataset.data["networks"][k].data
             self.model.network = self._set_network_(real_g, obs_g)
             adj = nx.to_numpy_array(obs_g)
             for t in range(self.num_points[k]):
-                real_x = self.dataset._data["inputs"][k].data[t]
-                obs_x = self.dataset.data["inputs"][k].data[t]
-                real_y = self.dataset._data["targets"][k].data[t]
-                obs_y = self.dataset.targets[k][t]
+                real_x = self.dataset._data["inputs"][k].get(t)
+                obs_x = self.dataset.data["inputs"][k].get(t)
+                real_y = self.dataset._data["targets"][k].get(t)
+                obs_y = self.dataset.targets[k].get(t)
                 pred = self.predict(real_x, obs_x, real_y, obs_y)
 
                 bin_x = (
                     from_nary(
-                        obs_x[:, -self.window_size :], axis=0, base=self.num_states
+                        obs_x[:, -self.window_size :], axis=-1, base=self.num_states
                     )
                     * 1
                 )

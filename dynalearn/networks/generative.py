@@ -47,7 +47,7 @@ class ConfigurationNetwork(GenerativeNetwork):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
-        GenerativeNetwork.__init__(self, config, weight_gen, weight_gen)
+        GenerativeNetwork.__init__(self, config, weight_gen=weight_gen)
         self.p_k = config.p_k
         if "maxiter" in config.__dict__:
             self.maxiter = config.maxiter

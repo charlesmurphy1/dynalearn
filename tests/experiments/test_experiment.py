@@ -1,12 +1,13 @@
-import dynalearn as dl
 import numpy as np
 import unittest
+from dynalearn.config import ExperimentConfig
+from dynalearn.experiments import Experiment
 
 
 class ExperimentTest(unittest.TestCase):
     def setUp(self):
-        self.config = dl.ExperimentConfig.test()
-        self.experiment = dl.Experiment(self.config, verbose=0)
+        self.config = ExperimentConfig.test()
+        self.experiment = Experiment(self.config, verbose=0)
 
     def test_generate(self):
         self.experiment.generate_data()
@@ -19,6 +20,7 @@ class ExperimentTest(unittest.TestCase):
 
     def test_train(self):
         self.experiment.generate_data()
+        self.experiment.partition_val_dataset()
         self.experiment.train_model()
         logs = self.experiment.model.nn.history._epoch_logs
         for epoch, log in logs.items():
