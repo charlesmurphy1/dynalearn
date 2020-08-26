@@ -17,7 +17,6 @@ class MetaSIRTest(unittest.TestCase):
         self.num_states = 3
         config.density = 1000
 
-
         self.infection_prob = config.infection_prob
         self.recovery_prob = config.recovery_prob
         self.infection_type = config.infection_type
@@ -63,7 +62,13 @@ class MetaSIRTest(unittest.TestCase):
         g = nx.complete_graph(self.model.num_nodes)
         self.model.network = g
         x = self.model.initial_state()
-        ref_ltp = np.array([self.diffusion_susceptible, self.diffusion_infected, self.diffusion_recovered])
+        ref_ltp = np.array(
+            [
+                self.diffusion_susceptible,
+                self.diffusion_infected,
+                self.diffusion_recovered,
+            ]
+        )
         ltp = self.model.diffusion(x)
         k = dict(g.degree())
         for (i, j) in g.edges():

@@ -18,7 +18,7 @@ class NetworkData(Data):
 
     def __eq__(self, other):
         if isinstance(other, NetworkData):
-            if self.isinstance(self.data, dict):
+            if isinstance(self.data, dict):
                 for k, v in self.data.items():
                     if k not in other.data:
                         return False

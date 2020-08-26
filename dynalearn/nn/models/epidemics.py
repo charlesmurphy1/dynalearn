@@ -32,6 +32,7 @@ class EpidemicsGNN(GraphNeuralNetwork):
         self.gnn_layer = get_gnn_layer(
             config.in_channels[-1], config.gnn_channels, config
         )
+        self.gnn_activation = get_activation(config.gnn_activation)
 
         if self.with_non_edge:
             self.non_edge_layer = Linear(config.in_channels[-1], 1, bias=config.bias)

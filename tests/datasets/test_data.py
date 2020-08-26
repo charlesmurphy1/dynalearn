@@ -13,11 +13,7 @@ class TestData(TestCase):
         self.data = DataCollection(
             name=self.name,
             data_list=[
-                StateData(
-                    name=self.name,
-                    data=np.random.rand(self.size, *self.shape),
-                    shape=(5, 6),
-                )
+                StateData(name=self.name, data=np.random.rand(self.size, *self.shape))
                 for i in range(self.num_points)
             ],
         )

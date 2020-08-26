@@ -33,7 +33,7 @@ class DiscreteDatasetTest(TestCase):
     def test_get_weights(self):
         weights = self.dataset.weights
         for i in range(self.num_networks):
-            self.assertEqual(weights[i].shape, (self.num_samples, self.num_nodes))
+            self.assertEqual(weights[i].data.shape, (self.num_samples, self.num_nodes))
 
     def test_partition(self):
         dataset = self.dataset.partition(0.5)
@@ -41,8 +41,8 @@ class DiscreteDatasetTest(TestCase):
         self.assertTrue(self.dataset.inputs == dataset.inputs)
         self.assertTrue(self.dataset.targets == dataset.targets)
         for i in range(self.num_networks):
-            index1 = self.dataset.weights[i] == 0.0
-            index2 = dataset.weights[i] > 0.0
+            index1 = self.dataset.weights[i].data == 0.0
+            index2 = dataset.weights[i].data > 0.0
             np.testing.assert_array_equal(index1, index2)
 
     def test_next(self):
@@ -67,9 +67,9 @@ class DiscreteDatasetTest(TestCase):
         for b in batches:
             j = 0
             for bb in b:
-                (x, edge_index), y, w = bb
+                (x, g), y, w = bb
                 self.assertEqual(type(x), torch.Tensor)
-                self.assertEqual(type(edge_index), torch.Tensor)
+                self.assertEqual(type(g), nx.Graph)
                 self.assertEqual(type(y), torch.Tensor)
                 self.assertEqual(type(w), torch.Tensor)
                 j += 1
@@ -77,3 +77,7 @@ class DiscreteDatasetTest(TestCase):
                 pass
             self.assertEqual(self.batch_size, j)
         self.assertEqual(self.num_samples * self.num_networks, i)
+
+
+if __name__ == "__main__":
+    unittest.main()

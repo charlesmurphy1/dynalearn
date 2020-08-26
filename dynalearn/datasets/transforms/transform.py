@@ -3,7 +3,7 @@ import numpy as np
 
 from abc import abstractmethod
 from dynalearn.config import Config
-from dynalearn.datasets.data.data import Data
+from dynalearn.datasets.data import Data, StateData, NetworkData
 
 
 class Transform:
@@ -45,8 +45,8 @@ class StateTransform(Transform):
     def __call__(self, x):
         assert issubclass(type(x), StateData)
         data = x.data
-        assert isinstance(data, (np.ndarray, torch.Tensor))
-        x.data = self._transform_state_(states)
+        assert isinstance(data, np.ndarray)
+        x.data = self._transform_state_(data)
         return x
 
 

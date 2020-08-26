@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 import torch
 
-from dynalearn.datasets import RemapStateTransform
+from dynalearn.datasets import RemapStateTransform, StateData
 from unittest import TestCase
 
 
@@ -13,9 +13,13 @@ class RemapStateTransformTest(TestCase):
         return
 
     def test_call(self):
-        x = np.random.randint(4, size=1000)
+        x = StateData(data=np.random.randint(4, size=1000))
         y = self.transform(x)
-        x_ref = x * 1
-        x_ref[x == 2] = 0
-        x_ref[x == 3] = 1
-        np.testing.assert_array_equal(x_ref, y)
+        x_ref = x.data * 1
+        x_ref[x.data == 2] = 0
+        x_ref[x.data == 3] = 1
+        np.testing.assert_array_equal(x_ref, y.data)
+
+
+if __name__ == "__main__":
+    unittest.main()

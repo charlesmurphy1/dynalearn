@@ -130,7 +130,7 @@ class SimpleMetaSIR(MetaPop):
             p[:, 0, 1] = 1 - (1 - self.infection_prob) ** x[:, 1]
         elif self.infection_type == 2:
             n = x.sum(-1)
-            index = np.where(np.logical_and(n > 1, x[:, 1] > 1))[0]
+            index = np.where(np.logical_and(n >= 1, x[:, 1] >= 1))[0]
             p[:, 0, 0] = 1
             p[:, 0, 1] = 0
             p[index, 0, 0] = (1 - self.infection_prob / n[index]) ** x[index, 1]

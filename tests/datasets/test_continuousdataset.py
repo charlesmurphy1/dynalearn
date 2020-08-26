@@ -34,7 +34,7 @@ class ContinuousDatasetTest(TestCase):
     def test_get_weights(self):
         weights = self.dataset.weights
         for i in range(self.num_networks):
-            self.assertEqual(weights[i].shape, (self.num_samples, self.num_nodes))
+            self.assertEqual(weights[i].data.shape, (self.num_samples, self.num_nodes))
 
     def test_partition(self):
         dataset = self.dataset.partition(0.5)
@@ -46,8 +46,8 @@ class ContinuousDatasetTest(TestCase):
             np.testing.assert_array_equal(
                 self.dataset.targets[i].data, dataset.targets[i].data
             )
-            index1 = self.dataset.weights[i] == 0.0
-            index2 = dataset.weights[i] > 0.0
+            index1 = self.dataset.weights[i].data == 0.0
+            index2 = dataset.weights[i].data > 0.0
             np.testing.assert_array_equal(index1, index2)
         return
 
@@ -59,7 +59,9 @@ class ContinuousDatasetTest(TestCase):
             i += 1
         self.assertEqual(self.num_samples * self.num_networks, i)
         (x, g), y, w = data
-        x_ref = np.zeros((self.num_nodes, self.dataset.num_states, self.dataset.window_size))
+        x_ref = np.zeros(
+            (self.num_nodes, self.dataset.num_states, self.dataset.window_size)
+        )
         y_ref = np.zeros((self.num_nodes, self.dataset.num_states))
         y_ref[:, 0] = 1
         w_ref = np.ones(self.num_nodes) / self.num_nodes
@@ -73,9 +75,9 @@ class ContinuousDatasetTest(TestCase):
         for b in batches:
             j = 0
             for bb in b:
-                (x, edge_index), y, w = bb
+                (x, g), y, w = bb
                 self.assertEqual(type(x), torch.Tensor)
-                self.assertEqual(type(edge_index), torch.Tensor)
+                self.assertEqual(type(g), nx.Graph)
                 self.assertEqual(type(y), torch.Tensor)
                 self.assertEqual(type(w), torch.Tensor)
                 j += 1
@@ -83,3 +85,7 @@ class ContinuousDatasetTest(TestCase):
                 pass
             self.assertEqual(self.batch_size, j)
         self.assertEqual(self.num_samples * self.num_networks, i)
+
+
+if __name__ == "__main__":
+    unittest.main()
