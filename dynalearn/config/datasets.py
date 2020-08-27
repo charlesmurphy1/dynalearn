@@ -1,9 +1,9 @@
 from .config import Config
 
 
-class DatasetConfig(Config):
+class DiscreteDatasetConfig(Config):
     @classmethod
-    def plain_discrete_default(cls):
+    def plain(cls):
         cls = cls()
         cls.name = "DiscreteDataset"
         cls.bias = 0
@@ -12,103 +12,84 @@ class DatasetConfig(Config):
         return cls
 
     @classmethod
-    def degree_weighted_discrete_default(cls):
+    def structure(cls, use_strength=True):
         cls = cls()
-        cls.name = "DegreeWeightedDiscreteDataset"
-        cls.bias = 0.5
+        cls.name = "DiscreteStructureWeightDataset"
+        cls.bias = 0
         cls.replace = True
         cls.use_groundtruth = False
+        cls.use_strength = use_strength
         return cls
 
     @classmethod
-    def degree_weighted_continuous_default(cls):
+    def state(cls, use_strength=True, compounded=True):
         cls = cls()
-        cls.name = "DegreeWeightedContinuousDataset"
-        cls.bias = 0.5
+        cls.name = "DiscreteStateWeightDataset"
+        cls.bias = 0
         cls.replace = True
         cls.use_groundtruth = False
+        cls.use_strength = use_strength
+        cls.compounded = compounded
         return cls
 
     @classmethod
-    def strength_weighted_Discrete_default(cls):
+    def hidden_sissis(cls):
         cls = cls()
-        cls.name = "StrengthWeightedDiscreteDataset"
-        cls.bias = 0.5
+        cls.name = "DiscreteStateWeightDataset"
+        cls.bias = 0
         cls.replace = True
         cls.use_groundtruth = False
-        cls.max_num_points = 1000
-        return cls
-
-    @classmethod
-    def strength_weighted_continuous_default(cls):
-        cls = cls()
-        cls.name = "StrengthWeightedContinuousDataset"
-        cls.bias = 0.5
-        cls.replace = True
-        cls.use_groundtruth = False
-        cls.max_num_points = 1000
-        return cls
-
-    @classmethod
-    def strength_weighted_continuous_default(cls):
-        cls = cls()
-        cls.name = "StrengthWeightedContinuousDataset"
-        cls.bias = 0.5
-        cls.replace = True
-        cls.use_groundtruth = False
-        cls.max_num_points = 1000
-        return cls
-
-    @classmethod
-    def state_weighted_discrete_default(cls):
-        cls = cls()
-        cls.name = "StateWeightedDiscreteDataset"
-        cls.bias = 0.5
-        cls.replace = True
-        cls.threshold_window_size = 3
-        cls.use_groundtruth = False
-        return cls
-
-    @classmethod
-    def state_weighted_continuous_default(cls):
-        cls = cls()
-        cls.name = "StateWeightedContinuousDataset"
-        cls.bias = 0.5
-        cls.replace = True
-        cls.use_groundtruth = False
-        cls.max_num_points = 1000
-        return cls
-
-    @classmethod
-    def state_weighted_hidden_sissis(cls):
-        cls = cls()
-        cls.name = "StateWeightedDiscreteDataset"
-        cls.bias = 0.5
-        cls.replace = True
-        cls.use_groundtruth = False
-        cls.threshold_window_size = 3
+        cls.use_strength = False
+        cls.compounded = True
         cls.transforms = TransformConfig.hidden_sissis_default()
+
         return cls
 
     @classmethod
-    def state_weighted_partially_hidden_sissis(cls):
+    def partially_hidden_sissis(cls):
         cls = cls()
-        cls.name = "StateWeightedDiscreteDataset"
-        cls.bias = 0.5
+        cls.name = "DiscreteStateWeightDataset"
+        cls.bias = 0
         cls.replace = True
         cls.use_groundtruth = False
-        cls.threshold_window_size = 3
+        cls.use_strength = False
+        cls.compounded = True
         cls.transforms = TransformConfig.partially_hidden_sissis_default()
+
+        return cls
+
+
+class ContinuousDatasetConfig(Config):
+    @classmethod
+    def plain(cls):
+        cls = cls()
+        cls.name = "ContinuousDataset"
+        cls.bias = 0
+        cls.replace = True
+        cls.use_groundtruth = False
         return cls
 
     @classmethod
-    def degree_weighted_hidden_sissis(cls):
+    def structure(cls, use_strength=True):
         cls = cls()
-        cls.name = "DegreeWeightedDiscreteDataset"
-        cls.bias = 0.5
+        cls.name = "ContinuousStructureWeightDataset"
+        cls.bias = 0
         cls.replace = True
         cls.use_groundtruth = False
-        cls.transforms = TransformConfig.hidden_sissis_default()
+        cls.use_strength = use_strength
+        return cls
+
+    @classmethod
+    def state(cls, use_strength=True, compounded=True, reduce=False):
+        cls = cls()
+        cls.name = "ContinuousStateWeightDataset"
+        cls.bias = 0
+        cls.replace = True
+        cls.use_groundtruth = False
+        cls.use_strength = use_strength
+        cls.compounded = compounded
+        cls.reduce = reduce
+        cls.max_num_points = -1
         return cls
 
 

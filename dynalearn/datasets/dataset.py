@@ -15,9 +15,11 @@ from dynalearn.datasets.data import (
     DataCollection,
     NetworkData,
     StateData,
-    WeightData,
-    DegreeWeightData,
-    NodeStrengthWeightData,
+)
+from dynalearn.datasets.weights import (
+    Weight,
+    DegreeWeight,
+    StrengthWeight,
 )
 from dynalearn.datasets.transforms.getter import get as get_transforms
 
@@ -315,7 +317,7 @@ class Dataset(object):
         return indices_dict
 
     def _get_weights_(self, data):
-        weights = WeightData()
+        weights = Weight()
         weights.compute(self, verbose=self.verbose)
         return weights
 
@@ -347,15 +349,11 @@ class Dataset(object):
         return data
 
 
-class DegreeWeightedDataset(Dataset):
+class StructureWeightDataset(Dataset):
     def _get_weights_(self, data):
-        weights = DegreeWeightData()
-        weights.compute(self, verbose=self.verbose)
-        return weights
-
-
-class StrengthWeightedDataset(Dataset):
-    def _get_weights_(self, data):
-        weights = NodeStrengthWeightData()
+        if self.config.use_strength:
+            weights = StrengthWeight()
+        else:
+            weights = DegreeWeight()
         weights.compute(self, verbose=self.verbose)
         return weights

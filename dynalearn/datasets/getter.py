@@ -1,24 +1,20 @@
 from dynalearn.datasets import (
     DiscreteDataset,
-    DegreeWeightedDiscreteDataset,
-    StrengthWeightedDiscreteDataset,
-    StateWeightedDiscreteDataset,
+    DiscreteStructureWeightDataset,
+    DiscreteStateWeightDataset,
     ContinuousDataset,
-    DegreeWeightedContinuousDataset,
-    StrengthWeightedContinuousDataset,
-    StateWeightedContinuousDataset,
+    ContinuousStructureWeightDataset,
+    ContinuousStateWeightDataset,
 )
 
 
 __datasets__ = {
     "DiscreteDataset": DiscreteDataset,
-    "DegreeWeightedDiscreteDataset": DegreeWeightedDiscreteDataset,
-    "StrengthWeightedDiscreteDataset": StrengthWeightedDiscreteDataset,
-    "StateWeightedDiscreteDataset": StateWeightedDiscreteDataset,
+    "DiscreteStructureWeightDataset": DiscreteStructureWeightDataset,
+    "DiscreteStateWeightDataset": DiscreteStateWeightDataset,
     "ContinuousDataset": ContinuousDataset,
-    "DegreeWeightedContinuousDataset": DegreeWeightedContinuousDataset,
-    "StrengthWeightedContinuousDataset": StrengthWeightedContinuousDataset,
-    "StateWeightedContinuousDataset": StateWeightedContinuousDataset,
+    "ContinuousStructureWeightDataset": ContinuousStructureWeightDataset,
+    "ContinuousStateWeightDataset": ContinuousStateWeightDataset,
 }
 
 

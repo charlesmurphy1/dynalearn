@@ -4,10 +4,12 @@ import torch
 import tqdm
 
 from scipy.stats import gaussian_kde
-from dynalearn.datasets import Dataset, DegreeWeightedDataset, StrengthWeightedDataset
-from dynalearn.datasets.data import (
-    NodeStrengthContinuousStateWeightData,
-    ContinuousStateWeightData,
+from dynalearn.datasets import Dataset, StructureWeightDataset
+from dynalearn.datasets.weights import (
+    ContinuousStateWeight,
+    ContinuousCompoundStateWeight,
+    StrengthContinuousStateWeight,
+    StrengthContinuousCompoundStateWeight,
 )
 from dynalearn.config import Config
 from dynalearn.utilities import from_nary
@@ -26,37 +28,33 @@ class ContinuousDataset(Dataset):
         return (x, g), y, w
 
 
-class DegreeWeightedContinuousDataset(ContinuousDataset, DegreeWeightedDataset):
+class ContinuousStructureWeightDataset(ContinuousDataset, StructureWeightDataset):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
         ContinuousDataset.__init__(self, config)
-        DegreeWeightedDataset.__init__(self, config)
+        StructureWeightDataset.__init__(self, config)
 
 
-class StrengthWeightedContinuousDataset(ContinuousDataset, StrengthWeightedDataset):
-    def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
-        ContinuousDataset.__init__(self, config)
-        StrengthWeightedDataset.__init__(self, config)
-
-
-class StateWeightedContinuousDataset(ContinuousDataset):
+class ContinuousStateWeightDataset(ContinuousDataset):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
         ContinuousDataset.__init__(self, config)
         self.max_num_points = config.max_num_points
+        self.compounded = config.compounded
+        self.reduce = config.reduce
 
     def _get_weights_(self, data):
-        if self.m_networks.is_weighted:
-            weights = NodeStrengthContinuousStateWeightData()
-            weights.compute(self, verbose=self.verbose)
+        if self.m_networks.is_weighted and self.compounded:
+            weights = StrengthContinuousCompoundStateWeight(reduce=self.reduce)
+        elif self.m_networks.is_weighted and not self.compounded:
+            weights = StrengthContinuousStateWeight(reduce=self.reduce)
+        elif not self.m_networks.is_weighted and self.compounded:
+            weights = ContinuousCompoundStateWeight(reduce=self.reduce)
         else:
-            weights = ContinuousStateWeightData()
-            weights.compute(self, verbose=self.verbose)
+            weights = ContinuousStateWeight()
+        weights.compute(self, verbose=self.verbose)
         return weights

@@ -183,11 +183,11 @@ class ExperimentConfig(Config):
         cls.model = model_config[dynamics]
 
         if dynamics == "hiddensissis":
-            cls.dataset = DatasetConfig.state_weighted_hidden_sissis()
+            cls.dataset = DiscreteDatasetConfig.hidden_sissis()
         elif dynamics == "partiallyhiddensissis":
-            cls.dataset = DatasetConfig.state_weighted_partially_hidden_sissis()
+            cls.dataset = DiscreteDatasetConfig.partially_hidden_sissis()
         else:
-            cls.dataset = DatasetConfig.state_weighted_discrete_default()
+            cls.dataset = DiscreteDatasetConfig.state()
         cls.train_details = TrainingConfig.discrete()
         cls.metrics = metrics_config[dynamics]
         cls.train_metrics = ["jensenshannon", "model_entropy"]
@@ -252,7 +252,7 @@ class ExperimentConfig(Config):
             cls.dynamics.is_multiplex = False
             cls.model.is_multiplex = False
 
-        cls.dataset = DatasetConfig.state_weighted_continuous_default()
+        cls.dataset = ContinuousDatasetConfig.state(compounded=True, reduce=False)
         cls.train_details = TrainingConfig.continuous()
         cls.metrics = metrics_config[dynamics]
         cls.train_metrics = ["acc"]
@@ -384,12 +384,12 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_summary):
             os.makedirs(path_to_summary)
         if config == "discrete":
-            cls.dataset = DatasetConfig.state_weighted_discrete_default()
+            cls.dataset = DiscreteDatasetConfig.state()
             cls.networks = NetworkConfig.erdosrenyi(1000, 4.0 / 999.0)
             cls.dynamics = DynamicsConfig.sis_default()
             cls.model = DynamicsConfig.sis_gnn_default()
         elif config == "continuous":
-            cls.dataset = DatasetConfig.state_weighted_continuous_default()
+            cls.dataset = ContinuousDatasetConfig.state()
             cls.networks = NetworkConfig.erdosrenyi(1000, 4.0 / 999.0)
             cls.dynamics = DynamicsConfig.metasis_default()
             cls.model = DynamicsConfig.metasis_gnn_default()

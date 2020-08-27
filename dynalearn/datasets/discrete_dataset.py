@@ -2,11 +2,11 @@ import networkx as nx
 import numpy as np
 import torch
 
-from dynalearn.datasets import Dataset, DegreeWeightedDataset, StrengthWeightedDataset
+from dynalearn.datasets import Dataset, StructureWeightDataset
 from dynalearn.config import Config
 from dynalearn.utilities import from_nary
 from dynalearn.utilities import to_edge_index, onehot
-from dynalearn.datasets.data import DiscreteStateWeightData
+from dynalearn.datasets.weights import DiscreteStateWeight, DiscreteCompoundStateWeight
 
 
 class DiscreteDataset(Dataset):
@@ -25,26 +25,20 @@ class DiscreteDataset(Dataset):
         return (x, g), y, w
 
 
-class DegreeWeightedDiscreteDataset(DiscreteDataset, DegreeWeightedDataset):
+class DiscreteStructureWeightDataset(DiscreteDataset, StructureWeightDataset):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
         DiscreteDataset.__init__(self, config)
-        DegreeWeightedDataset.__init__(self, config)
+        StructureWeightDataset.__init__(self, config)
 
 
-class StrengthWeightedDiscreteDataset(DiscreteDataset, StrengthWeightedDataset):
-    def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
-        DiscreteDataset.__init__(self, config)
-        DegreeWeightedDataset.__init__(self, config)
-
-
-class StateWeightedDiscreteDataset(DiscreteDataset):
+class DiscreteStateWeightDataset(DiscreteDataset):
     def _get_weights_(self, data):
-        weights = DiscreteStateWeightData()
+        if self.config.compounded:
+            weights = DiscreteCompoundStateWeight()
+        else:
+            weights = DiscreteStateWeight()
         weights.compute(self, verbose=self.verbose)
         return weights

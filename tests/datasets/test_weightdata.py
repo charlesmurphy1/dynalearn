@@ -2,17 +2,21 @@ import networkx as nx
 import numpy as np
 import unittest
 
-from dynalearn.datasets import (
-    DegreeWeightData,
-    NodeStrengthWeightData,
-    DiscreteStateWeightData,
-    ContinuousStateWeightData,
-    NodeStrengthContinuousStateWeightData,
+from dynalearn.datasets.weights import (
+    Weight,
+    DegreeWeight,
+    StrengthWeight,
+    DiscreteStateWeight,
+    DiscreteCompoundStateWeight,
+    ContinuousStateWeight,
+    ContinuousCompoundStateWeight,
+    StrengthContinuousStateWeight,
+    StrengthContinuousCompoundStateWeight,
 )
 from dynalearn.utilities import set_edge_attr, get_node_strength
 
 
-class WeightDataTest(unittest.TestCase):
+class WeightTest(unittest.TestCase):
     def setUp(self):
         self.num_nodes = 10
         self.num_states = 3
@@ -25,18 +29,23 @@ class WeightDataTest(unittest.TestCase):
             self.num_states, size=(self.size, self.num_nodes, 1)
         )
         self.d_templates = [
-            DegreeWeightData,
-            NodeStrengthWeightData,
-            DiscreteStateWeightData,
+            Weight,
+            DegreeWeight,
+            StrengthWeight,
+            DiscreteStateWeight,
+            DiscreteCompoundStateWeight,
         ]
         self.c_x = (
             np.random.randn(self.size, self.num_nodes, self.num_states, 1) * 100 + 500
         )
         self.c_templates = [
-            DegreeWeightData,
-            NodeStrengthWeightData,
-            ContinuousStateWeightData,
-            NodeStrengthContinuousStateWeightData,
+            Weight,
+            DegreeWeight,
+            StrengthWeight,
+            ContinuousStateWeight,
+            ContinuousCompoundStateWeight,
+            StrengthContinuousStateWeight,
+            StrengthContinuousCompoundStateWeight,
         ]
 
     def test_get_features(self):
