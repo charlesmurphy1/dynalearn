@@ -63,7 +63,7 @@ class KernelDensityEstimator:
         self._index = np.where(std > 1e-8)[0]
         y = (x[self._index] - mean[self._index]) / std[self._index]
         if self.max_num_samples < y.shape[-1]:
-            ind = np.random.choice(range(y.shape), size=self.max_num_samples)
+            ind = np.random.choice(range(y.shape[-1]), size=self.max_num_samples)
             y = y[:, ind]
         self.kde = gaussian_kde(y)
         self._mean = mean
@@ -322,7 +322,7 @@ class ContinuousStateWeightData(WeightData):
                     v, max_num_samples=self.max_num_samples
                 )
                 pp[k[1]] = kde[k[1]].pdf(v)
-                assert np.all(pp[k[1]] > 0)
+                assert np.all(pp[k[1]] > 0), "Found zero values in kde."
         for i, s in enumerate(states):
             for j, ss in enumerate(s):
                 cs = []
