@@ -41,7 +41,9 @@ class KernelDensityEstimatorTest(unittest.TestCase):
         self.assertEqual(kde.std, None)
 
     def test_pdf(self):
+        index = np.random.randint(len(self.dataset1))
         x = np.array(self.dataset1).reshape(self.num_points, self.shape).T
+        x[index]
         y = (x - np.expand_dims(x.mean(-1), axis=-1)) / np.expand_dims(
             x.std(-1), axis=-1
         )
@@ -49,6 +51,8 @@ class KernelDensityEstimatorTest(unittest.TestCase):
         kde = gaussian_kde(y)
         p = kde.pdf(y) / kde.pdf(y).sum()
         np.testing.assert_array_almost_equal(my_kde.pdf(self.dataset1), p)
+        for i in range(10):
+            p = kde.pdf(x[i])
 
         my_kde = KernelDensityEstimator(self.dataset2)
         np.testing.assert_array_almost_equal(

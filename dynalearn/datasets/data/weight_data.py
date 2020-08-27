@@ -15,7 +15,7 @@ from dynalearn.utilities import (
 
 
 class KernelDensityEstimator:
-    def __init__(self, samples):
+    def __init__(self, samples, max_num_samples=1000):
         assert isinstance(samples, list)
         self.samples = samples
         if isinstance(samples[0], np.ndarray):
@@ -26,11 +26,12 @@ class KernelDensityEstimator:
             if isinstance(s, (int, float)):
                 s = np.array([s])
             assert s.shape == self.shape
-        self.num_samples = len(samples)
+        self.max_num_samples = max_num_samples
         self.kde = None
-        self.mean = None
-        self.std = None
-        self.norm = None
+        self._mean = None
+        self._std = None
+        self._norm = None
+        self._index = None
         self.get_kde()
 
     def pdf(self, x):
@@ -42,36 +43,37 @@ class KernelDensityEstimator:
         assert x.shape[:-1] == self.shape
 
         if self.kde is None:
-            return np.ones(x.shape[-1]) / self.norm
+            return np.ones(x.shape[-1]) / self._norm
         else:
-            y = (x[self.index] - self.mean) / self.std
-            return self.kde.pdf(y) / self.norm
+            y = (x[self._index] - self._mean[self._index]) / self._std[self._index]
+            p = self.kde.pdf(y) / self._norm
+            return p
 
     def get_kde(self):
         if len(self.samples) <= 1:
-            self.norm = 1
+            self._norm = 1
             return
         x = np.array(self.samples)
         x = x.reshape(x.shape[0], -1).T
         mean = np.expand_dims(x.mean(axis=-1), -1)
         std = np.expand_dims(x.std(axis=-1), -1)
         if np.all(std < 1e-8):
-            self.norm = len(self.samples)
+            self._norm = len(self.samples)
             return
-        self.index = np.where(std > 1e-8)[0]
-        x = (x[self.index] - mean[self.index]) / std[self.index]
-        try:
-            self.kde = gaussian_kde(x)
-            self.mean = mean[self.index]
-            self.std = std[self.index]
-            self.norm = self.kde.pdf(x).sum()
-            self.samples = []
-        except:
-            raise ValueError("Error encountered in gaussian_kde")
+        self._index = np.where(std > 1e-8)[0]
+        y = (x[self._index] - mean[self._index]) / std[self._index]
+        if self.max_num_samples < y.shape[-1]:
+            ind = np.random.choice(range(y.shape), size=self.max_num_samples)
+            y = y[:, ind]
+        self.kde = gaussian_kde(y)
+        self._mean = mean
+        self._std = std
+        self._norm = self.kde.pdf(y).sum()
+        self.samples = []
 
 
 class WeightData(DataCollection):
-    def __init__(self, name="weight_collection", max_num_samples=1000):
+    def __init__(self, name="weight_collection", max_num_samples=10000):
         DataCollection.__init__(self, name=name)
         self.max_num_samples = max_num_samples
         self.features = {}
@@ -118,9 +120,8 @@ class WeightData(DataCollection):
             g = dataset.networks[i].data
             if isinstance(g, dict):
                 g = collapse_networks(g)
-            weights = StateData(
-                data=self._get_weights_(g, dataset.inputs[i].data, pb=pb)
-            )
+            w = self._get_weights_(g, dataset.inputs[i].data, pb=pb)
+            weights = StateData(data=w)
             self.add(weights)
 
     def _add_features_(self, key, value=None):
@@ -135,11 +136,6 @@ class WeightData(DataCollection):
                     self.features[key] = value
                 else:
                     self.features[key] = [value]
-            elif (
-                len(self.features[key]) > self.max_num_samples
-                and self.max_num_samples != -1
-            ):
-                pass
             else:
                 if isinstance(value, list):
                     self.features[key].extend(value)
@@ -206,7 +202,6 @@ class NodeStrengthWeightData(WeightData):
 
     def _get_features_(self, network, states, pb=None):
         degree = list(dict(network.degree()).values())
-        # strength = get_node_strength(network)
         for i, k in enumerate(degree):
             self._add_features_(("degree", k))
             for j in network.neighbors(i):
@@ -302,42 +297,40 @@ class ContinuousStateWeightData(WeightData):
         )
 
     def _get_features_(self, network, states, pb=None):
-        degree = list(dict(network.degree()).values())
-        if states.ndim == 3:
-            states = states[:, :, -1]
         for i, s in enumerate(states):
-            for j, (ss, k) in enumerate(zip(s, degree)):
-                cs = [
-                    np.concatenate([ss.reshape(-1), s[l].reshape(-1)])
-                    for l in network.neighbors(j)
-                ]
-                self._add_features_(("degree", k))
-                self._add_features_(("state-pair", k), cs)
+            for j, ss in enumerate(s):
+                cs = []
+                k = network.degree(j)
+                for l in network.neighbors(j):
+                    cs.append(np.concatenate([ss.reshape(-1), s[l].reshape(-1)]))
+                self._add_features_(("degree", int(k)))
+                self._add_features_(("state-pair", int(k)), cs)
             if pb is not None:
                 pb.update()
 
     def _get_weights_(self, network, states, pb=None):
         weights = np.zeros((states.shape[0], states.shape[1]))
-        degree = list(dict(network.degree()).values())
         z = 0
         kde = {}
-        mean = {}
-        std = {}
+        pp = {}
         for k, v in self.features.items():
             if k[0] == "degree":
                 z += v
             elif k[0] == "state-pair":
-                kde[k[1]] = KernelDensityEstimator(v)
+                x = np.array(v)
+                kde[k[1]] = KernelDensityEstimator(
+                    v, max_num_samples=self.max_num_samples
+                )
+                pp[k[1]] = kde[k[1]].pdf(v)
+                assert np.all(pp[k[1]] > 0)
         for i, s in enumerate(states):
-            for j, (ss, k) in enumerate(zip(s, degree)):
-                if k > 0:
-                    cs = []
-                    for l in network.neighbors(j):
-                        cs.append(np.concatenate([ss, s[l]]))
-                    p = np.prod(kde[k].pdf(cs)) ** (1.0 / k)
-                    weights[i, j] = self.features[("degree", k)] / z * p
-                else:
-                    weights[i, j] = self.features[("degree", k)] / z
+            for j, ss in enumerate(s):
+                cs = []
+                k = network.degree(j)
+                for l in network.neighbors(j):
+                    cs.append(np.concatenate([ss.reshape(-1), s[l].reshape(-1)]))
+                p = np.prod(kde[k].pdf(cs)) ** (1.0 / k)
+                weights[i, j] = self.features[("degree", k)] / z * p
             if pb is not None:
                 pb.update()
         return weights
