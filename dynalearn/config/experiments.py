@@ -105,7 +105,7 @@ class TrainingConfig(Config):
         cls.num_samples = 10000
         cls.resampling = 2
         cls.max_window_size = 3
-        cls.resample_when_dead = True
+        cls.resample_when_dead = False
 
         return cls
 
@@ -252,7 +252,7 @@ class ExperimentConfig(Config):
             cls.dynamics.is_multiplex = False
             cls.model.is_multiplex = False
 
-        cls.dataset = ContinuousDatasetConfig.state(compounded=True, reduce=False)
+        cls.dataset = ContinuousDatasetConfig.state(compounded=False, reduce=False)
         cls.train_details = TrainingConfig.continuous()
         cls.metrics = metrics_config[dynamics]
         cls.train_metrics = ["acc"]

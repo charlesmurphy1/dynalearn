@@ -27,17 +27,18 @@ class NetworkConfig(Config):
         return cls
 
     @classmethod
-    def barabasialbert(cls, num_nodes, m):
+    def barabasialbert(cls, num_nodes, m, p=0):
         cls = cls()
         cls.name = "BANetwork"
         cls.num_nodes = num_nodes
         cls.m = m
+        cls.p = p
         return cls
 
     @classmethod
     def ba_default(cls, weights=None, num_layers=None):
         cls = cls()
-        for k, v in NetworkConfig.barabasialbert(1000, 2).__dict__.items():
+        for k, v in NetworkConfig.barabasialbert(1000, 2, p=-1).__dict__.items():
             cls.__dict__[k] = v
         if weights is not None:
             cls.weights = weights

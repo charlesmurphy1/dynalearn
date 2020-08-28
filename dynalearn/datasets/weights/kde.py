@@ -50,11 +50,13 @@ class KernelDensityEstimator:
             return
         self._index = np.where(std > 1e-8)[0]
         y = (x[self._index] - mean[self._index]) / std[self._index]
-        if self.max_num_samples < y.shape[-1] and self.max_num_samples != -1:
-            ind = np.random.choice(range(y.shape[-1]), size=self.max_num_samples)
-            y = y[:, ind]
+
         self.kde = gaussian_kde(y)
         self._mean = mean
         self._std = std
-        self._norm = self.kde.pdf(y).sum()
+        if self.max_num_samples < y.shape[-1] and self.max_num_samples != -1:
+            ind = np.random.choice(range(y.shape[-1]), size=self.max_num_samples)
+            self._norm = y.shape[-1] * self.kde.pdf(y[:, ind]).mean()
+        else:
+            self._norm = self.kde.pdf(y).sum()
         self.samples = []

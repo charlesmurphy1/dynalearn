@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 
 from abc import abstractmethod
+from random import sample
 from dynalearn.config import Config
 from dynalearn.networks.network import Network
 
@@ -39,7 +40,21 @@ class ERNetwork(GenerativeNetwork):
 
 class BANetwork(GenerativeNetwork):
     def net_gen(self, seed=None):
-        return nx.barabasi_albert_graph(self.num_nodes, self.config.m, seed)
+        g = None
+        while g is None:
+            g = nx.barabasi_albert_graph(self.num_nodes, self.config.m, seed)
+            if "p" in self.config.__dict__:
+                if self.config.p == -1:
+                    p = np.random.rand()
+                    p = 1 - np.log((1 - p) + np.exp(1) * p)
+                else:
+                    p = self.config.p
+                num_edges = np.random.binomial(g.number_of_edges(), p)
+                removed_edges = sample(g.edges, num_edges)
+                g.remove_edges_from(removed_edges)
+            if g.number_of_edges() == 0:
+                g = None
+        return g
 
 
 class ConfigurationNetwork(GenerativeNetwork):

@@ -9,7 +9,7 @@ from .kde import KernelDensityEstimator
 class ContinuousStateWeight(Weight):
     def __init__(self, name="weight_collection", reduce=True):
         self.reduce = reduce
-        Weight.__init__(self, name=name, max_num_samples=-1)
+        Weight.__init__(self, name=name, max_num_samples=10000)
 
     def setUp(self, dataset):
         self.num_updates = 2 * np.sum(
@@ -49,7 +49,7 @@ class ContinuousStateWeight(Weight):
                 x = self._reduce_(j, s, network)
                 k = network.degree(j)
                 p = gmean(kde[k].pdf(x))
-                assert p > 0, "Encountered invalid value"
+                assert p > 0, "Encountered invalid value."
                 weights[i, j] = self.features[("degree", k)] / z * p
             if pb is not None:
                 pb.update()
