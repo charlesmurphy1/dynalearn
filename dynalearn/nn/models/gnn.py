@@ -192,8 +192,6 @@ class GraphNeuralNetwork(torch.nn.Module):
             return value
 
     def unnormalize(self, value, key):
-        # print(self._data_mean)
-        # raise ValueError()
         if key in self._data_mean:
             if isinstance(self._data_mean[key], dict):
                 assert isinstance(value, dict)

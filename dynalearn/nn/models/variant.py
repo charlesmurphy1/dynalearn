@@ -47,6 +47,9 @@ class ContinuousGraphNeuralNetwork(GraphNeuralNetwork):
                 ).view(1, -1, 1)
         self._data_mean_inputs = self._data_mean["inputs"]
         self._data_var_inputs = self._data_var["inputs"]
+        if torch.cuda.is_available():
+            self._data_mean["inputs"] = self._data_mean["inputs"].cuda()
+            self._data_std["inputs"] = self._data_std["inputs"].cuda()
 
     def _setup_target_(self, dataset):
         for i in range(dataset.networks.size):
@@ -72,6 +75,9 @@ class ContinuousGraphNeuralNetwork(GraphNeuralNetwork):
 
         self._data_mean_targets = self._data_mean["targets"]
         self._data_var_targets = self._data_var["targets"]
+        if torch.cuda.is_available():
+            self._data_mean["targets"] = self._data_mean["targets"].cuda()
+            self._data_std["targets"] = self._data_std["targets"].cuda()
 
 
 class WeightedGraphNeuralNetwork(GraphNeuralNetwork):
@@ -122,6 +128,10 @@ class WeightedGraphNeuralNetwork(GraphNeuralNetwork):
 
         self._data_mean_edgeattr = self._data_mean["edgeattr"]
         self._data_var_edgeattr = self._data_var["edgeattr"]
+
+        if torch.cuda.is_available():
+            self._data_mean["edgeattr"] = self._data_mean["edgeattr"].cuda()
+            self._data_std["edgeattr"] = self._data_std["edgeattr"].cuda()
 
 
 class MultiplexGraphNeuralNetwork(GraphNeuralNetwork):
@@ -205,6 +215,11 @@ class WeightedMultiplexGraphNeuralNetwork(GraphNeuralNetwork):
         for k in self._data_mean["edgeattr"].keys():
             setattr(self, f"_data_mean_edgeattr_{k}", self._data_mean["edgeattr"][k])
             setattr(self, f"_data_var_edgeattr_{k}", self._data_var["edgeattr"][k])
+
+        if torch.cuda.is_available():
+            for k in self._data_mean["edgeattr"].keys():
+                self._data_mean["edgeattr"][k] = self._data_mean["edgeattr"][k].cuda()
+                self._data_std["edgeattr"][k] = self._data_std["edgeattr"][k].cuda()
 
 
 class ContinuousWeightedGraphNeuralNetwork(
