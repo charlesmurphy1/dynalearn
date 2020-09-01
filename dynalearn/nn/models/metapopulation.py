@@ -67,7 +67,6 @@ class MetaPopGNN(ContinuousGraphNeuralNetwork):
         return x
 
     def loss(self, y_true, y_pred, weights):
-        n, s = y_true.size(0), y_true.size(1)
         l1 = weighted_mse(y_true, y_pred, weights=weights)
         sizes_true = torch.sum(y_true, axis=-1)
         sizes_pred = torch.sum(y_pred, axis=-1)
@@ -168,7 +167,7 @@ class MetaPopMGNN(MetaPopGNN, ContinuousMultiplexGraphNeuralNetwork):
         self.gnn_layer = MultiplexLayer(
             template, network_layers=self.network_layers, merge="mean"
         )
-        self.merge_layer = Sequential(get_activation(config.gnn_activation),)
+        self.merge_layer = Sequential(get_activation(config.gnn_activation))
 
         # Finishing initialization
         MetaPopMGNN.reset_parameters(self)
@@ -224,7 +223,7 @@ class MetaPopWMGNN(MetaPopGNN, ContinuousWeightedMultiplexGraphNeuralNetwork):
         self.gnn_layer = MultiplexLayer(
             template, keys=self.network_layers, merge="mean"
         )
-        self.merge_layer = Sequential(get_activation(config.gnn_activation),)
+        self.merge_layer = Sequential(get_activation(config.gnn_activation))
 
         # Finishing initialization
         MetaPopWMGNN.reset_parameters(self)

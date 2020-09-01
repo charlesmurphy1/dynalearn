@@ -104,7 +104,7 @@ class WeightedGraphNeuralNetwork(GraphNeuralNetwork):
         x = self.normalize(x, "inputs")
         y_true = self.normalize(y_true, "targets")
         edge_attr = self.normalize(edge_attr, "edgeattr")
-        return y_true, self.forward(x, edge_index, edge_attr=edge_attr)
+        return y_true, self.forward(x, edge_index, edge_attr=edge_attr), w
 
     def setUp(self, dataset):
         self._data_mean = {}
@@ -147,7 +147,7 @@ class MultiplexGraphNeuralNetwork(GraphNeuralNetwork):
             w = w.cuda()
         x = self.normalize(x, "inputs")
         y_true = self.normalize(y_true, "targets")
-        return y_true, self.forward(x, edge_index, edge_attr=edge_attr)
+        return y_true, self.forward(x, edge_index, edge_attr=edge_attr), w
 
 
 class WeightedMultiplexGraphNeuralNetwork(GraphNeuralNetwork):
@@ -175,7 +175,7 @@ class WeightedMultiplexGraphNeuralNetwork(GraphNeuralNetwork):
         x = self.normalize(x, "inputs")
         y_true = self.normalize(y_true, "targets")
         edge_attr = self.normalize(edge_attr, "edgeattr")
-        return y_true, self.forward(x, edge_index, edge_attr=edge_attr)
+        return y_true, self.forward(x, edge_index, edge_attr=edge_attr), w
 
     def setUp(self, dataset):
         self._data_mean = {}

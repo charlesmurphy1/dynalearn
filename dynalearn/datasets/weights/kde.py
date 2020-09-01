@@ -71,5 +71,6 @@ class KernelDensityEstimator:
         else:
             p = self.kde.pdf(y)
             self._norm = p.sum()
+        assert np.all(p > 0), f"Encountered an invalid value {y} in p = {p}"
 
         self.samples = []
