@@ -18,6 +18,8 @@ from .utils import (
     MultiplexLayer,
     ParallelLayer,
 )
+from dynalearn.nn.loss import weighted_mse
+
 from dynalearn.config import Config
 from dynalearn.nn.activation import get as get_activation
 from dynalearn.nn.models.getter import get as get_gnn_layer
@@ -31,6 +33,8 @@ class MetaPopGNN(ContinuousGraphNeuralNetwork):
             config.__dict__ = kwargs
         self.window_size = config.window_size
         self.num_states = config.num_states
+        self.alpha = config.alpha
+
         config.input_shape = torch.Size([1, config.num_states, config.window_size])
         config.target_shape = torch.Size([1, config.num_states])
         ContinuousGraphNeuralNetwork.__init__(self, config=config, **kwargs)
@@ -61,6 +65,18 @@ class MetaPopGNN(ContinuousGraphNeuralNetwork):
         x = self.out_layers(x)
         x = self.last_layer(x)
         return x
+
+    def loss(self, y_true, y_pred, weights):
+        n, s = y_true.size(0), y_true.size(1)
+        l1 = weighted_mse(y_true, y_pred, weights=weights)
+        sizes_true = torch.sum(y_true, axis=-1)
+        sizes_pred = torch.sum(y_pred, axis=-1)
+        l2 = torch.sum(weights * torch.abs(sizes_true - sizes_pred))
+        total_true = torch.sum(sizes_true, axis=-1)
+        total_pred = torch.sum(sizes_pred, axis=-1)
+        l3 = torch.abs(total_true - total_pred)
+        l = self.alpha[0] * l1 + self.alpha[1] * l2 + self.alpha[2] * l3
+        return l
 
     def reset_parameters(self, initialize_inplace=None):
         if initialize_inplace is None:
@@ -152,14 +168,7 @@ class MetaPopMGNN(MetaPopGNN, ContinuousMultiplexGraphNeuralNetwork):
         self.gnn_layer = MultiplexLayer(
             template, network_layers=self.network_layers, merge="mean"
         )
-        self.merge_layer = Sequential(
-            # Linear(
-            #     config.gnn_channels * len(config.network_layers),
-            #     config.gnn_channels,
-            #     bias=config.bias,
-            # ),
-            get_activation(config.gnn_activation),
-        )
+        self.merge_layer = Sequential(get_activation(config.gnn_activation),)
 
         # Finishing initialization
         MetaPopMGNN.reset_parameters(self)

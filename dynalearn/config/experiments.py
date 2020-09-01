@@ -252,7 +252,9 @@ class ExperimentConfig(Config):
             cls.dynamics.is_multiplex = False
             cls.model.is_multiplex = False
 
-        cls.dataset = ContinuousDatasetConfig.state(compounded=False, reduce=False)
+        cls.dataset = ContinuousDatasetConfig.state(
+            compounded=False, reduce=False, total=True
+        )
         cls.train_details = TrainingConfig.continuous()
         cls.metrics = metrics_config[dynamics]
         cls.train_metrics = ["acc"]

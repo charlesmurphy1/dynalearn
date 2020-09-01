@@ -80,7 +80,7 @@ class ContinuousDatasetConfig(Config):
         return cls
 
     @classmethod
-    def state(cls, use_strength=True, compounded=True, reduce=False):
+    def state(cls, use_strength=True, compounded=False, reduce=False, total=True):
         cls = cls()
         cls.name = "ContinuousStateWeightDataset"
         cls.bias = 0
@@ -88,6 +88,7 @@ class ContinuousDatasetConfig(Config):
         cls.use_groundtruth = False
         cls.use_strength = use_strength
         cls.compounded = compounded
+        cls.total = total
         cls.reduce = reduce
         cls.max_num_points = -1
         return cls

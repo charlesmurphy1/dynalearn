@@ -70,6 +70,9 @@ class EpidemicsGNN(GraphNeuralNetwork):
         x = self.last_layer(x)
         return torch.softmax(x, dim=-1)
 
+    def loss(self, y_true, y_pred, weights):
+        return
+
     def reset_parameters(self, initialize_inplace=None):
         if initialize_inplace is None:
             initialize_inplace = kaiming_normal_

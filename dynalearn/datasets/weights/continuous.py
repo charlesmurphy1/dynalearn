@@ -22,13 +22,20 @@ class ContinuousStateWeight(Weight):
             x = np.array([x.sum()])
         return x
 
+    def _reduce_global_(self, states, network):
+        return
+
     def _get_features_(self, network, states, pb=None):
         for i, s in enumerate(states):
+            y = self._reduce_global_(s, network)
+            if y is not None:
+                self._add_features_("global", y)
             for j, ss in enumerate(s):
                 k = network.degree(j)
-                x = self._reduce_(j, s, network)
                 self._add_features_(("degree", int(k)))
-                self._add_features_(("state", int(k)), x)
+                x = self._reduce_(j, s, network)
+                if x is not None:
+                    self._add_features_(("state", int(k)), x)
             if pb is not None:
                 pb.update()
 
@@ -41,22 +48,57 @@ class ContinuousStateWeight(Weight):
             if k[0] == "degree":
                 z += v
             elif k[0] == "state":
-                kde[k[1]] = KernelDensityEstimator(
-                    v, max_num_samples=self.max_num_samples
+                kde[k] = KernelDensityEstimator(
+                    samples=v, max_num_samples=self.max_num_samples
+                )
+            elif k == "global":
+                kde[k] = KernelDensityEstimator(
+                    samples=v, max_num_samples=self.max_num_samples
                 )
         for i, s in enumerate(states):
+            y = self._reduce_global_(s, network)
+            if y is not None:
+                p_g = kde["global"].pdf(y)
+            else:
+                p_g = 1.0
+            assert p_g > 0, f"Encountered invalid probability with value {y}."
             for j, ss in enumerate(s):
-                x = self._reduce_(j, s, network)
                 k = network.degree(j)
-                p = gmean(kde[k].pdf(x))
-                assert p > 0, "Encountered invalid value."
-                weights[i, j] = self.features[("degree", k)] / z * p
+                x = self._reduce_(j, s, network)
+                if x is not None:
+                    p_s = gmean(kde[("state", k)].pdf(x))
+                else:
+                    p_s = 1.0
+                assert p_s > 0, "Encountered invalid value."
+                weights[i, j] = self.features[("degree", k)] / z * p_s * p_g
             if pb is not None:
                 pb.update()
         return weights
 
 
-class StrengthContinuousStateWeight(Weight):
+class ContinuousGlobalStateWeight(ContinuousStateWeight):
+    def _reduce_global_(self, states, network):
+        return states.sum(0).squeeze()
+
+    def _reduce_(self, index, states, network):
+        return
+
+
+class StrengthContinuousGlobalStateWeight(ContinuousStateWeight):
+    def _reduce_global_(self, states, network):
+        return states.sum(0)
+
+    def _reduce_(self, index, states, network):
+        s = np.array([0.0])
+        for l in network.neighbors(index):
+            if "weight" in network.edges[index, l]:
+                s += network.edges[index, l]["weight"]
+            else:
+                s += np.array([1.0])
+        return s
+
+
+class StrengthContinuousStateWeight(ContinuousStateWeight):
     def _reduce_(self, index, states, network):
         x = states[index].reshape(-1)
         if self.reduce:

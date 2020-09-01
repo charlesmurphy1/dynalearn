@@ -7,7 +7,9 @@ from scipy.stats import gaussian_kde
 from dynalearn.datasets import Dataset, StructureWeightDataset
 from dynalearn.datasets.weights import (
     ContinuousStateWeight,
+    ContinuousGlobalStateWeight,
     ContinuousCompoundStateWeight,
+    StrengthContinuousGlobalStateWeight,
     StrengthContinuousStateWeight,
     StrengthContinuousCompoundStateWeight,
 )
@@ -44,17 +46,26 @@ class ContinuousStateWeightDataset(ContinuousDataset):
             config.__dict__ = kwargs
         ContinuousDataset.__init__(self, config)
         self.max_num_points = config.max_num_points
-        self.compounded = config.compounded
         self.reduce = config.reduce
+        self.compounded = config.compounded
+        self.total = config.total
+        if not self.total and not self.compounded:
+            raise ValueError("[total] and [compounded] are mutually exclusive.")
 
     def _get_weights_(self, data):
-        if self.m_networks.is_weighted and self.compounded:
-            weights = StrengthContinuousCompoundStateWeight(reduce=self.reduce)
-        elif self.m_networks.is_weighted and not self.compounded:
-            weights = StrengthContinuousStateWeight(reduce=self.reduce)
-        elif not self.m_networks.is_weighted and self.compounded:
-            weights = ContinuousCompoundStateWeight(reduce=self.reduce)
+        if self.total:
+            if self.m_networks.is_weighted:
+                weights = StrengthContinuousGlobalStateWeight(reduce=self.reduce)
+            else:
+                weights = ContinuousGlobalStateWeight(reduce=self.reduce)
         else:
-            weights = ContinuousStateWeight()
+            if self.m_networks.is_weighted and self.compounded:
+                weights = StrengthContinuousCompoundStateWeight(reduce=self.reduce)
+            elif self.m_networks.is_weighted and not self.compounded:
+                weights = StrengthContinuousStateWeight(reduce=self.reduce)
+            elif not self.m_networks.is_weighted and self.compounded:
+                weights = ContinuousCompoundStateWeight(reduce=self.reduce)
+            else:
+                weights = ContinuousStateWeight()
         weights.compute(self, verbose=self.verbose)
         return weights

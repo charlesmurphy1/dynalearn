@@ -10,7 +10,6 @@ from abc import abstractmethod
 from dynalearn.config import Config
 from dynalearn.nn.callbacks import CallbackList
 from dynalearn.nn.history import History
-from dynalearn.nn.loss import get as get_loss
 from dynalearn.nn.optimizer import get as get_optimizer
 from dynalearn.utilities import to_edge_index
 
@@ -21,7 +20,6 @@ class GraphNeuralNetwork(torch.nn.Module):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
-        self.loss = get_loss(config.loss)
         self.get_optimizer = get_optimizer(config.optimizer)
         self.history = History()
         if "using_log" in config.__dict__:
@@ -31,6 +29,10 @@ class GraphNeuralNetwork(torch.nn.Module):
 
     @abstractmethod
     def forward(self, x, edge_index):
+        raise NotImplemented()
+
+    @abstractmethod
+    def loss(self, y_true, y_pred, weights):
         raise NotImplemented()
 
     def fit(
@@ -122,8 +124,8 @@ class GraphNeuralNetwork(torch.nn.Module):
         num_samples = 0
         for data in batch:
             (x, edge_index), y_true, w = data
-            y_pred, y_true = self.get_output(data)
-            loss += self.loss(y_pred, y_true, w)
+            y_true, y_pred = self.get_output(data)
+            loss += self.loss(y_true, y_pred, w)
             num_samples += 1
         return loss / num_samples
 
@@ -142,9 +144,9 @@ class GraphNeuralNetwork(torch.nn.Module):
         i = 0
         for data in dataset:
             (x, g), y_true, w = data
-            y_pred, y_true = self.get_output(data)
+            y_true, y_pred = self.get_output(data)
             for m in metrics:
-                val = metrics[m](y_pred, y_true, w).cpu().detach().numpy()
+                val = metrics[m](y_true, y_pred, w).cpu().detach().numpy()
                 logs[prefix + m] += val / len(dataset)
         return logs
 
@@ -153,12 +155,13 @@ class GraphNeuralNetwork(torch.nn.Module):
         x = self.normalize(x, "inputs")
         y_true = self.normalize(y_true, "targets")
         edge_index = to_edge_index(g)
+
         if torch.cuda.is_available():
             x = x.cuda()
             edge_index = edge_index.cuda()
             y_true = y_true.cuda()
             w = w.cuda()
-        return self.forward(x, edge_index), y_true
+        return y_true, self.forward(x, edge_index)
 
     def get_weights(self):
         return self.state_dict()

@@ -67,7 +67,7 @@ class StrengthWeight(Weight):
             if k[0] == "degree":
                 z += v
             elif k[0] == "weight":
-                kde[k[1]] = KernelDensityEstimator(v)
+                kde[k[1]] = KernelDensityEstimator(samples=v)
         for i, k in enumerate(degree):
             ew = []
             for j in network.neighbors(i):
@@ -75,7 +75,10 @@ class StrengthWeight(Weight):
                     ew.append(network.edges[i, j]["weight"])
                 else:
                     ew.append(1)
-            p = gmean(kde[k].pdf(ew))
+            if k > 0:
+                p = gmean(kde[k].pdf(ew))
+            else:
+                p = 1.0
             weights[:, i] = self.features[("degree", k)] / z * p
 
             if pb is not None:

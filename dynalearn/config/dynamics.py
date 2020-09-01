@@ -374,6 +374,7 @@ class DynamicsConfig(Config):
         cls.window_step = 1
 
         cls.loss = "weighted_mse"
+        cls.alpha = np.array([0.5, 0.25, 0.25])
         cls.optimizer = OptimizerConfig.radam_default()
 
         cls.weighted = True
@@ -407,6 +408,7 @@ class DynamicsConfig(Config):
         cls.window_step = 1
 
         cls.loss = "weighted_mse"
+        cls.alpha = np.array([1, 1, 0.0])
         cls.optimizer = OptimizerConfig.radam_default()
 
         cls.weighted = True
