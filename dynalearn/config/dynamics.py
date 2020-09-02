@@ -94,9 +94,9 @@ class DynamicsConfig(Config):
         # cls.infection_prob = 0.04
         # cls.recovery_prob = 0.08
         cls.infection_type = 2
-        cls.diffusion_susceptible = 0.1
-        cls.diffusion_infected = 0.1
-        cls.diffusion_recovered = 0.1
+        cls.diffusion_susceptible = 0.001
+        cls.diffusion_infected = 0.001
+        cls.diffusion_recovered = 0.001
         cls.density = 10000
         epsilon = 5e-5
         cls.state_dist = np.array([1 - epsilon, epsilon, 0])

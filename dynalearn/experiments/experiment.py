@@ -207,6 +207,7 @@ class Experiment:
         cls = cls.from_file(os.path.join(path_to_data, "config.pickle"))
         cls.path_to_data = path_to_data
         cls.load_metrics()
+        cls.load_model()
         shutil.rmtree(path_to_data)
         return cls
 

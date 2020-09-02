@@ -220,7 +220,11 @@ class GraphNeuralNetwork(torch.nn.Module):
         torch.save(state_dict, path)
 
     def load_weights(self, path):
-        state_dict = torch.load(path)
+        if not torch.cuda.is_available():
+            device = torch.device("cpu")
+        else:
+            device = torch.devise("cuda")
+        state_dict = torch.load(path, map_location=device)
         self.load_state_dict(state_dict)
         self._data_mean = {}
         self._data_var = {}
@@ -256,7 +260,11 @@ class GraphNeuralNetwork(torch.nn.Module):
         torch.save(state_dict, path)
 
     def load_optimizer(self, path):
-        state_dict = torch.load(path)
+        if not torch.cuda.is_available():
+            device = torch.device("cpu")
+        else:
+            device = torch.devise("cuda")
+        state_dict = torch.load(path, map_location=device)
         self.optimizer.load_state_dict(state_dict)
 
     def save_history(self, path):
