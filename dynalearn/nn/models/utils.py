@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from torch import Tensor
-from torch.nn import Parameter, Linear, Sequential
+from torch.nn import Parameter, Linear, Sequential, Module
 from torch.nn.init import kaiming_normal_
 from torch_geometric.nn.inits import glorot, zeros
 from dynalearn.nn.activation import get as get_activation
@@ -172,15 +172,8 @@ def build_layers(channel_seq, activation, bias=True):
     return nn.Sequential(*layers)
 
 
-def get_in_layers(config, continuous=False):
-    if continuous:
-        in_layer_channels = [
-            config.window_size * config.num_states,
-            *config.in_channels,
-        ]
-    else:
-        in_layer_channels = [config.window_size, *config.in_channels]
-    return build_layers(in_layer_channels, config.in_activation, bias=config.bias)
+def get_in_layers(config):
+    return build_layers(config.in_channels, config.in_activation, bias=config.bias)
 
 
 def get_out_layers(config):
@@ -191,6 +184,17 @@ def get_out_layers(config):
     return build_layers(out_layer_channels, config.out_activation, bias=config.bias)
 
 
-def get_edge_layers(config):
-    edge_layer_channels = [1, *config.edge_channels]
+def get_edge_layers(edge_size, config):
+    edge_layer_channels = [edge_size, *config.edge_channels]
     return build_layers(edge_layer_channels, config.edge_activation, bias=config.bias)
+
+
+def reset_layer(layer, initialize_inplace=None):
+    if initialize_inplace is None:
+        initialize_inplace = kaiming_normal_
+    assert isinstance(layer, Module)
+    for l in layer:
+        if type(l) == Linear:
+            initialize_inplace(l.weight)
+            if l.bias is not None:
+                l.bias.data.fill_(0)
