@@ -4,7 +4,7 @@ import numpy as np
 
 from abc import abstractmethod
 from .metrics import Metrics
-from dynalearn.dynamics import Epidemics
+from dynalearn.dynamics.stochastic_epidemics import StochasticEpidemics
 from dynalearn.utilities import all_combinations, from_nary
 from itertools import product
 from scipy.special import binom
@@ -72,7 +72,7 @@ class LTPMetrics(Metrics):
 
     def initialize(self, experiment):
         self.model = self.get_model(experiment)
-        if not issubclass(self.model.__class__, Epidemics):
+        if not issubclass(self.model.__class__, StochasticEpidemics):
             raise ValueError(
                 f"{self.model.__class__} is an invalid model for LTPMetrics."
             )
@@ -227,7 +227,8 @@ class LTPMetrics(Metrics):
                 err_op = lambda xx: (np.nanpercentile(xx, 16), np.nanpercentile(xx, 84))
             else:
                 raise ValueError(
-                    f"{err_reduce} is an invalid reduction, valid options are ['std', 'percentile']"
+                    f"{err_reduce} is an invalid reduction, valid options are \
+                    ['std', 'percentile']"
                 )
         elif reduce == "sum":
             op = np.nansum
