@@ -207,39 +207,49 @@ def onehot_numpy(x, num_class=None, dim=-1):
 
 
 def to_edge_index(g):
-    if not nx.is_directed(g):
-        g = g.to_directed()
-
-    if len(list(g.edges())) == 0:
-        edge_index = torch.empty((2, 0), dtype=torch.long)
+    if isinstance(g, dict):
+        edge_index = {}
+        for k, v in g.items():
+            assert issubclass(v.__class__, nx.Graph)
+            if not nx.is_directed(v):
+                v = v.to_directed()
+            if v.number_of_edges() == 0:
+                edge_index[k] = np.zeros((2, 0))
+            else:
+                edge_index[k] = np.array(list(nx.to_edgelist(v)))[:, :2].astype("int").T
     else:
-        edge_index = np.array(list(nx.to_edgelist(g)))[:, :2].astype("int").T
-        edge_index = torch.LongTensor(edge_index)
+        assert issubclass(g.__class__, nx.Graph)
+        if not nx.is_directed(g):
+            g = g.to_directed()
+        if g.number_of_edges() == 0:
+            edge_index = np.zeros((2, 0))
+        else:
+            edge_index = np.array(list(nx.to_edgelist(g)))[:, :2].astype("int").T
 
     return edge_index
 
 
-def collapse_networks(g_dict):
-    if not isinstance(g_dict, dict):
-        return g_dict
-    g = nx.empty_graph()
-    for k, v in g_dict.items():
-        edge_list = to_edge_index(v).numpy().T
+def collapse_networks(g):
+    if not isinstance(g, dict):
+        return g
+    collapsed_g = nx.empty_graph()
+    for k, v in g.items():
+        edge_list = to_edge_index(v).T
         edge_attr = get_edge_attr(v)
-        g.add_edges_from(edge_list)
+        collapsed_g.add_edges_from(edge_list)
         for i, (u, v) in enumerate(edge_list):
-            if "weight" in g.edges[u, v]:
-                g.edges[u, v]["weight"] += edge_attr["weight"][i]
+            if "weight" in collapsed_g.edges[u, v]:
+                collapsed_g.edges[u, v]["weight"] += edge_attr["weight"][i]
             else:
-                g.edges[u, v]["weight"] = edge_attr["weight"][i]
-    return g
+                collapsed_g.edges[u, v]["weight"] = edge_attr["weight"][i]
+    return collapsed_g
 
 
 def get_edge_weights(g):
     if not nx.is_directed(g):
         g = g.to_directed()
 
-    edge_index = to_edge_index(g).numpy().T
+    edge_index = to_edge_index(g).T
     weights = np.zeros((edge_index.shape[0], 1))
 
     for i, (u, v) in enumerate(edge_index):
@@ -255,25 +265,28 @@ def get_edge_attr(g, to_data=False):
     if not nx.is_directed(g):
         g = g.to_directed()
 
-    edge_index = to_edge_index(g).numpy().T
+    edge_index = to_edge_index(g).T
     attributes = {}
-
+    n = edge_index.shape[0]
     for i, (u, v) in enumerate(edge_index):
         attr = g.edges[u, v]
         for k, a in attr.items():
             if k not in attributes:
-                attributes[k] = np.zeros(edge_index.shape[0])
+                attributes[k] = np.zeros(n)
             attributes[k][i] = a
     if to_data:
-        return np.concatenate(
-            [v.reshape(-1, 1) for k, v in attributes.items()], axis=-1,
-        )
+        if len(attributes) > 0:
+            return np.concatenate(
+                [v.reshape(-1, 1) for k, v in attributes.items()], axis=-1,
+            )
+        else:
+            return np.zeros((n, 0))
     return attributes
 
 
 def set_edge_attr(g, edge_attr_dict):
 
-    edge_index = to_edge_index(g).numpy().T
+    edge_index = to_edge_index(g).T
     for k, attr in edge_attr_dict.items():
         for i, (u, v) in enumerate(edge_index):
             g.edges[u, v][k] = attr[i]
@@ -291,6 +304,37 @@ def get_node_strength(g):
             strength[u] += g.edges[u, v]["weight"]
 
     return strength
+
+
+def get_node_attr(g, to_data=False):
+    if not nx.is_directed(g):
+        g = g.to_directed()
+
+    n = g.number_of_nodes()
+    attributes = {}
+
+    for i, u in enumerate(g.nodes()):
+        attr = g.nodes[u]
+        for k, a in attr.items():
+            if k not in attributes:
+                attributes[k] = np.zeros(n)
+            attributes[k][i] = a
+    if to_data:
+        if len(attributes) > 0:
+            return np.concatenate(
+                [v.reshape(-1, 1) for k, v in attributes.items()], axis=-1,
+            )
+        else:
+            return np.zeros((n, 0))
+    return attributes
+
+
+def set_node_attr(g, edge_attr_dict):
+
+    for k, attr in edge_attr_dict.items():
+        for i in g.nodes():
+            g.nodes[i][k] = attr[i]
+    return g
 
 
 def from_weighted_edgelist(edge_list, create_using=None):
