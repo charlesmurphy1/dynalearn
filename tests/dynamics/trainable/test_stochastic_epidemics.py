@@ -2,15 +2,15 @@ import unittest
 import networkx as nx
 import numpy as np
 
-from dynalearn.dynamics import TrainableEpidemics
-from dynalearn.config import DynamicsConfig
+from dynalearn.dynamics import TrainableStochasticEpidemics
+from dynalearn.config import TrainableConfig
 from torch_geometric.nn.inits import ones
 
 
-class TrainableEpidemicsTest(unittest.TestCase):
+class TrainableStochasticEpidemicsTest(unittest.TestCase):
     def setUp(self):
-        self.config = DynamicsConfig.sissis_gnn_default()
-        self.model = TrainableEpidemics(self.config)
+        self.config = TrainableConfig.sis()
+        self.model = TrainableStochasticEpidemics(self.config)
         self.num_nodes = 5
         self.num_states = self.config.num_states
         self.window_size = self.config.window_size
@@ -21,7 +21,7 @@ class TrainableEpidemicsTest(unittest.TestCase):
         return x
 
     def scenario_2(self):
-        self.model.network = nx.barabasi_albert_graph(self.num_nodes, self.window_size)
+        self.model.network = nx.barabasi_albert_graph(self.num_nodes, 2)
         x = np.random.randint(
             self.model.num_states, size=(self.num_nodes, self.window_size)
         )
@@ -36,13 +36,11 @@ class TrainableEpidemicsTest(unittest.TestCase):
         self.assertFalse(np.any(y == np.nan))
         self.model.nn.reset_parameters()
 
-    def test_predict_random(self):
         for i in range(10):
             self.model.nn.reset_parameters()
             x = self.scenario_2()
             y = self.model.predict(x)
-            if np.any(y == np.nan):
-                print(x)
+            self.assertFalse(np.any(y == np.nan))
 
     def test_sample(self):
         x = self.scenario_1()
