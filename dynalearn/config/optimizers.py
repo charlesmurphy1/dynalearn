@@ -3,7 +3,7 @@ from .config import Config
 
 class OptimizerConfig(Config):
     @classmethod
-    def adam_default(cls):
+    def adam(cls):
         cls = cls()
 
         cls.name = "Adam"
@@ -16,7 +16,7 @@ class OptimizerConfig(Config):
         return cls
 
     @classmethod
-    def radam_default(cls):
+    def radam(cls):
         cls = cls()
 
         cls.name = "RAdam"

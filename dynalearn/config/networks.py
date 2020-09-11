@@ -6,18 +6,11 @@ from .config import Config
 
 class NetworkConfig(Config):
     @classmethod
-    def erdosrenyi(cls, num_nodes, p):
+    def erdosrenyi(cls, num_nodes=1000, p=0.004, weights=None, num_layers=None):
         cls = cls()
         cls.name = "ERNetwork"
         cls.num_nodes = num_nodes
         cls.p = p
-        return cls
-
-    @classmethod
-    def er_default(cls, weights=None, num_layers=None):
-        cls = cls()
-        for k, v in NetworkConfig.erdosrenyi(1000, 0.004).__dict__.items():
-            cls.__dict__[k] = v
         if weights is not None:
             cls.weights = weights
 
@@ -27,33 +20,17 @@ class NetworkConfig(Config):
         return cls
 
     @classmethod
-    def barabasialbert(cls, num_nodes, m, p=0):
+    def barabasialbert(cls, num_nodes=1000, m=2, p=0, weights=None, num_layers=None):
         cls = cls()
         cls.name = "BANetwork"
         cls.num_nodes = num_nodes
         cls.m = m
         cls.p = p
-        return cls
-
-    @classmethod
-    def ba_default(cls, weights=None, num_layers=None):
-        cls = cls()
-        for k, v in NetworkConfig.barabasialbert(1000, 2, p=-1).__dict__.items():
-            cls.__dict__[k] = v
         if weights is not None:
             cls.weights = weights
 
         if isinstance(num_layers, int):
             cls.layers = [f"layer{i}" for i in range(num_layers)]
-        return cls
-
-    @classmethod
-    def treeba_default(cls, weights=None):
-        cls = cls()
-        for k, v in NetworkConfig.barabasialbert(1000, 1).__dict__.items():
-            cls.__dict__[k] = v
-        if weights is not None:
-            cls.weights = weights
         return cls
 
     @classmethod

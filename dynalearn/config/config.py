@@ -1,4 +1,7 @@
 class Config:
+    def __init__(self, **kwargs):
+        self.__dict__ = kwargs
+
     def __str__(self):
         return self.to_string()
 

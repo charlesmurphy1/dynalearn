@@ -6,47 +6,51 @@ import os
 from dynalearn.config import *
 
 network_config = {
-    "er": NetworkConfig.er_default(),
-    "uni_er": NetworkConfig.er_default(weights=NetworkWeightConfig.uniform()),
-    "norm_er": NetworkConfig.er_default(weights=NetworkWeightConfig.normal()),
-    "loguni_er": NetworkConfig.er_default(weights=NetworkWeightConfig.loguniform()),
-    "lognorm_er": NetworkConfig.er_default(weights=NetworkWeightConfig.lognormal()),
-    "ba": NetworkConfig.ba_default(),
-    "uni_ba": NetworkConfig.ba_default(weights=NetworkWeightConfig.uniform()),
-    "norm_ba": NetworkConfig.ba_default(weights=NetworkWeightConfig.normal()),
-    "loguni_ba": NetworkConfig.ba_default(weights=NetworkWeightConfig.loguniform()),
-    "lognorm_ba": NetworkConfig.ba_default(weights=NetworkWeightConfig.lognormal()),
-    "uni_multi_ba": NetworkConfig.ba_default(
+    "er": NetworkConfig.erdosrenyi(),
+    "uni_er": NetworkConfig.erdosrenyi(weights=NetworkWeightConfig.uniform()),
+    "norm_er": NetworkConfig.erdosrenyi(weights=NetworkWeightConfig.normal()),
+    "loguni_er": NetworkConfig.erdosrenyi(weights=NetworkWeightConfig.loguniform()),
+    "lognorm_er": NetworkConfig.erdosrenyi(weights=NetworkWeightConfig.lognormal()),
+    "ba": NetworkConfig.barabasialbert(p=-1),
+    "uni_ba": NetworkConfig.barabasialbert(weights=NetworkWeightConfig.uniform()),
+    "norm_ba": NetworkConfig.barabasialbert(weights=NetworkWeightConfig.normal()),
+    "loguni_ba": NetworkConfig.barabasialbert(weights=NetworkWeightConfig.loguniform()),
+    "lognorm_ba": NetworkConfig.barabasialbert(weights=NetworkWeightConfig.lognormal()),
+    "uni_multi_ba": NetworkConfig.barabasialbert(
         weights=NetworkWeightConfig.uniform(), num_layers=2
     ),
-    "norm_multi_ba": NetworkConfig.ba_default(
+    "norm_multi_ba": NetworkConfig.barabasialbert(
         weights=NetworkWeightConfig.normal(), num_layers=2
     ),
-    "loguni_multi_ba": NetworkConfig.ba_default(
+    "loguni_multi_ba": NetworkConfig.barabasialbert(
         weights=NetworkWeightConfig.loguniform(), num_layers=2
     ),
-    "lognorm_multi_ba": NetworkConfig.ba_default(
+    "lognorm_multi_ba": NetworkConfig.barabasialbert(
         weights=NetworkWeightConfig.lognormal(), num_layers=2
     ),
-    "treeba": NetworkConfig.treeba_default(),
+    "treeba": NetworkConfig.barabasialbert(m=1),
 }
 dynamics_config = {
-    "sis": DynamicsConfig.sis_default(),
-    "plancksis": DynamicsConfig.plancksis_default(),
-    "sissis": DynamicsConfig.sissis_default(),
-    "hiddensissis": DynamicsConfig.hidden_sissis_default(),
-    "partiallyhiddensissis": DynamicsConfig.partially_hidden_sissis_default(),
-    "metasis": DynamicsConfig.metasis_default(),
-    "metasir": DynamicsConfig.metasir_default(),
+    "sis": DynamicsConfig.sis(),
+    "plancksis": DynamicsConfig.plancksis(),
+    "sissis": DynamicsConfig.sissis(),
+    "hiddensissis": DynamicsConfig.hidden_sissis(),
+    "partiallyhiddensissis": DynamicsConfig.partially_hidden_sissis(),
+    "rdsis": DynamicsConfig.rdsis(),
+    "rdsir": DynamicsConfig.rdsir(),
+    "dsis": DynamicsConfig.dsis(),
+    "dsir": DynamicsConfig.dsir(),
 }
 model_config = {
-    "sis": DynamicsConfig.sis_gnn_default(),
-    "plancksis": DynamicsConfig.plancksis_gnn_default(),
-    "sissis": DynamicsConfig.sissis_gnn_default(),
-    "hiddensissis": DynamicsConfig.hidden_sissis_gnn_default(),
-    "partiallyhiddensissis": DynamicsConfig.partially_hidden_sissis_gnn_default(),
-    "metasis": DynamicsConfig.metasis_gnn_default(),
-    "metasir": DynamicsConfig.metasir_gnn_default(),
+    "sis": TrainableConfig.sis(),
+    "plancksis": TrainableConfig.plancksis(),
+    "sissis": TrainableConfig.sissis(),
+    "hiddensissis": TrainableConfig.hidden_sissis(),
+    "partiallyhiddensissis": TrainableConfig.partially_hidden_sissis(),
+    "rdsis": TrainableConfig.rdsis(),
+    "rdsir": TrainableConfig.rdsir(),
+    "dsis": TrainableConfig.dsis(),
+    "dsir": TrainableConfig.dsir(),
 }
 metrics_config = {
     "sis": MetricsConfig.sis(),
@@ -54,8 +58,21 @@ metrics_config = {
     "sissis": MetricsConfig.sissis(),
     "hiddensissis": MetricsConfig.hidden_sissis(),
     "partiallyhiddensissis": MetricsConfig.partially_hidden_sissis(),
-    "metasis": MetricsConfig.metasis(),
-    "metasir": MetricsConfig.metasir(),
+    "rdsis": MetricsConfig.rdsis(),
+    "rdsir": MetricsConfig.rdsir(),
+    "dsis": MetricsConfig.dsis(),
+    "dsir": MetricsConfig.dsir(),
+}
+trainingmetrics = {
+    "sis": ["acc", "jensenshannon", "model_entropy"],
+    "plancksis": ["acc", "jensenshannon", "model_entropy"],
+    "sissis": ["acc", "jensenshannon", "model_entropy"],
+    "hiddensissis": ["acc", "jensenshannon", "model_entropy"],
+    "partiallyhiddensissis": ["acc", "jensenshannon", "model_entropy"],
+    "rdsis": ["acc"],
+    "rdsir": ["acc"],
+    "dsis": ["acc", "jensenshannon", "model_entropy"],
+    "dsir": ["acc", "jensenshannon", "model_entropy"],
 }
 
 
@@ -257,7 +274,7 @@ class ExperimentConfig(Config):
         )
         cls.train_details = TrainingConfig.continuous()
         cls.metrics = metrics_config[dynamics]
-        cls.train_metrics = ["acc"]
+        cls.train_metrics = trainingmetrics[dynamics]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
         if seed is None:

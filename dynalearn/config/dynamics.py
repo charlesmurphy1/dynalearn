@@ -1,11 +1,11 @@
-from dynalearn.nn.optimizer import *
+import numpy as np
+
 from .config import Config
-from .optimizers import OptimizerConfig
 
 
 class DynamicsConfig(Config):
     @classmethod
-    def sis_default(cls):
+    def sis(cls):
         cls = cls()
         cls.name = "SIS"
         cls.infection = 0.04
@@ -14,7 +14,16 @@ class DynamicsConfig(Config):
         return cls
 
     @classmethod
-    def plancksis_default(cls):
+    def sir(cls):
+        cls = cls()
+        cls.name = "SIR"
+        cls.infection = 0.04
+        cls.recovery = 0.08
+        cls.initial_infected = -1
+        return cls
+
+    @classmethod
+    def plancksis(cls):
         cls = cls()
         cls.name = "PlanckSIS"
         cls.temperature = 6.0
@@ -23,7 +32,7 @@ class DynamicsConfig(Config):
         return cls
 
     @classmethod
-    def sissis_default(cls):
+    def sissis(cls):
         cls = cls()
         cls.name = "SISSIS"
         cls.infection1 = 0.02
@@ -35,7 +44,7 @@ class DynamicsConfig(Config):
         return cls
 
     @classmethod
-    def asymmetric_sissis_default(cls):
+    def asymmetric_sissis(cls):
         cls = cls()
         cls.name = "SISSIS"
         cls.infection1 = 0.02
@@ -48,7 +57,7 @@ class DynamicsConfig(Config):
         return cls
 
     @classmethod
-    def hidden_sissis_default(cls):
+    def hidden_sissis(cls):
         cls = cls()
         cls.name = "HiddenSISSIS"
         cls.infection1 = 0.02
@@ -60,7 +69,7 @@ class DynamicsConfig(Config):
         return cls
 
     @classmethod
-    def partially_hidden_sissis_default(cls):
+    def partially_hidden_sissis(cls):
         cls = cls()
         cls.name = "PartiallyHiddenSISSIS"
         cls.infection1 = 0.02
@@ -73,26 +82,25 @@ class DynamicsConfig(Config):
         return cls
 
     @classmethod
-    def metasis_default(cls):
+    def rdsis(cls):
         cls = cls()
-        cls.name = "MetaSIS"
+        cls.name = "RDSIS"
         cls.infection_prob = 0.04
         cls.recovery_prob = 0.08
         cls.infection_type = 2
         cls.diffusion_susceptible = 0.1
         cls.diffusion_infected = 0.1
         cls.density = 100
-        cls.state_dist = -1
+        epsilon = 5e-5
+        cls.state_dist = np.array([1 - epsilon, epsilon])
         return cls
 
     @classmethod
-    def metasir_default(cls):
+    def rdsir(cls):
         cls = cls()
-        cls.name = "MetaSIR"
+        cls.name = "RDSIR"
         cls.infection_prob = 2.5 / 2.3
         cls.recovery_prob = 1.0 / 7.5
-        # cls.infection_prob = 0.04
-        # cls.recovery_prob = 0.08
         cls.infection_type = 2
         cls.diffusion_susceptible = 0.001
         cls.diffusion_infected = 0.001
@@ -103,15 +111,38 @@ class DynamicsConfig(Config):
         return cls
 
     @classmethod
-    def metasir_covid(cls):
+    def dsis(cls):
         cls = cls()
-        cls.name = "MetaSIR"
+        cls.name = "DSIS"
+        cls.infection_prob = 0.08
+        cls.recovery_prob = 0.08
+        cls.infection_type = 2
+        cls.density = 100
+        # epsilon = 1e-4
+        # cls.state_dist = np.array([1 - epsilon, epsilon])
+        epsilon = 1e-2
+        cls.state_dist = np.array([1 - epsilon, epsilon])
+        return cls
+
+    @classmethod
+    def dsir(cls):
+        cls = cls()
+        cls.name = "DSIR"
+        cls.infection_prob = 2.5 / 2.3
+        cls.recovery_prob = 1.0 / 7.5
+        cls.infection_type = 2
+        cls.density = 10000
+        epsilon = 1e-5
+        cls.state_dist = np.array([1 - epsilon, epsilon, 0])
+        return cls
+
+    @classmethod
+    def dsir_covid(cls):
+        cls = cls()
+        cls.name = "DSIR"
         cls.infection_prob = 2.5 / 2.3
         cls.recovery_prob = 1.0 / (7.5)
         cls.infection_type = 2
-        cls.diffusion_susceptible = 0.1
-        cls.diffusion_infected = 0.1
-        cls.diffusion_recovered = 0.1
         cls.density = array(
             [
                 331549.0,
@@ -169,266 +200,4 @@ class DynamicsConfig(Config):
             ]
         )
         cls.state_dist = -1
-        return cls
-
-    @classmethod
-    def gnn_test(cls):
-        cls = cls()
-        cls.name = "TrainableEpidemics"
-        cls.num_states = 2
-        cls.window_size = 1
-        cls.window_step = 1
-        cls.with_non_edge = False
-
-        cls.loss = "weighted_cross_entropy"
-        cls.optimizer = OptimizerConfig.radam_default()
-
-        cls.in_activation = "relu"
-        cls.gnn_activation = "relu"
-        cls.out_activation = "relu"
-
-        cls.edge_activation = "relu"
-        cls.edge_gnn_activation = "relu"
-
-        cls.in_channels = [2]
-        cls.gnn_channels = 2
-        cls.out_channels = [2]
-        cls.edge_channels = 1
-        cls.edge_gnn_channels = 1
-        cls.heads = 1
-        cls.concat = False
-        cls.bias = True
-        cls.self_attention = True
-
-        return cls
-
-    @classmethod
-    def sis_gnn_default(cls):
-        cls = cls()
-        cls.name = "TrainableEpidemics"
-        cls.gnn_name = "DynamicsGATConv"
-        cls.num_states = 2
-        cls.window_size = 1
-        cls.window_step = 1
-        cls.with_non_edge = False
-
-        cls.loss = "weighted_cross_entropy"
-        cls.optimizer = OptimizerConfig.radam_default()
-
-        cls.in_activation = "relu"
-        cls.gnn_activation = "relu"
-        cls.out_activation = "relu"
-
-        cls.edge_activation = "relu"
-        cls.edge_gnn_activation = "relu"
-
-        cls.in_channels = [32]
-        cls.gnn_channels = 32
-        cls.out_channels = [32]
-        cls.edge_channels = [4]
-        cls.edge_gnn_channels = 4
-        cls.heads = 1
-        cls.concat = True
-        cls.bias = True
-        cls.self_attention = True
-
-        return cls
-
-    @classmethod
-    def plancksis_gnn_default(cls):
-        cls = cls()
-        cls.name = "TrainableEpidemics"
-        cls.gnn_name = "DynamicsGATConv"
-        cls.num_states = 2
-        cls.window_size = 1
-        cls.window_step = 1
-        cls.with_non_edge = False
-
-        cls.loss = "weighted_cross_entropy"
-        cls.optimizer = OptimizerConfig.radam_default()
-
-        cls.in_activation = "relu"
-        cls.gnn_activation = "relu"
-        cls.out_activation = "relu"
-
-        cls.edge_activation = "relu"
-        cls.edge_gnn_activation = "relu"
-
-        cls.in_channels = [32]
-        cls.gnn_channels = 32
-        cls.out_channels = [32]
-        cls.edge_channels = [4]
-        cls.edge_gnn_channels = 4
-        cls.heads = 1
-        cls.concat = True
-        cls.bias = True
-        cls.self_attention = True
-
-        return cls
-
-    @classmethod
-    def sissis_gnn_default(cls):
-        cls = cls()
-        cls.name = "TrainableEpidemics"
-        cls.gnn_name = "DynamicsGATConv"
-        cls.num_states = 4
-        cls.window_size = 1
-        cls.window_step = 1
-        cls.with_non_edge = False
-
-        cls.loss = "weighted_cross_entropy"
-        cls.optimizer = OptimizerConfig.radam_default()
-
-        cls.in_activation = "relu"
-        cls.gnn_activation = "relu"
-        cls.out_activation = "relu"
-
-        cls.edge_activation = "relu"
-        cls.edge_gnn_activation = "relu"
-
-        cls.in_channels = [32, 32]
-        cls.gnn_channels = 32
-        cls.out_channels = [32, 32]
-        cls.edge_channels = [4]
-        cls.edge_gnn_channels = 4
-        cls.heads = 2
-        cls.concat = True
-        cls.bias = True
-        cls.self_attention = True
-
-        return cls
-
-    @classmethod
-    def hidden_sissis_gnn_default(cls):
-        cls = cls()
-        cls.name = "TrainableEpidemics"
-        cls.gnn_name = "DynamicsGATConv"
-        cls.num_states = 2
-        cls.window_size = 1
-        cls.window_step = 1
-        cls.with_non_edge = True
-
-        cls.loss = "weighted_cross_entropy"
-        cls.optimizer = OptimizerConfig.radam_default()
-
-        cls.in_activation = "relu"
-        cls.gnn_activation = "relu"
-        cls.out_activation = "relu"
-
-        cls.edge_activation = "relu"
-        cls.edge_gnn_activation = "relu"
-
-        cls.in_channels = [32, 32]
-        cls.gnn_channels = 32
-        cls.out_channels = [32, 32]
-        cls.edge_channels = [4]
-        cls.edge_gnn_channels = 4
-        cls.heads = 2
-        cls.concat = True
-        cls.bias = True
-        cls.self_attention = True
-        cls.with_non_edge = False
-
-        return cls
-
-    @classmethod
-    def partially_hidden_sissis_gnn_default(cls):
-        cls = cls()
-        cls.name = "TrainableEpidemics"
-        cls.gnn_name = "DynamicsGATConv"
-        cls.num_states = 4
-        cls.window_size = 1
-        cls.window_step = 1
-        cls.with_non_edge = True
-
-        cls.loss = "weighted_cross_entropy"
-        cls.optimizer = OptimizerConfig.radam_default()
-
-        cls.in_activation = "relu"
-        cls.gnn_activation = "relu"
-        cls.out_activation = "relu"
-
-        cls.edge_activation = "relu"
-        cls.edge_gnn_activation = "relu"
-
-        cls.in_channels = [32, 32]
-        cls.gnn_channels = 32
-        cls.out_channels = [32, 32]
-        cls.edge_channels = [4]
-        cls.edge_gnn_channels = 4
-        cls.heads = 2
-        cls.concat = True
-        cls.bias = True
-        cls.self_attention = True
-        cls.with_non_edge = False
-
-        return cls
-
-    @classmethod
-    def metasis_gnn_default(cls):
-        cls = cls()
-        cls.name = "TrainableMetaPop"
-        cls.gnn_name = "DynamicsGATConv"
-        cls.num_states = 2
-        cls.window_size = 1
-        cls.window_step = 1
-
-        cls.loss = "weighted_mse"
-        cls.alpha = np.array([0.5, 0.25, 0.25])
-        cls.optimizer = OptimizerConfig.radam_default()
-
-        cls.weighted = True
-
-        cls.in_activation = "relu"
-        cls.gnn_activation = "relu"
-        cls.edge_activation = "relu"
-        cls.edge_gnn_activation = "relu"
-        cls.out_activation = "relu"
-
-        cls.in_channels = [64, 64, 64]
-        cls.gnn_channels = 64
-        cls.edge_channels = [32, 32]
-        cls.edge_gnn_channels = 32
-        cls.out_channels = [64, 64, 64]
-        cls.heads = 4
-        cls.concat = True
-        cls.bias = True
-        cls.self_attention = True
-        cls.using_log = False
-
-        return cls
-
-    @classmethod
-    def metasir_gnn_default(cls):
-        cls = cls()
-        cls.name = "TrainableMetaPop"
-        cls.gnn_name = "DynamicsGATConv"
-        cls.num_states = 3
-        cls.window_size = 1
-        cls.window_step = 1
-
-        cls.loss = "weighted_mse"
-        cls.alpha = np.array([1, 1, 0.0])
-        cls.optimizer = OptimizerConfig.radam_default()
-
-        cls.weighted = True
-
-        cls.in_activation = "relu"
-        cls.gnn_activation = "relu"
-        cls.edge_activation = "relu"
-        cls.edge_gnn_activation = "relu"
-        cls.out_activation = "relu"
-
-        cls.in_channels = [32, 32, 32, 32]
-        cls.gnn_channels = 64
-        cls.edge_channels = [64, 64]
-        cls.edge_gnn_channels = 64
-        cls.out_channels = [32, 32, 32, 32]
-        cls.heads = 8
-        cls.concat = True
-        cls.bias = True
-        cls.self_attention = True
-
-        cls.using_log = False
-
         return cls
