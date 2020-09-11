@@ -1,12 +1,13 @@
 import numpy as np
 from scipy.stats import gaussian_kde
+from sklearn.neighbors import KernelDensity
 
 
 class KernelDensityEstimator:
     def __init__(self, samples=None, max_num_samples=-1):
         self.max_num_samples = max_num_samples
 
-        self.shape = None
+        self.dim = None
         self.kde = None
         self._mean = None
         self._std = None
@@ -17,13 +18,15 @@ class KernelDensityEstimator:
 
             self.samples = samples
             if isinstance(samples[0], np.ndarray):
-                self.shape = samples[0].shape
+                self.dim = np.prod(samples[0].shape)
             elif isinstance(samples[0], (int, float)):
-                self.shape = (1,)
+                self.dim = 1
             for s in samples:
                 if isinstance(s, (int, float)):
                     s = np.array([s])
-                assert s.shape == self.shape
+                s = s.reshape(-1)
+                assert s.shape[0] == self.dim
+
             self.get_kde()
 
     def pdf(self, x):
@@ -31,16 +34,18 @@ class KernelDensityEstimator:
             if len(x) == 0:
                 return np.array([1.0])
             x = np.array(x)
-            x = x.reshape(x.shape[0], -1).T
-        if x.shape == self.shape:
-            x = np.expand_dims(x, -1)
-        assert x.shape[:-1] == self.shape or self.shape is None
+            x = x.reshape(x.shape[0], self.dim).T
+
+        x = x.reshape(self.dim, -1)
+
+        assert x.shape[0] == self.dim or self.dim is None
 
         if self.kde is None:
             return np.ones(x.shape[-1]) / self._norm
         else:
             y = (x[self._index] - self._mean[self._index]) / self._std[self._index]
-            p = self.kde.pdf(y) / self._norm
+            # p = self.kde.pdf(y) / self._norm
+            p = np.exp(self.kde.score_samples(y.T)) / self._norm
             return p
 
     def get_kde(self):
@@ -48,7 +53,7 @@ class KernelDensityEstimator:
             self._norm = 1
             return
         x = np.array(self.samples)
-        x = x.reshape(x.shape[0], -1).T
+        x = x.reshape(x.shape[0], self.dim).T
         mean = np.expand_dims(x.mean(axis=-1), -1)
         std = np.expand_dims(x.std(axis=-1), -1)
         if np.all(std < 1e-8):
@@ -56,21 +61,12 @@ class KernelDensityEstimator:
             return
         self._index = np.where(std > 1e-8)[0]
         y = (x[self._index] - mean[self._index]) / std[self._index]
-        self.kde = gaussian_kde(y)
+        # self.kde = gaussian_kde(y, bw_method="silverman")
+        self.kde = KernelDensity(kernel="gaussian").fit(y.T)
         self._mean = mean
         self._std = std
-
-        # thresholding covariance matrix for nearly-zero values.
-        self.kde.covariance[self.kde.covariance < 1e-10] = 1e-10
-        self.kde.inv_cov = np.linalg.inv(self.kde.covariance)
-
-        if self.max_num_samples < y.shape[-1] and self.max_num_samples != -1:
-            ind = np.random.choice(range(y.shape[-1]), size=self.max_num_samples)
-            p = self.kde.pdf(y[:, ind])
-            self._norm = y.shape[-1] * p.mean()
-        else:
-            p = self.kde.pdf(y)
-            self._norm = p.sum()
-        assert np.all(p > 0), f"Encountered an invalid value {y} in p = {p}"
-
+        # p = self.kde.pdf(y)
+        p = np.exp(self.kde.score_samples(y.T))
+        self._norm = p.sum()
+        assert np.all(p > 0), f"Encountered an invalid value"
         self.samples = []

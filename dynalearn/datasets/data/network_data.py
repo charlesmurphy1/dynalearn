@@ -1,10 +1,18 @@
 import h5py
+import networkx as nx
 import numpy as np
 import torch
 
 from abc import ABC, abstractmethod
 from dynalearn.datasets.data.data import Data
-from dynalearn.utilities import to_edge_index, get_edge_attr, set_edge_attr, onehot
+from dynalearn.utilities import (
+    to_edge_index,
+    get_edge_attr,
+    set_edge_attr,
+    get_node_attr,
+    set_node_attr,
+    onehot,
+)
 
 
 class NetworkData(Data):
@@ -60,9 +68,10 @@ class NetworkData(Data):
             self._save_graph_(self.data, group)
 
     def load(self, h5file):
-        if self.name not in h5file:
-            return
-        group = h5file[self.name]
+        if self.name in h5file:
+            group = h5file[self.name]
+        else:
+            group = h5file
         if "edge_list" in group:
             self.data = self._load_graph_(group)
         else:
@@ -74,21 +83,34 @@ class NetworkData(Data):
 
     def _save_graph_(self, g, h5file):
         if len(g.edges()) > 0:
-            edge_list = to_edge_index(g).numpy().T
+            edge_list = to_edge_index(g).T
             edge_attr = get_edge_attr(g)
+            node_attr = get_node_attr(g)
         else:
             edge_list = np.zeros((0, 2)).astype("int")
             edge_attr = {}
+            node_attr = {}
         h5file.create_dataset("edge_list", data=edge_list)
+        edge_group = h5file.create_group("edge_attr")
         for k, v in edge_attr.items():
-            h5file.create_dataset(k, data=v)
+            edge_group.create_dataset(k, data=v)
+
+        node_group = h5file.create_group("node_attr")
+        for k, v in node_attr.items():
+            node_group.create_dataset(k, data=v)
 
     def _load_graph_(self, h5file):
         edge_list = h5file["edge_list"][...]
         g = nx.from_edgelist(edge_list)
         edge_attr = {}
-        for k, v in h5file.items():
-            if k != "edge_list":
+        if "edge_attr" in h5file:
+            for k, v in h5file["edge_attr"].items():
                 edge_attr[k] = v
-        g = set_edge_attr(g, edge_attr)
+            g = set_edge_attr(g, edge_attr)
+
+        node_attr = {}
+        if "node_attr" in h5file:
+            for k, v in h5file["node_attr"].items():
+                node_attr[k] = v
+            g = set_node_attr(g, node_attr)
         return g

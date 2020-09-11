@@ -27,9 +27,7 @@ class DiscreteDataset(Dataset):
 
 class DiscreteStructureWeightDataset(DiscreteDataset, StructureWeightDataset):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         DiscreteDataset.__init__(self, config)
         StructureWeightDataset.__init__(self, config)
 

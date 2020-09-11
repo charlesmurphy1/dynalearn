@@ -61,7 +61,7 @@ class ContinuousStateWeight(Weight):
                 p_g = kde["global"].pdf(y)
             else:
                 p_g = 1.0
-            assert p_g > 0, f"Encountered invalid probability with value {y}."
+            assert p_g > 0, f"Encountered invalid value."
             for j, ss in enumerate(s):
                 k = network.degree(j)
                 x = self._reduce_(j, s, network)
@@ -78,7 +78,7 @@ class ContinuousStateWeight(Weight):
 
 class ContinuousGlobalStateWeight(ContinuousStateWeight):
     def _reduce_global_(self, states, network):
-        return states.sum(0).squeeze()
+        return states.sum(0).reshape(-1)
 
     def _reduce_(self, index, states, network):
         return
@@ -95,7 +95,7 @@ class StrengthContinuousGlobalStateWeight(ContinuousStateWeight):
                 s += network.edges[index, l]["weight"]
             else:
                 s += np.array([1.0])
-        return s
+        return s.reshape(-1)
 
 
 class StrengthContinuousStateWeight(ContinuousStateWeight):

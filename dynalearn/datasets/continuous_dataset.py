@@ -32,18 +32,14 @@ class ContinuousDataset(Dataset):
 
 class ContinuousStructureWeightDataset(ContinuousDataset, StructureWeightDataset):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         ContinuousDataset.__init__(self, config)
         StructureWeightDataset.__init__(self, config)
 
 
 class ContinuousStateWeightDataset(ContinuousDataset):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         ContinuousDataset.__init__(self, config)
         self.max_num_points = config.max_num_points
         self.reduce = config.reduce

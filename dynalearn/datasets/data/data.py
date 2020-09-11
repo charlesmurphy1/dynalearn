@@ -32,8 +32,15 @@ class Data(ABC):
         h5file.create_dataset(self.name, data=self.data)
 
     def load(self, h5file):
-        if self.name in h5file:
-            self.data = h5file[self.name]
+        if isinstance(h5file, h5py.Dataset):
+            self.data = h5file[...]
+        elif isinstance(h5file, h5py.Group):
+            if self.name in h5file:
+                self.data = h5file[self.name][...]
+            else:
+                print(
+                    f"{self.name} not in h5file with name {h5file}. Available keys are {h5file.keys()}"
+                )
 
     @property
     def data(self):

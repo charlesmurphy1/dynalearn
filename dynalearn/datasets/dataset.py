@@ -26,9 +26,7 @@ from dynalearn.datasets.transforms.getter import get as get_transforms
 
 class Dataset(object):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         self.config = config
         self.bias = config.bias
         self.use_groundtruth = config.use_groundtruth
@@ -78,6 +76,20 @@ class Dataset(object):
             pb = None
 
         self.data = self._generate_data_(details, pb=pb)
+
+        import matplotlib.pyplot as plt
+
+        fig, ax = plt.subplots(1, 2, figsize=(14, 6))
+        xx = np.zeros((0, *self.inputs[0].data.sum((1, -1)).shape[1:]))
+        ww = np.zeros((0, *self._state_weights[0].data.shape[1:]))
+        for i in range(self.networks.size):
+            xx = np.append(xx, self.inputs[i].data.sum((1, -1)), axis=0)
+            ww = np.append(ww, self._state_weights[i].data, axis=0)
+        ax[0].plot(xx)
+        ax[1].plot(ww)
+        plt.show()
+        # exit()
+
         if self.use_groundtruth:
             self._data["ground_truth"] = self._generate_groundtruth_(self._data)
         if experiment.verbose == 1:
@@ -260,6 +272,7 @@ class Dataset(object):
                             y = self.m_dynamics.sample(x)
                             x = 1 * y
                         targets_data[j] = 1 * y
+
                         k = 0
                         j += 1
                         if pb is not None:
@@ -272,9 +285,6 @@ class Dataset(object):
                     x = self.m_dynamics.sample(x)
                 if details.resample_when_dead and self.m_dynamics.is_dead(x):
                     x = self.m_dynamics.initial_state()
-                    # if self.verbose != 0:
-                    #     print("Resampling because x is dead.")
-
                 t += 1
             inputs.add(StateData(data=inputs_data))
             targets.add(StateData(data=targets_data))
@@ -341,9 +351,9 @@ class Dataset(object):
                 group = h5file[d_type]
                 for k, v in group.items():
                     if d_type == "networks":
-                        d = NetworkData()
+                        d = NetworkData(name=d_type)
                     else:
-                        d = StateData()
+                        d = StateData(name=d_type)
                     d.load(v)
                     data[d_type].add(d)
         return data
