@@ -10,9 +10,7 @@ from dynalearn.utilities import set_edge_attr
 
 class RealNetwork(Network):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         Network.__init__(self, config)
         path, ext = config.edgelist.split(".")
         if ext == "txt":
@@ -55,9 +53,7 @@ class RealNetwork(Network):
 
 class RealTemporalNetwork(Network):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         Network.__init__(self, config)
         self.edges = config.edges
         self.window = config.window

@@ -7,9 +7,7 @@ from dynalearn.config import Config
 
 class WeightGenerator(ABC):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
 
     @abstractmethod
     def weight_gen(self, u, v):
@@ -28,9 +26,7 @@ class WeightGenerator(ABC):
 
 class UniformWeightGenerator(WeightGenerator):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        WeightGenerator.__init__(self, config=config, **kwargs)
         if "low" in config.__dict__:
             self.low = config.low
         else:
@@ -54,9 +50,8 @@ class LogUniformWeightGenerator(UniformWeightGenerator):
 
 class NormalWeightGenerator(WeightGenerator):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        WeightGenerator.__init__(self, config=config, **kwargs)
+
         if "mean" in config.__dict__:
             self.mean = config.mean
         else:
@@ -80,9 +75,7 @@ class LogNormalWeightGenerator(NormalWeightGenerator):
 
 class DegreeWeightGenerator(WeightGenerator):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        WeightGenerator.__init__(self, config=config, **kwargs)
 
         if "normalized" in config.__dict__:
             self.normalized = config.normalized
@@ -115,9 +108,7 @@ class DegreeWeightGenerator(WeightGenerator):
 
 class BetweennessWeightGenerator(WeightGenerator):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        WeightGenerator.__init__(self, config=config, **kwargs)
 
         if "normalized" in config.__dict__:
             self.normalized = config.normalized

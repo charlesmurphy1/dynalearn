@@ -9,9 +9,7 @@ from dynalearn.networks.network import Network
 
 class GenerativeNetwork(Network):
     def __init__(self, config=None, weight_gen=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         self.weight_gen = weight_gen
         Network.__init__(self, config)
         if self.weight_gen is not None:
@@ -59,9 +57,7 @@ class BANetwork(GenerativeNetwork):
 
 class ConfigurationNetwork(GenerativeNetwork):
     def __init__(self, config=None, weight_gen=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         GenerativeNetwork.__init__(self, config, weight_gen=weight_gen)
         self.p_k = config.p_k
         if "maxiter" in config.__dict__:
