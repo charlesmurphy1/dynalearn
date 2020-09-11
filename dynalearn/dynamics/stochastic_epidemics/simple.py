@@ -1,14 +1,13 @@
 import numpy as np
-from dynalearn.dynamics.epidemics import SingleEpidemics
+
+from .base import SingleStochasticEpidemics
 from dynalearn.dynamics.activation import independent
 from dynalearn.config import Config
 
 
-class SIS(SingleEpidemics):
+class SIS(SingleStochasticEpidemics):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         super(SIS, self).__init__(config, 2)
         self.infection = config.infection
         self.recovery = config.recovery
@@ -26,11 +25,9 @@ class SIS(SingleEpidemics):
         return ltp
 
 
-class SIR(SingleEpidemics):
+class SIR(SingleStochasticEpidemics):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         super(SIR, self).__init__(config, 3)
         self.infection = config.infection
         self.recovery = config.recovery

@@ -1,11 +1,12 @@
-from dynalearn.config import Config
-from dynalearn.dynamics.epidemics import SingleEpidemics
-from dynalearn.dynamics.activation import constant, threshold, nonlinear, sine, planck
 import networkx as nx
 import numpy as np
 
+from .base import SingleStochasticEpidemics
+from dynalearn.config import Config
+from dynalearn.dynamics.activation import constant, threshold, nonlinear, sine, planck
 
-class ComplexSIS(SingleEpidemics):
+
+class ComplexSIS(SingleStochasticEpidemics):
     def __init__(self, config, activation, deactivation):
         super(ComplexSIS, self).__init__(config, 2)
         self.activation = activation
@@ -25,7 +26,7 @@ class ComplexSIS(SingleEpidemics):
         return ltp
 
 
-class ComplexSIR(SingleEpidemics):
+class ComplexSIR(SingleStochasticEpidemics):
     def __init__(self, config, activation, deactivation):
         super(ComplexSIR, self).__init__(config, 2)
         self.activation = activation
@@ -52,9 +53,7 @@ class ComplexSIR(SingleEpidemics):
 
 class ThresholdSIS(ComplexSIS):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
 
         activation = lambda l: threshold(l[1], l.sum(0), config.threshold, config.slope)
         deactivation = lambda l: constant(l[0], config.recovery)
@@ -64,9 +63,7 @@ class ThresholdSIS(ComplexSIS):
 
 class ThresholdSIR(ComplexSIR):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
 
         activation = lambda l: threshold(l[1], l.sum(0), config.threshold, config.slope)
         deactivation = lambda l: constant(l[0], config.recovery)
@@ -76,9 +73,7 @@ class ThresholdSIR(ComplexSIR):
 
 class NonLinearSIS(ComplexSIS):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
 
         activation = lambda l: nonlinear(l[1], config.infection, config.exponent)
         deactivation = lambda l: constant(l[0], config.recovery)
@@ -88,9 +83,7 @@ class NonLinearSIS(ComplexSIS):
 
 class NonLinearSIR(ComplexSIR):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
 
         activation = lambda l: nonlinear(l[1], config.infection, config.exponent)
         deactivation = lambda l: constant(l[0], config.recovery)
@@ -100,9 +93,7 @@ class NonLinearSIR(ComplexSIR):
 
 class SineSIS(ComplexSIS):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
 
         activation = lambda l: sine(
             l[1], config.infection, config.amplitude, config.period
@@ -114,9 +105,7 @@ class SineSIS(ComplexSIS):
 
 class SineSIR(ComplexSIR):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
 
         activation = lambda l: sine(
             l[1], config.infection, config.amplitude, config.period
@@ -128,9 +117,7 @@ class SineSIR(ComplexSIR):
 
 class PlanckSIS(ComplexSIS):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
 
         activation = lambda l: planck(l[1], config.temperature)
         deactivation = lambda l: constant(l[0], config.recovery)
@@ -140,9 +127,7 @@ class PlanckSIS(ComplexSIS):
 
 class PlanckSIR(ComplexSIR):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
 
         activation = lambda l: planck(l[1], config.temperature)
         deactivation = lambda l: constant(l[0], config.recovery)

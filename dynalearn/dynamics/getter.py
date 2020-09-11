@@ -1,4 +1,4 @@
-from .epidemics import (
+from .stochastic_epidemics import (
     SIS,
     SIR,
     ThresholdSIS,
@@ -12,16 +12,22 @@ from .epidemics import (
     SISSIS,
     HiddenSISSIS,
     PartiallyHiddenSISSIS,
-    TrainableEpidemics,
 )
-from .metapopulation import MetaSIS, MetaSIR, TrainableMetaPop
-
+from .deterministic_epidemics import DSIS, DSIR
+from .reaction_diffusion import RDSIS, RDSIR
+from .trainable import (
+    TrainableStochasticEpidemics,
+    TrainableDeterministicEpidemics,
+    TrainableReactionDiffusion,
+)
 
 __dynamics__ = {
     "SIS": SIS,
     "SIR": SIR,
-    "ThresholdSIS": ThresholdSIS,
+    "DSIS": DSIS,
+    "DSIR": DSIR,
     "ThresholdSIR": ThresholdSIR,
+    "ThresholdSIS": ThresholdSIS,
     "NonLinearSIS": NonLinearSIS,
     "NonLinearSIR": NonLinearSIR,
     "SineSIS": SineSIS,
@@ -31,10 +37,11 @@ __dynamics__ = {
     "SISSIS": SISSIS,
     "HiddenSISSIS": HiddenSISSIS,
     "PartiallyHiddenSISSIS": PartiallyHiddenSISSIS,
-    "TrainableEpidemics": TrainableEpidemics,
-    "MetaSIS": MetaSIS,
-    "MetaSIR": MetaSIR,
-    "TrainableMetaPop": TrainableMetaPop,
+    "RDSIS": RDSIS,
+    "RDSIR": RDSIR,
+    "TrainableStochasticEpidemics": TrainableStochasticEpidemics,
+    "TrainableDeterministicEpidemics": TrainableDeterministicEpidemics,
+    "TrainableReactionDiffusion": TrainableReactionDiffusion,
 }
 
 

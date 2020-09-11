@@ -10,11 +10,8 @@ from abc import abstractmethod
 from itertools import product
 
 
-class MetaPop(Dynamics):
+class ReactionDiffusion(Dynamics):
     def __init__(self, config, num_states):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
         if "state_dist" in config.__dict__:
             self.state_dist = config.state_dist
         else:
@@ -118,15 +115,15 @@ class MetaPop(Dynamics):
             return False
 
 
-class WeightedMetaPop(MetaPop, WeightedDynamics):
+class WeightedReactionDiffusion(ReactionDiffusion, WeightedDynamics):
     def __init__(self, config, num_states):
-        MetaPop.__init__(self, config, num_states)
+        ReactionDiffusion.__init__(self, config, num_states)
         WeightedDynamics.__init__(self, config, num_states)
 
 
-class MultiplexMetaPop(MetaPop, MultiplexDynamics):
+class MultiplexReactionDiffusion(ReactionDiffusion, MultiplexDynamics):
     def __init__(self, config, num_states):
-        MetaPop.__init__(self, config, num_states)
+        ReactionDiffusion.__init__(self, config, num_states)
         MultiplexDynamics.__init__(self, config, num_states)
 
     def predict(self, x):
@@ -168,9 +165,9 @@ class MultiplexMetaPop(MetaPop, MultiplexDynamics):
         return y.astype("int")
 
 
-class WeightedMultiplexMetaPop(MetaPop, WeightedMultiplexDynamics):
+class WeightedMultiplexReactionDiffusion(ReactionDiffusion, WeightedMultiplexDynamics):
     def __init__(self, config, num_states):
-        MetaPop.__init__(self, config, num_states)
+        ReactionDiffusion.__init__(self, config, num_states)
         WeightedMultiplexDynamics.__init__(self, config, num_states)
 
     def predict(self, x):

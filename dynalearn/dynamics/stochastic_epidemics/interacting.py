@@ -1,18 +1,16 @@
 import numpy as np
 import torch
 
+from .base import MultiStochasticEpidemics
 from dynalearn.datasets.transforms import RemapStateTransform
-from dynalearn.dynamics.epidemics import MultiEpidemics
 from dynalearn.dynamics.activation import independent
 from dynalearn.config import Config
 from dynalearn.utilities import onehot
 
 
-class SISSIS(MultiEpidemics):
+class SISSIS(MultiStochasticEpidemics):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         num_diseases = 2
         num_states = 4
 
@@ -95,9 +93,7 @@ class SISSIS(MultiEpidemics):
 
 class AsymmetricSISSIS(SISSIS):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         SISSIS.__init__(self, config, **kwargs)
         boost = config.boost
         if boost == "source":
@@ -162,9 +158,7 @@ class AsymmetricSISSIS(SISSIS):
 
 class HiddenSISSIS(SISSIS):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         SISSIS.__init__(self, config, **kwargs)
         self.state_map = {0: 0, 1: 1, 2: 0, 3: 1}
         self.hide = True
@@ -191,9 +185,7 @@ class HiddenSISSIS(SISSIS):
 
 class PartiallyHiddenSISSIS(SISSIS):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         SISSIS.__init__(self, config, **kwargs)
         self.state_map = {0: 0, 1: 1, 2: 0, 3: 1}
         self.hide_prob = config.hide_prob
@@ -260,11 +252,9 @@ class PartiallyHiddenSISSIS(SISSIS):
         return loglikelihood
 
 
-class SISnoise(MultiEpidemics):
+class SISnoise(MultiStochasticEpidemics):
     def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
+        config = config or Config(**kwargs)
         num_diseases = 2
         num_states = 4
         self.infection1 = config.infection1
@@ -273,7 +263,7 @@ class SISnoise(MultiEpidemics):
         self.transform = RemapStateTransform()
         self.transform.state_map = {0: 0, 1: 1, 2: 0, 3: 1}
 
-        MultiEpidemics.__init__(self, config, num_diseases, num_states)
+        MultiStochasticEpidemics.__init__(self, config, num_diseases, num_states)
 
     def predict(self, x):
         if len(x.shape) > 1:

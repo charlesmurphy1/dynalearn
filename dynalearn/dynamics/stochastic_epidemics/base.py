@@ -7,7 +7,7 @@ from dynalearn.nn.models import Propagator
 from dynalearn.utilities import from_binary, onehot
 
 
-class Epidemics(Dynamics):
+class StochasticEpidemics(Dynamics):
     def __init__(self, config, num_states):
         Dynamics.__init__(self, config, num_states)
         if "initial_infected" in config.__dict__:
@@ -57,14 +57,14 @@ class Epidemics(Dynamics):
         return l
 
 
-class MultiEpidemics(Epidemics):
+class MultiStochasticEpidemics(StochasticEpidemics):
     def __init__(self, params, num_diseases, num_states):
         self.num_diseases = num_diseases
         if num_states < 2:
             raise ValueError(
                 f"num_states must be greater than or equal to {2**num_diseases}"
             )
-        Epidemics.__init__(self, params, num_states)
+        StochasticEpidemics.__init__(self, params, num_states)
 
     def initial_state(self, initial_infected=None):
         if initial_infected is None:
@@ -100,6 +100,6 @@ class MultiEpidemics(Epidemics):
             return False
 
 
-class SingleEpidemics(MultiEpidemics):
+class SingleStochasticEpidemics(MultiStochasticEpidemics):
     def __init__(self, config, num_states):
-        MultiEpidemics.__init__(self, config, 1, num_states)
+        MultiStochasticEpidemics.__init__(self, config, 1, num_states)

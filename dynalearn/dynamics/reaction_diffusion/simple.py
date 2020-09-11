@@ -1,22 +1,22 @@
 import numpy as np
 
-from dynalearn.dynamics.metapopulation import (
-    MetaPop,
-    WeightedMetaPop,
-    MultiplexMetaPop,
-    WeightedMultiplexMetaPop,
+from .base import (
+    ReactionDiffusion,
+    WeightedReactionDiffusion,
+    MultiplexReactionDiffusion,
+    WeightedMultiplexReactionDiffusion,
 )
 from dynalearn.config import Config
 
 EPSILON = 0.0
 
 
-class SimpleMetaSIS(MetaPop):
+class SimpleRDSIS(ReactionDiffusion):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
-        MetaPop.__init__(self, config, 2)
+        ReactionDiffusion.__init__(self, config, 2)
         self.infection_prob = config.infection_prob
         self.infection_type = config.infection_type
         self.recovery_prob = config.recovery_prob
@@ -45,13 +45,13 @@ class SimpleMetaSIS(MetaPop):
         return p
 
 
-class WeightedMetaSIS(SimpleMetaSIS, WeightedMetaPop):
+class WeightedRDSIS(SimpleRDSIS, WeightedReactionDiffusion):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
-        WeightedMetaPop.__init__(self, config, 2)
-        SimpleMetaSIS.__init__(self, config=config, **kwargs)
+        WeightedReactionDiffusion.__init__(self, config, 2)
+        SimpleRDSIS.__init__(self, config=config, **kwargs)
 
     def diffusion(self, x):
         p = {}
@@ -68,13 +68,13 @@ class WeightedMetaSIS(SimpleMetaSIS, WeightedMetaPop):
         return p
 
 
-class MultiplexMetaSIS(SimpleMetaSIS, MultiplexMetaPop):
+class MultiplexRDSIS(SimpleRDSIS, MultiplexReactionDiffusion):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
-        MultiplexMetaPop.__init__(self, config, 2)
-        SimpleMetaSIS.__init__(self, config=config, **kwargs)
+        MultiplexReactionDiffusion.__init__(self, config, 2)
+        SimpleRDSIS.__init__(self, config=config, **kwargs)
 
     def diffusion(self, x):
         p = {}
@@ -84,13 +84,13 @@ class MultiplexMetaSIS(SimpleMetaSIS, MultiplexMetaPop):
         return p
 
 
-class WeightedMultiplexMetaSIS(SimpleMetaSIS, WeightedMultiplexMetaPop):
+class WeightedMultiplexRDSIS(SimpleRDSIS, WeightedMultiplexReactionDiffusion):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
-        WeightedMultiplexMetaPop.__init__(self, config, 2)
-        SimpleMetaSIS.__init__(self, config=config, **kwargs)
+        WeightedMultiplexReactionDiffusion.__init__(self, config, 2)
+        SimpleRDSIS.__init__(self, config=config, **kwargs)
 
     def diffusion(self, x):
         p = {}
@@ -98,7 +98,6 @@ class WeightedMultiplexMetaSIS(SimpleMetaSIS, WeightedMultiplexMetaPop):
             s = self.node_strength["all"][int(v)]
             w = self.edge_weight["all"][i]
             diff_prob = w / x[int(v)]
-            # p[int(u), int(v)] = diff_prob * w / s
             if np.all(s > 0):
                 p[int(u), int(v)] = self.diffusion_prob * w / s
             else:
@@ -106,12 +105,12 @@ class WeightedMultiplexMetaSIS(SimpleMetaSIS, WeightedMultiplexMetaPop):
         return p
 
 
-class SimpleMetaSIR(MetaPop):
+class SimpleRDSIR(ReactionDiffusion):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
-        MetaPop.__init__(self, config, 3)
+        ReactionDiffusion.__init__(self, config, 3)
         self.infection_prob = config.infection_prob
         self.infection_type = config.infection_type
         self.recovery_prob = config.recovery_prob
@@ -159,13 +158,13 @@ class SimpleMetaSIR(MetaPop):
             return False
 
 
-class WeightedMetaSIR(SimpleMetaSIR, WeightedMetaPop):
+class WeightedRDSIR(SimpleRDSIR, WeightedReactionDiffusion):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
-        WeightedMetaPop.__init__(self, config, 3)
-        SimpleMetaSIR.__init__(self, config=config, **kwargs)
+        WeightedReactionDiffusion.__init__(self, config, 3)
+        SimpleRDSIR.__init__(self, config=config, **kwargs)
 
     def diffusion(self, x):
         p = {}
@@ -179,13 +178,13 @@ class WeightedMetaSIR(SimpleMetaSIR, WeightedMetaPop):
         return p
 
 
-class MultiplexMetaSIR(SimpleMetaSIR, MultiplexMetaPop):
+class MultiplexRDSIR(SimpleRDSIR, MultiplexReactionDiffusion):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
-        MultiplexMetaPop.__init__(self, config, 3)
-        SimpleMetaSIR.__init__(self, config=config, **kwargs)
+        MultiplexReactionDiffusion.__init__(self, config, 3)
+        SimpleRDSIR.__init__(self, config=config, **kwargs)
 
     def diffusion(self, x):
         p = {}
@@ -195,13 +194,13 @@ class MultiplexMetaSIR(SimpleMetaSIR, MultiplexMetaPop):
         return p
 
 
-class WeightedMultiplexMetaSIR(SimpleMetaSIR, WeightedMultiplexMetaPop):
+class WeightedMultiplexRDSIR(SimpleRDSIR, WeightedMultiplexReactionDiffusion):
     def __init__(self, config=None, **kwargs):
         if config is None:
             config = Config()
             config.__dict__ = kwargs
-        WeightedMultiplexMetaPop.__init__(self, config, 3)
-        SimpleMetaSIR.__init__(self, config=config, **kwargs)
+        WeightedMultiplexReactionDiffusion.__init__(self, config, 3)
+        SimpleRDSIR.__init__(self, config=config, **kwargs)
 
     def diffusion(self, x):
         p = {}
@@ -215,10 +214,8 @@ class WeightedMultiplexMetaSIR(SimpleMetaSIR, WeightedMultiplexMetaPop):
         return p
 
 
-def MetaSIS(config=None, **kwargs):
-    if config is None:
-        config = Config()
-        config.__dict__ = kwagrs
+def RDSIS(config=None, **kwargs):
+    config = config or Config(**kwargs)
     if "is_weighted" in config.__dict__:
         is_weighted = config.is_weighted
     else:
@@ -229,19 +226,17 @@ def MetaSIS(config=None, **kwargs):
     else:
         is_multiplex = False
     if is_weighted and is_multiplex:
-        return WeightedMultiplexMetaSIS(config=config, **kwargs)
+        return WeightedMultiplexRDSIS(config=config, **kwargs)
     elif is_weighted and not is_multiplex:
-        return WeightedMetaSIS(config=config, **kwargs)
+        return WeightedRDSIS(config=config, **kwargs)
     elif not is_weighted and is_multiplex:
-        return MultiplexMetaSIS(config=config, **kwargs)
+        return MultiplexRDSIS(config=config, **kwargs)
     else:
-        return SimpleMetaSIS(config=config, **kwargs)
+        return SimpleRDSIS(config=config, **kwargs)
 
 
-def MetaSIR(config=None, **kwargs):
-    if config is None:
-        config = Config()
-        config.__dict__ = kwagrs
+def RDSIR(config=None, **kwargs):
+    config = config or Config(**kwargs)
     if "is_weighted" in config.__dict__:
         is_weighted = config.is_weighted
     else:
@@ -253,10 +248,10 @@ def MetaSIR(config=None, **kwargs):
         is_multiplex = False
 
     if is_weighted and is_multiplex:
-        return WeightedMultiplexMetaSIR(config=config, **kwargs)
+        return WeightedMultiplexRDSIR(config=config, **kwargs)
     elif is_weighted and not is_multiplex:
-        return WeightedMetaSIR(config=config, **kwargs)
+        return WeightedRDSIR(config=config, **kwargs)
     elif not is_weighted and is_multiplex:
-        return MultiplexMetaSIR(config=config, **kwargs)
+        return MultiplexRDSIR(config=config, **kwargs)
     else:
-        return SimpleMetaSIR(config=config, **kwargs)
+        return SimpleRDSIR(config=config, **kwargs)
