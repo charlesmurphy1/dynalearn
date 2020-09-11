@@ -1,6 +1,6 @@
 import numpy as np
 from .meanfield import GenericMeanfield
-from dynalearn.dynamics.epidemics.complex import *
+from dynalearn.dynamics.stochastic_epidemics.complex import *
 
 
 class ThresholdSISMeanfield(GenericMeanfield):

@@ -1,5 +1,5 @@
 from .meanfield import Meanfield
-from dynalearn.dynamics.epidemics import SIS, SIR
+from dynalearn.dynamics.stochastic_epidemics import SIS, SIR
 import numpy as np
 
 
