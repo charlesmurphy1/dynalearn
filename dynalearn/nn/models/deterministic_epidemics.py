@@ -40,8 +40,8 @@ class DeterministicEpidemicsWGNN(DeterministicEpidemicsGNN, WeightedGraphNeuralN
             self.config.num_states,
             self.config.num_states,
             window_size=self.config.window_size,
-            nodeatttr_size=1,
-            edgeatttr_size=1,
+            nodeattr_size=1,
+            edgeattr_size=1,
             out_act="softmax",
             config=config,
             **kwargs
@@ -58,7 +58,7 @@ class DeterministicEpidemicsMGNN(
             self.config.num_states,
             self.config.num_states,
             window_size=self.config.window_size,
-            nodeatttr_size=1,
+            nodeattr_size=1,
             out_act="softmax",
             config=config,
             **kwargs
@@ -75,7 +75,7 @@ class DeterministicEpidemicsWMGNN(
             self.config.num_states,
             self.config.num_states,
             window_size=self.config.window_size,
-            nodeatttr_size=1,
+            nodeattr_size=1,
             edgeattr_size=1,
             out_act="softmax",
             config=config,

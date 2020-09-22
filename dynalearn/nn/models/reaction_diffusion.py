@@ -44,7 +44,7 @@ class ReactionDiffusionWGNN(ReactionDiffusionGNN, WeightedGraphNeuralNetwork):
             self.config.num_states,
             self.config.num_states,
             window_size=self.config.window_size,
-            edgeatttr_size=1,
+            edgeattr_size=1,
             normalize=True,
             config=config,
             **kwargs

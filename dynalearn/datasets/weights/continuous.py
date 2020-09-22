@@ -16,26 +16,42 @@ class ContinuousStateWeight(Weight):
             [dataset.inputs[i].data.shape[0] for i in range(dataset.networks.size)]
         )
 
-    def _reduce_(self, index, states, network):
+    def _reduce_node_state_(self, index, states, network):
         x = states[index].reshape(-1)
         if self.reduce:
             x = np.array([x.sum()])
         return x
 
-    def _reduce_global_(self, states, network):
+    def _reduce_total_state_(self, states, network):
+        return
+
+    def _reduce_node_(self, index, network):
+        return
+
+    def _reduce_network_(self, network):
         return
 
     def _get_features_(self, network, states, pb=None):
+        x = self._reduce_network_(network)
+        if x is not None:
+            self._add_features_("network", x)
+
+        for i in network.nodes:
+            k = network.degree(i)
+            self._add_features_(("degree", int(k)))
+            x = self._reduce_node_(i, network)
+            if x is not None:
+                self._add_features_(("node", int(k)), x)
+
         for i, s in enumerate(states):
-            y = self._reduce_global_(s, network)
+            y = self._reduce_total_state_(s, network)
             if y is not None:
-                self._add_features_("global", y)
+                self._add_features_("total_state", y)
             for j, ss in enumerate(s):
                 k = network.degree(j)
-                self._add_features_(("degree", int(k)))
-                x = self._reduce_(j, s, network)
+                x = self._reduce_node_state_(j, s, network)
                 if x is not None:
-                    self._add_features_(("state", int(k)), x)
+                    self._add_features_(("node_state", int(k)), x)
             if pb is not None:
                 pb.update()
 
@@ -47,48 +63,60 @@ class ContinuousStateWeight(Weight):
         for k, v in self.features.items():
             if k[0] == "degree":
                 z += v
-            elif k[0] == "state":
-                kde[k] = KernelDensityEstimator(
-                    samples=v, max_num_samples=self.max_num_samples
-                )
-            elif k == "global":
-                kde[k] = KernelDensityEstimator(
-                    samples=v, max_num_samples=self.max_num_samples
-                )
-        for i, s in enumerate(states):
-            y = self._reduce_global_(s, network)
-            if y is not None:
-                p_g = kde["global"].pdf(y)
             else:
-                p_g = 1.0
-            assert p_g > 0, f"Encountered invalid value."
+                kde[k] = KernelDensityEstimator(
+                    samples=v, max_num_samples=self.max_num_samples
+                )
+        g_feats = self._reduce_network_(network)
+        if g_feats is not None:
+            p_g = kde["network"].pdf(g_feats)
+        else:
+            p_g = 1.0
+        for i, s in enumerate(states):
+            s_feats = self._reduce_total_state_(s, network)
+            s_feats = self._reduce_total_state_(s, network)
+            if s_feats is not None:
+                p_s = kde["total_state"].pdf(s_feats)
+            else:
+                p_s = 1.0
             for j, ss in enumerate(s):
                 k = network.degree(j)
-                x = self._reduce_(j, s, network)
-                if x is not None:
-                    p_s = gmean(kde[("state", k)].pdf(x))
+                p_k = self.features[("degree", k)] / z
+
+                ss_feats = self._reduce_node_state_(j, s, network)
+                if ss_feats is not None:
+                    p_ss = gmean(kde[("node_state", k)].pdf(ss_feats))
                 else:
-                    p_s = 1.0
-                assert p_s > 0, "Encountered invalid value."
-                weights[i, j] = self.features[("degree", k)] / z * p_s * p_g
+                    p_ss = 1.0
+
+                n_feats = self._reduce_node_(j, network)
+                if n_feats is not None:
+                    p_n = kde[("node", k)].pdf(n_feats)
+                else:
+                    p_n = 1.0
+
+                weights[i, j] = p_k * p_s * p_ss * p_n * p_g
             if pb is not None:
                 pb.update()
         return weights
 
 
 class ContinuousGlobalStateWeight(ContinuousStateWeight):
-    def _reduce_global_(self, states, network):
-        return states.sum(0).reshape(-1)
-
-    def _reduce_(self, index, states, network):
+    def _reduce_node_state_(self, index, states, network):
         return
+
+    def _reduce_total_state_(self, states, network):
+        return states.sum(0).reshape(-1)
 
 
 class StrengthContinuousGlobalStateWeight(ContinuousStateWeight):
-    def _reduce_global_(self, states, network):
-        return states.sum(0)
+    def _reduce_node_state_(self, index, states, network):
+        return
 
-    def _reduce_(self, index, states, network):
+    def _reduce_total_state_(self, states, network):
+        return states.sum(0).reshape(-1)
+
+    def _reduce_node_(self, index, network):
         s = np.array([0.0])
         for l in network.neighbors(index):
             if "weight" in network.edges[index, l]:
@@ -99,7 +127,7 @@ class StrengthContinuousGlobalStateWeight(ContinuousStateWeight):
 
 
 class StrengthContinuousStateWeight(ContinuousStateWeight):
-    def _reduce_(self, index, states, network):
+    def _reduce_node_state_(self, index, states, network):
         x = states[index].reshape(-1)
         if self.reduce:
             x = np.array([x.sum()])
@@ -113,7 +141,7 @@ class StrengthContinuousStateWeight(ContinuousStateWeight):
 
 
 class ContinuousCompoundStateWeight(ContinuousStateWeight):
-    def _reduce_(self, index, states, network):
+    def _reduce_node_state_(self, index, states, network):
         x = []
         _x = states[index].reshape(-1)
         if self.reduce:
@@ -127,7 +155,7 @@ class ContinuousCompoundStateWeight(ContinuousStateWeight):
 
 
 class StrengthContinuousCompoundStateWeight(ContinuousStateWeight):
-    def _reduce_(self, index, states, network):
+    def _reduce_node_state_(self, index, states, network):
         x = []
         s = states[index]
         for l in network.neighbors(index):

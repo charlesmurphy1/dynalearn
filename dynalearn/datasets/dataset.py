@@ -191,6 +191,7 @@ class Dataset(object):
     @data.setter
     def data(self, data):
         self._data = data
+
         if self.use_transformed:
             self._transformed_data = self._transform_data_(data)
         self.weights = self._get_weights_(data)

@@ -20,7 +20,7 @@ class NetworkConfig(Config):
         return cls
 
     @classmethod
-    def barabasialbert(cls, num_nodes=1000, m=2, p=0, weights=None, num_layers=None):
+    def barabasialbert(cls, num_nodes=1000, m=2, p=-1, weights=None, num_layers=None):
         cls = cls()
         cls.name = "BANetwork"
         cls.num_nodes = num_nodes

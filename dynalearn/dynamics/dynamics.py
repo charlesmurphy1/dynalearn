@@ -118,7 +118,7 @@ class WeightedDynamics(Dynamics):
         self._edge_index = to_edge_index(network)
         self._edge_weight = get_edge_attr(network)["weight"].reshape(-1, 1)
         self._node_degree = np.array(list(dict(self.network.degree()).values()))
-        self._node_strength = get_node_strength(network)["weight"].reshape(-1, 1)
+        self._node_strength = get_node_strength(network).reshape(-1, 1)
         self._num_nodes = self._network.number_of_nodes()
 
     @property
@@ -200,14 +200,14 @@ class WeightedMultiplexDynamics(Dynamics):
             )
             self._edge_index[k] = to_edge_index(net)
             self._edge_weight[k] = get_edge_attr(net)["weight"]
-            self._node_strength[k] = get_node_strength(net)["weight"]
+            self._node_strength[k] = get_node_strength(net)
         self._network["all"] = collapse_networks(network)
         self._edge_index["all"] = to_edge_index(self._network["all"])
         self._node_degree["all"] = np.array(
             list(dict(self._network["all"].degree()).values())
         )
         self._edge_weight["all"] = get_edge_attr(self._network["all"])["weight"]
-        self._node_strength["all"] = get_node_strength(self._network["all"])["weight"]
+        self._node_strength["all"] = get_node_strength(self._network["all"])
 
     @property
     def edge_weight(self):

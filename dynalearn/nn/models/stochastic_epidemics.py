@@ -37,7 +37,7 @@ class StochasticEpidemicsWGNN(StochasticEpidemicsGNN, WeightedGraphNeuralNetwork
             1,
             self.config.num_states,
             window_size=self.config.window_size,
-            edgeatttr_size=1,
+            edgeattr_size=1,
             out_act="softmax",
             config=config,
             **kwargs
