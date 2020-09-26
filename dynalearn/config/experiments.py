@@ -17,16 +17,16 @@ network_config = {
     "loguni_ba": NetworkConfig.barabasialbert(weights=NetworkWeightConfig.loguniform()),
     "lognorm_ba": NetworkConfig.barabasialbert(weights=NetworkWeightConfig.lognormal()),
     "uni_multi_ba": NetworkConfig.barabasialbert(
-        weights=NetworkWeightConfig.uniform(), num_layers=2
+        weights=NetworkWeightConfig.uniform(), num_layers=5
     ),
     "norm_multi_ba": NetworkConfig.barabasialbert(
-        weights=NetworkWeightConfig.normal(), num_layers=2
+        weights=NetworkWeightConfig.normal(), num_layers=5
     ),
     "loguni_multi_ba": NetworkConfig.barabasialbert(
-        weights=NetworkWeightConfig.loguniform(), num_layers=2
+        weights=NetworkWeightConfig.loguniform(), num_layers=5
     ),
     "lognorm_multi_ba": NetworkConfig.barabasialbert(
-        weights=NetworkWeightConfig.lognormal(), num_layers=2
+        weights=NetworkWeightConfig.lognormal(), num_layers=5
     ),
     "treeba": NetworkConfig.barabasialbert(m=1),
 }
