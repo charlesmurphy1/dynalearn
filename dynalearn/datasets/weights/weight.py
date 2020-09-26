@@ -7,8 +7,8 @@ from dynalearn.utilities import collapse_networks
 
 
 class Weight(DataCollection):
-    def __init__(self, name="weight_collection", max_num_samples=-1):
-        DataCollection.__init__(self, name=name)
+    def __init__(self, name="weights", max_num_samples=-1):
+        DataCollection.__init__(self, name=name, template=StateData)
         self.max_num_samples = max_num_samples
         self.features = {}
 
@@ -41,7 +41,6 @@ class Weight(DataCollection):
         self.num_updates = 2 * dataset.networks.size
 
     def compute_features(self, dataset, pb=None):
-
         for i in range(dataset.networks.size):
             g = dataset.networks[i].data
             if isinstance(g, dict):

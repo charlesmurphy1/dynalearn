@@ -52,9 +52,13 @@ class Data(ABC):
 
 
 class DataCollection:
-    def __init__(self, name="data_collection", data_list=[]):
+    def __init__(self, name="data_collection", data_list=[], template=None):
         self.name = name
         self.data_list = []
+        if template is None:
+            self.template = lambda d: Data(data=d, shape=d.shape[1:])
+        else:
+            self.template = lambda d: template(data=d)
         for data in data_list:
             self.add(data)
 
@@ -95,7 +99,7 @@ class DataCollection:
         if self.name in h5file:
             group = h5file[self.name]
             for k, v in group.items():
-                d = Data(data=v, shape=v.shape[1:])
+                d = self.template(v)
                 self.add(d)
 
     def transform(self, transformation):

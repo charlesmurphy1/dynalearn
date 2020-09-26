@@ -159,6 +159,8 @@ class Dataset(object):
         group = h5file.create_group(name)
         self._save_data_(self._data, group)
 
+        self.weights.save(group)
+
         if len(self._transformed_data) > 0:
             name = f"transformed_{name}"
             if name in h5file:
@@ -173,7 +175,15 @@ class Dataset(object):
         self._transformed_data = {}
 
         if "data" in h5file:
-            self._data = self._load_data_(h5file["data"])
+            group = h5file["data"]
+        else:
+            group = h5file
+        if "data" in h5file:
+            self._data = self._load_data_(group)
+
+        w = DataCollection(name="weights")
+        w.load(group)
+        self.weights = w
 
         if self.use_transformed:
             if "transformed_data" in h5file:
@@ -348,15 +358,7 @@ class Dataset(object):
         }
 
         for d_type in ["networks", "inputs", "targets", "ground_truth"]:
-            if d_type in h5file:
-                group = h5file[d_type]
-                for k, v in group.items():
-                    if d_type == "networks":
-                        d = NetworkData(name=d_type)
-                    else:
-                        d = StateData(name=d_type)
-                    d.load(v)
-                    data[d_type].add(d)
+            data[d_type].load(group)
         return data
 
 
