@@ -56,7 +56,7 @@ class PredictionMetrics(Metrics):
             val_nodes = self._get_nodes_(experiment.val_dataset)
             self.get_data["val_pred"] = lambda pb: self._get_pred_(val_nodes, pb=pb)
             self.get_data["val_degree"] = lambda pb: self._get_degree_(val_nodes)
-            self.names.append(["val_pred", "val_degree"])
+            self.names.extend(["val_pred", "val_degree"])
             update_factor += 1
 
         if experiment.test_dataset is not None:

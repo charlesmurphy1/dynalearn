@@ -6,7 +6,7 @@ from dynalearn.utilities import from_nary
 
 
 class DiscreteStateWeight(Weight):
-    def __init__(self, name="weight_collection", max_window_size=3):
+    def __init__(self, name="weights", max_window_size=3):
         self.max_window_size = max_window_size
         Weight.__init__(self, name=name, max_num_samples=-1)
 

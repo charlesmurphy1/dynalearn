@@ -7,7 +7,7 @@ from .kde import KernelDensityEstimator
 
 
 class ContinuousStateWeight(Weight):
-    def __init__(self, name="weight_collection", reduce=True):
+    def __init__(self, name="weights", reduce=True):
         self.reduce = reduce
         Weight.__init__(self, name=name, max_num_samples=10000)
 
