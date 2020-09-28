@@ -6,9 +6,8 @@ from dynalearn.utilities import to_edge_index, get_edge_attr, get_node_attr
 
 
 class Normalizer(Transformer):
-    def __init__(self, name, getter, shape=(), axis=0, auto_cuda=True):
+    def __init__(self, name, shape=(), axis=0, auto_cuda=True):
         Transformer.__init__(self, name)
-        self.getter = getter
         self.axis = axis
         if isinstance(shape, int):
             if shape > 0:
@@ -35,6 +34,9 @@ class Normalizer(Transformer):
             self.cuda_transformer = CUDATransformer()
         else:
             self.cuda_transformer = IdentityTransformer()
+
+    def getter(self, index, dataset):
+        raise NotImplemented()
 
     def forward(self, x):
         if isinstance(x, np.ndarray):
@@ -70,7 +72,8 @@ class Normalizer(Transformer):
             return y
         for i in range(dataset.networks.size):
             x = self.getter(i, dataset)
-            if x.size == 0:
+            assert isinstance(x, torch.Tensor)
+            if x.numel() == 0:
                 self.is_empty = True
                 return y
             if y is None:
@@ -84,29 +87,31 @@ class Normalizer(Transformer):
 class InputNormalizer(Normalizer):
     def __init__(self, size, auto_cuda=True):
         self.size = size
-        getter = lambda index, dataset: torch.Tensor(dataset.inputs[index].data)
         if size > 0:
             shape = (1, size, 1)
         else:
             shape = ()
         axis = (0, 1, 2)
-        Normalizer.__init__(
-            self, "inputs", getter, shape=shape, axis=axis, auto_cuda=auto_cuda
-        )
+        Normalizer.__init__(self, "inputs", shape=shape, axis=axis, auto_cuda=auto_cuda)
+
+    def getter(self, index, dataset):
+        return torch.Tensor(dataset.inputs[index].data)
 
 
 class TargetNormalizer(Normalizer):
     def __init__(self, size, auto_cuda=True):
         self.size = size
-        getter = lambda index, dataset: torch.Tensor(dataset.targets[index].data)
         if size > 0:
             shape = (1, size)
         else:
             shape = ()
         axis = (0, 1)
         Normalizer.__init__(
-            self, "targets", getter, shape=shape, axis=axis, auto_cuda=auto_cuda
+            self, "targets", shape=shape, axis=axis, auto_cuda=auto_cuda
         )
+
+    def getter(self, index, dataset):
+        return torch.Tensor(dataset.targets[index].data)
 
 
 class NodeNormalizer(Normalizer):
@@ -114,22 +119,24 @@ class NodeNormalizer(Normalizer):
         self.size = size
         self.layer = layer
         if self.layer is None:
-            getter = lambda index, dataset: torch.Tensor(
-                get_node_attr(dataset.networks[index].data, to_data=True)
-            )
             label = ""
         else:
-            getter = lambda index, dataset: torch.Tensor(
-                get_node_attr(dataset.networks[index].data[self.layer], to_data=True)
-            )
             label = f"_{self.layer}"
         if size > 0:
             shape = (1, size)
         else:
             shape = ()
         Normalizer.__init__(
-            self, f"nodeattr{label}", getter, shape=shape, axis=0, auto_cuda=auto_cuda,
+            self, f"nodeattr{label}", shape=shape, axis=0, auto_cuda=auto_cuda,
         )
+
+    def getter(self, index, dataset):
+        if self.layer is None:
+            x = get_node_attr(dataset.networks[index].data, to_data=True)
+        else:
+            x = get_node_attr(dataset.networks[index].data[self.layer], to_data=True)
+
+        return torch.Tensor(x)
 
 
 class EdgeNormalizer(Normalizer):
@@ -137,22 +144,24 @@ class EdgeNormalizer(Normalizer):
         self.size = size
         self.layer = layer
         if self.layer is None:
-            getter = lambda index, dataset: torch.Tensor(
-                get_edge_attr(dataset.networks[index].data, to_data=True)
-            )
             label = ""
         else:
-            getter = lambda index, dataset: torch.Tensor(
-                get_edge_attr(dataset.networks[index].data[self.layer], to_data=True)
-            )
             label = f"_{self.layer}"
         if size > 0:
             shape = (1, size)
         else:
             shape = ()
         Normalizer.__init__(
-            self, f"edgeattr{label}", getter, shape=shape, axis=0, auto_cuda=auto_cuda,
+            self, f"edgeattr{label}", shape=shape, axis=0, auto_cuda=auto_cuda,
         )
+
+    def getter(self, index, dataset):
+        if self.layer is None:
+            x = get_edge_attr(dataset.networks[index].data, to_data=True)
+        else:
+            x = get_edge_attr(dataset.networks[index].data[self.layer], to_data=True)
+
+        return torch.Tensor(x)
 
 
 class NetworkNormalizer(Transformer):
@@ -164,17 +173,22 @@ class NetworkNormalizer(Transformer):
         self.t_cuda = CUDATransformer()
         if layers is not None:
             for l in layers:
-                setattr(self, "t_nodeattr_{l}", NodeNormalizer(layer=l, size=node_size))
-                setattr(self, "t_edgeattr_{l}", EdgeNormalizer(layer=l, size=edge_size))
+                setattr(
+                    self, f"t_nodeattr_{l}", NodeNormalizer(layer=l, size=node_size)
+                )
+                setattr(
+                    self, f"t_edgeattr_{l}", EdgeNormalizer(layer=l, size=edge_size)
+                )
         else:
             setattr(self, "t_nodeattr", NodeNormalizer(size=node_size))
             setattr(self, "t_edgeattr", EdgeNormalizer(size=edge_size))
 
     def setUp(self, dataset):
+
         if self.layers is not None:
             for l in self.layers:
-                getattr(self, "t_nodeattr_{l}").setUp(dataset)
-                getattr(self, "t_edgeattr_{l}").setUp(dataset)
+                getattr(self, f"t_nodeattr_{l}").setUp(dataset)
+                getattr(self, f"t_edgeattr_{l}").setUp(dataset)
         else:
             getattr(self, "t_nodeattr").setUp(dataset)
             getattr(self, "t_edgeattr").setUp(dataset)
@@ -182,9 +196,10 @@ class NetworkNormalizer(Transformer):
     def forward(self, g):
         if isinstance(g, dict):
             edge_index, edge_attr, node_attr = {}, {}, {}
-            for k, v in g.items():
+            for k in self.layers:
+                assert k in g.keys(), f"{k} is not a layer of the graph"
                 edge_index[k], edge_attr[k], node_attr[k] = self._normalize_network_(
-                    v, layer=k
+                    g[k], layer=k
                 )
         else:
             edge_index, edge_attr, node_attr = self._normalize_network_(g)
@@ -204,6 +219,7 @@ class NetworkNormalizer(Transformer):
         node_attr = getattr(self, n_key).forward(
             torch.Tensor(get_node_attr(g, to_data=True))
         )
+
         edge_attr = getattr(self, e_key).forward(
             torch.Tensor(get_edge_attr(g, to_data=True))
         )

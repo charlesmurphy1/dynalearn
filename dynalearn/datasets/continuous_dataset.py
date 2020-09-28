@@ -15,13 +15,13 @@ from dynalearn.datasets.weights import (
 )
 from dynalearn.config import Config
 from dynalearn.utilities import from_nary
-from dynalearn.utilities import to_edge_index, onehot
+from dynalearn.utilities import to_edge_index, onehot, get_node_attr
 
 
 class ContinuousDataset(Dataset):
     def __getitem__(self, index):
         i, j = self.indices[index]
-        g = self.networks[i].get()
+        g = self.networks[i].data
         x = torch.FloatTensor(self.inputs[i].get(j))
         y = torch.FloatTensor(self.targets[i].get(j))
         w = torch.FloatTensor(self.weights[i].get(j))

@@ -41,6 +41,7 @@ class Model(torch.nn.Module):
         callbacks=[],
         verbose=0,
     ):
+
         if type(callbacks) == list:
             callbacks = CallbackList(callbacks)
             for c in callbacks:

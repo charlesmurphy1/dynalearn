@@ -162,7 +162,10 @@ class MultiplexDynamics(Dynamics):
                 list(dict(self._network[k].degree()).values())
             )
             self._edge_index[k] = to_edge_index(net)
-        self._network["all"] = collapse_networks(network)
+        if "all" not in network:
+            self._network["all"] = collapse_networks(network)
+        else:
+            self._network["all"] = network["all"]
         self._edge_index["all"] = to_edge_index(self._network["all"])
 
 
@@ -201,7 +204,10 @@ class WeightedMultiplexDynamics(Dynamics):
             self._edge_index[k] = to_edge_index(net)
             self._edge_weight[k] = get_edge_attr(net)["weight"]
             self._node_strength[k] = get_node_strength(net)
-        self._network["all"] = collapse_networks(network)
+        if "all" not in network:
+            self._network["all"] = collapse_networks(network)
+        else:
+            self._network["all"] = network["all"]
         self._edge_index["all"] = to_edge_index(self._network["all"])
         self._node_degree["all"] = np.array(
             list(dict(self._network["all"].degree()).values())

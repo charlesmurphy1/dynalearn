@@ -28,6 +28,7 @@ class GraphNeuralNetwork(Model):
         window_size=1,
         nodeattr_size=0,
         edgeattr_size=0,
+        layers=None,
         out_act="identity",
         normalize=False,
         config=None,
@@ -72,6 +73,7 @@ class GraphNeuralNetwork(Model):
             target_size=target_size,
             edge_size=edgeattr_size,
             node_size=nodeattr_size,
+            layers=layers,
         )
 
         self.reset_parameters()
@@ -177,6 +179,7 @@ class MultiplexGraphNeuralNetwork(GraphNeuralNetwork):
             nodeattr_size=nodeattr_size,
             out_act=out_act,
             normalize=normalize,
+            layers=config.network_layers,
             config=config,
             **kwargs
         )
@@ -189,19 +192,20 @@ class MultiplexGraphNeuralNetwork(GraphNeuralNetwork):
             self_attention=self.config.self_attention,
         )
         self.gnn_layer = MultiplexLayer(
-            template, network_layers=self.config.network_layers, merge="mean"
+            template, self.config.network_layers, merge="mean"
         )
 
         # Finishing initialization
-        GenericMGNN.reset_parameters(self)
+        self.reset_parameters()
         self.optimizer = self.get_optimizer(self.parameters())
         if torch.cuda.is_available():
             self = self.cuda()
 
     def merge_nodeattr(self, x, node_attr):
-        if self.num_node_attr > 0:
+        if self.nodeattr_size > 0:
             for k, v in node_attr.items():
-                x = torch.cat([x, v.view(-1, self.num_nodeattr)], dim=-1)
+                if v is not None:
+                    x = torch.cat([x, v.view(-1, self.nodeattr_size)], dim=-1)
         return x
 
 
@@ -237,13 +241,12 @@ class WeightedMultiplexGraphNeuralNetwork(MultiplexGraphNeuralNetwork):
             bias=self.config.bias,
             self_attention=self.config.self_attention,
         )
-
         self.gnn_layer = MultiplexLayer(
-            template, network_layers=self.config.network_layers, merge="mean"
+            template, self.config.network_layers, merge="mean"
         )
         self.edge_layers = ParallelLayer(
             lambda: get_edge_layers(edgeattr_size, self.config),
-            keys=self.network_layers,
+            keys=self.config.network_layers,
         )
 
         # Finishing initialization

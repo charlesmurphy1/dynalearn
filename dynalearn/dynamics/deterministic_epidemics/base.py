@@ -8,7 +8,7 @@ from dynalearn.dynamics.dynamics import (
     MultiplexDynamics,
     WeightedMultiplexDynamics,
 )
-from dynalearn.utilities import set_node_attr
+from dynalearn.utilities import set_node_attr, get_node_attr
 
 
 class DeterministicEpidemics(Dynamics):
@@ -46,15 +46,24 @@ class DeterministicEpidemics(Dynamics):
             self.density = self.num_nodes
 
         x = np.zeros([self.num_nodes, self.num_states])
-
-        if "population" not in self.network.nodes[0]:
+        if isinstance(self.network, dict):
+            g = self.network["all"]
+        else:
+            g = self.network
+        if "population" not in g.nodes[0]:
             if self.population is None:
                 if isinstance(density, (float, int)):
                     self.population = np.random.poisson(density, size=self.num_nodes)
                 elif isinstance(density, (list, np.ndarray)):
                     assert len(density) == self.num_nodes
                     self.population = np.array(density)
-            self.network = set_node_attr(self.network, {"population": self.population})
+            g = set_node_attr(g, {"population": self.population})
+
+        if isinstance(self.network, dict):
+            self.network["all"] = g
+        else:
+            self.network = g
+
         for i, n in enumerate(self.population):
             x[i] = np.random.multinomial(n, p) / n
 

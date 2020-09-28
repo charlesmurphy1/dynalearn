@@ -2,6 +2,7 @@ import torch
 
 from .transformer import TransformerDict, CUDATransformer
 from .normalizer import InputNormalizer, TargetNormalizer, NetworkNormalizer
+from dynalearn.utilities import get_node_attr
 
 
 class BatchNormalizer(TransformerDict):
@@ -28,7 +29,7 @@ class BatchNormalizer(TransformerDict):
             transformer_dict["t_targets"] = CUDATransformer()
 
         transformer_dict["t_networks"] = NetworkNormalizer(
-            node_size, edge_size, layers=None, auto_cuda=auto_cuda
+            node_size, edge_size, layers=layers, auto_cuda=auto_cuda
         )
 
         TransformerDict.__init__(self, transformer_dict)

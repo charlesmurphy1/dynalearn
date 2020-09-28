@@ -74,8 +74,8 @@ class ParallelLayer(nn.Module):
             )
             return (torch.mean(yy, axis=-1) for yy in out)
         else:
-            out = torch.cat([y[k].view(*yy[k].shape, 1) for k in self.keys], axis=-1,)
-            return torch.mean(y, axis, -1)
+            out = torch.cat([y[k].view(*y[k].shape, 1) for k in self.keys], axis=-1,)
+            return torch.mean(out, axis=-1)
 
     def _merge_sum_(self, y):
         if isinstance(y, list):
@@ -85,8 +85,8 @@ class ParallelLayer(nn.Module):
             )
             return (torch.mean(yy, axis=-1) for yy in out)
         else:
-            out = torch.cat([y[k].view(*yy[k].shape, 1) for k in self.keys], axis=-1,)
-            return torch.mean(y, axis, -1)
+            out = torch.cat([y[k].view(*y[k].shape, 1) for k in self.keys], axis=-1,)
+            return torch.mean(out, axis=-1)
 
     def _merge_concat_(self, y):
         if isinstance(y, list):
@@ -95,7 +95,7 @@ class ParallelLayer(nn.Module):
                 for yy in y
             )
         else:
-            return torch.cat([y[k].view(*yy[k].shape) for k in self.keys], axis=-1,)
+            return torch.cat([y[k].view(*y[k].shape) for k in self.keys], axis=-1,)
 
 
 class MultiplexLayer(ParallelLayer):
@@ -193,8 +193,12 @@ def reset_layer(layer, initialize_inplace=None):
     if initialize_inplace is None:
         initialize_inplace = kaiming_normal_
     assert isinstance(layer, Module)
-    for l in layer:
-        if type(l) == Linear:
-            initialize_inplace(l.weight)
-            if l.bias is not None:
-                l.bias.data.fill_(0)
+
+    if isinstance(layer, Sequential):
+        for l in layer:
+            if type(l) == Linear:
+                initialize_inplace(l.weight)
+                if l.bias is not None:
+                    l.bias.data.fill_(0)
+    else:
+        layer.reset_parameters()

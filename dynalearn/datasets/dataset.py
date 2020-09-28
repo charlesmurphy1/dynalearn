@@ -22,6 +22,7 @@ from dynalearn.datasets.weights import (
     StrengthWeight,
 )
 from dynalearn.datasets.transforms.getter import get as get_transforms
+from dynalearn.utilities import get_node_attr
 
 
 class Dataset(object):
@@ -76,20 +77,18 @@ class Dataset(object):
             pb = None
 
         self.data = self._generate_data_(details, pb=pb)
-
-        import matplotlib.pyplot as plt
-
-        fig, ax = plt.subplots(1, 2, figsize=(14, 6))
-        xx = np.zeros((0, *self.inputs[0].data.sum((1, -1)).shape[1:]))
-        ww = np.zeros((0, *self._state_weights[0].data.shape[1:]))
-        for i in range(self.networks.size):
-            xx = np.append(xx, self.inputs[i].data.sum((1, -1)), axis=0)
-            ww = np.append(ww, self._state_weights[i].data, axis=0)
-        ax[0].plot(xx)
-        ax[1].plot(ww)
-        plt.show()
+        # import matplotlib.pyplot as plt
+        #
+        # fig, ax = plt.subplots(1, 2, figsize=(14, 6))
+        # xx = np.zeros((0, *self.inputs[0].data.sum((1, -1)).shape[1:]))
+        # ww = np.zeros((0, *self._state_weights[0].data.shape[1:]))
+        # for i in range(self.networks.size):
+        #     xx = np.append(xx, self.inputs[i].data.sum((1, -1)), axis=0)
+        #     ww = np.append(ww, self._state_weights[i].data, axis=0)
+        # ax[0].plot(xx)
+        # ax[1].plot(ww)
+        # plt.show()
         # exit()
-
         if self.use_groundtruth:
             self._data["ground_truth"] = self._generate_groundtruth_(self._data)
         if experiment.verbose == 1:
@@ -125,6 +124,7 @@ class Dataset(object):
         dataset.max_window_size = self.max_window_size
         dataset.num_states = self.num_states
         dataset.sampler.reset()
+
         return dataset
 
     def setup(self, experiment):
@@ -264,9 +264,10 @@ class Dataset(object):
         for i in range(details.num_networks):
             self.m_dynamics.network = self.m_networks.generate()
 
+            x = self.m_dynamics.initial_state()
+
             networks.add(NetworkData(data=self.m_dynamics.network))
 
-            x = self.m_dynamics.initial_state()
             in_data = np.zeros((*x.shape, self.window_size))
             inputs_data = np.zeros((details.num_samples, *in_data.shape))
             targets_data = np.zeros((details.num_samples, *x.shape))

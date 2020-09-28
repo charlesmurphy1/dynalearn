@@ -260,11 +260,11 @@ class ExperimentConfig(Config):
         else:
             cls.dynamics.is_weighted = False
             cls.model.is_weighted = False
-
         if cls.networks.is_multiplex:
             cls.dynamics.is_multiplex = True
             cls.model.is_multiplex = True
             cls.model.network_layers = cls.networks.layers
+            cls.model.network_layers.append("all")
         else:
             cls.dynamics.is_multiplex = False
             cls.model.is_multiplex = False

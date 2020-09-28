@@ -34,7 +34,7 @@ class PredictionMetrics(Metrics):
 
         for i in range(self.dataset.networks.size):
             g = self.dataset.networks[i].data
-            n = g.number_of_nodes()
+            n = experiment.networks.num_nodes
             if (
                 self.max_num_points < self.dataset.inputs[i].size * n
                 and self.max_num_points > 1
@@ -118,6 +118,8 @@ class PredictionMetrics(Metrics):
         i = 0
         for k in range(self.dataset.networks.size):
             g = self.dataset.data["networks"][k].data
+            if isinstance(g, dict):
+                g = self.dataset.data["networks"][k].data["all"]
             degree_seq = np.array(list(dict(g.degree()).values()))
             for t in range(self.dataset.data["inputs"][k].size):
                 degree = degree_seq[nodes[k][t]]
