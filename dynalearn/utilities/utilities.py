@@ -189,6 +189,7 @@ def onehot_torch(x, num_class=None, dim=-1):
         num_class = num_class or int(x.max()) + 1
     x_onehot = torch.zeros(*tuple(x.size()), num_class).float()
     if torch.cuda.is_available():
+        x = x.cuda()
         x_onehot = x_onehot.cuda()
     x = x.long().view(-1, 1)
     x_onehot.scatter_(dim, x, 1)
