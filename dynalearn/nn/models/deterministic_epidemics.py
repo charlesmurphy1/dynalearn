@@ -29,7 +29,7 @@ class DeterministicEpidemicsGNN(GraphNeuralNetwork):
         )
 
     def loss(self, y_true, y_pred, weights):
-        return weighted_cross_entropy(y_pred, y_true, weights=weights)
+        return weighted_cross_entropy(y_true, y_pred, weights=weights)
 
 
 class DeterministicEpidemicsWGNN(DeterministicEpidemicsGNN, WeightedGraphNeuralNetwork):

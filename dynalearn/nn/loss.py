@@ -4,7 +4,7 @@ import numpy as np
 from dynalearn.utilities import onehot
 
 
-def weighted_cross_entropy(y_pred, y_true, weights=None):
+def weighted_cross_entropy(y_true, y_pred, weights=None):
     if weights is None:
         weights = torch.ones([y_true.size(i) for i in range(y_true.dim() - 1)])
     if torch.cuda.is_available():
@@ -17,7 +17,7 @@ def weighted_cross_entropy(y_pred, y_true, weights=None):
     return loss.sum()
 
 
-def weighted_mse(y_pred, y_true, weights=None):
+def weighted_mse(y_true, y_pred, weights=None):
     if weights is None:
         weights = torch.ones([y_true.size(i) for i in range(y_true.dim() - 1)])
     if torch.cuda.is_available():
@@ -32,7 +32,7 @@ __losses__ = {
     "weighted_cross_entropy": weighted_cross_entropy,
     "weighted_mse": weighted_mse,
     "cross_entropy": torch.nn.CrossEntropyLoss(),
-    "cross_entropy": torch.nn.MSELoss(),
+    "mse": torch.nn.MSELoss(),
 }
 
 

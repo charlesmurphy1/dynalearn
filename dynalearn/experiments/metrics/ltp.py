@@ -180,9 +180,10 @@ class LTPMetrics(Metrics):
                     pb.update()
         ltp_array = np.ones((len(self.summaries), self.num_states)) * np.nan
         for i, s in enumerate(self.summaries):
-            index = np.nansum(ltp[s], axis=-1) > 0
-            if np.sum(index) > 0:
-                ltp_array[i] = np.mean(ltp[s][index], axis=0).squeeze()
+            if s in ltp:
+                index = np.nansum(ltp[s], axis=-1) > 0
+                if np.sum(index) > 0:
+                    ltp_array[i] = np.mean(ltp[s][index], axis=0).squeeze()
 
         return ltp_array
 

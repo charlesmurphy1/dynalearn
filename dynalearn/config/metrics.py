@@ -47,7 +47,8 @@ class MetricsConfig(Config):
 
         # ltp and statistcs metrics
         cls.max_num_sample = 1000
-        cls.max_num_points = 1000
+        cls.max_num_points = 1e6
+        # cls.max_num_points = 1000
         cls.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
 
         # stationary and meanfield metrics
