@@ -48,7 +48,7 @@ class CUDATransformer(Transformer):
                     assert isinstance(v, torch.Tensor)
                     x[k] = v.cuda()
             else:
-                assert isinstance(v, torch.Tensor)
+                assert isinstance(x, torch.Tensor)
                 x = x.cuda()
         return x
 
