@@ -25,11 +25,9 @@ class Metrics(ABC):
         self.initialize(experiment)
 
         if self.verbose == 1:
-            pb = tqdm.tqdm(
-                range(self.num_updates), "Computing " + self.__class__.__name__
-            )
+            pb = tqdm.tqdm(range(self.num_updates), self.__class__.__name__)
         elif self.verbose != 0:
-            print("Computing " + self.__class__.__name__)
+            print(self.__class__.__name__)
             pb = None
         else:
             pb = None

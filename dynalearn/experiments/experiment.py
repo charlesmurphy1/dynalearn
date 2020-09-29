@@ -1,4 +1,5 @@
 import h5py
+import json
 import networkx as nx
 import numpy as np
 import os
@@ -13,7 +14,7 @@ from datetime import datetime
 from dynalearn.datasets.getter import get as get_dataset
 from dynalearn.dynamics.getter import get as get_dynamics
 from dynalearn.experiments.metrics.getter import get as get_metrics
-from dynalearn.experiments.loggers import LoggerDict, MemoryLogger, TimeLogger
+from dynalearn.loggers import LoggerDict, MemoryLogger, TimeLogger
 from dynalearn.networks.getter import get as get_network
 from dynalearn.nn.metrics import get as get_train_metrics
 from dynalearn.nn.callbacks.getter import get as get_callbacks
@@ -73,7 +74,7 @@ class Experiment:
             else "config.pickle"
         )
         self.fname_logger = (
-            config.fname_logger if "fname_logger" in config.__dict__ else "logger.json"
+            config.fname_logger if "fname_logger" in config.__dict__ else "log"
         )
 
         # Setting seeds
@@ -94,11 +95,11 @@ class Experiment:
         ]
         self.__loggers__ = LoggerDict({"time": TimeLogger(), "memory": MemoryLogger()})
         self.__files__ = [
-            "config.pickle",
+            "config.json",
             "loggers.json",
             "data.h5",
             "metrics.h5",
-            "history.pickle",
+            "history.json",
             "model.pt",
             "optim.pt",
         ]
@@ -147,19 +148,9 @@ class Experiment:
             val_dataset=self.val_dataset,
             metrics=self.train_metrics,
             callbacks=self.callbacks,
+            loggers=loggers,
             verbose=self.verbose,
         )
-        if "time" in loggers.keys():
-            loggers["time"].log[f"time-training"] = []
-            for v in self.model.nn.history._epoch_logs.values():
-                loggers["time"].log[f"time-training"].append(v["time"])
-
-        if "memory" in loggers.keys():
-            loggers["memory"].log[f"memory-training"] = []
-            for v in self.model.nn.history._epoch_logs.values():
-                loggers["memory"].log[f"memory-training"].append(
-                    v["memory"] / loggers["memory"].factor
-                )
 
         if save:
             self.save_model()
@@ -193,7 +184,6 @@ class Experiment:
         if save:
             with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
                 for k, m in self.metrics.items():
-                    print(k)
                     loggers.on_task_midstep("metrics")
                     m.compute(self, verbose=self.verbose)
                     m.save(f)
@@ -204,8 +194,8 @@ class Experiment:
 
     def zip(self, loggers=None, to_zip=None):
         to_zip = to_zip or self.__files__
-        if "config.pickle" not in to_zip:
-            to_zip.append("config.pickle")
+        if "config.json" not in to_zip:
+            to_zip.append("config.json")
 
         zip = zipfile.ZipFile(
             os.path.join(self.path_to_summary, self.name + ".zip"), mode="w"
@@ -255,8 +245,8 @@ class Experiment:
 
     @classmethod
     def from_file(cls, path_to_config):
-        with open(path_to_config, "rb") as config_file:
-            config = pickle.load(config_file)
+        with open(path_to_config, "r") as config_file:
+            config = json.load(config_file)
         return cls(config)
 
     @classmethod
@@ -265,7 +255,7 @@ class Experiment:
         path_to_data, _ = os.path.split(zip.namelist()[0])
         destination = destination or "."
         zip.extractall(path=destination)
-        cls = cls.from_file(os.path.join(path_to_data, "config.pickle"))
+        cls = cls.from_file(os.path.join(path_to_data, "config.json"))
         cls.path_to_data = path_to_data
         cls.load_metrics()
         cls.load_model()

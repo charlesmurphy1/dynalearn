@@ -9,6 +9,7 @@ import psutil
 
 from abc import abstractmethod
 from dynalearn.config import Config
+from dynalearn.loggers import LoggerDict
 from dynalearn.nn.callbacks import CallbackList
 from dynalearn.nn.history import History
 from dynalearn.nn.optimizers import get as get_optimizer
@@ -39,15 +40,19 @@ class Model(torch.nn.Module):
         learning_rate=1e-3,
         val_dataset=None,
         metrics={},
-        callbacks=[],
+        callbacks=None,
+        loggers=None,
         verbose=0,
     ):
 
-        if type(callbacks) == list:
+        callbacks = callbacks or CallbackList()
+        if isinstance(callbacks, list):
             callbacks = CallbackList(callbacks)
-            for c in callbacks:
-                if "verbose" in c.__dict__:
-                    c.verbose = verbose > 0
+        for c in callbacks:
+            if "verbose" in c.__dict__:
+                c.verbose = verbose > 0
+
+        loggers = loggers or LoggerDict()
 
         callbacks.set_params(self)
         callbacks.set_model(self)
@@ -68,8 +73,8 @@ class Model(torch.nn.Module):
                 val_metrics = {}
 
             t1 = time.time()
-            mem = psutil.virtual_memory().used
-            logs = {"epoch": self.history.epoch + 1, "time": t1 - t0, "memory": mem}
+            loggers.on_task_midstep("training")
+            logs = {"epoch": self.history.epoch + 1, "time": t1 - t0}
             logs.update(train_metrics)
             logs.update(val_metrics)
             self.history.update_epoch(logs)

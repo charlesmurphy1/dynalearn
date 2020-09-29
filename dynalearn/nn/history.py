@@ -35,7 +35,7 @@ class History:
 
     def save(self, file):
         data = {"epoch_logs": self._epoch_logs, "batch_logs": self._batch_logs}
-        pickle.dump(data, file)
+        pickle.dump(data, file, indent=4)
 
     def load(self, file):
         data = pickle.load(file)

@@ -20,7 +20,7 @@ class TimeLogger(Logger):
         self.log["end"] = self.begin.strftime("%Y-%m-%d %H:%M:%S")
         days, hours, mins, secs = self.format_diff(self.begin, self.end)
         self.log["time"] = f"{days:0=2d}-{hours:0=2d}:{mins:0=2d}:{secs:0=2d}"
-        self.log["sec"] = self.format_diff(self.begin, self.end, to_sec=True)
+        self.log["total"] = self.format_diff(self.begin, self.end, to_sec=True)
 
     def on_task_midstep(self, stepname=None):
         stepname = stepname or "midstep"
