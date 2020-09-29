@@ -74,7 +74,7 @@ class Experiment:
             else "config.pickle"
         )
         self.fname_logger = (
-            config.fname_logger if "fname_logger" in config.__dict__ else "log"
+            config.fname_logger if "fname_logger" in config.__dict__ else "log.json"
         )
 
         # Setting seeds
