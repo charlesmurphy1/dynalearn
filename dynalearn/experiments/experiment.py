@@ -13,7 +13,7 @@ from datetime import datetime
 from dynalearn.datasets.getter import get as get_dataset
 from dynalearn.dynamics.getter import get as get_dynamics
 from dynalearn.experiments.metrics.getter import get as get_metrics
-from dynalearn.experiments.summaries.getter import get as get_summaries
+from dynalearn.experiments.loggers import LoggerDict, MemoryLogger, TimeLogger
 from dynalearn.networks.getter import get as get_network
 from dynalearn.nn.metrics import get as get_train_metrics
 from dynalearn.nn.callbacks.getter import get as get_callbacks
@@ -72,6 +72,9 @@ class Experiment:
             if "fname_config" in config.__dict__
             else "config.pickle"
         )
+        self.fname_logger = (
+            config.fname_logger if "fname_logger" in config.__dict__ else "logger.json"
+        )
 
         # Setting seeds
         if "seed" in config.__dict__:
@@ -87,11 +90,12 @@ class Experiment:
             "partition_test_dataset",
             "train_model",
             "compute_metrics",
-            "compute_summaries",
             "zip",
         ]
+        self.__loggers__ = LoggerDict({"time": TimeLogger(), "memory": MemoryLogger()})
         self.__files__ = [
             "config.pickle",
+            "loggers.json",
             "data.h5",
             "metrics.h5",
             "history.pickle",
@@ -99,38 +103,40 @@ class Experiment:
             "optim.pt",
         ]
 
-    def run(self, tasks=None):
+    # Run command
+    def run(self, tasks=None, loggers=None):
+        tasks = tasks or self.__tasks__
+        loggers = loggers or self.__loggers__
+        loggers.on_task_begin()
         self.save_config()
         if self.verbose != 0:
-            begin = datetime.now()
             print(f"---Experiment {self.name}---")
-            print(f"Current time: {begin.strftime('%Y-%m-%d %H:%M:%S')}")
-
-        tasks = tasks or self.__tasks__
+            if "time" in loggers.keys():
+                begin = loggers["time"].log["begin"]
+                print(f"Current time: {begin}")
 
         for t in tasks:
             if t in self.__tasks__:
                 f = getattr(self, t)
-                f()
+                f(loggers=loggers)
             else:
                 raise ValueError(
                     f"{t} is an invalid task, possible tasks are {self.__tasks__}"
                 )
 
+        loggers.on_task_end()
+        self.save(loggers)
         if self.verbose != 0:
-            end = datetime.now()
             print(f"\n---Finished {self.name}---")
-            print(f"Current time: {end.strftime('%Y-%m-%d %H:%M:%S')}")
-            dt = end - begin
-            days = dt.days
-            hours, r = divmod(dt.seconds, 60 * 60)
-            mins, r = divmod(r, 60)
-            secs = r
-            print(
-                f"Computation time: {days:0=2d}-{hours:0=2d}:{mins:0=2d}:{secs:0=2d}\n"
-            )
+            if "time" in loggers.keys():
+                end = loggers["time"].log["end"]
+                t = loggers["time"].log["time"]
+                print(f"Current time: {end}")
+                print(f"Computation time: {t}\n")
 
-    def train_model(self, save=True, restore_best=True):
+    # All tasks
+    def train_model(self, loggers=None, save=True, restore_best=True):
+        loggers = loggers or LoggerDict()
         if self.verbose != 0:
             print("\n---Training model---")
 
@@ -143,6 +149,17 @@ class Experiment:
             callbacks=self.callbacks,
             verbose=self.verbose,
         )
+        if "time" in loggers.keys():
+            loggers["time"].log[f"time-training"] = []
+            for v in self.model.nn.history._epoch_logs.values():
+                loggers["time"].log[f"time-training"].append(v["time"])
+
+        if "memory" in loggers.keys():
+            loggers["memory"].log[f"memory-training"] = []
+            for v in self.model.nn.history._epoch_logs.values():
+                loggers["memory"].log[f"memory-training"].append(
+                    v["memory"] / loggers["memory"].factor
+                )
 
         if save:
             self.save_model()
@@ -150,7 +167,7 @@ class Experiment:
         if restore_best:
             self.load_model()
 
-    def generate_data(self, save=True):
+    def generate_data(self, loggers=None, save=True):
         if self.verbose != 0:
             print("\n---Generating data---")
         self.dataset.generate(self)
@@ -158,7 +175,70 @@ class Experiment:
         if save:
             self.save_data()
 
-    def partition_dataset(self, fraction=0.1, bias=0.0, name="val"):
+    def partition_val_dataset(self, loggers=None, fraction=0.1, bias=0.0):
+        self.val_dataset = self.partition_dataset(
+            loggers=loggers, fraction=fraction, bias=bias, name="val"
+        )
+
+    def partition_test_dataset(self, loggers=None, fraction=0.1, bias=0.0):
+        self.test_dataset = self.partition_dataset(
+            loggers=loggers, fraction=fraction, bias=bias, name="test"
+        )
+
+    def compute_metrics(self, loggers=None, save=True):
+        loggers = loggers or LoggerDict()
+        if self.verbose != 0:
+            print("\n---Computing metrics---")
+
+        if save:
+            with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
+                for k, m in self.metrics.items():
+                    print(k)
+                    loggers.on_task_midstep("metrics")
+                    m.compute(self, verbose=self.verbose)
+                    m.save(f)
+        else:
+            for k, m in self.metrics.items():
+                loggers.on_task_midstep("metrics")
+                m.compute(self, verbose=self.verbose)
+
+    def zip(self, loggers=None, to_zip=None):
+        to_zip = to_zip or self.__files__
+        if "config.pickle" not in to_zip:
+            to_zip.append("config.pickle")
+
+        zip = zipfile.ZipFile(
+            os.path.join(self.path_to_summary, self.name + ".zip"), mode="w"
+        )
+        for root, _, files in os.walk(self.path_to_data):
+            for f in files:
+                if f in to_zip:
+                    p = os.path.basename(root)
+                    zip.write(os.path.join(root, f), os.path.join(p, f))
+        zip.close()
+
+    def save(self, loggers=None):
+        loggers = loggers or LoggerDict()
+
+        self.save_config()
+        self.save_data()
+        self.save_model()
+        self.save_metrics()
+        with open(join(self.path_to_data, self.fname_logger), "w") as f:
+            loggers.save(f)
+
+    def load(self, loggers=None):
+        self.load_config()
+        self.load_data()
+        self.load_model()
+        self.load_metrics()
+        if os.path.exists(join(self.path_to_data, self.fname_logger)):
+            with open(join(self.path_to_data, self.fname_logger), "r") as f:
+                loggers.load(f)
+
+    # Other methods
+    def partition_dataset(self, loggers=None, fraction=0.1, bias=0.0, name="val"):
+        loggers = loggers or LoggerDict()
         if self.verbose != 0:
             print(f"\n---Partitioning {name}-data---")
 
@@ -172,25 +252,6 @@ class Experiment:
                 print("After partitioning, partition is still empty.")
             partition = None
         return partition
-
-    def partition_val_dataset(self, fraction=0.1, bias=0.0):
-        self.val_dataset = self.partition_dataset(fraction, bias, name="val")
-
-    def partition_test_dataset(self, fraction=0.1, bias=0.0):
-        self.test_dataset = self.partition_dataset(fraction, bias, name="test")
-
-    def compute_metrics(self, save=True):
-        if self.verbose != 0:
-            print("\n---Computing metrics---")
-
-        if save:
-            with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
-                for k, m in self.metrics.items():
-                    m.compute(self, verbose=self.verbose)
-                    m.save(f)
-        else:
-            for k, m in self.metrics.items():
-                m.compute(self, verbose=self.verbose)
 
     @classmethod
     def from_file(cls, path_to_config):
@@ -211,28 +272,6 @@ class Experiment:
         shutil.rmtree(path_to_data)
         return cls
 
-    def zip(self, to_zip=None):
-        to_zip = to_zip or self.__files__
-        if "config.pickle" not in to_zip:
-            to_zip.append("config.pickle")
-
-        zip = zipfile.ZipFile(
-            os.path.join(self.path_to_summary, self.name + ".zip"), mode="w"
-        )
-        for root, _, files in os.walk(self.path_to_data):
-            for f in files:
-                if f in to_zip:
-                    p = os.path.basename(root)
-                    zip.write(os.path.join(root, f), os.path.join(p, f))
-        zip.close()
-
-    def save(self):
-        self.save_config()
-        self.save_data()
-        self.save_model()
-        self.save_metrics()
-        self.save_summaries()
-
     def save_data(self):
         with h5py.File(join(self.path_to_data, self.fname_data), "w") as f:
             self.dataset.save(f)
@@ -247,21 +286,9 @@ class Experiment:
             for k, m in self.metrics.items():
                 m.save(f)
 
-    def save_summaries(self):
-        with h5py.File(join(self.path_to_summary, self.name + ".h5"), "a") as f:
-            for k, m in self.summaries.items():
-                m.save(f)
-
     def save_config(self):
         with open(join(self.path_to_data, self.fname_config), "wb") as f:
             pickle.dump(self.config, f)
-
-    def load(self):
-        self.load_config()
-        self.load_data()
-        self.load_model()
-        self.load_metrics()
-        self.load_summaries()
 
     def load_data(self):
         if exists(join(self.path_to_data, self.fname_data)):
@@ -301,15 +328,6 @@ class Experiment:
             if self.verbose != 0:
                 print("Loading metrics: Did not find metrics to load.")
 
-    def load_summaries(self):
-        if exists(join(self.path_to_summary, self.name + ".h5")):
-            with h5py.File(join(self.path_to_summary, self.name + ".h5"), "r") as f:
-                for k in self.summaries.keys():
-                    self.summaries[k].load(f)
-        else:
-            if self.verbose != 0:
-                print("Loading summaries: Did not find summaries to load.")
-
     def load_config(self, best=True):
         if exists(join(self.path_to_data, self.fname_config)):
             with open(join(self.path_to_data, self.fname_config), "rb") as f:
@@ -318,6 +336,7 @@ class Experiment:
             if self.verbose != 0:
                 print("Loading config: Did not find config to load.")
 
+    # Other attributes
     @property
     def dataset(self):
         return self._dataset[self._mode]

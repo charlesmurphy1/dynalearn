@@ -5,6 +5,7 @@ import time
 import torch
 import torch.nn as nn
 import tqdm
+import psutil
 
 from abc import abstractmethod
 from dynalearn.config import Config
@@ -51,6 +52,7 @@ class Model(torch.nn.Module):
         callbacks.set_params(self)
         callbacks.set_model(self)
         callbacks.on_train_begin()
+
         self.transformers.setUp(dataset)
         for i in range(epochs):
             callbacks.on_epoch_begin(self.history.epoch)
@@ -66,7 +68,8 @@ class Model(torch.nn.Module):
                 val_metrics = {}
 
             t1 = time.time()
-            logs = {"epoch": self.history.epoch + 1, "time": t1 - t0}
+            mem = psutil.virtual_memory().used
+            logs = {"epoch": self.history.epoch + 1, "time": t1 - t0, "memory": mem}
             logs.update(train_metrics)
             logs.update(val_metrics)
             self.history.update_epoch(logs)
