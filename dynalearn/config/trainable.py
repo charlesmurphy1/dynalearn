@@ -7,7 +7,7 @@ class TrainableConfig(Config):
     @classmethod
     def test(cls):
         cls = cls()
-        cls.name = "TrainableEpidemics"
+        cls.name = "TrainableStochasticEpidemics"
         cls.num_states = 2
         cls.window_size = 1
         cls.window_step = 1
@@ -66,7 +66,7 @@ class TrainableConfig(Config):
     @classmethod
     def plancksis(cls):
         cls = cls()
-        cls.name = "TrainableEpidemics"
+        cls.name = "TrainableStochasticEpidemics"
         cls.gnn_name = "DynamicsGATConv"
         cls.num_states = 2
         cls.window_size = 1
@@ -96,7 +96,7 @@ class TrainableConfig(Config):
     @classmethod
     def sissis(cls):
         cls = cls()
-        cls.name = "TrainableEpidemics"
+        cls.name = "TrainableStochasticEpidemics"
         cls.gnn_name = "DynamicsGATConv"
         cls.num_states = 4
         cls.window_size = 1
@@ -126,7 +126,7 @@ class TrainableConfig(Config):
     @classmethod
     def hidden_sissis(cls):
         cls = cls()
-        cls.name = "TrainableEpidemics"
+        cls.name = "TrainableStochasticEpidemics"
         cls.gnn_name = "DynamicsGATConv"
         cls.num_states = 2
         cls.window_size = 1
@@ -157,7 +157,7 @@ class TrainableConfig(Config):
     @classmethod
     def partially_hidden_sissis(cls):
         cls = cls()
-        cls.name = "TrainableEpidemics"
+        cls.name = "TrainableStochasticEpidemics"
         cls.gnn_name = "DynamicsGATConv"
         cls.num_states = 4
         cls.window_size = 1
