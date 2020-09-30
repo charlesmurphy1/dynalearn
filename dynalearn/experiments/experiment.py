@@ -14,7 +14,7 @@ from datetime import datetime
 from dynalearn.datasets.getter import get as get_dataset
 from dynalearn.dynamics.getter import get as get_dynamics
 from dynalearn.experiments.metrics.getter import get as get_metrics
-from dynalearn.loggers import LoggerDict, MemoryLogger, TimeLogger
+from dynalearn.loggers import LoggerDict, MemoryLogger, TimeLogger, ProgressionLogger
 from dynalearn.networks.getter import get as get_network
 from dynalearn.nn.metrics import get as get_train_metrics
 from dynalearn.nn.callbacks.getter import get as get_callbacks
@@ -93,7 +93,15 @@ class Experiment:
             "compute_metrics",
             "zip",
         ]
-        self.__loggers__ = LoggerDict({"time": TimeLogger(), "memory": MemoryLogger()})
+        self.__loggers__ = LoggerDict(
+            {
+                "time": TimeLogger(),
+                "memory": MemoryLogger(),
+                "progression": ProgressionLogger(
+                    os.path.join(self.path_to_data, "progress")
+                ),
+            }
+        )
         self.__files__ = [
             "config.json",
             "loggers.json",
