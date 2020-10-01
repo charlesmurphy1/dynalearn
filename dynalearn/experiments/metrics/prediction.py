@@ -85,7 +85,9 @@ class PredictionMetrics(Metrics):
         return nodes
 
     def _get_pred_(self, nodes, pb=None):
-        pred_array = np.zeros([sum(self.num_points.values()), self.num_states])
+        pred_array = np.zeros(
+            [int(sum(self.num_points.values())), int(self.num_states)]
+        )
         i = 0
         for k in range(self.dataset.networks.size):
             obs_g = self.dataset.data["networks"][k].data
@@ -114,7 +116,7 @@ class PredictionMetrics(Metrics):
         return pred_array
 
     def _get_degree_(self, nodes):
-        degree_array = np.zeros(sum(self.num_points.values()))
+        degree_array = np.zeros(int(sum(self.num_points.values())))
         i = 0
         for k in range(self.dataset.networks.size):
             g = self.dataset.data["networks"][k].data
