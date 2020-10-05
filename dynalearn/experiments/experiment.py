@@ -253,7 +253,7 @@ class Experiment:
 
     @classmethod
     def from_file(cls, path_to_config):
-        with open(path_to_config, "r") as config_file:
+        with open(path_to_config, "rb") as config_file:
             config = pickle.load(config_file)
         return cls(config)
 

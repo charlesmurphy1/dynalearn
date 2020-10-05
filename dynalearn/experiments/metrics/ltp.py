@@ -5,7 +5,7 @@ import numpy as np
 from abc import abstractmethod
 from .metrics import Metrics
 from dynalearn.dynamics.stochastic_epidemics import StochasticEpidemics
-from dynalearn.utilities import all_combinations, from_nary
+from dynalearn.utilities import all_combinations, from_nary, onehot
 from itertools import product
 from scipy.special import binom
 
@@ -327,7 +327,7 @@ class MLELTPMetrics(LTPMetrics):
         return experiment.dynamics
 
     def predict(self, real_x, obs_x, real_y, obs_y):
-        return obs_y
+        return onehot(obs_y, num_class=self.num_states, dim=-1)
 
 
 class UniformLTPMetrics(LTPMetrics):
