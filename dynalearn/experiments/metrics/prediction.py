@@ -125,7 +125,7 @@ class PredictionMetrics(Metrics):
             degree_seq = np.array(list(dict(g.degree()).values()))
             for t in range(self.dataset.data["inputs"][k].size):
                 degree = degree_seq[nodes[k][t]]
-            if i + degree.shape[0] <= degree.shape[0]:
+            if i + degree.shape[0] <= degree_array.shape[0]:
                 degree_array[i : i + degree.shape[0]] = degree
                 i = i + degree.shape[0]
             else:
