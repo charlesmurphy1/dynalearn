@@ -47,7 +47,7 @@ class MetricsConfig(Config):
 
         # ltp and statistcs metrics
         cls.max_num_sample = 1000
-        cls.max_num_points = 1e6
+        cls.max_num_points = 1e4
         # cls.max_num_points = 1000
         cls.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
 
@@ -88,7 +88,7 @@ class MetricsConfig(Config):
 
         # ltp and statistcs metrics
         cls.max_num_sample = 1000
-        cls.max_num_points = 1000
+        cls.max_num_points = 1e4
         cls.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
 
         # stationary and meanfield metrics
@@ -128,7 +128,7 @@ class MetricsConfig(Config):
 
         # ltp and statistcs metrics
         cls.max_num_sample = 1000
-        cls.max_num_points = 1000
+        cls.max_num_points = 1e4
         cls.degree_class = np.unique(np.logspace(0, 2, 30).astype("int"))
 
         # stationary and meanfield metrics
@@ -246,7 +246,7 @@ class MetricsConfig(Config):
         cls = cls()
         cls.names = []
 
-        cls.max_num_points = 1e6
+        cls.max_num_points = 1e4
         cls.epsilon = 1e-3
         cls.adaptive = True
         cls.num_samples = 25
