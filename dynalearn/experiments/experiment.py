@@ -103,11 +103,11 @@ class Experiment:
             }
         )
         self.__files__ = [
-            "config.json",
+            "config.pickle",
             "loggers.json",
             "data.h5",
             "metrics.h5",
-            "history.json",
+            "history.pickle",
             "model.pt",
             "optim.pt",
         ]
@@ -202,8 +202,8 @@ class Experiment:
 
     def zip(self, loggers=None, to_zip=None):
         to_zip = to_zip or self.__files__
-        if "config.json" not in to_zip:
-            to_zip.append("config.json")
+        if "config.pickle" not in to_zip:
+            to_zip.append("config.pickle")
 
         zip = zipfile.ZipFile(
             os.path.join(self.path_to_summary, self.name + ".zip"), mode="w"
@@ -254,7 +254,7 @@ class Experiment:
     @classmethod
     def from_file(cls, path_to_config):
         with open(path_to_config, "r") as config_file:
-            config = json.load(config_file)
+            config = pickle.load(config_file)
         return cls(config)
 
     @classmethod
@@ -263,7 +263,7 @@ class Experiment:
         path_to_data, _ = os.path.split(zip.namelist()[0])
         destination = destination or "."
         zip.extractall(path=destination)
-        cls = cls.from_file(os.path.join(path_to_data, "config.json"))
+        cls = cls.from_file(os.path.join(path_to_data, "config.pickle"))
         cls.path_to_data = path_to_data
         cls.load_metrics()
         cls.load_model()
