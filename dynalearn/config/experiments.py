@@ -71,8 +71,8 @@ trainingmetrics = {
     "partiallyhiddensissis": ["acc", "jensenshannon", "model_entropy"],
     "rdsis": ["acc"],
     "rdsir": ["acc"],
-    "dsis": ["acc", "jensenshannon", "model_entropy"],
-    "dsir": ["acc", "jensenshannon", "model_entropy"],
+    "dsis": ["jensenshannon", "model_entropy"],
+    "dsir": ["jensenshannon", "model_entropy"],
 }
 
 
