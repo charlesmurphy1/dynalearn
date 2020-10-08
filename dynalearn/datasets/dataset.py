@@ -61,7 +61,7 @@ class Dataset(object):
     def __next__(self):
         return self[self.rev_indices[self.sampler()]]
 
-    def generate(self, experiment):
+    def generate(self, experiment, loggers=None):
         details = self.setup(experiment)
         self.transforms.setup(experiment)
 
@@ -77,18 +77,6 @@ class Dataset(object):
             pb = None
 
         self.data = self._generate_data_(details, pb=pb)
-        # import matplotlib.pyplot as plt
-        #
-        # fig, ax = plt.subplots(1, 2, figsize=(14, 6))
-        # xx = np.zeros((0, *self.inputs[0].data.sum((1, -1)).shape[1:]))
-        # ww = np.zeros((0, *self._state_weights[0].data.shape[1:]))
-        # for i in range(self.networks.size):
-        #     xx = np.append(xx, self.inputs[i].data.sum((1, -1)), axis=0)
-        #     ww = np.append(ww, self._state_weights[i].data, axis=0)
-        # ax[0].plot(xx)
-        # ax[1].plot(ww)
-        # plt.show()
-        # exit()
         if self.use_groundtruth:
             self._data["ground_truth"] = self._generate_groundtruth_(self._data)
         if experiment.verbose == 1:

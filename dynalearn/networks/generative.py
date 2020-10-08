@@ -10,8 +10,8 @@ from dynalearn.networks.network import Network
 class GenerativeNetwork(Network):
     def __init__(self, config=None, weight_gen=None, **kwargs):
         config = config or Config(**kwargs)
-        self.weight_gen = weight_gen
         Network.__init__(self, config)
+        self.weight_gen = weight_gen
         if self.weight_gen is not None:
             self.is_weighted = True
 
@@ -58,7 +58,7 @@ class BANetwork(GenerativeNetwork):
 class ConfigurationNetwork(GenerativeNetwork):
     def __init__(self, config=None, weight_gen=None, **kwargs):
         config = config or Config(**kwargs)
-        GenerativeNetwork.__init__(self, config, weight_gen=weight_gen)
+        GenerativeNetwork.__init__(self, config, weight_gen=weight_gen, **kwargs)
         self.p_k = config.p_k
         if "maxiter" in config.__dict__:
             self.maxiter = config.maxiter
@@ -74,7 +74,7 @@ class ConfigurationNetwork(GenerativeNetwork):
         while it < maxiter:
             seq = self.p_k.sample(self.num_nodes)
             if np.sum(seq) % 2 == 0:
-                g = nx.configuration_model(seq, seed=seed)
+                g = nx.expected_degree_graph(seq, seed=seed)
                 return g
             it += 1
         raise ValueError("Invalid degree sequence.")
