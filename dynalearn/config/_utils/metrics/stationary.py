@@ -8,12 +8,12 @@ class StationaryConfig(Config):
     def stocont(cls):
         cls = cls()
         cls.adaptive = True
-        cls.num_nodes = 2000
+        cls.num_nodes = 1000
         cls.init_param = {}
 
         cls.sampler = "SteadyStateSampler"
-        cls.initial_burn = 200
-        cls.mid_burn = 10
+        cls.initial_burn = 100
+        cls.mid_burn = 2
         cls.num_windows = 20
         cls.num_samples = 20
 
@@ -27,7 +27,7 @@ class StationaryConfig(Config):
         cls = cls()
 
         cls.adaptive = False
-        cls.num_nodes = 2000
+        cls.num_nodes = 1000
         cls.init_param = {}
 
         cls.sampler = "FixedPointSampler"

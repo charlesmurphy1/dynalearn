@@ -9,7 +9,7 @@ from .metrics import Metrics
 class PredictionMetrics(Metrics):
     def __init__(self, config, verbose=0):
         Metrics.__init__(self, config, verbose)
-        self.max_num_points = config.max_num_points
+        self.max_num_points = config.pred_max_num_points
         self.model = None
         self.names = ["pred", "degree", "train_pred", "train_degree"]
 
@@ -44,7 +44,8 @@ class PredictionMetrics(Metrics):
                 and self.max_num_points != -1
             ):
                 self.points[k] = sample(
-                    range(self.dataset.data["inputs"][k].size), self.max_num_points // n
+                    range(self.dataset.data["inputs"][k].size),
+                    int(self.max_num_points // n),
                 )
                 self.size += self.max_num_points
             else:

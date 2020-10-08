@@ -63,11 +63,11 @@ class StationaryStateMetrics(Metrics):
         samples = []
         for i in range(self.num_samples):
             self.initialize_network()
-            samples.append(self.sampler(self.model, self.initializer, self.statistics))
+            samples.append(self.sampler(self.model, self.initializer))
             if pb is not None:
                 pb.update()
         samples = np.array(samples)
-        samples.reshape(-1, samples.shape[-1])
+        samples = samples.reshape(-1, samples.shape[-1])
         self.initializer.update(self.statistics.avg(samples))
         y = self.statistics(samples)
         return y

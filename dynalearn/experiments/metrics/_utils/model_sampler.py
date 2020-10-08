@@ -52,7 +52,7 @@ class SteadyStateSampler(ModelSampler):
         self.num_windows = config.num_windows
         self.mid_burn = config.mid_burn
 
-    def __call__(self, model, initializer, statistics):
+    def __call__(self, model, initializer):
         x0 = initializer()
         x0 = self.burning(model, x0, self.initial_burn)
         samples = []
@@ -61,7 +61,7 @@ class SteadyStateSampler(ModelSampler):
             samples.append(self.aggregate(x0))
             if self.dynamics.is_dead(x0):
                 x0 = initializer()
-        return statistics(samples)
+        return samples
 
     def aggregate(self, x):
         agg_x = []
@@ -88,7 +88,7 @@ class FixedPointSampler(ModelSampler):
         self.tol = config.tol
         self.maxiter = config.maxiter
 
-    def __call__(self, model, initializer, statistics):
+    def __call__(self, model, initializer):
         x = initializer()
         x = self.burning(model, x, self.initial_burn)
 

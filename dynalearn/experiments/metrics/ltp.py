@@ -16,7 +16,7 @@ class LTPMetrics(Metrics):
         Metrics.__init__(self, config, verbose)
 
         self.max_num_sample = config.max_num_sample
-        self.max_num_points = config.max_num_points
+        self.max_num_points = config.ltp_max_num_points
 
         self.model = None
 
