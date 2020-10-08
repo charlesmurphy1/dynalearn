@@ -3,11 +3,12 @@ import networkx as nx
 import numpy as np
 
 from abc import abstractmethod
-from .metrics import Metrics
+from itertools import product
+from random import sample
+from scipy.special import binom
 from dynalearn.dynamics.stochastic_epidemics import StochasticEpidemics
 from dynalearn.utilities import all_combinations, from_nary, onehot
-from itertools import product
-from scipy.special import binom
+from .metrics import Metrics
 
 
 class LTPMetrics(Metrics):
@@ -23,44 +24,6 @@ class LTPMetrics(Metrics):
         self.summaries = set()
 
         self.names = ["summaries", "ltp", "train_ltp"]
-
-    def display(
-        self,
-        ax=None,
-        data_name=None,
-        in_states=[],
-        out_states=[],
-        colors=None,
-        fill_color=None,
-        fill_alpha=0.2,
-        axis=None,
-        **kwargs,
-    ):
-        if isinstance(in_states, int) or isinstance(in_states, tuple):
-            in_states = [in_states]
-
-        if isinstance(out_states, int) or isinstance(out_states, tuple):
-            out_states = [out_states]
-
-        ax = ax or plt.gca()
-        data_name = data_name or "ltp"
-        colors = colors or {(i, j): "k" for (i, j) in product(in_states, out_states)}
-        fill_color = "k"
-
-        for i, j in product(in_states, out_states):
-            x, y, yl, yh = LTPMetrics.aggregate(
-                self.data[data_name],
-                self.data["summaries"],
-                in_state=i,
-                out_state=i,
-                axis=axis,
-                reduce="mean",
-                err_reduce="percentile",
-            )
-            c = colors[(i, j)]
-            ax.plot(x, y, color=c, **kwargs)
-            ax.fill_between(x, yl, yh, color=fill_color, alpha=0.2)
-        return ax
 
     @abstractmethod
     def get_model(self, experiment):
@@ -83,18 +46,19 @@ class LTPMetrics(Metrics):
         else:
             self.window_size = experiment.model.window_size
 
-        self.num_points = {}
+        self.points = {}
         self.num_updates = 0
-
         for k, g in enumerate(self.dataset.networks.data_list):
             if (
-                self.max_num_points < self.dataset.inputs[k].size
-                and self.max_num_points > 1
+                self.dataset.data["inputs"][k].size > self.max_num_points
+                and self.max_num_points != -1
             ):
-                self.num_points[k] = self.max_num_points
+                self.points[k] = sample(
+                    range(self.dataset.data["inputs"][k].size), self.max_num_points
+                )
             else:
-                self.num_points[k] = self.dataset.inputs[k].size
-                self.num_updates += self.num_points[k]
+                self.points[k] = range(self.dataset.data["inputs"][k].size)
+            self.num_updates += len(self.points[k])
 
         self.get_data["summaries"] = self._get_summaries_
         self.all_nodes = self._get_nodes_(experiment.dataset, all=True)
@@ -123,7 +87,8 @@ class LTPMetrics(Metrics):
         for k in range(self.dataset.networks.size):
             g = self.dataset.networks[k].data
             adj = nx.to_numpy_array(g)
-            for t in range(self.num_points[k]):
+
+            for t in self.points[k]:
                 obs_x = self.dataset.data["inputs"][k].get(t)
                 obs_x = from_nary(
                     obs_x[:, : self.window_size], axis=-1, base=self.num_states
@@ -147,7 +112,7 @@ class LTPMetrics(Metrics):
             obs_g = self.dataset.data["networks"][k].data
             self.model.network = self._set_network_(real_g, obs_g)
             adj = nx.to_numpy_array(obs_g)
-            for t in range(self.num_points[k]):
+            for t in self.points[k]:
                 real_x = self.dataset._data["inputs"][k].get(t)
                 obs_x = self.dataset.data["inputs"][k].get(t)
                 real_y = self.dataset._data["targets"][k].get(t)
@@ -293,9 +258,6 @@ class LTPMetrics(Metrics):
 
 
 class TrueLTPMetrics(LTPMetrics):
-    def __init__(self, config, verbose=0):
-        LTPMetrics.__init__(self, config, verbose)
-
     def get_model(self, experiment):
         return experiment.dynamics
 
@@ -307,9 +269,6 @@ class TrueLTPMetrics(LTPMetrics):
 
 
 class GNNLTPMetrics(LTPMetrics):
-    def __init__(self, config, verbose=0):
-        LTPMetrics.__init__(self, config, verbose)
-
     def get_model(self, experiment):
         return experiment.model
 
@@ -318,11 +277,6 @@ class GNNLTPMetrics(LTPMetrics):
 
 
 class MLELTPMetrics(LTPMetrics):
-    def __init__(self, config, verbose=0):
-        LTPMetrics.__init__(self, config, verbose)
-        if "mle_num_points" in config.__dict__:
-            self.num_points = config.mle_num_points
-
     def get_model(self, experiment):
         return experiment.dynamics
 
@@ -331,9 +285,6 @@ class MLELTPMetrics(LTPMetrics):
 
 
 class UniformLTPMetrics(LTPMetrics):
-    def __init__(self, config, verbose=0):
-        LTPMetrics.__init__(self, config, verbose)
-
     def get_model(self, experiment):
         return experiment.dynamics
 

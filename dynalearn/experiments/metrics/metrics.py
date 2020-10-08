@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 class Metrics(ABC):
     def __init__(self, config, verbose=0):
-        self._config = config
+        self.config = config
         self.verbose = verbose
         self.data = {}
         self.names = []

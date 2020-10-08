@@ -3,8 +3,8 @@ import numpy as np
 
 from abc import abstractmethod
 from .metrics import Metrics
-from dynalearn.meanfields.getter import get as get_mf
-from dynalearn.meanfields.finder import get as get_finder
+from ._utils.meanfields.getter import get as get_mf
+from ._utils.meanfields.finder import get as get_finder
 from dynalearn.utilities import poisson_distribution
 from random import sample
 

@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 
 from abc import abstractmethod
+from random import sample
 from .metrics import Metrics
 
 
@@ -18,56 +19,61 @@ class PredictionMetrics(Metrics):
         raise NotImplementedError()
 
     @abstractmethod
-    def predict(self, real_x, obs_x, real_y, obs_y):
+    def get_prediction(self, index):
         raise NotImplementedError()
 
-    def _set_network_(self, real_g, obs_g):
-        return obs_g
+    def get_degrees(self):
+        g = self.model.network
+        if isinstance(g, dict):
+            g = self.model.network["all"]
+        return np.array(list(dict(g.degree()).values()))
+
+    def get_network(self, index):
+        return self.dataset.data["networks"][index].data
 
     def initialize(self, experiment):
         self.model = self.get_model(experiment)
         self.dataset = experiment.dataset
         self.num_states = experiment.model.num_states
 
-        self.num_points = {}
+        self.points = {}
         self.num_updates = 0
-
-        for i in range(self.dataset.networks.size):
-            g = self.dataset.networks[i].data
-            n = experiment.networks.num_nodes
+        for k, g in enumerate(self.dataset.networks.data_list):
             if (
-                self.max_num_points < self.dataset.inputs[i].size * n
-                and self.max_num_points > 1
+                self.dataset.data["inputs"][k].size > self.max_num_points
+                and self.max_num_points != -1
             ):
-                self.num_points[i] = self.max_num_points
+                self.points[k] = sample(
+                    range(self.dataset.data["inputs"][k].size), self.max_num_points
+                )
             else:
-                self.num_points[i] = self.dataset.inputs[i].size * n
-            self.num_updates += self.dataset.inputs[i].size
+                self.points[k] = range(self.dataset.data["inputs"][k].size)
+            self.num_updates += len(self.points[k])
 
-        self.all_nodes = self._get_nodes_(experiment.dataset, all=True)
-        self.get_data["pred"] = lambda pb: self._get_pred_(self.all_nodes, pb=pb)
-        self.get_data["degree"] = lambda pb: self._get_degree_(self.all_nodes)
+        self.all_nodes = self._nodes_(experiment.dataset, all=True)
+        self.get_data["pred"] = lambda pb: self._pred_(self.all_nodes, pb=pb)
+        self.get_data["degree"] = lambda pb: self._degree_(self.all_nodes, pb=pb)
 
-        train_nodes = self._get_nodes_(experiment.dataset)
-        self.get_data["train_pred"] = lambda pb: self._get_pred_(train_nodes, pb=pb)
-        self.get_data["train_degree"] = lambda pb: self._get_degree_(train_nodes)
+        train_nodes = self._nodes_(experiment.dataset)
+        self.get_data["train_pred"] = lambda pb: self._pred_(train_nodes, pb=pb)
+        self.get_data["train_degree"] = lambda pb: self._degree_(train_nodes, pb=pb)
         update_factor = 2
         if experiment.val_dataset is not None:
-            val_nodes = self._get_nodes_(experiment.val_dataset)
-            self.get_data["val_pred"] = lambda pb: self._get_pred_(val_nodes, pb=pb)
-            self.get_data["val_degree"] = lambda pb: self._get_degree_(val_nodes)
+            val_nodes = self._nodes_(experiment.val_dataset)
+            self.get_data["val_pred"] = lambda pb: self._pred_(val_nodes, pb=pb)
+            self.get_data["val_degree"] = lambda pb: self._degree_(val_nodes, pb=pb)
             self.names.extend(["val_pred", "val_degree"])
             update_factor += 1
 
         if experiment.test_dataset is not None:
-            test_nodes = self._get_nodes_(experiment.test_dataset)
-            self.get_data["test_pred"] = lambda pb: self._get_pred_(test_nodes, pb=pb)
-            self.get_data["test_degree"] = lambda pb: self._get_degree_(test_nodes)
+            test_nodes = self._nodes_(experiment.test_dataset)
+            self.get_data["test_pred"] = lambda pb: self._pred_(test_nodes, pb=pb)
+            self.get_data["test_degree"] = lambda pb: self._degree_(test_nodes, pb=pb)
             self.names.extend(["test_pred", "test_degree"])
             update_factor += 1
         self.num_updates *= update_factor
 
-    def _get_nodes_(self, dataset, all=False):
+    def _nodes_(self, dataset, all=False):
         weights = dataset.weights
         nodes = {}
 
@@ -84,30 +90,19 @@ class PredictionMetrics(Metrics):
                     )[0]
         return nodes
 
-    def _get_pred_(self, nodes, pb=None):
-        pred_array = np.zeros(
-            [int(sum(self.num_points.values())), int(self.num_states)]
-        )
+    def _pred_(self, nodes, pb=None):
+        pred_array = np.zeros([int(self.num_updates), int(self.num_states)])
         i = 0
-        for k in range(self.dataset.networks.size):
-            obs_g = self.dataset.data["networks"][k].data
-            real_g = self.dataset._data["networks"][k].data
-            self.model.network = self._set_network_(real_g, obs_g)
-            for t in range(self.dataset.data["inputs"][k].size):
-                real_x = self.dataset._data["inputs"][k].data[t]
-                obs_x = self.dataset.data["inputs"][k].data[t]
-                real_y = self.dataset._data["targets"][k].data[t]
-                obs_y = self.dataset.targets[k].data[t]
-                pred = self.predict(real_x, obs_x, real_y, obs_y)[nodes[k][t], :]
+        for k in range(self.dataset.data["networks"].size):
+            indices = set(range(self.dataset.data["inputs"][k].size))
+            self.model.network = self.get_network(k)
+            for t in self.points[k]:
+                pred = self.get_prediction(k, t)[nodes[k][t], :]
                 if i + pred.shape[0] <= pred_array.shape[0]:
                     pred_array[i : i + pred.shape[0]] = pred
                     i = i + pred.shape[0]
                 else:
-                    index = np.random.choice(
-                        range(pred.shape[0]),
-                        size=pred_array[i:].shape[0],
-                        replace=False,
-                    )
+                    index = sample(range(pred.shape[0]), pred_array[i:].shape[0])
                     pred_array[i:] = pred[index]
                     break
                 if pb is not None:
@@ -115,50 +110,44 @@ class PredictionMetrics(Metrics):
 
         return pred_array
 
-    def _get_degree_(self, nodes):
-        degree_array = np.zeros(int(sum(self.num_points.values())))
+    def _degree_(self, nodes, pb=None):
+        degree_array = np.zeros(int(self.num_updates))
         i = 0
-        for k in range(self.dataset.networks.size):
-            g = self.dataset.data["networks"][k].data
-            if isinstance(g, dict):
-                g = self.dataset.data["networks"][k].data["all"]
-            degree_seq = np.array(list(dict(g.degree()).values()))
-            for t in range(self.dataset.data["inputs"][k].size):
-                degree = degree_seq[nodes[k][t]]
-            if i + degree.shape[0] <= degree_array.shape[0]:
-                degree_array[i : i + degree.shape[0]] = degree
-                i = i + degree.shape[0]
-            else:
-                index = np.random.choice(
-                    range(degree.shape[0]),
-                    size=degree_array[i:].shape[0],
-                    replace=False,
-                )
-                degree_array[i:] = degree[index]
-                break
+        for k in range(self.dataset.data["networks"].size):
+            indices = set(range(self.dataset.data["inputs"][k].size))
+            self.model.network = self.get_network(k)
+            degree = self.get_degrees()
+            for t in self.points[k]:
+                deg = degree[nodes[k][t]]
+                if i + deg.shape[0] <= degree_array.shape[0]:
+                    degree_array[i : i + deg.shape[0]] = deg
+                    i = i + deg.shape[0]
+                else:
+                    index = sample(range(deg.shape[0]), degree_array[i:].shape[0])
+                    degree_array[i:] = deg[index]
+                    break
+                if pb is not None:
+                    pb.update()
+
         return degree_array
 
 
 class TruePredictionMetrics(PredictionMetrics):
-    def __init__(self, config, verbose=0):
-        PredictionMetrics.__init__(self, config, verbose)
-
     def get_model(self, experiment):
         return experiment.dynamics
 
-    def predict(self, real_x, obs_x, real_y, obs_y):
-        return self.model.predict(real_x)
+    def get_prediction(self, g_index, s_index):
+        x = self.dataset._data["inputs"][g_index].data[s_index]
+        return self.model.predict(x)
 
-    def _set_network_(self, real_g, obs_g):
-        return real_g
+    def get_network(self, index):
+        return self.dataset._data["networks"][index].data
 
 
 class GNNPredictionMetrics(PredictionMetrics):
-    def __init__(self, config, verbose=0):
-        PredictionMetrics.__init__(self, config, verbose)
-
     def get_model(self, experiment):
         return experiment.model
 
-    def predict(self, real_x, obs_x, real_y, obs_y):
-        return self.model.predict(obs_x)
+    def get_prediction(self, g_index, s_index):
+        x = self.dataset.data["inputs"][g_index].data[s_index]
+        return self.model.predict(x)

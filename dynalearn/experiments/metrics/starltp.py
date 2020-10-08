@@ -10,7 +10,7 @@ from itertools import product
 class StarLTPMetrics(LTPMetrics):
     def __init__(self, config, verbose=0):
         LTPMetrics.__init__(self, config, verbose)
-        self.degree_class = config.degree_class
+        self.degree = config.degree
         self.names = ["ltp", "summaries"]
 
     def initialize(self, experiment):
@@ -26,8 +26,7 @@ class StarLTPMetrics(LTPMetrics):
             self.window_size = experiment.model.window_size
         eff_num_states = self.num_states ** self.window_size
         self.num_updates = np.sum(
-            binom(self.degree_class + eff_num_states - 1, eff_num_states - 1)
-            * eff_num_states
+            binom(self.degree + eff_num_states - 1, eff_num_states - 1) * eff_num_states
         ).astype("int")
 
         self.get_data["ltp"] = lambda pb: self._get_ltp_(pb=pb)
@@ -38,10 +37,10 @@ class StarLTPMetrics(LTPMetrics):
 
     def _get_ltp_(self, pb=None):
         eff_num_states = self.num_states ** self.window_size
-        num_nodes = np.max(self.degree_class) + 1
+        num_nodes = np.max(self.degree) + 1
         ltp = np.zeros((self.num_updates, self.num_states))
         i = 0
-        for k in self.degree_class:
+        for k in self.degree:
             g = nx.empty_graph(num_nodes)
             g.add_edges_from(nx.star_graph(k).edges())
             self.model.network = g

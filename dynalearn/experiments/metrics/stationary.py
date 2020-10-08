@@ -1,58 +1,32 @@
-import networkx as nx
 import numpy as np
 
 from abc import abstractmethod
-from .metrics import Metrics
-from dynalearn.utilities import poisson_distribution, from_nary
-from dynalearn.networks import (
-    Network,
-    GenerativeNetwork,
-    ConfigurationNetwork,
-    RealNetwork,
-    RealTemporalNetwork,
-)
-from dynalearn.config import NetworkConfig
 from random import sample
+from dynalearn.utilities import poisson_distribution
+from dynalearn.networks import ConfigurationNetwork, ERNetwork
+from dynalearn.config import NetworkConfig
+from .metrics import Metrics
+from ._utils import Initializer, ModelSampler, Statistics
 
 
 class StationaryStateMetrics(Metrics):
     def __init__(self, config, verbose=0):
         Metrics.__init__(self, config, verbose)
-
         if "parameters" in config.__dict__:
             self.parameters = config.parameters
         else:
             self.parameters = None
         self.num_samples = config.num_samples
-        self.num_windows = config.num_windows
-        self.sample_graph = config.sample_graph
-        self.full_data = config.full_data
-        self.burn = config.burn
+        self.initializer = Initializer(self.config)
+        self.sampler = ModelSampler.getter(self.config)
+        self.statistics = Statistics.getter(self.config)
 
         self.dynamics = None
         self.networks = None
         self.model = None
 
-        if self.parameters is None:
-            self.names = ["stationary_state"]
-        else:
-            self.names = ["parameters", "stationary_state"]
-
-        if self.full_data:
-            self.statistics = self._statistics_full
-        else:
-            self.statistics = self._statistics_meanstd
-
     @abstractmethod
     def get_model(self, experiment):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def initial_state(self, initial_infected=None):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def avg(self, x, axis=-1):
         raise NotImplementedError()
 
     def get_networks(self, experiment):
@@ -65,84 +39,49 @@ class StationaryStateMetrics(Metrics):
         self.dynamics = experiment.dynamics
         self.networks = self.get_networks(experiment)
         self.model = self.get_model(experiment)
-        self.num_states = self.model.num_states
-        if "window_size" in self.model.__dict__:
-            self.window_size = experiment.model.window_size
-            self.window_step = experiment.model.window_step
-        else:
-            self.window_size = 1
-            self.window_step = 1
+        self.initializer.setUp(self)
+        self.sampler.setUp(self)
 
-        if self.parameters is None:
-            self.num_updates = self.num_windows
-            self.get_data["stationary_state"] = lambda pb: self._stationary_state_(
-                pb=pb
-            )
-        else:
-            self.num_updates = self.num_windows * len(self.parameters)
-            self.get_data["parameters"] = lambda pb=None: self.parameters
-            self.get_data["stationary_state"] = lambda pb: self._all_stationary_states_(
-                pb
-            )
+        self.num_updates = self.num_samples
 
-    def initial_network(self):
-        if issubclass(self.networks.__class__, RealTemporalNetwork):
-            g = self.networks.complete_network
-        elif hasattr(self.networks, "generate"):
-            g = self.networks.generate()
-        else:
-            g = sample(self.networks.data, 1)[0]
+        if self.parameters is not None:
+            self.num_updates *= len(self.parameters)
+            self.names.append("parameters")
+            self.get_data["parameters"] = lambda pb: self.parameters
+        for m in self.initializer.all_modes:
+            self.get_data[m] = lambda pb: self._all_stationary_states_(mode=m, pb=pb)
+            self.names.append(m)
+
+    def initialize_network(self):
+        g = self.networks.generate()
         self.dynamics.network = g
         self.model.network = g
 
-    def burning(self, x, burn=1):
-        for b in range(burn):
-            y = x.T[:: self.window_step]
-            y = self.model.sample(y.T)
-            x = np.roll(x, -1, axis=-1)
-            x.T[-1] = y.T
-        return x
-
-    def _all_stationary_states_(self, pb=None):
-        stationary_states = []
-        for p in self.parameters:
-            stationary_states.append(self._stationary_state_(param=p, pb=pb))
-        return np.array(stationary_states)
-
-    def _stationary_state_(self, param=None, epsilon=None, pb=None):
+    def _stationary_(self, param=None, pb=None):
         if param is not None:
             self.change_param(param)
         samples = []
-        self.initial_network()
-        x = self.initial_state(initial_infected=epsilon)
-
-        for i in range(self.num_windows):
-            if np.random.rand() < self.sample_graph:
-                self.initial_network()
-                x = self.burning(x, self.burn)
-
-            x = self.burning(x, self.burn)
-            avg_x = self.avg(x)
-            if len(samples) == self.num_samples:
-                samples.pop(0)
-            samples.append(x)
-
-            if self.verbose and pb is not None:
+        for i in range(self.num_samples):
+            self.initialize_network()
+            samples.append(self.sampler(self.model, self.initializer, self.statistics))
+            if pb is not None:
                 pb.update()
-            if self.dynamics.is_dead(x):
-                x = self.initial_state(initial_infected=epsilon)
-        avg_samples = self.avg(np.array(samples))
-        return self.statistics(avg_samples)
+        samples = np.array(samples)
+        samples.reshape(-1, samples.shape[-1])
+        self.initializer.update(self.statistics.avg(samples))
+        y = self.statistics(samples)
+        return y
 
-    def _statistics_meanstd(self, avg_samples):
-        data = np.zeros((2, avg_samples.shape[0]))
-        data[0] = np.mean(avg_samples, axis=-1)
-        data[1] = np.std(avg_samples, axis=-1)
-        return data
-
-    def _statistics_full(self, avg_samples):
-        data = avg_samples.T
-        return data
+    def _all_stationary_states_(self, mode=None, pb=None):
+        s = []
+        if mode is not None:
+            self.initializer.mode = mode
+        if self.parameters is not None:
+            for p in self.parameters:
+                s.append(self._stationary_(param=p, pb=pb))
+        else:
+            s.append(self._stationary_(pb=pb))
+        return np.array(s)
 
 
 class TrueSSMetrics(StationaryStateMetrics):
@@ -155,228 +94,58 @@ class GNNSSMetrics(StationaryStateMetrics):
         return experiment.model
 
 
-class EpidemicSSMetrics(StationaryStateMetrics):
+class PoissonSSMetrics(StationaryStateMetrics):
     def __init__(self, config, verbose=0):
         StationaryStateMetrics.__init__(self, config, verbose)
-        self.epsilon = config.epsilon
-        self.adaptive = config.adaptive
-
-        if self.parameters is None:
-            self.names = ["absorbing_stationary_state", "epidemic_stationary_state"]
-        else:
-            self.names = [
-                "parameters",
-                "absorbing_stationary_state",
-                "epidemic_stationary_state",
-            ]
-
-    def initialize(self, experiment):
-        self.dynamics = experiment.dynamics
-        self.networks = self.get_networks(experiment)
-        self.model = self.get_model(experiment)
-        self.num_states = self.model.num_states
-        if "window_size" in self.model.__dict__:
-            self.window_size = experiment.model.window_size
-            self.window_step = experiment.model.window_step
-        else:
-            self.window_size = 1
-            self.window_step = 1
-
-        if self.parameters is None:
-            self.num_updates = 2 * self.num_windows
-            self.get_data[
-                "epidemic_stationary_state"
-            ] = lambda pb: self._stationary_state_(1 - self.epsilon, pb=pb)
-            self.get_data[
-                "absorbing_stationary_state"
-            ] = lambda pb: self._stationary_state_(self.epsilon, pb=pb)
-        else:
-            self.num_updates = 2 * self.num_windows * len(self.parameters)
-            self.get_data["parameters"] = lambda pb=None: self.parameters
-            self.get_data[
-                "absorbing_stationary_state"
-            ] = lambda pb: self._all_stationary_states_(
-                epsilon=self.epsilon, pb=pb, ascend=True
-            )
-            self.get_data[
-                "epidemic_stationary_state"
-            ] = lambda pb: self._all_stationary_states_(
-                epsilon=1 - self.epsilon, pb=pb, ascend=False
-            )
-
-    def initial_state(self, initial_infected=None):
-        x0 = np.zeros((self.networks.num_nodes, self.window_size * self.window_step))
-        x0[:, 0] = self.dynamics.initial_state(initial_infected=initial_infected)
-        for i in range(1, self.window_size * self.window_step):
-            x0[:, i] = self.dynamics.sample(x0[i - 1])
-        return x0
-
-    def avg(self, x, axis=-1):
-        avg_x = []
-
-        if x.shape == (self.networks.num_nodes, self.window_size * self.window_step):
-            x = from_nary(x[:, :: self.window_step], axis=-1, base=self.num_states)
-        else:
-            x = np.array(
-                [
-                    from_nary(xx[:, :: self.window_step], axis=-1, base=self.num_states)
-                    for xx in x
-                ]
-            )
-        for i in range(self.num_states ** self.window_size):
-            avg_x.append(np.mean(x == i, axis=axis))
-        return np.array(avg_x)
-
-    def _all_stationary_states_(self, epsilon=None, pb=None, ascend=True):
-        stationary_states = []
-        if ascend:
-            params = np.sort(self.parameters)
-        else:
-            params = np.sort(self.parameters)[::-1]
-
-        for p in params:
-            stats = self._stationary_state_(p, epsilon, pb)
-            stationary_states.append(stats)
-            if self.adaptive:
-                if self.full_data:
-                    epsilon = 1 - np.mean(stats, axis=-1)[0]
-                else:
-                    epsilon = 1 - stats[0, 0]
-
-                if epsilon < self.epsilon:
-                    epsilon = self.epsilon
-                elif epsilon > 1 - self.epsilon:
-                    epsilon = 1 - self.epsilon
-        if ascend:
-            return np.array(stationary_states)
-        else:
-            return np.array(stationary_states)[::-1]
-
-
-class TrueESSMetrics(TrueSSMetrics, EpidemicSSMetrics):
-    def __init__(self, config, verbose=0):
-        TrueSSMetrics.__init__(self, config, verbose)
-        EpidemicSSMetrics.__init__(self, config, verbose)
-
-
-class GNNESSMetrics(GNNSSMetrics, EpidemicSSMetrics):
-    def __init__(self, config, verbose=0):
-        GNNSSMetrics.__init__(self, config, verbose)
-        EpidemicSSMetrics.__init__(self, config, verbose)
-
-
-class PoissonESSMetrics(EpidemicSSMetrics):
-    def __init__(self, config, verbose=0):
-        EpidemicSSMetrics.__init__(self, config, verbose)
         self.num_nodes = config.num_nodes
         self.num_k = config.num_k
 
     def get_networks(self, experiment):
         p_k = poisson_distribution(self.parameters[0], self.num_k)
         config = NetworkConfig.configuration(self.num_nodes, p_k)
-        return ConfigurationNetwork(config)
+        self.weight_gen = experiment.networks.weight_gen
+        return ConfigurationNetwork(config, weight_gen=self.weight_gen)
 
     def change_param(self, avgk):
         p_k = poisson_distribution(avgk, self.num_k)
         config = NetworkConfig.configuration(self.num_nodes, p_k)
-        self.networks = ConfigurationNetwork(config)
+        self.networks = ConfigurationNetwork(config, weight_gen=self.weight_gen)
 
 
-class TruePESSMetrics(TrueSSMetrics, PoissonESSMetrics):
+class TruePSSMetrics(TrueSSMetrics, PoissonSSMetrics):
     def __init__(self, config, verbose=0):
         TrueSSMetrics.__init__(self, config, verbose)
-        PoissonESSMetrics.__init__(self, config, verbose)
+        PoissonSSMetrics.__init__(self, config, verbose)
 
 
-class GNNPESSMetrics(GNNSSMetrics, PoissonESSMetrics):
+class GNNPSSMetrics(GNNSSMetrics, PoissonSSMetrics):
     def __init__(self, config, verbose=0):
         GNNSSMetrics.__init__(self, config, verbose)
-        PoissonESSMetrics.__init__(self, config, verbose)
+        PoissonSSMetrics.__init__(self, config, verbose)
 
 
-class MetaPopSSMetrics(EpidemicSSMetrics):
+class ErdosRenyiSSMetrics(StationaryStateMetrics):
     def __init__(self, config, verbose=0):
-        EpidemicSSMetrics.__init__(self, config, verbose)
-        self.window_size = 1
-        self.window_step = 1
-
-    def initial_state(self, initial_infected=None):
-        state_dist = np.zeros(self.dynamics.num_states)
-        state_dist[0] = 1 - initial_infected
-        state_dist[1] = initial_infected
-        x0 = np.zeros(
-            (
-                self.networks.num_nodes,
-                self.num_states,
-                self.window_size * self.window_step,
-            )
-        )
-        x0[:, :, 0] = self.dynamics.initial_state(state_dist=state_dist)
-        for i in range(1, self.window_size * self.window_step):
-            x0[:, :, i] = self.dynamics.sample(x0[i - 1])
-        return x0
-
-    def avg(self, x, axis=-1):
-        if x.shape == (
-            self.networks.num_nodes,
-            self.num_states,
-            self.window_size * self.window_step,
-        ):
-            x = x.reshape(1, *x.shape)
-        x = x.mean(-1)
-        avg_x = []
-        for i in range(self.dynamics.num_states):
-            avg_x.append(np.mean(x[:, :, i], axis=axis))
-        return np.array(avg_x).squeeze()
-
-
-class WeightDecayMPSSMetrics(MetaPopSSMetrics):
-    def __init__(self, config, verbose=0):
-        MetaPopSSMetrics.__init__(self, config, verbose)
-        if "targets" in config.__dict__:
-            self.targets = config.targets
-        else:
-            self.targets = None
+        StationaryStateMetrics.__init__(self, config, verbose)
+        self.num_nodes = config.num_nodes
 
     def get_networks(self, experiment):
-        assert experiment.config.networks.is_weighted
-        network = Network(config=experiment.config.networks)
-        network_copy = Network(config=experiment.config.networks)
-        if issubclass(experiment.networks.__class__, GenerativeNetwork):
-            for i in range(experiment.train_details.num_networks):
-                g = experiment.networks.generate()
-                network.data.append(g)
-                network_copy.data.append(g.copy())
-        else:
-            network.data = experiment.networks.data
-            network_copy.data = experiment.networks.data
-        self._unaltered_networks = network_copy
-        return network
+        p = self.parameters[0] / (self.num_nodes - 1)
+        config = NetworkConfig.erdosrenyi(self.num_nodes, p)
+        self.weight_gen = experiment.networks.weight_gen
+        return ERNetwork(config, weight_gen=self.weight_gen)
 
-    def change_param(self, decay):
-        for i, g in enumerate(self._unaltered_networks.data):
-            if isinstance(g, dict):
-                for k, v in g.items():
-                    self.networks.data[i][k] = self._decay_weight_(v, decay)
-
-            else:
-                self.networks.data[i] = self._decay_weight_(g, decay)
-
-    def _decay_weight_(self, g, decay):
-        assert isinstance(g, (nx.Graph, nx.DiGraph))
-        _g = g.copy()
-        for u, v in g.edges():
-            _g.edges[u, v]["weight"] *= decay
-        return _g
+    def change_param(self, avgk):
+        self.networks.config.p = avgk / (self.num_nodes - 1)
 
 
-class TrueWDMPSSMetrics(TrueSSMetrics, WeightDecayMPSSMetrics):
+class TrueERSSMetrics(TrueSSMetrics, ErdosRenyiSSMetrics):
     def __init__(self, config, verbose=0):
-        TrueSSMetrics.__init__(self, config, verbose=verbose)
-        WeightDecayMPSSMetrics.__init__(self, config, verbose=verbose)
+        TrueSSMetrics.__init__(self, config, verbose)
+        ErdosRenyiSSMetrics.__init__(self, config, verbose)
 
 
-class GNNWDMPSSMetrics(GNNSSMetrics, WeightDecayMPSSMetrics):
+class GNNERSSMetrics(GNNSSMetrics, ErdosRenyiSSMetrics):
     def __init__(self, config, verbose=0):
-        GNNSSMetrics.__init__(self, config, verbose=verbose)
-        WeightDecayMPSSMetrics.__init__(self, config, verbose=verbose)
+        GNNSSMetrics.__init__(self, config, verbose)
+        ErdosRenyiSSMetrics.__init__(self, config, verbose)
