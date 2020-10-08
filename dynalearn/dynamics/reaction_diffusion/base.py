@@ -12,10 +12,10 @@ from itertools import product
 
 class ReactionDiffusion(Dynamics):
     def __init__(self, config, num_states):
-        if "state_dist" in config.__dict__:
-            self.state_dist = config.state_dist
+        if "init_param" in config.__dict__:
+            self.init_param = config.init_param
         else:
-            self.state_dist = -1
+            self.init_param = -1
         if "density" in config.__dict__:
             self.density = config.density
         else:
@@ -30,18 +30,18 @@ class ReactionDiffusion(Dynamics):
     def diffusion(self, x):
         raise NotImplemented()
 
-    def initial_state(self, state_dist=None, density=None):
-        if state_dist is None:
-            state_dist = self.state_dist
+    def initial_state(self, init_param=None, density=None):
+        if init_param is None:
+            init_param = self.init_param
 
         if density is None:
             density = self.density
-        if not isinstance(state_dist, (np.ndarray, list)):
+        if not isinstance(init_param, (np.ndarray, list)):
             p = np.random.rand(self.num_states)
             p /= p.sum()
         else:
-            assert len(state_dist) == self.num_states
-            p = np.array(state_dist)
+            assert len(init_param) == self.num_states
+            p = np.array(init_param)
 
         if density == -1.0:
             self.density = self.num_nodes

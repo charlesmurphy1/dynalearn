@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 import torch
 
+from abc import abstractmethod
 from dynalearn.dynamics.dynamics import Dynamics
 from dynalearn.nn.models import Propagator
 from dynalearn.utilities import from_binary, onehot
@@ -10,10 +11,10 @@ from dynalearn.utilities import from_binary, onehot
 class StochasticEpidemics(Dynamics):
     def __init__(self, config, num_states):
         Dynamics.__init__(self, config, num_states)
-        if "initial_infected" in config.__dict__:
-            self.initial_infected = config.initial_infected
+        if "init_param" in config.__dict__:
+            self.init_param = config.init_param
         else:
-            self.initial_infected = -1
+            self.init_param = None
         self.propagator = Propagator(num_states)
         self.state_map = {i: i for i in range(num_states)}
         self.window_size = 1
@@ -56,50 +57,76 @@ class StochasticEpidemics(Dynamics):
         l = l.cpu().numpy()
         return l
 
+    def initial_state(self, init_param=None):
+        if init_param is None:
+            init_param = self.init_param
+        if init_param is None:
+            init_param = np.random.rand(self.num_states)
+            init_param /= init_param.sum()
+        elif isinstance(init_param, list):
+            init_param = np.array(init_param)
 
-class MultiStochasticEpidemics(StochasticEpidemics):
-    def __init__(self, params, num_diseases, num_states):
-        self.num_diseases = num_diseases
-        if num_states < 2:
-            raise ValueError(
-                f"num_states must be greater than or equal to {2**num_diseases}"
-            )
-        StochasticEpidemics.__init__(self, params, num_states)
-
-    def initial_state(self, initial_infected=None):
-        if initial_infected is None:
-            initial_infected = self.initial_infected
-
-        if initial_infected == -1.0:
-            p = [np.random.rand() for i in range(self.num_diseases)]
-        elif initial_infected >= 0 and initial_infected <= 1:
-            p = np.ones(self.num_diseases) * (
-                1 - (1 - initial_infected) ** (1.0 / self.num_diseases)
-            )
-        else:
-            raise ValueError(
-                "Value for 'initial_infected'"
-                + f" must be between [0, 1] or equal to -1:"
-                + f" Received {initial_infected}."
-            )
-        n_infected = [np.random.binomial(self.num_nodes, pp) for pp in p]
-        nodeset = np.arange(self.num_nodes)
-        index = [np.random.choice(nodeset, size=n, replace=False) for n in n_infected]
-        bin_x = np.zeros((self.num_nodes, self.num_diseases))
-        for i, ind in enumerate(index):
-            bin_x[ind, i] = 1
-        x = np.array([from_binary(b[::-1]) for b in bin_x])
-        return x
+        assert isinstance(init_param, np.ndarray)
+        assert init_param.shape == (self.num_states,)
+        x = np.random.multinomial(1, init_param, size=self.num_nodes)
+        return np.where(x == 1.0)[1]
 
     def is_dead(self, x):
-        if len(x.shape) > 1:
+        if x.ndim > 1:
             x = x[-1]
-        if np.all(x == 0):
+        if self.number_of_infected(x) == 0:
             return True
         else:
             return False
 
+    @abstractmethod
+    def number_of_infected(self, x):
+        raise NotImplemented
 
-class SingleStochasticEpidemics(MultiStochasticEpidemics):
-    def __init__(self, config, num_states):
-        MultiStochasticEpidemics.__init__(self, config, 1, num_states)
+
+# class MultiStochasticEpidemics(StochasticEpidemics):
+#     def __init__(self, params, num_diseases, num_states):
+#         self.num_diseases = num_diseases
+#         if num_states < 2:
+#             raise ValueError(
+#                 f"num_states must be greater than or equal to {2**num_diseases}"
+#             )
+#         StochasticEpidemics.__init__(self, params, num_states)
+
+# def initial_state(self, initial_infected=None):
+#     if initial_infected is None:
+#         initial_infected = self.initial_infected
+#
+#     if initial_infected == -1.0:
+#         p = [np.random.rand() for i in range(self.num_diseases)]
+#     elif initial_infected >= 0 and initial_infected <= 1:
+#         p = np.ones(self.num_diseases) * (
+#             1 - (1 - initial_infected) ** (1.0 / self.num_diseases)
+#         )
+#     else:
+#         raise ValueError(
+#             "Value for 'initial_infected'"
+#             + f" must be between [0, 1] or equal to -1:"
+#             + f" Received {initial_infected}."
+#         )
+#     n_infected = [np.random.binomial(self.num_nodes, pp) for pp in p]
+#     nodeset = np.arange(self.num_nodes)
+#     index = [np.random.choice(nodeset, size=n, replace=False) for n in n_infected]
+#     bin_x = np.zeros((self.num_nodes, self.num_diseases))
+#     for i, ind in enumerate(index):
+#         bin_x[ind, i] = 1
+#     x = np.array([from_binary(b[::-1]) for b in bin_x])
+#     return x
+
+#     def is_dead(self, x):
+#         if len(x.shape) > 1:
+#             x = x[-1]
+#         if np.all(x == 0):
+#             return True
+#         else:
+#             return False
+#
+#
+# class SingleStochasticEpidemics(MultiStochasticEpidemics):
+#     def __init__(self, config, num_states):
+#         MultiStochasticEpidemics.__init__(self, config, 1, num_states)

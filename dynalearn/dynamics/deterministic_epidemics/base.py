@@ -13,10 +13,10 @@ from dynalearn.utilities import set_node_attr, get_node_attr
 
 class DeterministicEpidemics(Dynamics):
     def __init__(self, config, num_states):
-        if "state_dist" in config.__dict__:
-            self.state_dist = config.state_dist
+        if "init_param" in config.__dict__:
+            self.init_param = config.init_param
         else:
-            self.state_dist = -1
+            self.init_param = -1
         if "density" in config.__dict__:
             self.density = config.density
         else:
@@ -29,21 +29,19 @@ class DeterministicEpidemics(Dynamics):
     def update(self, x):
         raise NotImplemented()
 
-    def initial_state(self, state_dist=None, density=None):
-        if state_dist is None:
-            state_dist = self.state_dist
-
+    def initial_state(self, init_param=None, density=None):
+        if init_param is None:
+            init_param = self.init_param
         if density is None:
             density = self.density
-        if not isinstance(state_dist, (np.ndarray, list)):
+        if density == -1.0:
+            density = self.num_nodes
+        if not isinstance(init_param, (np.ndarray, list)):
             p = np.random.rand(self.num_states)
             p /= p.sum()
         else:
-            assert len(state_dist) == self.num_states
-            p = np.array(state_dist)
-
-        if density == -1.0:
-            self.density = self.num_nodes
+            assert len(init_param) == self.num_states
+            p = np.array(init_param)
 
         x = np.zeros([self.num_nodes, self.num_states])
         if isinstance(self.network, dict):
@@ -51,12 +49,11 @@ class DeterministicEpidemics(Dynamics):
         else:
             g = self.network
         if "population" not in g.nodes[0]:
-            if self.population is None:
-                if isinstance(density, (float, int)):
-                    self.population = np.random.poisson(density, size=self.num_nodes)
-                elif isinstance(density, (list, np.ndarray)):
-                    assert len(density) == self.num_nodes
-                    self.population = np.array(density)
+            if isinstance(density, (float, int)):
+                self.population = np.random.poisson(density, size=self.num_nodes)
+            elif isinstance(density, (list, np.ndarray)):
+                assert len(density) == self.num_nodes
+                self.population = np.array(density)
             g = set_node_attr(g, {"population": self.population})
 
         if isinstance(self.network, dict):
@@ -75,7 +72,13 @@ class DeterministicEpidemics(Dynamics):
     def predict(self, x):
         if len(x.shape) == 3:
             x = x[:, :, -1].squeeze()
-        return x + self.update(x)
+        dx = self.update(x)
+        y = x + dx
+        y[y < 0] = 0
+        y[y > 1] = 1
+        y /= y.sum(-1, keepdims=True)
+
+        return y
 
     def sample(self, x):
         return self.predict(x)

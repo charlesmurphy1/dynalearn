@@ -24,8 +24,8 @@ class SimpleTrainableDeterministicEpidemics(DeterministicEpidemics):
     def __init__(self, config=None, **kwargs):
         self.config = config or Config(**kwargs)
         DeterministicEpidemics.__init__(self, config, config.num_states)
-        self.window_size = config.window_size
-        self.window_step = config.window_step
+        # self.window_size = config.window_size
+        # self.window_step = config.window_step
         self.nn = DeterministicEpidemicsGNN(config)
         if torch.cuda.is_available():
             self.nn = self.nn.cuda()

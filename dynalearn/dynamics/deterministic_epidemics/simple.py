@@ -182,16 +182,17 @@ class WeightedDSIR(SimpleDSIR, WeightedDeterministicEpidemics):
             infection = 1 - (1 - self.infection_prob / self.population) ** I
 
         infection = infection.squeeze()
-        k = self.node_strength.squeeze()
+        s = self.node_strength.squeeze()
+        k = self.node_degree.squeeze()
         inf_update = (
             self.propagator(infection, self.edge_index, w=self.edge_weight)
             .cpu()
             .detach()
             .numpy()
         ).squeeze()
-        inf_update[k == 0] = 0
-        k[k == 0] = 1
-        return inf_update / k
+        inf_update[s == 0] = 0
+        s[s == 0] = 1
+        return inf_update / s * k
 
 
 class MultiplexDSIR(SimpleDSIR, MultiplexDeterministicEpidemics):
@@ -207,7 +208,7 @@ class MultiplexDSIR(SimpleDSIR, MultiplexDeterministicEpidemics):
             infection = 1 - (1 - self.infection_prob / self.population) ** I
 
         infection = infection.squeeze()
-        k = self.node_degree["all"].squeeze()
+        k = self.node_degree.squeeze()
         inf_update = (
             self.propagator(infection, self.edge_index["all"])
             .cpu()
@@ -216,7 +217,6 @@ class MultiplexDSIR(SimpleDSIR, MultiplexDeterministicEpidemics):
             .squeeze()
         )
         inf_update[k == 0] = 0
-        k[k == 0] = 1
         return inf_update / k
 
 
@@ -232,7 +232,8 @@ class WeightedMultiplexDSIR(SimpleDSIR, WeightedMultiplexDeterministicEpidemics)
         elif self.infection_type == 2:
             infection = 1 - (1 - self.infection_prob / self.population) ** I
         infection = infection.squeeze()
-        k = self.node_strength["all"].squeeze()
+        k = self.node_degree["all"].squeeze()
+        s = self.node_strength["all"].squeeze()
         inf_update = (
             self.propagator(
                 infection, self.edge_index["all"], w=self.edge_weight["all"]
@@ -242,9 +243,9 @@ class WeightedMultiplexDSIR(SimpleDSIR, WeightedMultiplexDeterministicEpidemics)
             .numpy()
             .squeeze()
         )
-        inf_update[k == 0] = 0
-        k[k == 0] = 1
-        return inf_update / k
+        inf_update[s == 0] = 0
+        s[s == 0] = 1
+        return inf_update / s
 
 
 def DSIS(config=None, **kwargs):

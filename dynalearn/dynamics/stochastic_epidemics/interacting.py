@@ -1,17 +1,16 @@
 import numpy as np
 import torch
 
-from .base import MultiStochasticEpidemics
+from .base import StochasticEpidemics
 from dynalearn.datasets.transforms import RemapStateTransform
 from dynalearn.dynamics.activation import independent
 from dynalearn.config import Config
 from dynalearn.utilities import onehot
 
 
-class SISSIS(MultiStochasticEpidemics):
+class SISSIS(StochasticEpidemics):
     def __init__(self, config=None, **kwargs):
         config = config or Config(**kwargs)
-        num_diseases = 2
         num_states = 4
 
         self.infection1 = config.infection1
@@ -20,7 +19,7 @@ class SISSIS(MultiStochasticEpidemics):
         self.recovery2 = config.recovery2
         self.coupling = config.coupling
 
-        super(SISSIS, self).__init__(config, num_diseases, num_states)
+        StochasticEpidemics.__init__(self, config, num_states)
 
     def predict(self, x):
         if len(x.shape) > 1:
@@ -89,6 +88,9 @@ class SISSIS(MultiStochasticEpidemics):
         rec1 = np.ones(x.shape) * self.recovery2
 
         return rec0, rec1
+
+    def number_of_infected(self, x):
+        return x.size - np.sum(x == 0)
 
 
 class AsymmetricSISSIS(SISSIS):
@@ -252,10 +254,9 @@ class PartiallyHiddenSISSIS(SISSIS):
         return loglikelihood
 
 
-class SISnoise(MultiStochasticEpidemics):
+class SISnoise(StochasticEpidemics):
     def __init__(self, config=None, **kwargs):
         config = config or Config(**kwargs)
-        num_diseases = 2
         num_states = 4
         self.infection1 = config.infection1
         self.recovery = config.recovery
@@ -263,7 +264,7 @@ class SISnoise(MultiStochasticEpidemics):
         self.transform = RemapStateTransform()
         self.transform.state_map = {0: 0, 1: 1, 2: 0, 3: 1}
 
-        MultiStochasticEpidemics.__init__(self, config, num_diseases, num_states)
+        StochasticEpidemics.__init__(self, config, num_states)
 
     def predict(self, x):
         if len(x.shape) > 1:
@@ -289,3 +290,6 @@ class SISnoise(MultiStochasticEpidemics):
         ltp[x == 1, 2] = q * self.noise
         ltp[x == 1, 3] = (1 - q) * self.noise
         return ltp
+
+    def number_of_infected(self, x):
+        return x.size - np.sum(x == 0)

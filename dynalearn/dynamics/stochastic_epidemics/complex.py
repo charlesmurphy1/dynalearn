@@ -1,14 +1,14 @@
 import networkx as nx
 import numpy as np
 
-from .base import SingleStochasticEpidemics
+from .base import StochasticEpidemics
 from dynalearn.config import Config
 from dynalearn.dynamics.activation import constant, threshold, nonlinear, sine, planck
 
 
-class ComplexSIS(SingleStochasticEpidemics):
+class ComplexSIS(StochasticEpidemics):
     def __init__(self, config, activation, deactivation):
-        super(ComplexSIS, self).__init__(config, 2)
+        StochasticEpidemics.__init__(self, config, 2)
         self.activation = activation
         self.deactivation = deactivation
 
@@ -25,10 +25,13 @@ class ComplexSIS(SingleStochasticEpidemics):
         ltp[x == 1, 1] = 1 - q[x == 1]
         return ltp
 
+    def number_of_infected(self, x):
+        return np.sum(x == 1)
 
-class ComplexSIR(SingleStochasticEpidemics):
+
+class ComplexSIR(StochasticEpidemics):
     def __init__(self, config, activation, deactivation):
-        super(ComplexSIR, self).__init__(config, 2)
+        StochasticEpidemics.__init__(self, config, 2)
         self.activation = activation
         self.deactivation = deactivation
 
@@ -49,6 +52,9 @@ class ComplexSIR(SingleStochasticEpidemics):
         ltp[x == 2, 1] = 0
         ltp[x == 2, 2] = 1
         return ltp
+
+    def number_of_infected(self, x):
+        return np.sum(x == 1)
 
 
 class ThresholdSIS(ComplexSIS):

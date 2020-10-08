@@ -16,19 +16,11 @@ class SimpleTrainableStochasticEpidemics(StochasticEpidemics):
     def __init__(self, config=None, **kwargs):
         self.config = config or Config(**kwargs)
         StochasticEpidemics.__init__(self, config, config.num_states)
-        self.window_size = config.window_size
-        self.window_step = config.window_step
+        # self.window_size = config.window_size
+        # self.window_step = config.window_step
         self.nn = StochasticEpidemicsGNN(config)
         if torch.cuda.is_available():
             self.nn = self.nn.cuda()
-
-    def initial_state(self):
-        return np.random.randint(
-            self.num_states, size=(self.num_nodes, self.window_size)
-        ).squeeze()
-
-    def is_dead(self):
-        return False
 
     def predict(self, x):
         if isinstance(x, np.ndarray):
@@ -39,6 +31,9 @@ class SimpleTrainableStochasticEpidemics(StochasticEpidemics):
         g = self.nn.transformers["t_networks"].forward(self.network)
         y = self.nn.transformers["t_targets"].backward(self.nn.forward(x, g))
         return y.cpu().detach().numpy()
+
+    def number_of_infected(self, x):
+        return np.inf
 
 
 def TrainableStochasticEpidemics(config=None, **kwargs):

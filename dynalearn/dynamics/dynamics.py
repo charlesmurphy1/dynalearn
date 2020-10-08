@@ -35,6 +35,16 @@ class Dynamics(ABC):
         self._edge_index = None
         self._num_nodes = None
 
+        if "window_size" in config.__dict__:
+            self.window_size = config.window_size
+        else:
+            self.window_size = 1
+
+        if "window_step" in config.__dict__:
+            self.window_step = config.window_step
+        else:
+            self.window_step = 1
+
     @abstractmethod
     def initial_state(self):
         raise NotImplementedError("self.initial_state() has not been impletemented")

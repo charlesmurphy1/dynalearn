@@ -1,14 +1,14 @@
 import numpy as np
 
-from .base import SingleStochasticEpidemics
+from .base import StochasticEpidemics
 from dynalearn.dynamics.activation import independent
 from dynalearn.config import Config
 
 
-class SIS(SingleStochasticEpidemics):
+class SIS(StochasticEpidemics):
     def __init__(self, config=None, **kwargs):
         config = config or Config(**kwargs)
-        super(SIS, self).__init__(config, 2)
+        StochasticEpidemics.__init__(self, config, 2)
         self.infection = config.infection
         self.recovery = config.recovery
 
@@ -24,11 +24,14 @@ class SIS(SingleStochasticEpidemics):
         ltp[x == 1, 1] = 1 - q
         return ltp
 
+    def number_of_infected(self, x):
+        return np.sum(x == 1)
 
-class SIR(SingleStochasticEpidemics):
+
+class SIR(StochasticEpidemics):
     def __init__(self, config=None, **kwargs):
         config = config or Config(**kwargs)
-        super(SIR, self).__init__(config, 3)
+        StochasticEpidemics.__init__(self, config, 3)
         self.infection = config.infection
         self.recovery = config.recovery
 
@@ -48,3 +51,6 @@ class SIR(SingleStochasticEpidemics):
         ltp[x == 2, 1] = 0
         ltp[x == 2, 2] = 1
         return ltp
+
+    def number_of_infected(self, x):
+        return np.sum(x == 1)
