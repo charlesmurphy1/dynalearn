@@ -30,3 +30,7 @@ class Config:
     @property
     def state_dict(self):
         return self.get_state_dict()
+
+    def merge(self, config):
+        for k, v in config.__dict__.items():
+            self.__dict__[k] = v

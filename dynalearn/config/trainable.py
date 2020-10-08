@@ -1,5 +1,5 @@
 from .config import Config
-from .optimizers import OptimizerConfig
+from ._utils import OptimizerConfig
 from dynalearn.nn.optimizers import *
 
 

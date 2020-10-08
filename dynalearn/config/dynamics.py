@@ -10,7 +10,7 @@ class DynamicsConfig(Config):
         cls.name = "SIS"
         cls.infection = 0.04
         cls.recovery = 0.08
-        cls.initial_infected = -1
+        cls.init_param = None
         return cls
 
     @classmethod
@@ -19,7 +19,7 @@ class DynamicsConfig(Config):
         cls.name = "SIR"
         cls.infection = 0.04
         cls.recovery = 0.08
-        cls.initial_infected = -1
+        cls.init_param = None
         return cls
 
     @classmethod
@@ -28,7 +28,8 @@ class DynamicsConfig(Config):
         cls.name = "PlanckSIS"
         cls.temperature = 6.0
         cls.recovery = 0.08
-        cls.initial_infected = -1
+        cls.init_param = None
+
         return cls
 
     @classmethod
@@ -40,88 +41,8 @@ class DynamicsConfig(Config):
         cls.recovery1 = 0.12
         cls.recovery2 = 0.13
         cls.coupling = 10.0
-        cls.initial_infected = -1
-        return cls
+        cls.init_param = None
 
-    @classmethod
-    def asymmetric_sissis(cls):
-        cls = cls()
-        cls.name = "SISSIS"
-        cls.infection1 = 0.02
-        cls.infection2 = 0.01
-        cls.recovery1 = 0.12
-        cls.recovery2 = 0.13
-        cls.coupling = 10.0
-        cls.boost = "source"
-        cls.initial_infected = -1
-        return cls
-
-    @classmethod
-    def hidden_sissis(cls):
-        cls = cls()
-        cls.name = "HiddenSISSIS"
-        cls.infection1 = 0.02
-        cls.infection2 = 0.01
-        cls.recovery1 = 0.12
-        cls.recovery2 = 0.13
-        cls.coupling = 10.0
-        cls.initial_infected = -1
-        return cls
-
-    @classmethod
-    def partially_hidden_sissis(cls):
-        cls = cls()
-        cls.name = "PartiallyHiddenSISSIS"
-        cls.infection1 = 0.02
-        cls.infection2 = 0.01
-        cls.recovery1 = 0.12
-        cls.recovery2 = 0.13
-        cls.coupling = 10.0
-        cls.hide_prob = 0.0
-        cls.initial_infected = -1
-        return cls
-
-    @classmethod
-    def rdsis(cls):
-        cls = cls()
-        cls.name = "RDSIS"
-        cls.infection_prob = 0.04
-        cls.recovery_prob = 0.08
-        cls.infection_type = 2
-        cls.diffusion_susceptible = 0.1
-        cls.diffusion_infected = 0.1
-        cls.density = 100
-        epsilon = 5e-5
-        cls.state_dist = np.array([1 - epsilon, epsilon])
-        return cls
-
-    @classmethod
-    def rdsir(cls):
-        cls = cls()
-        cls.name = "RDSIR"
-        cls.infection_prob = 2.5 / 2.3
-        cls.recovery_prob = 1.0 / 7.5
-        cls.infection_type = 2
-        cls.diffusion_susceptible = 0.001
-        cls.diffusion_infected = 0.001
-        cls.diffusion_recovered = 0.001
-        cls.density = 10000
-        epsilon = 5e-5
-        cls.state_dist = np.array([1 - epsilon, epsilon, 0])
-        return cls
-
-    @classmethod
-    def dsis(cls):
-        cls = cls()
-        cls.name = "DSIS"
-        cls.infection_prob = 0.08
-        cls.recovery_prob = 0.08
-        cls.infection_type = 2
-        cls.density = 100
-        # epsilon = 1e-4
-        # cls.state_dist = np.array([1 - epsilon, epsilon])
-        epsilon = 1e-2
-        cls.state_dist = np.array([1 - epsilon, epsilon])
         return cls
 
     @classmethod
@@ -133,7 +54,7 @@ class DynamicsConfig(Config):
         cls.infection_type = 2
         cls.density = 10000
         epsilon = 1e-5
-        cls.state_dist = np.array([1 - epsilon, epsilon, 0])
+        cls.init_param = np.array([1 - epsilon, epsilon, 0])
         return cls
 
     @classmethod
@@ -199,5 +120,5 @@ class DynamicsConfig(Config):
                 86487.0,
             ]
         )
-        cls.state_dist = -1
+        cls.init_param = None
         return cls
