@@ -1,7 +1,6 @@
 import numpy as np
 from .meanfield import Meanfield
 from dynalearn.dynamics.stochastic_epidemics.interacting import SISSIS
-from dynalearn.meanfields import Meanfield
 
 allowed_types = [SISSIS]
 
