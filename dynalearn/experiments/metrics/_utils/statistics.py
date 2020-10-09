@@ -22,7 +22,6 @@ class Statistics:
             )
 
     def avg(self, s):
-        # s dim: [num_stats, num_states]
         y = np.mean(s, axis=(0, 1))
         assert y.shape == (s.shape[-1],)
         return y
@@ -38,7 +37,6 @@ class MeanVarStatistics(Statistics):
         return s
 
     def avg(self, s):
-        # s dim: [num_stats, num_states]
         y = s.mean(0)
         assert y.shape == (s.shape[-1],)
         return y

@@ -281,7 +281,10 @@ class MLELTPMetrics(LTPMetrics):
         return experiment.dynamics
 
     def predict(self, real_x, obs_x, real_y, obs_y):
-        return onehot(obs_y, num_class=self.num_states, dim=-1)
+        # y = onehot(obs_y, num_class=self.num_states, dim=-1)
+        # print(y.shape, obs_y.shape)
+        assert obs_y.shape[-1] == self.num_states
+        return obs_y
 
 
 class UniformLTPMetrics(LTPMetrics):
