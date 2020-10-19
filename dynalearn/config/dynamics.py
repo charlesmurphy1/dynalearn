@@ -35,13 +35,13 @@ class DynamicsConfig(Config):
     @classmethod
     def sissis(cls):
         cls = cls()
-        cls.name = "SISSIS"
-        cls.infection1 = 0.02
-        cls.infection2 = 0.01
-        cls.recovery1 = 0.12
-        cls.recovery2 = 0.13
-        cls.coupling = 10.0
-        cls.init_param = None
+        cls.name = "AsymmetricSISSIS"
+        cls.infection1 = 0.01
+        cls.infection2 = 0.012
+        cls.recovery1 = 0.19
+        cls.recovery2 = 0.22
+        cls.coupling = 50.0
+        cls.boost = "source"
 
         return cls
 

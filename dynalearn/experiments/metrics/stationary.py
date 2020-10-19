@@ -3,7 +3,7 @@ import numpy as np
 from abc import abstractmethod
 from random import sample
 from dynalearn.utilities import poisson_distribution
-from dynalearn.networks import ConfigurationNetwork, ERNetwork
+from dynalearn.networks import ConfigurationNetwork, GNMNetwork
 from dynalearn.config import NetworkConfig
 from .metrics import Metrics
 from ._utils import Initializer, ModelSampler, Statistics
@@ -42,14 +42,17 @@ class StationaryStateMetrics(Metrics):
         self.initializer.setUp(self)
         self.sampler.setUp(self)
 
-        self.num_updates = self.num_samples
-
         if self.parameters is not None:
-            self.num_updates *= len(self.parameters)
-            self.names.append("parameters")
-            self.get_data["parameters"] = lambda pb: self.parameters
+            factor = 0
+            for k, p in self.parameters.items():
+                factor += len(p)
+                self.data[f"param-{k}"] = p
+        else:
+            factor = len(self.config.init_param)
+        self.num_updates = self.num_samples * factor
+
         for m in self.initializer.all_modes:
-            self.get_data[m] = lambda pb: self._all_stationary_states_(mode=m, pb=pb)
+            self.get_data[m] = lambda pb: self._all_stationary_states_(pb=pb)
             self.names.append(m)
 
     def initialize_network(self):
@@ -60,27 +63,31 @@ class StationaryStateMetrics(Metrics):
     def _stationary_(self, param=None, pb=None):
         if param is not None:
             self.change_param(param)
-        samples = []
+        samples = np.zeros((0, self.model.num_states))
+        x0 = None
         for i in range(self.num_samples):
             self.initialize_network()
-            samples.append(self.sampler(self.model, self.initializer))
+            if x0 is None:
+                x0 = self.initializer()
+            y, x0 = self.sampler(self.model, x0)
+            samples = np.concatenate([samples, y])
             if pb is not None:
                 pb.update()
-        samples = np.array(samples)
-        samples = samples.reshape(-1, samples.shape[-1])
-        self.initializer.update(self.statistics.avg(samples))
+        self.initializer.update(np.mean(samples, axis=0))
         y = self.statistics(samples)
+        print(param, y)
         return y
 
-    def _all_stationary_states_(self, mode=None, pb=None):
+    def _all_stationary_states_(self, pb=None):
         s = []
-        if mode is not None:
-            self.initializer.mode = mode
+        mode = self.initializer.mode
         if self.parameters is not None:
-            for p in self.parameters:
+            for p in self.parameters[mode]:
                 s.append(self._stationary_(param=p, pb=pb))
         else:
             s.append(self._stationary_(pb=pb))
+        self.initializer.next_mode()
+
         return np.array(s)
 
 
@@ -130,13 +137,13 @@ class ErdosRenyiSSMetrics(StationaryStateMetrics):
         self.num_nodes = config.num_nodes
 
     def get_networks(self, experiment):
-        p = self.parameters[0] / (self.num_nodes - 1)
-        config = NetworkConfig.erdosrenyi(self.num_nodes, p)
+        m = 4.0 * self.num_nodes / 2
+        config = NetworkConfig.gnm(self.num_nodes, m)
         self.weight_gen = experiment.networks.weight_gen
-        return ERNetwork(config, weight_gen=self.weight_gen)
+        return GNMNetwork(config, weight_gen=self.weight_gen)
 
     def change_param(self, avgk):
-        self.networks.config.p = avgk / (self.num_nodes - 1)
+        self.networks.config.m = avgk * self.num_nodes / 2
 
 
 class TrueERSSMetrics(TrueSSMetrics, ErdosRenyiSSMetrics):

@@ -169,7 +169,8 @@ class Dataset(object):
         if "data" in h5file:
             self._data = self._load_data_(group)
 
-        w = DataCollection(name="weights")
+        # w = DataCollection(name="weights", template=StateData)
+        w = Weight()
         w.load(group)
         self.weights = w
 
@@ -340,14 +341,14 @@ class Dataset(object):
 
     def _load_data_(self, h5file):
         data = {
-            "networks": DataCollection(name="networks"),
-            "inputs": DataCollection(name="inputs"),
-            "targets": DataCollection(name="targets"),
-            "ground_truth": DataCollection(name="ground_truth"),
+            "networks": DataCollection(name="networks", template=NetworkData),
+            "inputs": DataCollection(name="inputs", template=StateData),
+            "targets": DataCollection(name="targets", template=StateData),
+            "ground_truth": DataCollection(name="ground_truth", template=StateData),
         }
 
         for d_type in ["networks", "inputs", "targets", "ground_truth"]:
-            data[d_type].load(group)
+            data[d_type].load(h5file)
         return data
 
 

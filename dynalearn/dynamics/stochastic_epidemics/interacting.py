@@ -18,6 +18,23 @@ class SISSIS(StochasticEpidemics):
         self.recovery1 = config.recovery1
         self.recovery2 = config.recovery2
         self.coupling = config.coupling
+        assert (
+            self.infection1 >= 0 and self.infection1 <= 1
+        ), "Invalid parameter, infection1 must be between [0, 1]."
+        assert (
+            self.infection2 >= 0 and self.infection2 <= 1
+        ), "Invalid parameter, infection2 must be between [0, 1]."
+        assert (
+            self.recovery1 >= 0 and self.recovery1 <= 1
+        ), "Invalid parameter, recovery1 must be between [0, 1]."
+        assert (
+            self.recovery2 >= 0 and self.recovery2 <= 1
+        ), "Invalid parameter, recovery2 must be between [0, 1]."
+        assert (
+            self.coupling >= 0
+            and self.coupling * self.infection1 < 1
+            and self.coupling * self.infection2 < 1
+        ), "Invalid parameter, coupling must be greater than 0 and bounded."
 
         StochasticEpidemics.__init__(self, config, num_states)
 
@@ -92,6 +109,13 @@ class SISSIS(StochasticEpidemics):
     def number_of_infected(self, x):
         return x.size - np.sum(x == 0)
 
+    def nearly_dead_state(self, num_infected=None):
+        num_infected = num_infected or 1
+        x = np.zeros(self.num_nodes)
+        i = np.random.choice(range(self.num_nodes), size=num_infected)
+        x[i] = 3
+        return x
+
 
 class AsymmetricSISSIS(SISSIS):
     def __init__(self, config=None, **kwargs):
@@ -145,15 +169,15 @@ class AsymmetricSISSIS(SISSIS):
         # Node IS
         inf1[x == 1] = (
             1
-            - (1 - self.infection2) ** l[2, x == 0]
-            * (1 - self.coupling * self.infection2) ** l[3, x == 0]
+            - (1 - self.infection2) ** l[2, x == 1]
+            * (1 - self.coupling * self.infection2) ** l[3, x == 1]
         )
 
         # Node SI
         inf0[x == 2] = (
             1
-            - (1 - self.infection1) ** l[1, x == 0]
-            * (1 - self.coupling * self.infection1) ** l[3, x == 0]
+            - (1 - self.infection1) ** l[1, x == 2]
+            * (1 - self.coupling * self.infection1) ** l[3, x == 2]
         )
         return inf0, inf1
 
@@ -293,3 +317,10 @@ class SISnoise(StochasticEpidemics):
 
     def number_of_infected(self, x):
         return x.size - np.sum(x == 0)
+
+    def nearly_dead_state(self, num_infected=None):
+        num_infected = num_infected or 1
+        x = np.zeros(self.num_nodes)
+        i = np.random.choice(range(self.num_nodes), size=num_infected)
+        x[i] = 3
+        return x

@@ -72,12 +72,16 @@ class StochasticEpidemics(Dynamics):
         return np.where(x == 1.0)[1]
 
     def is_dead(self, x):
-        if x.ndim > 1:
-            x = x[-1]
+        if x.ndim == 2:
+            x = x[:, -1]
         if self.number_of_infected(x) == 0:
             return True
         else:
             return False
+
+    @abstractmethod
+    def nearly_dead_state(self, num_infected=None):
+        raise NotImplemented
 
     @abstractmethod
     def number_of_infected(self, x):

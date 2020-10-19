@@ -1,3 +1,4 @@
+import networkx as nx
 import numpy as np
 
 from abc import abstractmethod
@@ -32,10 +33,6 @@ class DeterministicEpidemics(Dynamics):
     def initial_state(self, init_param=None, density=None):
         if init_param is None:
             init_param = self.init_param
-        if density is None:
-            density = self.density
-        if density == -1.0:
-            density = self.num_nodes
         if not isinstance(init_param, (np.ndarray, list)):
             p = np.random.rand(self.num_states)
             p /= p.sum()
@@ -44,27 +41,36 @@ class DeterministicEpidemics(Dynamics):
             p = np.array(init_param)
 
         x = np.zeros([self.num_nodes, self.num_states])
-        if isinstance(self.network, dict):
-            g = self.network["all"]
-        else:
-            g = self.network
-        if "population" not in g.nodes[0]:
-            if isinstance(density, (float, int)):
-                self.population = np.random.poisson(density, size=self.num_nodes)
-            elif isinstance(density, (list, np.ndarray)):
-                assert len(density) == self.num_nodes
-                self.population = np.array(density)
-            g = set_node_attr(g, {"population": self.population})
-
-        if isinstance(self.network, dict):
-            self.network["all"] = g
-        else:
-            self.network = g
+        self.population = self.init_population(density=density)
 
         for i, n in enumerate(self.population):
             x[i] = np.random.multinomial(n, p) / n
 
         return x
+
+    def init_population(self, density=None):
+        if density is None:
+            density = self.density
+        if density == -1.0:
+            density = self.num_nodes
+        if isinstance(self.network, dict):
+            g = self.network["all"]
+        else:
+            g = self.network
+        assert isinstance(g, nx.Graph)
+        if "population" in g.nodes[0]:
+            population = get_node_attr(g)["population"]
+        else:
+            if isinstance(density, (float, int)):
+                population = np.random.poisson(density, size=self.num_nodes)
+            elif isinstance(density, (list, np.ndarray)):
+                assert len(density) == self.num_nodes
+                population = np.array(density)
+        if isinstance(self.network, dict):
+            self._network["all"] = set_node_attr(g, {"population": population})
+        else:
+            self._network = set_node_attr(g, {"population": population})
+        return population
 
     def loglikelihood(self, x):
         return 1
@@ -88,6 +94,9 @@ class DeterministicEpidemics(Dynamics):
             return True
         else:
             return False
+
+    def update_node_attr(self):
+        self.population = self.init_population()
 
 
 class WeightedDeterministicEpidemics(DeterministicEpidemics, WeightedDynamics):

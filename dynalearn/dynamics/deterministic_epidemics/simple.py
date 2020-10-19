@@ -46,7 +46,7 @@ class SimpleDSIS(DeterministicEpidemics):
         )
         inf_update[k == 0] = 0
         k[k == 0] = 1
-        return inf_update / k
+        return inf_update
 
 
 class WeightedDSIS(SimpleDSIS, WeightedDeterministicEpidemics):
@@ -73,7 +73,7 @@ class WeightedDSIS(SimpleDSIS, WeightedDeterministicEpidemics):
         inf_update[k == 0] = 0
         k[k == 0] = 1
 
-        return inf_update / k
+        return inf_update
 
 
 class MultiplexDSIS(SimpleDSIS, MultiplexDeterministicEpidemics):
@@ -97,7 +97,7 @@ class MultiplexDSIS(SimpleDSIS, MultiplexDeterministicEpidemics):
             .numpy()
             .squeeze()
         )
-        return inf_update / k
+        return inf_update
 
 
 class WeightedMultiplexDSIS(SimpleDSIS, WeightedMultiplexDeterministicEpidemics):
@@ -122,7 +122,7 @@ class WeightedMultiplexDSIS(SimpleDSIS, WeightedMultiplexDeterministicEpidemics)
             .detach()
             .numpy()
         )
-        return inf_update / k
+        return inf_update
 
 
 class SimpleDSIR(DeterministicEpidemics):
@@ -152,21 +152,12 @@ class SimpleDSIR(DeterministicEpidemics):
             infection = 1 - (1 - self.infection_prob) ** I
         elif self.infection_type == 2:
             infection = 1 - (1 - self.infection_prob / self.population) ** I
-        if (
-            np.any(infection > 1)
-            or np.any(np.isnan(infection))
-            or np.any(infection < 0)
-        ):
-            exit()
 
         infection = infection.squeeze()
-        k = self.node_degree.squeeze()
         inf_update = (
             self.propagator(infection, self.edge_index).cpu().detach().numpy().squeeze()
         )
-        inf_update[k == 0] = 0
-        k[k == 0] = 1
-        return inf_update / k
+        return inf_update
 
 
 class WeightedDSIR(SimpleDSIR, WeightedDeterministicEpidemics):
@@ -208,7 +199,6 @@ class MultiplexDSIR(SimpleDSIR, MultiplexDeterministicEpidemics):
             infection = 1 - (1 - self.infection_prob / self.population) ** I
 
         infection = infection.squeeze()
-        k = self.node_degree.squeeze()
         inf_update = (
             self.propagator(infection, self.edge_index["all"])
             .cpu()
@@ -216,8 +206,7 @@ class MultiplexDSIR(SimpleDSIR, MultiplexDeterministicEpidemics):
             .numpy()
             .squeeze()
         )
-        inf_update[k == 0] = 0
-        return inf_update / k
+        return inf_update
 
 
 class WeightedMultiplexDSIR(SimpleDSIR, WeightedMultiplexDeterministicEpidemics):
@@ -245,7 +234,7 @@ class WeightedMultiplexDSIR(SimpleDSIR, WeightedMultiplexDeterministicEpidemics)
         )
         inf_update[s == 0] = 0
         s[s == 0] = 1
-        return inf_update / s
+        return inf_update / s * k
 
 
 def DSIS(config=None, **kwargs):

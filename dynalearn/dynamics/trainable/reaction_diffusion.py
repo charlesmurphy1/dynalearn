@@ -21,8 +21,6 @@ class SimpleTrainableReactionDiffusion(ReactionDiffusion):
         self.config = config or Config(**kwargs)
         ReactionDiffusion.__init__(self, config, config.num_states)
         self.nn = ReactionDiffusionGNN(config)
-        # self.window_size = config.window_size
-        # self.window_step = config.window_step
 
     def reaction(self, x):
         return x

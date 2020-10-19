@@ -6,13 +6,17 @@ from .config import Config
 
 class NetworkConfig(Config):
     @classmethod
-    def erdosrenyi(cls, num_nodes=1000, p=0.004, weights=None, num_layers=None):
+    def gnp(
+        cls, num_nodes=1000, p=0.004, weights=None, transforms=None, num_layers=None
+    ):
         cls = cls()
-        cls.name = "ERNetwork"
+        cls.name = "GNPNetwork"
         cls.num_nodes = num_nodes
         cls.p = p
         if weights is not None:
             cls.weights = weights
+        if transforms is not None:
+            cls.transforms = transforms
 
         if isinstance(num_layers, int):
             cls.layers = [f"layer{i}" for i in range(num_layers)]
@@ -20,60 +24,61 @@ class NetworkConfig(Config):
         return cls
 
     @classmethod
-    def barabasialbert(cls, num_nodes=1000, m=2, p=-1, weights=None, num_layers=None):
+    def gnm(
+        cls, num_nodes=1000, m=2000, weights=None, transforms=None, num_layers=None
+    ):
+        cls = cls()
+        cls.name = "GNMNetwork"
+        cls.num_nodes = num_nodes
+        cls.m = m
+        if weights is not None:
+            cls.weights = weights
+        if transforms is not None:
+            cls.transforms = transforms
+
+        if isinstance(num_layers, int):
+            cls.layers = [f"layer{i}" for i in range(num_layers)]
+
+        return cls
+
+    @classmethod
+    def barabasialbert(
+        cls, num_nodes=1000, m=2, weights=None, transforms=None, num_layers=None
+    ):
         cls = cls()
         cls.name = "BANetwork"
         cls.num_nodes = num_nodes
         cls.m = m
-        cls.p = p
         if weights is not None:
             cls.weights = weights
+        if transforms is not None:
+            cls.transforms = transforms
 
         if isinstance(num_layers, int):
             cls.layers = [f"layer{i}" for i in range(num_layers)]
         return cls
 
     @classmethod
-    def configuration(cls, num_nodes, p_k):
-        cls = cls()
-        cls.name = "ConfigurationNetwork"
-        cls.num_nodes = num_nodes
-        cls.p_k = p_k
+    def w_gnp(cls, num_nodes=1000, p=0.004):
+        w = NetworkWeightConfig.uniform()
+        t = NetworkTransformConfig.sparcifier()
+        cls = cls.gnp(num_nodes=num_nodes, p=p, weights=w, transforms=t)
         return cls
 
     @classmethod
-    def spain_mobility(cls, path, weighted=False, mutliplex=False):
-        cls = cls()
-        cls.name = "RealNetwork"
-        cls.path = path
-        if weighted and multiplex:
-            cls.group_name = "weighted-multiplex"
-        elif weighted and not multiplex:
-            cls.group_name = "weighted"
-        elif not weighted and multiplex:
-            cls.group_name = "multiplex"
-        else:
-            cls.group_name = "thresholded"
-
+    def w_ba(cls, num_nodes=1000, m=2):
+        w = NetworkWeightConfig.uniform()
+        t = NetworkTransformConfig.sparcifier()
+        cls = cls.barabasialbert(num_nodes=num_nodes, m=m, weights=w, transforms=t)
         return cls
 
     @classmethod
-    def realnetwork(cls, path_to_edgelist):
-        cls = cls()
-        cls.name = "RealNetwork"
-        cls.edgelist = np.loadtxt(path_to_edgelist, dtype=np.int)
-        cls.num_nodes = np.unique(cls.edgelist.flatten()).shape[0]
-        return cls
-
-    @classmethod
-    def realtemporalnetwork(cls, path_to_edgelist, window=1):
-        cls = cls()
-        cls.name = "RealTemporalNetwork"
-        cls.edges = np.loadtxt(path_to_edgelist).astype("int")
-        t = np.unique(cls.edges)
-        cls.dt = np.min(np.abs(t - np.roll(t, -1))[:-1])
-        cls.window = int(3600 / cls.dt * window)
-        cls.num_nodes = np.unique(cls.edges[:, :2].flatten()).shape[0]
+    def mw_ba(cls, num_nodes=1000, m=2, num_layers=1):
+        w = NetworkWeightConfig.uniform()
+        t = NetworkTransformConfig.sparcifier()
+        cls = cls.barabasialbert(
+            num_nodes=num_nodes, m=m, weights=w, transforms=t, num_layers=num_layers
+        )
         return cls
 
     @property
@@ -83,6 +88,16 @@ class NetworkConfig(Config):
     @property
     def is_multiplex(self):
         return "layers" in self.__dict__
+
+
+class NetworkTransformConfig(Config):
+    @classmethod
+    def sparcifier(cls):
+        cls = cls()
+        cls.names = ["SparcifierTransform"]
+        cls.maxiter = 100
+        cls.p = -1
+        return cls
 
 
 class NetworkWeightConfig(Config):

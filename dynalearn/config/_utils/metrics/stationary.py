@@ -12,14 +12,12 @@ class StationaryConfig(Config):
         cls.init_param = {}
 
         cls.sampler = "SteadyStateSampler"
-        cls.initial_burn = 100
-        cls.mid_burn = 2
-        cls.num_windows = 20
-        cls.num_samples = 20
+        cls.burn = 1
+        cls.T = 1000
+        cls.tol = 500
+        cls.num_samples = 5
 
         cls.statistics = "MeanVarStatistics"
-
-        cls.num_k = 5
         return cls
 
     @classmethod
@@ -32,25 +30,26 @@ class StationaryConfig(Config):
 
         cls.sampler = "FixedPointSampler"
         cls.initial_burn = 0
+        cls.init_epsilon = 1e-5
         cls.mid_burn = 10
         cls.tol = 1e-5
         cls.maxiter = 1000
         cls.num_samples = 20
 
         cls.statistics = "MeanVarStatistics"
-
-        cls.num_k = 5
         return cls
 
     @classmethod
     def test(cls):
         cls = cls.stocont()
         epsilon = 1e-3
+        cls.init_epsilon = 1e-3
         cls.init_param = {
             "absorbing": np.array([1 - epsilon, epsilon]),
             "epidemic": np.array([0, 1]),
         }
-        cls.parameters = np.linspace(0.1, 10.0, 10)
+        param = np.linspace(0.1, 10.0, 10)
+        cls.parameters = {"absorbing": param, "epidemics": param[::-1]}
         cls.num_samples = 1
         return cls
 
@@ -58,34 +57,42 @@ class StationaryConfig(Config):
     def sis(cls):
         cls = cls.stocont()
         epsilon = 1e-3
+        cls.init_epsilon = 1e-3
         cls.init_param = {
             "absorbing": np.array([1 - epsilon, epsilon]),
-            "epidemic": np.array([0, 1]),
+            # "epidemic": np.array([0, 1]),
         }
-        cls.parameters = np.concatenate(
-            (
-                np.linspace(0.1, 1.4, 5),
-                np.linspace(1.5, 3.5, 50),
-                np.linspace(3.6, 7, 15),
-            )
-        )
+        # param = np.concatenate(
+        #     (
+        #         np.linspace(0.1, 1.4, 5),
+        #         np.linspace(1.5, 3.5, 50),
+        #         np.linspace(3.6, 7, 15),
+        #     )
+        # )
+        param = np.linspace(0.1, 5, 20)
+        # cls.parameters = {"absorbing": param, "epidemic": param[::-1]}
+        cls.parameters = {"absorbing": param}
         return cls
 
     @classmethod
     def plancksis(cls):
         cls = cls.stocont()
         epsilon = 1e-3
+        cls.init_epsilon = 1e-3
         cls.init_param = {
             "absorbing": np.array([1 - epsilon, epsilon]),
             "epidemic": np.array([0, 1]),
         }
-        cls.parameters = np.concatenate(
-            (
-                np.linspace(0.1, 3.0, 10),
-                np.linspace(3.1, 4.5, 50),
-                np.linspace(4.6, 6, 10),
-            )
-        )
+        # param = np.concatenate(
+        #     (
+        #         np.linspace(0.1, 3.0, 10),
+        #         np.linspace(3.1, 4.5, 50),
+        # np.linspace(4.6, 6, 10),
+        #     )
+        # )
+        param = np.linspace(2.1, 6, 20)
+
+        cls.parameters = {"absorbing": param, "epidemic": param[::-1]}
 
         return cls
 
@@ -94,17 +101,21 @@ class StationaryConfig(Config):
         cls = cls()
         cls = cls.stocont()
         epsilon = 1e-3
+        cls.init_epsilon = 1 - (1 - epsilon) ** 0.5
         cls.init_param = {
-            "absorbing": np.array([1 - epsilon, 0, 0, epsilon,]),
             "epidemic": np.array([0, 0, 0, 1]),
+            "absorbing": np.array([1 - epsilon, 0, 0, epsilon]),
         }
-        cls.parameters = np.concatenate(
-            (
-                np.linspace(0.1, 1.0, 5),
-                np.linspace(1.0, 4.5, 50),
-                np.linspace(4.6, 7, 10),
-            )
-        )
+        # param = np.concatenate(
+        #     (
+        #         np.linspace(0.1, 1.0, 5),
+        #         np.linspace(1.0, 4.5, 50),
+        #         np.linspace(4.6, 7, 10),
+        #     )
+        # )
+        param = np.linspace(3.1, 7, 20)
+
+        cls.parameters = {"absorbing": param, "epidemic": param[::-1]}
         return cls
 
     @classmethod
@@ -115,5 +126,5 @@ class StationaryConfig(Config):
             "absorbing": np.array([1 - epsilon, epsilon, 0]),
         }
 
-        cls.parameters = np.linspace(0.01, 5, 60)
+        cls.parameters = {"absorbing": np.linspace(0.01, 5, 60)}
         return cls

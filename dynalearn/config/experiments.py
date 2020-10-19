@@ -7,29 +7,11 @@ from dynalearn.config import *
 from ._utils import TrainingConfig, CallbackConfig
 
 network_config = {
-    "er": NetworkConfig.erdosrenyi(),
-    "uni_er": NetworkConfig.erdosrenyi(weights=NetworkWeightConfig.uniform()),
-    "norm_er": NetworkConfig.erdosrenyi(weights=NetworkWeightConfig.normal()),
-    "loguni_er": NetworkConfig.erdosrenyi(weights=NetworkWeightConfig.loguniform()),
-    "lognorm_er": NetworkConfig.erdosrenyi(weights=NetworkWeightConfig.lognormal()),
-    "ba": NetworkConfig.barabasialbert(p=-1),
-    "uni_ba": NetworkConfig.barabasialbert(weights=NetworkWeightConfig.uniform()),
-    "norm_ba": NetworkConfig.barabasialbert(weights=NetworkWeightConfig.normal()),
-    "loguni_ba": NetworkConfig.barabasialbert(weights=NetworkWeightConfig.loguniform()),
-    "lognorm_ba": NetworkConfig.barabasialbert(weights=NetworkWeightConfig.lognormal()),
-    "uni_multi_ba": NetworkConfig.barabasialbert(
-        weights=NetworkWeightConfig.uniform(), num_layers=5
-    ),
-    "norm_multi_ba": NetworkConfig.barabasialbert(
-        weights=NetworkWeightConfig.normal(), num_layers=5
-    ),
-    "loguni_multi_ba": NetworkConfig.barabasialbert(
-        weights=NetworkWeightConfig.loguniform(), num_layers=5
-    ),
-    "lognorm_multi_ba": NetworkConfig.barabasialbert(
-        weights=NetworkWeightConfig.lognormal(), num_layers=5
-    ),
-    "treeba": NetworkConfig.barabasialbert(m=1),
+    "gnp": NetworkConfig.gnp(),
+    "ba": NetworkConfig.barabasialbert(),
+    "w_gnp": NetworkConfig.w_gnp(),
+    "w_ba": NetworkConfig.w_ba(),
+    "mw_ba": NetworkConfig.mw_ba(),
 }
 dynamics_config = {
     "sis": DynamicsConfig.sis(),
@@ -188,7 +170,7 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_summary):
             os.makedirs(path_to_summary)
         cls.dataset = DiscreteDatasetConfig.state()
-        cls.networks = NetworkConfig.erdosrenyi(1000, 4.0 / 999.0)
+        cls.networks = NetworkConfig.gnp(1000, 4.0 / 999.0)
         cls.dynamics = DynamicsConfig.sis()
         cls.model = TrainableConfig.sis()
         cls.train_details = TrainingConfig.test()

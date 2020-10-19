@@ -40,6 +40,7 @@ class LTPMetrics(Metrics):
                 f"{self.model.__class__} is an invalid model for LTPMetrics."
             )
         self.dataset = experiment.dataset
+        self.dataset.use_groundtruth = False
         self.num_states = experiment.model.num_states
         if experiment.model.window_size > experiment.train_details.max_window_size:
             self.window_size = experiment.train_details.max_window_size
@@ -281,10 +282,10 @@ class MLELTPMetrics(LTPMetrics):
         return experiment.dynamics
 
     def predict(self, real_x, obs_x, real_y, obs_y):
-        # y = onehot(obs_y, num_class=self.num_states, dim=-1)
+        y = onehot(obs_y, num_class=self.num_states, dim=-1)
         # print(y.shape, obs_y.shape)
-        assert obs_y.shape[-1] == self.num_states
-        return obs_y
+        assert y.shape[-1] == self.num_states
+        return y
 
 
 class UniformLTPMetrics(LTPMetrics):

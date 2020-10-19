@@ -9,6 +9,9 @@ class StateData(Data):
     def __init__(self, name="state_data", data=None):
         Data.__init__(self, name=name)
         if data is not None:
+            if isinstance(data, h5py.Dataset):
+                data = data[...]
+            assert isinstance(data, np.ndarray)
             self.data = data
 
     def __eq__(self, other):

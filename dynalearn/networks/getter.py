@@ -1,10 +1,12 @@
 from .generative import *
 from .weighted import *
+from .transform import *
 from .real_network import *
 
 
 __networks__ = {
-    "ERNetwork": ERNetwork,
+    "GNPNetwork": GNPNetwork,
+    "GNMNetwork": GNMNetwork,
     "BANetwork": BANetwork,
     "ConfigurationNetwork": ConfigurationNetwork,
     "RealNetwork": RealNetwork,
@@ -20,9 +22,14 @@ __weights__ = {
     "BetweennessWeightGenerator": BetweennessWeightGenerator,
 }
 
+__transforms__ = {"SparcifierTransform": SparcifierTransform}
+
 
 def get(config):
     name = config.name
+    weight_gen = None
+    transforms = []
+
     if "weights" in config.__dict__:
         if config.weights.name in __weights__:
             weight_gen = __weights__[config.weights.name](config.weights)
@@ -30,10 +37,19 @@ def get(config):
             raise ValueError(
                 f"{config.weights.name} is invalid, possible entries are {list(__weights__.keys())}"
             )
-    else:
-        weight_gen = None
+
+    if "transforms" in config.__dict__:
+        assert isinstance(config.transforms.names, list)
+        for n in config.transforms.names:
+            if n in __transforms__:
+                transforms.append(__transforms__[n](config.transforms))
+            else:
+                raise ValueError(
+                    f"{n} is invalid, possible entries are {list(__transforms__.keys())}"
+                )
+
     if name in __networks__:
-        return __networks__[name](config, weight_gen)
+        return __networks__[name](config, weight_gen, transforms)
     else:
         raise ValueError(
             f"{name} is invalid, possible entries are {list(__networks__.keys())}"

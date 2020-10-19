@@ -10,6 +10,7 @@ from .stochastic_epidemics import (
     PlanckSIS,
     PlanckSIR,
     SISSIS,
+    AsymmetricSISSIS,
     HiddenSISSIS,
     PartiallyHiddenSISSIS,
 )
@@ -35,6 +36,7 @@ __dynamics__ = {
     "PlanckSIS": PlanckSIS,
     "PlanckSIR": PlanckSIR,
     "SISSIS": SISSIS,
+    "AsymmetricSISSIS": AsymmetricSISSIS,
     "HiddenSISSIS": HiddenSISSIS,
     "PartiallyHiddenSISSIS": PartiallyHiddenSISSIS,
     "RDSIS": RDSIS,

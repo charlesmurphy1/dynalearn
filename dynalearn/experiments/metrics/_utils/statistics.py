@@ -37,6 +37,6 @@ class MeanVarStatistics(Statistics):
         return s
 
     def avg(self, s):
-        y = s.mean(0)
+        y = s[0]
         assert y.shape == (s.shape[-1],)
         return y

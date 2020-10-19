@@ -27,6 +27,13 @@ class SIS(StochasticEpidemics):
     def number_of_infected(self, x):
         return np.sum(x == 1)
 
+    def nearly_dead_state(self, num_infected=None):
+        num_infected = num_infected or 1
+        x = np.zeros(self.num_nodes)
+        i = np.random.choice(range(self.num_nodes), size=num_infected)
+        x[i] = 1
+        return x
+
 
 class SIR(StochasticEpidemics):
     def __init__(self, config=None, **kwargs):
@@ -54,3 +61,10 @@ class SIR(StochasticEpidemics):
 
     def number_of_infected(self, x):
         return np.sum(x == 1)
+
+    def nearly_dead_state(self, num_infected=None):
+        num_infected = num_infected or 1
+        x = np.zeros(self.num_nodes)
+        i = np.random.choice(range(self.num_nodes), size=num_infected)
+        x[i] = 1
+        return x

@@ -7,12 +7,11 @@ from .stationary import *
 __metrics__ = {
     "TrueLTPMetrics": TrueLTPMetrics,
     "TrueStarLTPMetrics": TrueStarLTPMetrics,
-    "TruePredictionMetrics": TruePredictionMetrics,
     "GNNLTPMetrics": GNNLTPMetrics,
     "GNNStarLTPMetrics": GNNStarLTPMetrics,
-    "GNNPredictionMetrics": GNNPredictionMetrics,
     "MLELTPMetrics": MLELTPMetrics,
     "UniformStarLTPMetrics": UniformStarLTPMetrics,
+    "PredictionMetrics": PredictionMetrics,
     "StatisticsMetrics": StatisticsMetrics,
     "TruePSSMetrics": TruePSSMetrics,
     "GNNPSSMetrics": GNNPSSMetrics,

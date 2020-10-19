@@ -19,6 +19,9 @@ class NetworkData(Data):
     def __init__(self, name="network_data", data=None):
         Data.__init__(self, name=name)
         if data is not None:
+            if isinstance(data, h5py.Group):
+                data = self._load_graph_(data)
+            assert issubclass(data.__class__, nx.Graph)
             self.data = data
         else:
             self._data = None
@@ -82,26 +85,31 @@ class NetworkData(Data):
                 self.data[k] = self._load_graph_(group[k])
 
     def _save_graph_(self, g, h5file):
+        node_list = np.array(g.nodes())
+        node_attr = get_node_attr(g)
+        h5file.create_dataset("node_list", data=node_list)
+        node_group = h5file.create_group("node_attr")
+        for k, v in node_attr.items():
+            node_group.create_dataset(k, data=v)
+
         if len(g.edges()) > 0:
             edge_list = to_edge_index(g).T
             edge_attr = get_edge_attr(g)
-            node_attr = get_node_attr(g)
         else:
             edge_list = np.zeros((0, 2)).astype("int")
             edge_attr = {}
-            node_attr = {}
         h5file.create_dataset("edge_list", data=edge_list)
         edge_group = h5file.create_group("edge_attr")
         for k, v in edge_attr.items():
             edge_group.create_dataset(k, data=v)
 
-        node_group = h5file.create_group("node_attr")
-        for k, v in node_attr.items():
-            node_group.create_dataset(k, data=v)
-
     def _load_graph_(self, h5file):
+        node_list = h5file["node_list"][...]
         edge_list = h5file["edge_list"][...]
-        g = nx.from_edgelist(edge_list)
+
+        g = nx.DiGraph()
+        g.add_nodes_from(node_list)
+        g.add_edges_from(edge_list)
         edge_attr = {}
         if "edge_attr" in h5file:
             for k, v in h5file["edge_attr"].items():
