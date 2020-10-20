@@ -94,7 +94,14 @@ class PredictionMetrics(Metrics):
         self.size = 0
         self.num_updates = 0
         for k, g in enumerate(self.dataset.networks.data_list):
-            n = g.data.number_of_nodes()
+            if isinstance(g.data, dict):
+                i = next(iter(g.data.keys()))
+                assert isinstance(g.data[i], nx.Graph)
+                n = g.data[i].number_of_nodes()
+            else:
+                assert isinstance(g.data, nx.Graph)
+                n = g.data.number_of_nodes()
+
             if (
                 self.dataset.data["inputs"][k].size > self.max_num_points // n
                 and self.max_num_points != -1

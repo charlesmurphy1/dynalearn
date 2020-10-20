@@ -155,6 +155,63 @@ class ExperimentConfig(Config):
         return cls
 
     @classmethod
+    def covid_pretrain(
+        cls,
+        name,
+        path_to_data="./",
+        path_to_best="./",
+        path_to_summary="./",
+        seed=None,
+    ):
+        cls = cls()
+        cls.name = name
+
+        cls.path_to_data = os.path.join(path_to_data, cls.name)
+        if not os.path.exists(cls.path_to_data):
+            os.makedirs(cls.path_to_data)
+
+        cls.path_to_best = os.path.join(path_to_best, cls.name + ".pt")
+        if not os.path.exists(path_to_best):
+            os.makedirs(path_to_best)
+
+        cls.path_to_summary = path_to_summary
+        if not os.path.exists(path_to_summary):
+            os.makedirs(path_to_summary)
+        cls.dynamics = DynamicsConfig.covid_pretrain()
+        cls.networks = NetworkConfig.covid_pretrain()
+        cls.model = TrainableConfig.dsir()
+        if cls.networks.is_weighted:
+            cls.dynamics.is_weighted = True
+            cls.model.is_weighted = True
+        else:
+            cls.dynamics.is_weighted = False
+            cls.model.is_weighted = False
+        if cls.networks.is_multiplex:
+            cls.dynamics.is_multiplex = True
+            cls.model.is_multiplex = True
+            cls.model.network_layers = cls.networks.layers
+            cls.model.network_layers.append("all")
+        else:
+            cls.dynamics.is_multiplex = False
+            cls.model.is_multiplex = False
+
+        cls.metrics = MetricsConfig.dsir()
+        cls.train_metrics = ["jensenshannon", "model_entropy"]
+        cls.callbacks = CallbackConfig.default(cls.path_to_best)
+
+        cls.dataset = ContinuousDatasetConfig.state(
+            compounded=False, reduce=False, total=True
+        )
+        cls.train_details = TrainingConfig.continuous()
+
+        if seed is None:
+            cls.seed = int(time.time())
+        else:
+            cls.seed = seed
+
+        return cls
+
+    @classmethod
     def test(
         cls, path_to_data="./", path_to_best="./", path_to_summary="./",
     ):

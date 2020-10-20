@@ -21,7 +21,7 @@ class NetworkData(Data):
         if data is not None:
             if isinstance(data, h5py.Group):
                 data = self._load_graph_(data)
-            assert issubclass(data.__class__, nx.Graph)
+            assert issubclass(data.__class__, (nx.Graph, dict))
             self.data = data
         else:
             self._data = None

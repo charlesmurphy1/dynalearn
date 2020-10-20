@@ -6,9 +6,7 @@ from .config import Config
 
 class NetworkConfig(Config):
     @classmethod
-    def gnp(
-        cls, num_nodes=1000, p=0.004, weights=None, transforms=None, num_layers=None
-    ):
+    def gnp(cls, num_nodes=1000, p=0.004, weights=None, transforms=None, layers=None):
         cls = cls()
         cls.name = "GNPNetwork"
         cls.num_nodes = num_nodes
@@ -18,15 +16,15 @@ class NetworkConfig(Config):
         if transforms is not None:
             cls.transforms = transforms
 
-        if isinstance(num_layers, int):
-            cls.layers = [f"layer{i}" for i in range(num_layers)]
+        if isinstance(layers, int):
+            cls.layers = [f"layer{i}" for i in range(layers)]
+        elif isinstance(layers, list):
+            cls.layers = layers
 
         return cls
 
     @classmethod
-    def gnm(
-        cls, num_nodes=1000, m=2000, weights=None, transforms=None, num_layers=None
-    ):
+    def gnm(cls, num_nodes=1000, m=2000, weights=None, transforms=None, layers=None):
         cls = cls()
         cls.name = "GNMNetwork"
         cls.num_nodes = num_nodes
@@ -36,14 +34,16 @@ class NetworkConfig(Config):
         if transforms is not None:
             cls.transforms = transforms
 
-        if isinstance(num_layers, int):
-            cls.layers = [f"layer{i}" for i in range(num_layers)]
+        if isinstance(layers, int):
+            cls.layers = [f"layer{i}" for i in range(layers)]
+        elif isinstance(layers, list):
+            cls.layers = layers
 
         return cls
 
     @classmethod
     def barabasialbert(
-        cls, num_nodes=1000, m=2, weights=None, transforms=None, num_layers=None
+        cls, num_nodes=1000, m=2, weights=None, transforms=None, layers=None
     ):
         cls = cls()
         cls.name = "BANetwork"
@@ -54,8 +54,11 @@ class NetworkConfig(Config):
         if transforms is not None:
             cls.transforms = transforms
 
-        if isinstance(num_layers, int):
-            cls.layers = [f"layer{i}" for i in range(num_layers)]
+        if isinstance(layers, int):
+            cls.layers = [f"layer{i}" for i in range(layers)]
+        elif isinstance(layers, list):
+            cls.layers = layers
+
         return cls
 
     @classmethod
@@ -73,12 +76,20 @@ class NetworkConfig(Config):
         return cls
 
     @classmethod
-    def mw_ba(cls, num_nodes=1000, m=2, num_layers=1):
+    def mw_ba(cls, num_nodes=1000, m=2, layers=1):
         w = NetworkWeightConfig.uniform()
         t = NetworkTransformConfig.sparcifier()
         cls = cls.barabasialbert(
-            num_nodes=num_nodes, m=m, weights=w, transforms=t, num_layers=num_layers
+            num_nodes=num_nodes, m=m, weights=w, transforms=t, layers=layers
         )
+        return cls
+
+    @classmethod
+    def covid_pretrain(cls):
+        w = NetworkWeightConfig.uniform()
+        t = NetworkTransformConfig.sparcifier()
+        l = ["plane", "car", "bus", "boat", "train"]
+        cls = cls.barabasialbert(num_nodes=1000, m=2, weights=w, transforms=t, layers=l)
         return cls
 
     @property
