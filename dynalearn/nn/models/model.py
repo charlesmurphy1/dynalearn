@@ -175,6 +175,7 @@ class Model(torch.nn.Module):
         self.load_state_dict(state_dict)
         if torch.cuda.is_available():
             self.cuda()
+            self.transformers = self.transformers.cuda()
 
     def save_optimizer(self, path):
         state_dict = self.optimizer.state_dict()
@@ -189,6 +190,7 @@ class Model(torch.nn.Module):
         self.optimizer.load_state_dict(state_dict)
         if torch.cuda.is_available():
             self = self.cuda()
+            self.transformers = self.transformers.cuda()
 
     def save_history(self, path):
         with open(path, "wb") as f:
