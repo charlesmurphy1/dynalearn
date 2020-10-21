@@ -104,21 +104,27 @@ class NetworkData(Data):
             edge_group.create_dataset(k, data=v)
 
     def _load_graph_(self, h5file):
-        node_list = h5file["node_list"][...]
-        edge_list = h5file["edge_list"][...]
+        def load_g(h5group):
+            node_list = h5group["node_list"][...]
+            edge_list = h5group["edge_list"][...]
 
-        g = nx.DiGraph()
-        g.add_nodes_from(node_list)
-        g.add_edges_from(edge_list)
-        edge_attr = {}
-        if "edge_attr" in h5file:
-            for k, v in h5file["edge_attr"].items():
-                edge_attr[k] = v
-            g = set_edge_attr(g, edge_attr)
+            g = nx.DiGraph()
+            g.add_nodes_from(node_list)
+            g.add_edges_from(edge_list)
+            edge_attr = {}
+            if "edge_attr" in h5group:
+                for k, v in h5group["edge_attr"].items():
+                    edge_attr[k] = v
+                g = set_edge_attr(g, edge_attr)
 
-        node_attr = {}
-        if "node_attr" in h5file:
-            for k, v in h5file["node_attr"].items():
-                node_attr[k] = v
-            g = set_node_attr(g, node_attr)
-        return g
+            node_attr = {}
+            if "node_attr" in h5group:
+                for k, v in h5group["node_attr"].items():
+                    node_attr[k] = v
+                g = set_node_attr(g, node_attr)
+            return g
+
+        if "edge_list" in h5file:
+            return load_g(h5file)
+        else:
+            return {k: load_g(v) for k, v in h5file.items()}

@@ -175,11 +175,19 @@ class Experiment:
             self.save_data()
 
     def partition_val_dataset(self, loggers=None, fraction=0.1, bias=0.0):
+        if "val_fraction" in self.train_details.__dict__:
+            fraction = self.train_details.val_fraction
+        if "val_bias" in self.train_details.__dict__:
+            bias = self.train_details.val_bias
         self.val_dataset = self.partition_dataset(
             loggers=loggers, fraction=fraction, bias=bias, name="val"
         )
 
     def partition_test_dataset(self, loggers=None, fraction=0.1, bias=0.0):
+        if "test_fraction" in self.train_details.__dict__:
+            fraction = self.train_details.test_fraction
+        if "test_bias" in self.train_details.__dict__:
+            bias = self.train_details.test_bias
         self.test_dataset = self.partition_dataset(
             loggers=loggers, fraction=fraction, bias=bias, name="test"
         )
