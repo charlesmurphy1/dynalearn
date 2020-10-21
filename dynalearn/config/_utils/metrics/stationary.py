@@ -69,7 +69,7 @@ class StationaryConfig(Config):
         #         np.linspace(3.6, 7, 15),
         #     )
         # )
-        param = np.linspace(0.1, 5, 20)
+        param = np.linspace(0.1, 7, 50)
         # cls.parameters = {"absorbing": param, "epidemic": param[::-1]}
         cls.parameters = {"absorbing": param}
         return cls
@@ -90,7 +90,7 @@ class StationaryConfig(Config):
         # np.linspace(4.6, 6, 10),
         #     )
         # )
-        param = np.linspace(2.1, 6, 20)
+        param = np.linspace(2.1, 6, 50)
 
         cls.parameters = {"absorbing": param, "epidemic": param[::-1]}
 
@@ -113,7 +113,7 @@ class StationaryConfig(Config):
         #         np.linspace(4.6, 7, 10),
         #     )
         # )
-        param = np.linspace(3.1, 7, 20)
+        param = np.linspace(3.1, 7, 50)
 
         cls.parameters = {"absorbing": param, "epidemic": param[::-1]}
         return cls
