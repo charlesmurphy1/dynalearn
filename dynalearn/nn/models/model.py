@@ -173,6 +173,8 @@ class Model(torch.nn.Module):
             device = torch.device("cuda")
         state_dict = torch.load(path, map_location=device)
         self.load_state_dict(state_dict)
+        if torch.cuda.is_available():
+            self.cuda()
 
     def save_optimizer(self, path):
         state_dict = self.optimizer.state_dict()
@@ -185,6 +187,8 @@ class Model(torch.nn.Module):
             device = torch.device("cuda")
         state_dict = torch.load(path, map_location=device)
         self.optimizer.load_state_dict(state_dict)
+        if torch.cuda.is_available():
+            self = self.cuda()
 
     def save_history(self, path):
         with open(path, "wb") as f:

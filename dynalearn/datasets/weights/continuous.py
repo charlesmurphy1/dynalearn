@@ -35,7 +35,6 @@ class ContinuousStateWeight(Weight):
         x = self._reduce_network_(network)
         if x is not None:
             self._add_features_("network", x)
-
         for i in network.nodes:
             k = network.degree(i)
             self._add_features_(("degree", int(k)))

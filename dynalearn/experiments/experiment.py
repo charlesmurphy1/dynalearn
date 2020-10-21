@@ -230,7 +230,7 @@ class Experiment:
         self.load_data()
         self.load_model()
         self.load_metrics()
-        if os.path.exists(join(self.path_to_data, self.fname_logger)):
+        if exists(join(self.path_to_data, self.fname_logger)):
             with open(join(self.path_to_data, self.fname_logger), "r") as f:
                 loggers.load(f)
 
@@ -275,11 +275,13 @@ class Experiment:
             self.dataset.save(f)
 
     def save_model(self):
+
         self.model.nn.save_history(join(self.path_to_data, self.fname_history))
         self.model.nn.save_optimizer(join(self.path_to_data, self.fname_optim))
         self.model.nn.save_weights(join(self.path_to_data, self.fname_model))
 
     def save_metrics(self):
+
         with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
             for k, m in self.metrics.items():
                 m.save(f)
