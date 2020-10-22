@@ -41,6 +41,7 @@ class Normalizer(Transformer):
     def forward(self, x):
         if isinstance(x, np.ndarray):
             x = torch.Tensor(x)
+        x = self.cuda_transformer.forward(x)
         m = getattr(self, f"{self.name}_mean")
         v = getattr(self, f"{self.name}_var")
         if self.is_empty:
@@ -52,6 +53,8 @@ class Normalizer(Transformer):
     def backward(self, x):
         if isinstance(x, np.ndarray):
             x = torch.Tensor(x)
+        x = self.cuda_transformer.forward(x)
+
         m = getattr(self, f"{self.name}_mean")
         v = getattr(self, f"{self.name}_var")
         if self.is_empty:

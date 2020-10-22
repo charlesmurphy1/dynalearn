@@ -73,7 +73,7 @@ class PredictionMetrics(Metrics):
                 self.get_pred, self.get_network_pred, val_nodes, pb=pb
             )
             self.get_data["val_degree"] = lambda pb: self._degree_(val_nodes, pb=pb)
-            self.names.extend(["val_true", "val_true", "val_degree"])
+            self.names.extend(["val_true", "val_pred", "val_degree"])
             update_factor += 3
 
         if experiment.test_dataset is not None:
@@ -85,7 +85,7 @@ class PredictionMetrics(Metrics):
                 self.get_pred, self.get_network_pred, test_nodes, pb=pb
             )
             self.get_data["test_degree"] = lambda pb: self._degree_(test_nodes, pb=pb)
-            self.names.extend(["test_true", "test_true", "test_degree"])
+            self.names.extend(["test_true", "test_pred", "test_degree"])
             update_factor += 3
         self.num_updates *= update_factor
 

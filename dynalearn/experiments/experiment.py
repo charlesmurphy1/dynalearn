@@ -281,6 +281,10 @@ class Experiment:
     def save_data(self):
         with h5py.File(join(self.path_to_data, self.fname_data), "w") as f:
             self.dataset.save(f)
+            if self.val_dataset is not None:
+                self.val_dataset.save(f, name="val")
+            if self.test_dataset is not None:
+                self.test_dataset.save(f, name="test")
 
     def save_model(self):
 
