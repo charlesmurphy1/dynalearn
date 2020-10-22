@@ -33,7 +33,6 @@ class Initializer:
             x[x < self.init_epsilon] = self.init_epsilon
             self.current_param[self.mode] = x
             self.current_param[self.mode] /= self.current_param[self.mode].sum()
-        print(self.current_param[self.mode], x)
 
     def next_mode(self):
         self.mode_index += 1

@@ -9,6 +9,8 @@ class Transformer(torch.nn.Module):
         torch.nn.Module.__init__(self)
         self.name = name
         self.is_empty = False
+        if torch.cuda.is_available():
+            self = self.cuda()
 
     @abstractmethod
     def forward(self, x):
@@ -23,6 +25,8 @@ class Transformer(torch.nn.Module):
             if method[: len("_setUp_")] == "_setUp_":
                 label = method[len("_setUp_") :]
                 m = getattr(self, method)(dataset)
+                if isinstance(m, torch.Tensor) and torch.cuda.is_available():
+                    m = m.cuda()
                 setattr(self, f"{self.name}_{label}", m)
 
 

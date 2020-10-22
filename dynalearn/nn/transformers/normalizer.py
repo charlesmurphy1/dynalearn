@@ -35,6 +35,9 @@ class Normalizer(Transformer):
         else:
             self.cuda_transformer = IdentityTransformer()
 
+        if torch.cuda.is_available():
+            self = self.cuda()
+
     def getter(self, index, dataset):
         raise NotImplemented()
 
@@ -130,7 +133,7 @@ class NodeNormalizer(Normalizer):
         else:
             shape = ()
         Normalizer.__init__(
-            self, f"nodeattr{label}", shape=shape, axis=0, auto_cuda=auto_cuda,
+            self, f"nodeattr{label}", shape=shape, axis=0, auto_cuda=auto_cuda
         )
 
     def getter(self, index, dataset):
@@ -155,7 +158,7 @@ class EdgeNormalizer(Normalizer):
         else:
             shape = ()
         Normalizer.__init__(
-            self, f"edgeattr{label}", shape=shape, axis=0, auto_cuda=auto_cuda,
+            self, f"edgeattr{label}", shape=shape, axis=0, auto_cuda=auto_cuda
         )
 
     def getter(self, index, dataset):

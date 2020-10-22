@@ -75,7 +75,6 @@ class StationaryStateMetrics(Metrics):
                 pb.update()
         self.initializer.update(np.mean(samples, axis=0))
         y = self.statistics(samples)
-        print(param, y)
         return y
 
     def _all_stationary_states_(self, pb=None):
