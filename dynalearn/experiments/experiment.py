@@ -29,7 +29,7 @@ class Experiment:
 
         # Main objects
         self._dataset = {"main": get_dataset(config.dataset)}
-        if "pretrain" in config.__dict__:
+        if "pretrain_dataset" in config.__dict__:
             self._dataset["pretrain"] = get_dataset(config.pretrain_dataset)
         self._val_dataset = {}
         self._test_dataset = {}
@@ -378,6 +378,10 @@ class Experiment:
     @test_dataset.setter
     def test_dataset(self, test_dataset):
         self._test_dataset[self._mode] = test_dataset
+
+    @property
+    def mode(self):
+        return self._mode
 
     def mode(self, mode):
         if mode in self._dataset:

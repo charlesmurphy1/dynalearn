@@ -202,6 +202,9 @@ class ExperimentConfig(Config):
         cls.dataset = ContinuousDatasetConfig.state(
             compounded=False, reduce=False, total=True
         )
+        cls.pretrain_dataset = ContinuousDatasetConfig.state(
+            compounded=False, reduce=False, total=True
+        )
         cls.train_details = TrainingConfig.continuous()
 
         if seed is None:
