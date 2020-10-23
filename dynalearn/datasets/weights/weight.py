@@ -3,7 +3,7 @@ import numpy as np
 import tqdm
 
 from dynalearn.datasets.data import DataCollection, StateData
-from dynalearn.utilities import collapse_networks
+from dynalearn.utilities import collapse_networks, Verbose
 
 
 class Weight(DataCollection):
@@ -22,19 +22,13 @@ class Weight(DataCollection):
             pb.update()
         return np.ones((states.shape[0], states.shape[1]))
 
-    def compute(self, dataset, verbose=0):
+    def compute(self, dataset, verbose=Verbose()):
         self.setUp(dataset)
-        if verbose != 0 and verbose != 1:
-            print("Computing weights")
-
-        if verbose == 1:
-            pb = tqdm.tqdm(range(self.num_updates), "Computing weights",)
-        else:
-            pb = None
+        pb = verbose.progress_bar("Computing weights", self.num_updates)
         self.compute_features(dataset, pb=pb)
         self.compute_weights(dataset, pb=pb)
         self.clear()
-        if verbose == 1:
+        if pb is not None:
             pb.close()
 
     def setUp(self, dataset):

@@ -9,10 +9,10 @@ import psutil
 
 from abc import abstractmethod
 from dynalearn.config import Config
-from dynalearn.loggers import LoggerDict
 from dynalearn.nn.callbacks import CallbackList
 from dynalearn.nn.history import History
 from dynalearn.nn.optimizers import get as get_optimizer
+from dynalearn.utilities import Verbose, LoggerDict
 
 
 class Model(torch.nn.Module):
@@ -42,7 +42,7 @@ class Model(torch.nn.Module):
         metrics={},
         callbacks=None,
         loggers=None,
-        verbose=0,
+        verbose=Verbose(),
     ):
 
         callbacks = callbacks or CallbackList()
@@ -50,7 +50,7 @@ class Model(torch.nn.Module):
             callbacks = CallbackList(callbacks)
         for c in callbacks:
             if "verbose" in c.__dict__:
-                c.verbose = verbose > 0
+                c.verbose = verbose
 
         loggers = loggers or LoggerDict()
 
@@ -79,19 +79,18 @@ class Model(torch.nn.Module):
             logs.update(val_metrics)
             self.history.update_epoch(logs)
             callbacks.on_epoch_end(self.history.epoch, logs)
-            if verbose != 0:
-                self.history.display()
+            verbose(self.history.display())
+
         callbacks.on_train_end(self.history._epoch_logs)
 
-    def _do_epoch_(self, dataset, batch_size=1, callbacks=CallbackList(), verbose=0):
+    def _do_epoch_(
+        self, dataset, batch_size=1, callbacks=CallbackList(), verbose=Verbose()
+    ):
         epoch = self.history.epoch
-        if verbose == 1:
-            num_updates = len(dataset) // batch_size
-            if len(dataset) % batch_size > 0:
-                num_updates += 1
-            pb = tqdm.tqdm(range(num_updates), "Epoch %d" % (epoch))
-        elif verbose != 0:
-            print("Epoch %d" % (epoch))
+        num_updates = len(dataset) // batch_size
+        if len(dataset) % batch_size > 0:
+            num_updates += 1
+        pb = verbose.progress_bar("Epoch %d" % (epoch), num_updates)
 
         self.train()
         for batch in dataset.to_batch(batch_size):
@@ -112,11 +111,11 @@ class Model(torch.nn.Module):
 
             self.optimizer.step()
             callbacks.on_batch_end(self.history.batch, logs)
-            if verbose == 1:
+            if pb is not None:
                 pb.set_description(f"Epoch {epoch} loss: {loss:.4f}")
                 pb.update()
 
-        if verbose == 1:
+        if pb is not None:
             pb.set_description(f"Epoch {epoch}")
             pb.close()
         self.eval()

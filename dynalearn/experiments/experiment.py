@@ -14,17 +14,21 @@ from datetime import datetime
 from dynalearn.datasets.getter import get as get_dataset
 from dynalearn.dynamics.getter import get as get_dynamics
 from dynalearn.experiments.metrics.getter import get as get_metrics
-from dynalearn.loggers import LoggerDict, MemoryLogger, TimeLogger, ProgressionLogger
 from dynalearn.networks.getter import get as get_network
 from dynalearn.nn.metrics import get as get_train_metrics
 from dynalearn.nn.callbacks.getter import get as get_callbacks
+from dynalearn.utilities.loggers import (
+    LoggerDict,
+    MemoryLogger,
+    TimeLogger,
+)
+from dynalearn.utilities import Verbose
 from os.path import join, exists
 
 
 class Experiment:
     def __init__(self, config, verbose=0):
         self.config = config
-        self.verbose = verbose
         self.name = config.name
 
         # Main objects
@@ -77,6 +81,14 @@ class Experiment:
             config.fname_logger if "fname_logger" in config.__dict__ else "log.json"
         )
 
+        # Setting verbose
+        if verbose == 1 or verbose == 2:
+            self.verbose = Verbose(
+                filename=join(self.path_to_data, "verbose"), type=verbose
+            )
+        else:
+            self.verbose = Verbose(type=verbose)
+
         # Setting seeds
         if "seed" in config.__dict__:
             random.seed(config.seed)
@@ -93,15 +105,7 @@ class Experiment:
             "compute_metrics",
             "zip",
         ]
-        self.__loggers__ = LoggerDict(
-            {
-                "time": TimeLogger(),
-                "memory": MemoryLogger(),
-                "progression": ProgressionLogger(
-                    os.path.join(self.path_to_data, "progress")
-                ),
-            }
-        )
+        self.__loggers__ = LoggerDict({"time": TimeLogger(), "memory": MemoryLogger(),})
         self.__files__ = [
             "config.pickle",
             "loggers.json",
@@ -118,11 +122,10 @@ class Experiment:
         loggers = loggers or self.__loggers__
         loggers.on_task_begin()
         self.save_config()
-        if self.verbose != 0:
-            print(f"---Experiment {self.name}---")
-            if "time" in loggers.keys():
-                begin = loggers["time"].log["begin"]
-                print(f"Current time: {begin}")
+        self.verbose(f"---Experiment {self.name}---")
+        if "time" in loggers.keys():
+            begin = loggers["time"].log["begin"]
+            self.verbose(f"Current time: {begin}")
 
         for t in tasks:
             if t in self.__tasks__:
@@ -135,19 +138,17 @@ class Experiment:
 
         loggers.on_task_end()
         self.save(loggers)
-        if self.verbose != 0:
-            print(f"\n---Finished {self.name}---")
-            if "time" in loggers.keys():
-                end = loggers["time"].log["end"]
-                t = loggers["time"].log["time"]
-                print(f"Current time: {end}")
-                print(f"Computation time: {t}\n")
+        self.verbose(f"\n---Finished {self.name}---")
+        if "time" in loggers.keys():
+            end = loggers["time"].log["end"]
+            t = loggers["time"].log["time"]
+            self.verbose(f"Current time: {end}")
+            self.verbose(f"Computation time: {t}\n")
 
     # All tasks
     def train_model(self, loggers=None, save=True, restore_best=True):
         loggers = loggers or LoggerDict()
-        if self.verbose != 0:
-            print("\n---Training model---")
+        self.verbose("\n---Training model---")
 
         self.model.nn.fit(
             self.dataset,
@@ -167,9 +168,8 @@ class Experiment:
             self.load_model()
 
     def generate_data(self, loggers=None, save=True):
-        if self.verbose != 0:
-            print("\n---Generating data---")
-        self.dataset.generate(self)
+        self.verbose("\n---Generating data---")
+        self.dataset.generate(self, verbose=self.verbose)
 
         if save:
             self.save_data()
@@ -180,7 +180,7 @@ class Experiment:
         if "val_bias" in self.train_details.__dict__:
             bias = self.train_details.val_bias
         self.val_dataset = self.partition_dataset(
-            loggers=loggers, fraction=fraction, bias=bias, name="val"
+            loggers=loggers, fraction=fraction, bias=bias, name="val",
         )
 
     def partition_test_dataset(self, loggers=None, fraction=0.1, bias=0.0):
@@ -189,13 +189,12 @@ class Experiment:
         if "test_bias" in self.train_details.__dict__:
             bias = self.train_details.test_bias
         self.test_dataset = self.partition_dataset(
-            loggers=loggers, fraction=fraction, bias=bias, name="test"
+            loggers=loggers, fraction=fraction, bias=bias, name="test",
         )
 
     def compute_metrics(self, loggers=None, save=True):
         loggers = loggers or LoggerDict()
-        if self.verbose != 0:
-            print("\n---Computing metrics---")
+        self.verbose("\n---Computing metrics---")
 
         if save:
             with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
@@ -245,8 +244,7 @@ class Experiment:
     # Other methods
     def partition_dataset(self, loggers=None, fraction=0.1, bias=0.0, name="val"):
         loggers = loggers or LoggerDict()
-        if self.verbose != 0:
-            print(f"\n---Partitioning {name}-data---")
+        self.verbose(f"\n---Partitioning {name}-data---")
 
         if f"{name}_fraction" in self.train_details.__dict__:
             fraction = self.train_details.__dict__[f"{name}_fraction"]
@@ -254,8 +252,7 @@ class Experiment:
             bias = self.train_details.__dict__[f"{name}_bias"]
         partition = self.dataset.partition(fraction, bias=bias)
         if np.sum(partition.network_weights) == 0:
-            if self.verbose != 0:
-                print("After partitioning, partition is still empty.")
+            self.verbose("After partitioning, partition is still empty.")
             partition = None
         return partition
 
@@ -307,29 +304,25 @@ class Experiment:
             with h5py.File(join(self.path_to_data, self.fname_data), "r") as f:
                 self.dataset.load(f)
         else:
-            if self.verbose != 0:
-                print("Loading data: Did not find data to load.")
+            self.verbose("Loading data: Did not find data to load.")
 
     def load_model(self, restore_best=True):
         if exists(join(self.path_to_data, self.fname_history)):
             self.model.nn.load_history(join(self.path_to_data, self.fname_history))
         else:
-            if self.verbose != 0:
-                print("Loading model: Did not find history to load.")
+            self.verbose("Loading model: Did not find history to load.")
 
         if exists(join(self.path_to_data, self.fname_optim)):
             self.model.nn.load_optimizer(join(self.path_to_data, self.fname_optim))
         else:
-            if self.verbose != 0:
-                print("Loading model: Did not find optimizer to load.")
+            self.verbose("Loading model: Did not find optimizer to load.")
 
         if restore_best and exists(self.path_to_best):
             self.model.nn.load_weights(self.path_to_best)
         elif exists(join(self.path_to_data, self.fname_model)):
             self.model.nn.load_weights(join(self.path_to_data, self.fname_model))
         else:
-            if self.verbose != 0:
-                print("Loading model: Did not find model to load.")
+            self.verbose("Loading model: Did not find model to load.")
 
     def load_metrics(self):
         if exists(join(self.path_to_data, self.fname_metrics)):
@@ -337,16 +330,14 @@ class Experiment:
                 for k in self.metrics.keys():
                     self.metrics[k].load(f)
         else:
-            if self.verbose != 0:
-                print("Loading metrics: Did not find metrics to load.")
+            self.verbose("Loading metrics: Did not find metrics to load.")
 
     def load_config(self, best=True):
         if exists(join(self.path_to_data, self.fname_config)):
             with open(join(self.path_to_data, self.fname_config), "rb") as f:
                 self.config = pickle.load(f)
         else:
-            if self.verbose != 0:
-                print("Loading config: Did not find config to load.")
+            self.verbose("Loading config: Did not find config to load.")
 
     # Other attributes
     @property
@@ -387,4 +378,4 @@ class Experiment:
         if mode in self._dataset:
             self._mode = mode
         else:
-            raise ValueError(f"Dataset mode {mode} not available.")
+            self.verbose(f"Dataset mode {mode} not available, kept {self.mode}.")

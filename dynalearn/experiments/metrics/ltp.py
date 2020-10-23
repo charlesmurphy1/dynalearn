@@ -12,8 +12,8 @@ from .metrics import Metrics
 
 
 class LTPMetrics(Metrics):
-    def __init__(self, config, verbose=0):
-        Metrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        Metrics.__init__(self, config)
 
         self.max_num_sample = config.max_num_sample
         self.max_num_points = config.ltp_max_num_points

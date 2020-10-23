@@ -31,8 +31,7 @@ class ModelCheckpoint(PeriodicSaveCallback):
     def on_train_end(self, logs):
         if self.restore_best:
             if self.best_filename is not None:
-                if self.verbose:
-                    print("Restoring model from %s" % self.best_filename)
+                self.verbose("Restoring model from %s" % self.best_filename)
                 self.model.load_weights(self.best_filename)
             else:
                 warnings.warn("No  weights to restore!")

@@ -31,7 +31,7 @@ class History:
             if k is not "epoch":
                 log_str += f"{k}: {v:.4f}\t"
 
-        print(f"\t{log_str}")
+        return f"\t{log_str}"
 
     def save(self, file):
         data = {"epoch_logs": self._epoch_logs, "batch_logs": self._batch_logs}

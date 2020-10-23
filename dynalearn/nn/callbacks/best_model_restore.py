@@ -1,10 +1,11 @@
 import warnings
 
 from .callbacks import Callback
+from dynalearn.utilities import Verbose
 
 
 class BestModelRestore(Callback):
-    def __init__(self, *, monitor="val_loss", mode="min", verbose=False):
+    def __init__(self, *, monitor="val_loss", mode="min", verbose=Verbose()):
         super().__init__()
         self.monitor = monitor
 
@@ -24,17 +25,15 @@ class BestModelRestore(Callback):
             old_best = self.current_best
             self.current_best = logs[self.monitor]
 
-            if self.verbose:
-                print(
-                    "Epoch %d: %s improved from %0.5f to %0.5f"
-                    % (epoch_number, self.monitor, old_best, self.current_best)
-                )
+            self.verbose(
+                "Epoch %d: %s improved from %0.5f to %0.5f"
+                % (epoch_number, self.monitor, old_best, self.current_best)
+            )
             self.best_weights = self.get_weight_copies()
 
     def on_train_end(self, logs):
         if self.best_weights is not None:
-            if self.verbose:
-                print("Restoring best model")
+            self.verbose("Restoring best model")
             self.model.set_weights(self.best_weights)
         else:
             warnings.warn("No  weights to restore!")

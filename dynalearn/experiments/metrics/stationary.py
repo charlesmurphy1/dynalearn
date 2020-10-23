@@ -10,8 +10,8 @@ from ._utils import Initializer, ModelSampler, Statistics
 
 
 class StationaryStateMetrics(Metrics):
-    def __init__(self, config, verbose=0):
-        Metrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        Metrics.__init__(self, config)
         if "parameters" in config.__dict__:
             self.parameters = config.parameters
         else:
@@ -101,8 +101,8 @@ class GNNSSMetrics(StationaryStateMetrics):
 
 
 class PoissonSSMetrics(StationaryStateMetrics):
-    def __init__(self, config, verbose=0):
-        StationaryStateMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        StationaryStateMetrics.__init__(self, config)
         self.num_nodes = config.num_nodes
         self.num_k = config.num_k
 
@@ -119,20 +119,20 @@ class PoissonSSMetrics(StationaryStateMetrics):
 
 
 class TruePSSMetrics(TrueSSMetrics, PoissonSSMetrics):
-    def __init__(self, config, verbose=0):
-        TrueSSMetrics.__init__(self, config, verbose)
-        PoissonSSMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        TrueSSMetrics.__init__(self, config)
+        PoissonSSMetrics.__init__(self, config)
 
 
 class GNNPSSMetrics(GNNSSMetrics, PoissonSSMetrics):
-    def __init__(self, config, verbose=0):
-        GNNSSMetrics.__init__(self, config, verbose)
-        PoissonSSMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        GNNSSMetrics.__init__(self, config)
+        PoissonSSMetrics.__init__(self, config)
 
 
 class ErdosRenyiSSMetrics(StationaryStateMetrics):
-    def __init__(self, config, verbose=0):
-        StationaryStateMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        StationaryStateMetrics.__init__(self, config)
         self.num_nodes = config.num_nodes
 
     def get_networks(self, experiment):
@@ -146,12 +146,12 @@ class ErdosRenyiSSMetrics(StationaryStateMetrics):
 
 
 class TrueERSSMetrics(TrueSSMetrics, ErdosRenyiSSMetrics):
-    def __init__(self, config, verbose=0):
-        TrueSSMetrics.__init__(self, config, verbose)
-        ErdosRenyiSSMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        TrueSSMetrics.__init__(self, config)
+        ErdosRenyiSSMetrics.__init__(self, config)
 
 
 class GNNERSSMetrics(GNNSSMetrics, ErdosRenyiSSMetrics):
-    def __init__(self, config, verbose=0):
-        GNNSSMetrics.__init__(self, config, verbose)
-        ErdosRenyiSSMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        GNNSSMetrics.__init__(self, config)
+        ErdosRenyiSSMetrics.__init__(self, config)

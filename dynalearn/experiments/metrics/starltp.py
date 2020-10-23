@@ -8,8 +8,8 @@ from itertools import product
 
 
 class StarLTPMetrics(LTPMetrics):
-    def __init__(self, config, verbose=0):
-        LTPMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        LTPMetrics.__init__(self, config)
         self.degree = config.degree
         self.names = ["ltp", "summaries"]
 
@@ -63,18 +63,18 @@ class StarLTPMetrics(LTPMetrics):
 
 
 class TrueStarLTPMetrics(TrueLTPMetrics, StarLTPMetrics):
-    def __init__(self, config, verbose=0):
-        TrueLTPMetrics.__init__(self, config, verbose)
-        StarLTPMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        TrueLTPMetrics.__init__(self, config)
+        StarLTPMetrics.__init__(self, config)
 
 
 class GNNStarLTPMetrics(GNNLTPMetrics, StarLTPMetrics):
-    def __init__(self, config, verbose=0):
-        GNNLTPMetrics.__init__(self, config, verbose)
-        StarLTPMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        GNNLTPMetrics.__init__(self, config)
+        StarLTPMetrics.__init__(self, config)
 
 
 class UniformStarLTPMetrics(UniformLTPMetrics, StarLTPMetrics):
-    def __init__(self, config, verbose=0):
-        UniformLTPMetrics.__init__(self, config, verbose)
-        StarLTPMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        UniformLTPMetrics.__init__(self, config)
+        StarLTPMetrics.__init__(self, config)

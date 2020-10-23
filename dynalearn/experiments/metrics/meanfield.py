@@ -5,13 +5,13 @@ from abc import abstractmethod
 from .metrics import Metrics
 from ._utils.meanfields.getter import get as get_mf
 from ._utils.meanfields.finder import get as get_finder
-from dynalearn.utilities import poisson_distribution
+from dynalearn.utilities import poisson_distribution, Verbose
 from random import sample
 
 
 class MeanfieldMetrics(Metrics):
-    def __init__(self, config, verbose=0):
-        Metrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        Metrics.__init__(self, config)
 
         if "parameters" in config.__dict__:
             self.parameters = config.parameters
@@ -73,11 +73,6 @@ class MeanfieldMetrics(Metrics):
         f = lambda x: self.mf.flatten(self.mf.update(self.mf.unflatten(x)))
 
         result = self.finder(f, x0)
-        if self.verbose != 0 and not result.success:
-            if param is not None:
-                print(f"Fixed point has not converged with parameter {param}.")
-            else:
-                print(f"Fixed point has not converged.")
         x = self.mf.unflatten(result.x)
 
         return self.mf.avg(x)
@@ -102,8 +97,8 @@ class GNNMFMetrics(MeanfieldMetrics):
 
 
 class EpidemicMFMetrics(MeanfieldMetrics):
-    def __init__(self, config, verbose=0):
-        MeanfieldMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        MeanfieldMetrics.__init__(self, config)
         self.epsilon = config.epsilon
         self.adaptive = config.adaptive
 
@@ -171,8 +166,8 @@ class EpidemicMFMetrics(MeanfieldMetrics):
 
 
 class PoissonEMFMetrics(EpidemicMFMetrics):
-    def __init__(self, config, verbose=0):
-        EpidemicMFMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        EpidemicMFMetrics.__init__(self, config)
         self.num_k = config.num_k
         self.p_k = poisson_distribution(1, self.num_k)
 
@@ -182,12 +177,12 @@ class PoissonEMFMetrics(EpidemicMFMetrics):
 
 
 class TruePEMFMetrics(TrueMFMetrics, PoissonEMFMetrics):
-    def __init__(self, config, verbose=0):
-        TrueMFMetrics.__init__(self, config, verbose)
-        PoissonEMFMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        TrueMFMetrics.__init__(self, config)
+        PoissonEMFMetrics.__init__(self, config)
 
 
 class GNNPEMFMetrics(GNNMFMetrics, PoissonEMFMetrics):
-    def __init__(self, config, verbose=0):
-        GNNMFMetrics.__init__(self, config, verbose)
-        PoissonEMFMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        GNNMFMetrics.__init__(self, config)
+        PoissonEMFMetrics.__init__(self, config)

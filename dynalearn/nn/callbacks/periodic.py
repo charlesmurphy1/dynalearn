@@ -1,5 +1,6 @@
 from .callbacks import Callback
 from ._utils import atomic_lambda_save
+from dynalearn.utilities import Verbose
 
 
 class PeriodicSaveCallback(Callback):
@@ -11,7 +12,7 @@ class PeriodicSaveCallback(Callback):
         mode="min",
         save_best_only=False,
         period=1,
-        verbose=False,
+        verbose=Verbose(),
         temporary_filename=None,
         atomic_write=True,
         open_mode="wb"
@@ -60,31 +61,25 @@ class PeriodicSaveCallback(Callback):
                 self.current_best = logs[self.monitor]
                 self.best_filename = filename
 
-                if self.verbose:
-                    print(
-                        "%s improved from %0.5f to %0.5f, saving file to %s"
-                        % (
-                            self.monitor,
-                            old_best,
-                            self.current_best,
-                            self.best_filename,
-                        )
-                    )
+                self.verbose(
+                    "%s improved from %0.5f to %0.5f, saving file to %s"
+                    % (self.monitor, old_best, self.current_best, self.best_filename)
+                )
                 self._save_file(self.best_filename, epoch_number, logs)
         elif epoch_number % self.period == 0:
-            if self.verbose:
-                print("Epoch %d: saving file to %s" % (epoch_number, filename))
+            self.verbose("Epoch %d: saving file to %s" % (epoch_number, filename))
             self._save_file(filename, epoch_number, logs)
 
 
 class PeriodicSaveLambda(PeriodicSaveCallback):
     """
     Call a lambda with a file descriptor after every epoch. See
-    :class:`~poutyne.framework.callbacks.PeriodicSaveCallback` for the arguments' descriptions.
+    :class:`~poutyne.framework.callbacks.PeriodicSaveCallback` for the arguments'
+    descriptions.
 
     Args:
-        func (Callable[[fd, int, dict], None]): The lambda that will be called with a file descriptor, the
-            epoch number and the epoch logs.
+        func (Callable[[fd, int, dict], None]): The lambda that will be called
+        with a file descriptor, the epoch number and the epoch logs.
 
     See:
         :class:`~poutyne.framework.callbacks.PeriodicSaveCallback`

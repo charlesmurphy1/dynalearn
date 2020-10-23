@@ -22,7 +22,7 @@ from dynalearn.datasets.weights import (
     StrengthWeight,
 )
 from dynalearn.datasets.transforms.getter import get as get_transforms
-from dynalearn.utilities import get_node_attr
+from dynalearn.utilities import get_node_attr, Verbose
 
 
 class Dataset(object):
@@ -61,20 +61,20 @@ class Dataset(object):
     def __next__(self):
         return self[self.rev_indices[self.sampler()]]
 
-    def generate(self, experiment, loggers=None):
+    def generate(self, experiment, verbose=Verbose(), loggers=None):
         details = self.setup(experiment)
         self.transforms.setup(experiment)
 
-        if self.verbose != 0 and self.verbose != 1:
-            print("Generating training set")
-
-        if self.verbose == 1:
-            pb = tqdm.tqdm(
-                range(details.num_networks * details.num_samples),
-                "Generating training set",
-            )
-        else:
-            pb = None
+        pb = verbose.progress_bar(
+            "Generating training set", details.num_networks * details.num_samples
+        )
+        # if self.verbose == 1:
+        #     pb = tqdm.tqdm(
+        #         range(details.num_networks * details.num_samples),
+        #         "Generating training set",
+        #     )
+        # else:
+        #     pb = None
 
         self.data = self._generate_data_(details, pb=pb)
         if self.use_groundtruth:

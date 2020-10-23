@@ -7,8 +7,8 @@ from .metrics import Metrics
 
 
 class PredictionMetrics(Metrics):
-    def __init__(self, config, verbose=0):
-        Metrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        Metrics.__init__(self, config)
         self.max_num_points = config.pred_max_num_points
         self.model = None
         self.names = [

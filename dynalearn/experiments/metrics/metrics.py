@@ -2,12 +2,12 @@ import h5py
 import tqdm
 
 from abc import ABC, abstractmethod
+from dynalearn.utilities import Verbose
 
 
 class Metrics(ABC):
-    def __init__(self, config, verbose=0):
+    def __init__(self, config):
         self.config = config
-        self.verbose = verbose
         self.data = {}
         self.names = []
         self.get_data = {}
@@ -20,22 +20,16 @@ class Metrics(ABC):
     def exit(self, experiment):
         return
 
-    def compute(self, experiment, verbose=None):
-        self.verbose = verbose or self.verbose
+    def compute(self, experiment, verbose=Verbose()):
+        self.verbose = verbose
         self.initialize(experiment)
 
-        if self.verbose == 1:
-            pb = tqdm.tqdm(range(self.num_updates), self.__class__.__name__)
-        elif self.verbose != 0:
-            print(self.__class__.__name__)
-            pb = None
-        else:
-            pb = None
+        pb = self.verbose.progress_bar(self.__class__.__name__, self.num_updates)
 
         for k in self.names:
             self.data[k] = self.get_data[k](pb)
 
-        if self.verbose == 1:
+        if pb is not None:
             pb.close()
 
         self.exit(experiment)

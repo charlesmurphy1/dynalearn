@@ -1,12 +1,13 @@
 import networkx as nx
 import numpy as np
 from dynalearn.experiments.metrics import Metrics
+from dynalearn.utilities import Verbose
 from abc import abstractmethod
 
 
 class ForecastMetrics(Metrics):
-    def __init__(self, config, verbose=0):
-        Metrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        Metrics.__init__(self, config)
         self.num_forecasts = config.num_forecasts
         self.num_steps = config.num_steps
 
@@ -49,8 +50,8 @@ class ForecastMetrics(Metrics):
 
 
 class EpidemicsForecastMetrics(ForecastMetrics):
-    def __init__(self, config, verbose=0):
-        ForecastMetrics.__init__(self, config, verbose=verbose)
+    def __init__(self, config):
+        ForecastMetrics.__init__(self, config)
         self.initial_infected = config.epsilon
 
     def initial_state(self):
@@ -58,8 +59,8 @@ class EpidemicsForecastMetrics(ForecastMetrics):
 
 
 class MetaPopForecastMetrics(ForecastMetrics):
-    def __init__(self, config, verbose=0):
-        ForecastMetrics.__init__(self, config, verbose=verbose)
+    def __init__(self, config):
+        ForecastMetrics.__init__(self, config)
         self.initial_infected = config.epsilon
 
     def initial_state(self):
@@ -120,48 +121,48 @@ class GNNForecastMetrics(ForecastMetrics):
 
 
 class TrueEpidemicsForecastMetrics(TrueForecastMetrics, EpidemicsForecastMetrics):
-    def __init__(self, config, verbose=0):
-        TrueForecastMetrics.__init__(self, config, verbose=verbose)
-        EpidemicsForecastMetrics.__init__(self, config, verbose=verbose)
+    def __init__(self, config):
+        TrueForecastMetrics.__init__(self, config)
+        EpidemicsForecastMetrics.__init__(self, config)
 
     def get_model(self, experiment):
         return experiment.dynamics
 
 
 class GNNEpidemicsForecastMetrics(GNNForecastMetrics, EpidemicsForecastMetrics):
-    def __init__(self, config, verbose=0):
-        GNNForecastMetrics.__init__(self, config, verbose=verbose)
-        EpidemicsForecastMetrics.__init__(self, config, verbose=verbose)
+    def __init__(self, config):
+        GNNForecastMetrics.__init__(self, config)
+        EpidemicsForecastMetrics.__init__(self, config)
 
     def get_model(self, experiment):
         return experiment.model
 
 
 class TrueMetaPopForecastMetrics(TrueForecastMetrics, MetaPopForecastMetrics):
-    def __init__(self, config, verbose=0):
-        TrueForecastMetrics.__init__(self, config, verbose=verbose)
-        MetaPopForecastMetrics.__init__(self, config, verbose=verbose)
+    def __init__(self, config):
+        TrueForecastMetrics.__init__(self, config)
+        MetaPopForecastMetrics.__init__(self, config)
 
     def get_model(self, experiment):
         return experiment.dynamics
 
 
 class GNNMetaPopForecastMetrics(GNNForecastMetrics, MetaPopForecastMetrics):
-    def __init__(self, config, verbose=0):
-        GNNForecastMetrics.__init__(self, config, verbose=verbose)
-        MetaPopForecastMetrics.__init__(self, config, verbose=verbose)
+    def __init__(self, config):
+        GNNForecastMetrics.__init__(self, config)
+        MetaPopForecastMetrics.__init__(self, config)
 
     def get_model(self, experiment):
         return experiment.model
 
 
 class TrueRTNForecastMetrics(RTNForecastMetrics, TrueForecastMetrics):
-    def __init__(self, config, verbose=0):
-        RTNForecastMetrics.__init__(self, config, verbose)
-        TrueForecastMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        RTNForecastMetrics.__init__(self, config)
+        TrueForecastMetrics.__init__(self, config)
 
 
 class GNNRTNForecastMetrics(RTNForecastMetrics, GNNForecastMetrics):
-    def __init__(self, config, verbose=0):
-        RTNForecastMetrics.__init__(self, config, verbose)
-        GNNForecastMetrics.__init__(self, config, verbose)
+    def __init__(self, config):
+        RTNForecastMetrics.__init__(self, config)
+        GNNForecastMetrics.__init__(self, config)
