@@ -109,13 +109,13 @@ class PoissonSSMetrics(StationaryStateMetrics):
     def get_networks(self, experiment):
         p_k = poisson_distribution(self.parameters[0], self.num_k)
         config = NetworkConfig.configuration(self.num_nodes, p_k)
-        self.weight_gen = experiment.networks.weight_gen
-        return ConfigurationNetwork(config, weight_gen=self.weight_gen)
+        self.weights = experiment.networks.weights
+        return ConfigurationNetwork(config, weights=self.weights)
 
     def change_param(self, avgk):
         p_k = poisson_distribution(avgk, self.num_k)
         config = NetworkConfig.configuration(self.num_nodes, p_k)
-        self.networks = ConfigurationNetwork(config, weight_gen=self.weight_gen)
+        self.networks = ConfigurationNetworkGenerator(config, weights=self.weights)
 
 
 class TruePSSMetrics(TrueSSMetrics, PoissonSSMetrics):
@@ -138,8 +138,8 @@ class ErdosRenyiSSMetrics(StationaryStateMetrics):
     def get_networks(self, experiment):
         m = 4.0 * self.num_nodes / 2
         config = NetworkConfig.gnm(self.num_nodes, m)
-        self.weight_gen = experiment.networks.weight_gen
-        return GNMNetwork(config, weight_gen=self.weight_gen)
+        self.weights = experiment.networks.weights
+        return GNMNetworkGenerator(config, weights=self.weights)
 
     def change_param(self, avgk):
         self.networks.config.m = avgk * self.num_nodes / 2

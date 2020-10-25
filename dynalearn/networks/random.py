@@ -14,6 +14,10 @@ class RandomNetworkGenerator(NetworkGenerator):
         config = config or Config(**kwargs)
         NetworkGenerator.__init__(self, config)
         self.weights = weights or EmptyWeightGenerator()
+        if isinstance(self.weights, EmptyWeightGenerator):
+            self.is_weighted = False
+        else:
+            self.is_weighted = True
         self.transforms = NetworkTransformList(transforms)
 
     def generate(self, seed=None):
