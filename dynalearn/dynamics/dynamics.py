@@ -19,6 +19,7 @@ import os
 
 from abc import ABC, abstractmethod
 from math import ceil
+from dynalearn.networks import Network, MultiplexNetwork
 from dynalearn.utilities import (
     to_edge_index,
     get_edge_attr,
@@ -74,11 +75,11 @@ class Dynamics(ABC):
 
     @network.setter
     def network(self, network):
+        assert isinstance(network, Network)
+        network = network.to_directed()
         self._network = network
-        if not network.is_directed():
-            network = nx.to_directed(network)
-        self._edge_index = to_edge_index(network)
-        self._node_degree = np.array(list(dict(self.network.degree()).values()))
+        self._edge_index = network.edges.T
+        self._node_degree = network.degree()
         self._num_nodes = self._network.number_of_nodes()
         self.update_edge_attr()
         self.update_node_attr()
@@ -130,14 +131,16 @@ class WeightedDynamics(Dynamics):
 
     @network.setter
     def network(self, network):
+        assert isinstance(network, Network)
+        network = network.to_directed()
         self._network = network
-        if not nx.is_directed(network):
-            network = nx.to_directed(network)
-        self._edge_index = to_edge_index(network)
-        self._edge_weight = get_edge_attr(network)["weight"].reshape(-1, 1)
-        self._node_degree = np.array(list(dict(self.network.degree()).values()))
-        self._node_strength = get_node_strength(network).reshape(-1, 1)
-        self._num_nodes = self._network.number_of_nodes()
+        self._edge_index = network.edges.T
+        self._edge_weight = network.edge_attr["weight"].reshape(-1, 1)
+        self._node_degree = network.degree()
+        self._num_nodes = network.number_of_nodes()
+        self._node_strength = np.zeros(self._num_nodes)
+        for i, (u, v) in enumerate(network.edges):
+            self._node_strength[u] += self._edge_weight[i]
         self.update_edge_attr()
         self.update_node_attr()
 
@@ -166,27 +169,12 @@ class MultiplexDynamics(Dynamics):
 
     @network.setter
     def network(self, network):
-        self._network = network
-        self._edge_index = {}
-        self._node_degree = {}
-        self._num_nodes = None
-        self._num_networks = len(self._network)
-        for k, net in network.items():
-            if not net.is_directed():
-                net = nx.to_directed(net)
-            if self._num_nodes is None:
-                self._num_nodes = net.number_of_nodes()
-            else:
-                assert self._num_nodes == net.number_of_nodes()
-            self._node_degree[k] = np.array(
-                list(dict(self._network[k].degree()).values())
-            )
-            self._edge_index[k] = to_edge_index(net)
-        if "all" not in network:
-            self._network["all"] = collapse_networks(network)
-        else:
-            self._network["all"] = network["all"]
-        self._edge_index["all"] = to_edge_index(self._network["all"])
+        assert isinstance(network, MultiplexNetwork)
+        network = network.to_directed()
+        self._edge_index = {k: v.T for k, v in network.edges.items()}
+        self._node_degree = network.degree()
+        self._num_nodes = network.number_of_nodes()
+        self._collapsed_network = network.collapse()
         self.update_edge_attr()
         self.update_node_attr()
 
@@ -206,36 +194,21 @@ class WeightedMultiplexDynamics(Dynamics):
 
     @network.setter
     def network(self, network):
+        assert isinstance(network, MultiplexNetwork)
+        network = network.to_directed()
         self._network = network
-        self._edge_index = {}
-        self._node_degree = {}
-        self._edge_weight = {}
+        self._edge_index = {k: v.T for k, v in network.edges.items()}
+        self._node_degree = network.degree()
+        self._num_nodes = network.number_of_nodes()
+        self._collapsed_network = network.collapse()
+        self._edge_weight = {
+            k: v["weight"].reshape(-1, 1) for k, v in network.edge_attr.items()
+        }
         self._node_strength = {}
-        self._num_nodes = None
-        self._num_networks = len(self._network)
-        for k, net in network.items():
-            if not net.is_directed():
-                net = nx.to_directed(net)
-            if self._num_nodes is None:
-                self._num_nodes = net.number_of_nodes()
-            else:
-                assert self._num_nodes == net.number_of_nodes()
-            self._node_degree[k] = np.array(
-                list(dict(self._network[k].degree()).values())
-            )
-            self._edge_index[k] = to_edge_index(net)
-            self._edge_weight[k] = get_edge_attr(net)["weight"]
-            self._node_strength[k] = get_node_strength(net)
-        if "all" not in network:
-            self._network["all"] = collapse_networks(network)
-        else:
-            self._network["all"] = network["all"]
-        self._edge_index["all"] = to_edge_index(self._network["all"])
-        self._node_degree["all"] = np.array(
-            list(dict(self._network["all"].degree()).values())
-        )
-        self._edge_weight["all"] = get_edge_attr(self._network["all"])["weight"]
-        self._node_strength["all"] = get_node_strength(self._network["all"])
+        for k, edges in network.edges:
+            self._node_strength[k] = np.zeros(self._num_nodes)
+            for i, (u, v) in enumerate(edges):
+                self._node_strength[k][u] += self._edge_weight[k][i]
         self.update_edge_attr()
         self.update_node_attr()
 

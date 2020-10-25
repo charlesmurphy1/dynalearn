@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 from .transformer import Transformer, CUDATransformer, IdentityTransformer
-from dynalearn.utilities import to_edge_index, get_edge_attr, get_node_attr
+from dynalearn.networks import Network, MultiplexNetwork
 
 
 class Normalizer(Transformer):
@@ -137,10 +137,13 @@ class NodeNormalizer(Normalizer):
         )
 
     def getter(self, index, dataset):
+        g = dataset.networks[index].data
         if self.layer is None:
-            x = get_node_attr(dataset.networks[index].data, to_data=True)
+            assert isinstance(g, Network)
+            x = g.get_node_data()
         else:
-            x = get_node_attr(dataset.networks[index].data[self.layer], to_data=True)
+            assert isinstance(g, MultiplexNetwork)
+            x = g.get_node_data()[self.layer]
 
         return torch.Tensor(x)
 
@@ -162,10 +165,13 @@ class EdgeNormalizer(Normalizer):
         )
 
     def getter(self, index, dataset):
+        g = dataset.networks[index].data
         if self.layer is None:
-            x = get_edge_attr(dataset.networks[index].data, to_data=True)
+            assert isinstance(g, Network)
+            x = g.get_edge_data()
         else:
-            x = get_edge_attr(dataset.networks[index].data[self.layer], to_data=True)
+            assert isinstance(g, MultiplexNetwork)
+            x = g.get_edge_data()[self.layer]
 
         return torch.Tensor(x)
 
@@ -200,12 +206,12 @@ class NetworkNormalizer(Transformer):
             getattr(self, "t_edgeattr").setUp(dataset)
 
     def forward(self, g):
-        if isinstance(g, dict):
+        if isinstance(g, MultiplexNetwork):
             edge_index, edge_attr, node_attr = {}, {}, {}
             for k in self.layers:
-                assert k in g.keys(), f"{k} is not a layer of the graph"
+                assert k in g.layers(), f"{k} is not a layer of the graph"
                 edge_index[k], edge_attr[k], node_attr[k] = self._normalize_network_(
-                    g[k], layer=k
+                    g, layer=k
                 )
         else:
             edge_index, edge_attr, node_attr = self._normalize_network_(g)
@@ -219,16 +225,14 @@ class NetworkNormalizer(Transformer):
         e_key = "t_edgeattr"
         n_key = "t_nodeattr"
         if layer is not None:
+            assert isinstance(g, MultiplexNetwork)
             e_key += f"_{layer}"
             n_key += f"_{layer}"
-        edge_index = self.t_cuda.forward(torch.LongTensor(to_edge_index(g)))
-        node_attr = getattr(self, n_key).forward(
-            torch.Tensor(get_node_attr(g, to_data=True))
-        )
+            g = g.collapse(layer)
+        edge_index = self.t_cuda.forward(torch.LongTensor(g.edges.T))
+        node_attr = getattr(self, n_key).forward(torch.Tensor(g.get_node_data()))
 
-        edge_attr = getattr(self, e_key).forward(
-            torch.Tensor(get_edge_attr(g, to_data=True))
-        )
+        edge_attr = getattr(self, e_key).forward(torch.Tensor(g.get_edge_data()))
         if edge_attr.numel() == 0:
             edge_attr = None
 

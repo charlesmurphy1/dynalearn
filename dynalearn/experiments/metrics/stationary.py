@@ -3,7 +3,7 @@ import numpy as np
 from abc import abstractmethod
 from random import sample
 from dynalearn.utilities import poisson_distribution
-from dynalearn.networks import ConfigurationNetwork, GNMNetwork
+from dynalearn.networks import ConfigurationNetworkGenerator, GNMNetworkGenerator
 from dynalearn.config import NetworkConfig
 from .metrics import Metrics
 from ._utils import Initializer, ModelSampler, Statistics

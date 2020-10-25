@@ -87,7 +87,7 @@ class LTPMetrics(Metrics):
 
         for k in range(self.dataset.networks.size):
             g = self.dataset.networks[k].data
-            adj = nx.to_numpy_array(g)
+            adj = g.to_array()
 
             for t in self.points[k]:
                 obs_x = self.dataset.data["inputs"][k].get(t)
@@ -112,7 +112,7 @@ class LTPMetrics(Metrics):
             real_g = self.dataset._data["networks"][k].data
             obs_g = self.dataset.data["networks"][k].data
             self.model.network = self._set_network_(real_g, obs_g)
-            adj = nx.to_numpy_array(obs_g)
+            adj = self.model.network.to_array()
             for t in self.points[k]:
                 real_x = self.dataset._data["inputs"][k].get(t)
                 obs_x = self.dataset.data["inputs"][k].get(t)
@@ -283,7 +283,6 @@ class MLELTPMetrics(LTPMetrics):
 
     def predict(self, real_x, obs_x, real_y, obs_y):
         y = onehot(obs_y, num_class=self.num_states, dim=-1)
-        # print(y.shape, obs_y.shape)
         assert y.shape[-1] == self.num_states
         return y
 

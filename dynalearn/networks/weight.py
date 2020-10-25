@@ -10,7 +10,7 @@ class WeightGenerator(ABC):
         config = config or Config(**kwargs)
 
     @abstractmethod
-    def weight_gen(self, u, v):
+    def generate(self, u, v):
         raise NotImplemented
 
     def setUp(self, g):
@@ -20,8 +20,16 @@ class WeightGenerator(ABC):
         _g = g.copy()
         self.setUp(g)
         for u, v in g.edges():
-            _g.edges[u, v]["weight"] = self.weight_gen(u, v)
+            _g.edges[u, v]["weight"] = self.generate(u, v)
         return _g
+
+
+class EmptyWeightGenerator(WeightGenerator):
+    def generate(self, u, v):
+        return
+
+    def __call__(self, g):
+        return g
 
 
 class UniformWeightGenerator(WeightGenerator):
@@ -37,13 +45,13 @@ class UniformWeightGenerator(WeightGenerator):
         else:
             self.high = 1
 
-    def weight_gen(self, u, v):
+    def generate(self, u, v):
         r = np.random.rand()
         return (1 - r) * self.low + r * self.high
 
 
 class LogUniformWeightGenerator(UniformWeightGenerator):
-    def weight_gen(self, u, v):
+    def generate(self, u, v):
         r = np.random.rand()
         return np.exp((1 - r) * np.log(self.low) + r * np.log(self.high))
 
@@ -62,13 +70,13 @@ class NormalWeightGenerator(WeightGenerator):
         else:
             self.std = 1
 
-    def weight_gen(self, u, v):
+    def generate(self, u, v):
         r = np.random.randn()
         return r * self.std + self.mean
 
 
 class LogNormalWeightGenerator(NormalWeightGenerator):
-    def weight_gen(self, u, v):
+    def generate(self, u, v):
         r = np.random.randn()
         return np.exp(r * np.log(self.std) + np.log(self.mean))
 
@@ -102,7 +110,7 @@ class DegreeWeightGenerator(WeightGenerator):
                 r = (self.degree_weight[k] - mean) / std
                 self.degree_weight[k] = r * self.std + self.mean
 
-    def weight_gen(self, u, v):
+    def generate(self, u, v):
         return self.degree_weight[(u, v)]
 
 
@@ -133,5 +141,5 @@ class BetweennessWeightGenerator(WeightGenerator):
                 r = (self.betweenness[k] - mean) / std
                 self.betweenness[k] = r * self.std + self.mean
 
-    def weight_gen(self, u, v):
+    def generate(self, u, v):
         return self.betweenness[(u, v)]

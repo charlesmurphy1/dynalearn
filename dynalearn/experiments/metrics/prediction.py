@@ -4,6 +4,7 @@ import numpy as np
 from abc import abstractmethod
 from random import sample
 from .metrics import Metrics
+from dynalearn.networks import Network, MultiplexNetwork
 
 
 class PredictionMetrics(Metrics):
@@ -30,9 +31,9 @@ class PredictionMetrics(Metrics):
 
     def get_degrees(self):
         g = self.model.network
-        if isinstance(g, dict):
-            g = self.model.network["all"]
-        return np.array(list(dict(g.degree()).values()))
+        if isinstance(g, MultiplexNetwork):
+            g = g.collapse()
+        return g.degree()
 
     def get_network_true(self, index):
         self.dynamics.network = self.dataset._data["networks"][index].data
@@ -94,12 +95,12 @@ class PredictionMetrics(Metrics):
         self.size = 0
         self.num_updates = 0
         for k, g in enumerate(self.dataset.networks.data_list):
-            if isinstance(g.data, dict):
+            if isinstance(g.data, MultiplexNetwork):
                 i = next(iter(g.data.keys()))
                 assert isinstance(g.data[i], nx.Graph)
                 n = g.data[i].number_of_nodes()
             else:
-                assert isinstance(g.data, nx.Graph)
+                assert isinstance(g.data, Network)
                 n = g.data.number_of_nodes()
 
             if (
@@ -173,24 +174,3 @@ class PredictionMetrics(Metrics):
                     pb.update()
 
         return degree_array
-
-
-# class TruePredictionMetrics(PredictionMetrics):
-#     def get_model(self, experiment):
-#         return experiment.dynamics
-#
-#     def get_prediction(self, g_index, s_index):
-#         x = self.dataset._data["inputs"][g_index].data[s_index]
-#         return self.model.predict(x)
-#
-#     def get_network(self, index):
-#         return self.dataset._data["networks"][index].data
-#
-#
-# class GNNPredictionMetrics(PredictionMetrics):
-#     def get_model(self, experiment):
-#         return experiment.model
-#
-#     def get_prediction(self, g_index, s_index):
-#         x = self.dataset.data["inputs"][g_index].data[s_index]
-#         return self.model.predict(x)

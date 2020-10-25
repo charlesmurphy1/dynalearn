@@ -8,7 +8,7 @@ class NetworkConfig(Config):
     @classmethod
     def gnp(cls, num_nodes=1000, p=0.004, weights=None, transforms=None, layers=None):
         cls = cls()
-        cls.name = "GNPNetwork"
+        cls.name = "GNPNetworkGenerator"
         cls.num_nodes = num_nodes
         cls.p = p
         if weights is not None:
@@ -26,7 +26,7 @@ class NetworkConfig(Config):
     @classmethod
     def gnm(cls, num_nodes=1000, m=2000, weights=None, transforms=None, layers=None):
         cls = cls()
-        cls.name = "GNMNetwork"
+        cls.name = "GNMNetworkGenerator"
         cls.num_nodes = num_nodes
         cls.m = m
         if weights is not None:
@@ -46,7 +46,7 @@ class NetworkConfig(Config):
         cls, num_nodes=1000, m=2, weights=None, transforms=None, layers=None
     ):
         cls = cls()
-        cls.name = "BANetwork"
+        cls.name = "BANetworkGenerator"
         cls.num_nodes = num_nodes
         cls.m = m
         if weights is not None:

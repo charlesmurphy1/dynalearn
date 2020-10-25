@@ -68,43 +68,6 @@ class WeightedRDSIS(SimpleRDSIS, WeightedReactionDiffusion):
         return p
 
 
-class MultiplexRDSIS(SimpleRDSIS, MultiplexReactionDiffusion):
-    def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
-        MultiplexReactionDiffusion.__init__(self, config, 2)
-        SimpleRDSIS.__init__(self, config=config, **kwargs)
-
-    def diffusion(self, x):
-        p = {}
-        for i, (u, v) in enumerate(self.edge_index.T):
-            k = self.node_degree["all"][int(v)]
-            p[int(u), int(v)] = self.diffusion_prob / k
-        return p
-
-
-class WeightedMultiplexRDSIS(SimpleRDSIS, WeightedMultiplexReactionDiffusion):
-    def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
-        WeightedMultiplexReactionDiffusion.__init__(self, config, 2)
-        SimpleRDSIS.__init__(self, config=config, **kwargs)
-
-    def diffusion(self, x):
-        p = {}
-        for i, (u, v) in enumerate(self.edge_index.T):
-            s = self.node_strength["all"][int(v)]
-            w = self.edge_weight["all"][i]
-            diff_prob = w / x[int(v)]
-            if np.all(s > 0):
-                p[int(u), int(v)] = self.diffusion_prob * w / s
-            else:
-                p[int(u), int(v)] = 0
-        return p
-
-
 class SimpleRDSIR(ReactionDiffusion):
     def __init__(self, config=None, **kwargs):
         if config is None:
@@ -178,42 +141,6 @@ class WeightedRDSIR(SimpleRDSIR, WeightedReactionDiffusion):
         return p
 
 
-class MultiplexRDSIR(SimpleRDSIR, MultiplexReactionDiffusion):
-    def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
-        MultiplexReactionDiffusion.__init__(self, config, 3)
-        SimpleRDSIR.__init__(self, config=config, **kwargs)
-
-    def diffusion(self, x):
-        p = {}
-        for i, (u, v) in enumerate(self.edge_index["all"].T):
-            k = self.node_degree["all"][int(v)]
-            p[int(u), int(v)] = self.diffusion_prob / k
-        return p
-
-
-class WeightedMultiplexRDSIR(SimpleRDSIR, WeightedMultiplexReactionDiffusion):
-    def __init__(self, config=None, **kwargs):
-        if config is None:
-            config = Config()
-            config.__dict__ = kwargs
-        WeightedMultiplexReactionDiffusion.__init__(self, config, 3)
-        SimpleRDSIR.__init__(self, config=config, **kwargs)
-
-    def diffusion(self, x):
-        p = {}
-        for i, (u, v) in enumerate(self.edge_index["all"].T):
-            s = self.node_strength["all"][int(v)]
-            w = self.edge_weight["all"][i]
-            if s > 0:
-                p[int(u), int(v)] = self.diffusion_prob * w / s
-            else:
-                p[int(u), int(v)] = 0
-        return p
-
-
 def RDSIS(config=None, **kwargs):
     config = config or Config(**kwargs)
     if "is_weighted" in config.__dict__:
@@ -221,16 +148,8 @@ def RDSIS(config=None, **kwargs):
     else:
         is_weighted = False
 
-    if "is_multiplex" in config.__dict__:
-        is_multiplex = config.is_multiplex
-    else:
-        is_multiplex = False
-    if is_weighted and is_multiplex:
-        return WeightedMultiplexRDSIS(config=config, **kwargs)
-    elif is_weighted and not is_multiplex:
+    if is_weighted:
         return WeightedRDSIS(config=config, **kwargs)
-    elif not is_weighted and is_multiplex:
-        return MultiplexRDSIS(config=config, **kwargs)
     else:
         return SimpleRDSIS(config=config, **kwargs)
 
@@ -242,16 +161,7 @@ def RDSIR(config=None, **kwargs):
     else:
         is_weighted = False
 
-    if "is_multiplex" in config.__dict__:
-        is_multiplex = config.is_multiplex
-    else:
-        is_multiplex = False
-
-    if is_weighted and is_multiplex:
-        return WeightedMultiplexRDSIR(config=config, **kwargs)
-    elif is_weighted and not is_multiplex:
+    if is_weighted:
         return WeightedRDSIR(config=config, **kwargs)
-    elif not is_weighted and is_multiplex:
-        return MultiplexRDSIR(config=config, **kwargs)
     else:
         return SimpleRDSIR(config=config, **kwargs)
