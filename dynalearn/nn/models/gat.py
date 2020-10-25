@@ -144,9 +144,10 @@ class DynamicsGATConv(MessagePassing):
 
         # adding self attention
         if self.self_attention:
-            out += torch.sigmoid(self_alpha_t + self_alpha_s).unsqueeze(-1) * x_t.view(
-                -1, H, C
-            )
+            out += x_t.view(-1, H, C)
+            # out += torch.sigmoid(self_alpha_t + self_alpha_s).unsqueeze(-1) * x_t.view(
+            #     -1, H, C
+            # )
 
         alpha = self._alpha
         self._alpha = None
