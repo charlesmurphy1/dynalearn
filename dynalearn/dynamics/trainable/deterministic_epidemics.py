@@ -37,7 +37,10 @@ class SimpleTrainableDeterministicEpidemics(DeterministicEpidemics):
         return False
 
     def update(self, x):
-        return x
+        raise ValueError("This method is invalid for Trainable models")
+
+    def infection_rate(self, x):
+        raise ValueError("This method is invalid for Trainable models")
 
     def predict(self, x):
         if isinstance(x, np.ndarray):

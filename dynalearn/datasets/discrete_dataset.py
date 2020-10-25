@@ -33,7 +33,7 @@ class DiscreteStructureWeightDataset(DiscreteDataset, StructureWeightDataset):
 
 
 class DiscreteStateWeightDataset(DiscreteDataset):
-    def _get_weights_(self, data):
+    def _get_weights_(self):
         if self.config.compounded:
             weights = DiscreteCompoundStateWeight()
         else:

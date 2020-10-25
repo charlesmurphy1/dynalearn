@@ -1,29 +1,238 @@
-import numpy as np
 import networkx as nx
+import numpy as np
 
-from abc import ABC, abstractmethod
-from dynalearn.config import Config
+from dynalearn.utilities import get_node_attr, get_edge_attr
 
 
-class Network(ABC):
-    def __init__(self, config=None):
-        if config is None:
-            config = Config()
-        self._config = config
-        self.data = []
-        if "num_nodes" in config.__dict__:
-            self.num_nodes = config.num_nodes
-        else:
-            self.num_nodes = None
-        if "layers" in config.__dict__:
-            self.layers = config.layers
-        else:
-            self.layers = None
-        self.is_weighted = False
+class Network:
+    def __init__(self, data=nx.Graph()):
+        assert isinstance(data, nx.Graph)
+        self.data = data
 
     @property
-    def config(self):
-        return self._config
+    def nodes(self):
+        return self._nodes
 
-    def clear(self):
-        self.data = []
+    @property
+    def edges(self):
+        return self._edges
+
+    @property
+    def node_attr(self):
+        return self._node_attr
+
+    @node_attr.setter
+    def node_attr(self, node_attr):
+        assert isinstance(node_attr, dict)
+        for k, v in node_attr:
+            assert isinstance(v, np.ndarray)
+            assert len(v) == len(self._nodes)
+            self._node_attr[k] = v
+
+    @property
+    def edge_attr(self):
+        return self._edge_attr
+
+    @edge_attr.setter
+    def edge_attr(self, edge_attr):
+        assert isinstance(edge_attr, dict)
+        for k, v in edge_attr:
+            assert isinstance(v, np.ndarray)
+            assert len(v) == len(self._edges)
+            self._edge_attr[k] = v
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, data):
+        self._data = data
+        self._nodes = self._get_nodes_(data)
+        self._edges = self._get_edges_(data)
+        self._node_attr = self._get_node_attr_(data)
+        self._edge_attr = self._get_edge_attr_(data)
+
+    def to_directed(self):
+        data = self.data.to_directed()
+        return Network(data)
+
+    def to_array(self):
+        return nx.to_numpy_array(self.data)
+
+    def get_node_data(self):
+        n = len(self.nodes)
+        node_data = np.zeros((n, 0))
+        for k, v in self.node_attr.items():
+            node_data = np.concatenate([node_data, v.reshape(n, 1)], axis=-1)
+        return node_data
+
+    def get_edge_data(self):
+        m = len(self.edges)
+        edge_data = np.zeros((m, 0))
+        for k, v in self.edge_attr.items():
+            edge_data = np.concatenate([edge_data, v.reshape(m, 1)], axis=-1)
+        return edge_data
+
+    def degree(self, index=None):
+        degree = np.array(list(dict(self.data.degree()).values()))
+        if index is None:
+            return degree
+        else:
+            return degree[index]
+
+    def number_of_nodes(self):
+        return len(self.nodes)
+
+    def number_of_edges(self):
+        return self.data.number_of_edges()
+
+    def _get_nodes_(self, g):
+        return np.array(list(g.nodes()))
+
+    def _get_edges_(self, g):
+        return np.array(list(g.edges()))
+
+    def _get_node_attr_(self, g):
+        return get_node_attr(g)
+
+    def _get_edge_attr_(self, g):
+        return get_edge_attr(g)
+
+
+class MultiplexNetwork:
+    def __init__(self, data={}):
+        assert isinstance(data, dict)
+        self.data = data
+
+    @property
+    def nodes(self):
+        return self._nodes
+
+    @property
+    def edges(self):
+        return self._edges
+
+    @property
+    def node_attr(self):
+        return self._node_attr
+
+    @node_attr.setter
+    def node_attr(self, node_attr):
+        assert isinstance(node_attr, dict)
+        for k, v in node_attr:
+            assert isinstance(v, np.ndarray)
+            assert len(v) == len(self._nodes)
+            self._node_attr[k] = v
+
+    @property
+    def edge_attr(self):
+        return self._edge_attr
+
+    @edge_attr.setter
+    def edge_attr(self, edge_attr):
+        assert isinstance(edge_attr, dict)
+        for l in edge_attr.keys():
+            assert l in self.data
+            for k, v in edge_attr[l]:
+                assert isinstance(v, np.ndarray)
+                assert len(v) == len(self._edges)
+                self._edge_attr[l][k] = v
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, data):
+        assert isinstance(data, dict)
+        self._data = data
+        self.layers = list(data.keys())
+        self._nodes = self._get_nodes_(data)
+        self._edges = self._get_edges_(data)
+        self._node_attr = self._get_node_attr_(data)
+        self._edge_attr = self._get_edge_attr_(data)
+
+    def to_directed(self):
+        return MultiplexNetwork({k: v.to_directed() for k, v in self.data.items()})
+
+    def collapse(self, layer=None):
+        layer = layer or self.layers
+        g = nx.empty_graph()
+        g.add_nodes_from(self.nodes())
+        g = set_node_attr(g, self.node_attr)
+        for k in layer:
+            edge_list = self.edges[k]
+            edge_attr = self.edge_attr[k]
+            g.add_edges_from(edge_list)
+            for kk, vv in edge_attr.items():
+                for i, (u, v) in enumerate(edge_list):
+                    if k in g.edges[u, v]:
+                        g.edges[u, v][k] += vv[i]
+                    else:
+                        g.edges[u, v][k] = vv[i]
+        return Network(data=g)
+
+    def to_array(self):
+        return {l: nx.to_numpy_array(self.data[l]) for l in self.layers}
+
+    def get_node_data(self):
+        n = len(self.nodes)
+        node_data = np.zeros((n, 0))
+        for k, v in self.node_attr.items():
+            node_data = np.concatenate([node_data, v.reshape(n, 1)], axis=-1)
+        return node_data
+
+    def get_edge_data(self):
+        edge_data = {}
+        for k, v in self.edge_attr.items():
+            m = len(self.edges[k])
+            edge_data[k] = np.zeros((m, 0))
+            for kk, vv in v.items():
+                edge_data[k] = np.concatenate([edge_data[k], vv.reshape(m, 1)], axis=-1)
+        return edge_data
+
+    def degree(self):
+        return {
+            k: np.array(list(dict(v.degree()).values())) for k, v in self.data.items()
+        }
+
+    def number_of_nodes(self):
+        return len(self.nodes)
+
+    def number_of_edges(self):
+        return {k: v.number_of_edges() for k, v in self.data.items()}
+
+    def _get_nodes_(self, g):
+        assert isinstance(g, dict)
+        nodes = set()
+        for k, v in g.items():
+            nodes = nodes.union(set(v.nodes()))
+        return np.array(list(nodes))
+
+    def _get_edges_(self, g):
+        assert isinstance(g, dict)
+        edges = {}
+        for k, v in g.items():
+            edges[k] = np.array(list(v.edges()))
+        return edges
+
+    def _get_node_attr_(self, g):
+        assert isinstance(g, dict)
+        all_node_attr = get_node_attr(g)
+        node_attr = None
+        for l, na in all_node_attr.items():
+            if node_attr is None:
+                node_attr = na
+            for k, v in na.items():
+                if k in node_attr:
+                    assert isinstance(v, np.ndarray)
+                    assert isinstance(na[k], np.ndarray)
+                    assert np.all(na[k] == v)
+                else:
+                    node_attr[k] = v
+        return node_attr
+
+    def _get_edge_attr_(self, g):
+        assert isinstance(g, dict)
+        return get_edge_attr(g)

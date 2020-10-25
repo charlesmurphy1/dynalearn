@@ -66,9 +66,11 @@ class Model(torch.nn.Module):
                 dataset, batch_size=batch_size, callbacks=callbacks, verbose=verbose
             )
 
-            train_metrics = self.evaluate(dataset, metrics)
+            train_metrics = self.evaluate(dataset, metrics=metrics, verbose=verbose)
             if val_dataset is not None:
-                val_metrics = self.evaluate(val_dataset, metrics, "val")
+                val_metrics = self.evaluate(
+                    val_dataset, metrics=metrics, name="val", verbose=verbose
+                )
             else:
                 val_metrics = {}
 
@@ -131,10 +133,11 @@ class Model(torch.nn.Module):
             num_samples += 1
         return loss / num_samples
 
-    def evaluate(self, dataset, metrics={}, prefix=None):
-        if prefix is not None:
-            prefix = prefix + "_"
+    def evaluate(self, dataset, metrics={}, name=None, verbose=Verbose()):
+        if name is not None:
+            prefix = name + "_"
         else:
+            name = "train"
             prefix = ""
         metrics["loss"] = self.loss
 
@@ -143,12 +146,18 @@ class Model(torch.nn.Module):
             logs[prefix + m] = 0
 
         self.eval()
-        i = 0
+
+        pb = verbose.progress_bar(f"Evaluating {name}", len(dataset) + 1)
+
         for data in dataset:
             y_true, y_pred, w = self.prepare_output(data)
             for m in metrics:
                 val = metrics[m](y_true, y_pred, w).cpu().detach().numpy()
                 logs[prefix + m] += val / len(dataset)
+            if pb is not None:
+                pb.update()
+        if pb is not None:
+            pb.close()
         return logs
 
     def prepare_output(self, data):

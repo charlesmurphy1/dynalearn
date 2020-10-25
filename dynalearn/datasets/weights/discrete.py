@@ -31,13 +31,12 @@ class DiscreteStateWeight(Weight):
         return s, ns
 
     def _get_features_(self, network, states, pb=None):
-        adj = nx.to_numpy_array(network)
+        adj = network.to_array()
+        degree = network.degree()
         for i, x in enumerate(states):
             s, ns = self._get_compound_states_(adj, x)
-
             for j in range(s.shape[0]):
-                k = network.degree(j)
-                key = (s[j], k)
+                key = (s[j], degree[j])
                 self._add_features_(("state", key))
             if pb is not None:
                 pb.update()
@@ -45,11 +44,12 @@ class DiscreteStateWeight(Weight):
     def _get_weights_(self, network, states, pb=None):
         weights = np.zeros((states.shape[0], states.shape[1]))
         z = sum(self.features.values())
-        adj = nx.to_numpy_array(network)
+        adj = network.to_array()
+        degree = network.degree()
         for i, x in enumerate(states):
             s, ns = self._get_compound_states_(adj, x)
             for j in range(s.shape[0]):
-                k = network.degree(j)
+                key = (s[j], degree[j])
                 key = (s[j], k)
                 weights[i, j] = self.features[("state", key)] / z
             if pb is not None:
@@ -59,12 +59,10 @@ class DiscreteStateWeight(Weight):
 
 class DiscreteCompoundStateWeight(DiscreteStateWeight):
     def _get_features_(self, network, states, pb=None):
-        adj = nx.to_numpy_array(network)
+        adj = network.to_array()
         for i, x in enumerate(states):
             s, ns = self._get_compound_states_(adj, x)
-
             for j in range(s.shape[0]):
-                k = network.degree(j)
                 key = (s[j], *ns[j])
                 self._add_features_(("state", key))
             if pb is not None:
@@ -73,11 +71,10 @@ class DiscreteCompoundStateWeight(DiscreteStateWeight):
     def _get_weights_(self, network, states, pb=None):
         weights = np.zeros((states.shape[0], states.shape[1]))
         z = sum(self.features.values())
-        adj = nx.to_numpy_array(network)
+        adj = network.to_array()
         for i, x in enumerate(states):
             s, ns = self._get_compound_states_(adj, x)
             for j in range(s.shape[0]):
-                k = network.degree(j)
                 key = (s[j], *ns[j])
                 weights[i, j] = self.features[("state", key)] / z
             if pb is not None:

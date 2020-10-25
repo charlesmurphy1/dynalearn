@@ -23,10 +23,10 @@ class SimpleTrainableReactionDiffusion(ReactionDiffusion):
         self.nn = ReactionDiffusionGNN(config)
 
     def reaction(self, x):
-        return x
+        raise ValueError("This method is invalid for Trainable models")
 
     def diffusion(self, x):
-        return x
+        raise ValueError("This method is invalid for Trainable models")
 
     def initial_state(self):
         x = np.random.randn(self.num_nodes, self.num_states, self.window_size)

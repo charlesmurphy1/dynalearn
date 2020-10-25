@@ -27,7 +27,7 @@ from os.path import join, exists
 
 
 class Experiment:
-    def __init__(self, config, verbose=0):
+    def __init__(self, config, verbose=Verbose()):
         self.config = config
         self.name = config.name
 
@@ -82,12 +82,15 @@ class Experiment:
         )
 
         # Setting verbose
-        if verbose == 1 or verbose == 2:
-            self.verbose = Verbose(
-                filename=join(self.path_to_data, "verbose"), type=verbose
-            )
-        else:
-            self.verbose = Verbose(type=verbose)
+        if isinstance(verbose, int):
+            if verbose == 1 or verbose == 2:
+                self.verbose = Verbose(
+                    filename=join(self.path_to_data, "verbose"), vtype=verbose
+                )
+            else:
+                self.verbose = Verbose(type=verbose)
+        elif isinstance(verbose, Verbose):
+            self.verbose = verbose
 
         # Setting seeds
         if "seed" in config.__dict__:
@@ -245,15 +248,16 @@ class Experiment:
     def partition_dataset(self, loggers=None, fraction=0.1, bias=0.0, name="val"):
         loggers = loggers or LoggerDict()
         self.verbose(f"\n---Partitioning {name}-data---")
-
-        if f"{name}_fraction" in self.train_details.__dict__:
-            fraction = self.train_details.__dict__[f"{name}_fraction"]
-        if f"{name}_bias" in self.train_details.__dict__:
-            bias = self.train_details.__dict__[f"{name}_bias"]
         partition = self.dataset.partition(fraction, bias=bias)
         if np.sum(partition.network_weights) == 0:
             self.verbose("After partitioning, partition is still empty.")
             partition = None
+        real_fraction = 0
+        for k in range(partition.networks.size):
+            for w in partition.weights[k].data:
+                real_fraction += (w > 0).mean() / partition.weights[k].size
+        self.verbose(f"Fraction of partitionned samples: {np.round(real_fraction, 4)}")
+
         return partition
 
     @classmethod
@@ -376,6 +380,7 @@ class Experiment:
 
     def mode(self, mode):
         if mode in self._dataset:
+            self.verbose(f"Changing mode `{self.mode}` to `{model}`.")
             self._mode = mode
         else:
-            self.verbose(f"Dataset mode {mode} not available, kept {self.mode}.")
+            self.verbose(f"Dataset mode `{mode}` not available, kept `{self.mode}`.")

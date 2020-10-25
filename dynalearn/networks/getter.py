@@ -1,19 +1,17 @@
-from .generative import *
-from .weighted import *
+from .random import *
+from .weight import *
 from .transform import *
-from .real_network import *
 
 
 __networks__ = {
-    "GNPNetwork": GNPNetwork,
-    "GNMNetwork": GNMNetwork,
-    "BANetwork": BANetwork,
-    "ConfigurationNetwork": ConfigurationNetwork,
-    "RealNetwork": RealNetwork,
-    "RealTemporalNetwork": RealTemporalNetwork,
+    "GNPNetworkGenerator": GNPNetworkGenerator,
+    "GNMNetworkGenerator": GNMNetworkGenerator,
+    "BANetworkGenerator": BANetworkGenerator,
+    "ConfigurationNetworkGenerator": ConfigurationNetworkGenerator,
 }
 
 __weights__ = {
+    "EmptyWeightGenerator": EmptyWeightGenerator,
     "UniformWeightGenerator": UniformWeightGenerator,
     "LogUniformWeightGenerator": LogUniformWeightGenerator,
     "NormalWeightGenerator": NormalWeightGenerator,

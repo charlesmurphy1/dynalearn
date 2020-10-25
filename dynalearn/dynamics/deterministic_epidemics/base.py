@@ -9,7 +9,8 @@ from dynalearn.dynamics.dynamics import (
     MultiplexDynamics,
     WeightedMultiplexDynamics,
 )
-from dynalearn.utilities import set_node_attr, get_node_attr
+from dynalearn.nn.models import Propagator
+from dynalearn.networks import Network, MultiplexNetwork
 
 
 class DeterministicEpidemics(Dynamics):
@@ -24,11 +25,27 @@ class DeterministicEpidemics(Dynamics):
             self.density = -1
 
         self.population = None
+        self.propagator = Propagator()
         Dynamics.__init__(self, config, num_states)
 
     @abstractmethod
     def update(self, x):
         raise NotImplemented()
+
+    @abstractmethod
+    def infection_rate(self, x):
+        raise NotImplemented()
+
+    def infection(self, x):
+        infection = self.infection_rate(x).squeeze()
+        k = self.node_degree.squeeze()
+        k[k == 0] = 1
+        update = (
+            self.propagator(infection, self.edge_index).cpu().detach().numpy().squeeze()
+        )
+        update[k == 0] = 0
+        k[k == 0] = 1
+        return update
 
     def initial_state(self, init_param=None, density=None):
         if init_param is None:
@@ -53,23 +70,19 @@ class DeterministicEpidemics(Dynamics):
             density = self.density
         if density == -1.0:
             density = self.num_nodes
-        if isinstance(self.network, dict):
-            g = self.network["all"]
+        if isinstance(self.network, MultiplexNetwork):
+            g = self.collapsed_network
         else:
             g = self.network
-        assert isinstance(g, nx.Graph)
-        if "population" in g.nodes[0]:
-            population = get_node_attr(g)["population"]
+        if "population" in g.node_attr:
+            population = g.node_attr["population"]
         else:
             if isinstance(density, (float, int)):
                 population = np.random.poisson(density, size=self.num_nodes)
             elif isinstance(density, (list, np.ndarray)):
                 assert len(density) == self.num_nodes
                 population = np.array(density)
-        if isinstance(self.network, dict):
-            self._network["all"] = set_node_attr(g, {"population": population})
-        else:
-            self._network = set_node_attr(g, {"population": population})
+        g.node_attr["population"] = population
         return population
 
     def loglikelihood(self, x):
@@ -104,11 +117,42 @@ class WeightedDeterministicEpidemics(DeterministicEpidemics, WeightedDynamics):
         DeterministicEpidemics.__init__(self, config, num_states)
         WeightedDynamics.__init__(self, config, num_states)
 
+    def infection(self, x):
+        infection = self.infection_rate(x).squeeze()
+        k = self.node_degree.squeeze()
+        s = self.node_strength.squeeze()
+        s[s == 0] = 1
+        update = (
+            self.propagator(infection, self.edge_index, w=self.edge_weight)
+            .cpu()
+            .detach()
+            .numpy()
+            .squeeze()
+        )
+        update[s == 0] = 0
+        update[k == 0] = 0
+        s[s == 0] = 1
+        return update * k / s
+
 
 class MultiplexDeterministicEpidemics(DeterministicEpidemics, MultiplexDynamics):
     def __init__(self, config, num_states):
         DeterministicEpidemics.__init__(self, config, num_states)
         MultiplexDynamics.__init__(self, config, num_states)
+
+    def infection(self, x):
+        infection = self.infection_rate(x).squeeze()
+        k = self._collapsed_network.degree().squeeze()
+        k[k == 0] = 1
+        inf_update = (
+            self.propagator(infection, self._collapsed_network.edges.T)
+            .cpu()
+            .detach()
+            .numpy()
+            .squeeze()
+        )
+        inf_update[k == 0] = 0
+        return inf_update
 
 
 class WeightedMultiplexDeterministicEpidemics(
@@ -117,3 +161,20 @@ class WeightedMultiplexDeterministicEpidemics(
     def __init__(self, config, num_states):
         DeterministicEpidemics.__init__(self, config, num_states)
         WeightedMultiplexDynamics.__init__(self, config, num_states)
+
+    def infection(self, x):
+        infection = self.infection_rate(x).squeeze()
+        s = np.sum(list(self.node_strength.values()), axis=0)
+        k = np.sum(list(self.node_degree.values()), axis=0)
+        edges = self.collapsed_network.edges.T
+        weights = self.collapsed_network.edge_attr["weight"]
+        inf_update = (
+            self.propagator(infection, self.collapsed_network.edges.T, w=weights)
+            .cpu()
+            .detach()
+            .numpy()
+        )
+        inf_update[s == 0] = 0
+        inf_update[k == 0] = 0
+        s[s == 0] = 1
+        return inf_update * k / s

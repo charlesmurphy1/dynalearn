@@ -3,7 +3,8 @@ import numpy as np
 import tqdm
 
 from dynalearn.datasets.data import DataCollection, StateData
-from dynalearn.utilities import collapse_networks, Verbose
+from dynalearn.networks import MultiplexNetwork
+from dynalearn.utilities import Verbose
 
 
 class Weight(DataCollection):
@@ -37,16 +38,16 @@ class Weight(DataCollection):
     def compute_features(self, dataset, pb=None):
         for i in range(dataset.networks.size):
             g = dataset.networks[i].data
-            if isinstance(g, dict):
-                g = collapse_networks(g)
+            if isinstance(g, MultiplexNetwork):
+                g = g.collapse()
             self._get_features_(g, dataset.inputs[i].data, pb=pb)
         return
 
     def compute_weights(self, dataset, pb=None):
         for i in range(dataset.networks.size):
             g = dataset.networks[i].data
-            if isinstance(g, dict):
-                g = collapse_networks(g)
+            if isinstance(g, MultiplexNetwork):
+                g = g.collapse()
             w = self._get_weights_(g, dataset.inputs[i].data, pb=pb)
             weights = StateData(data=w)
             self.add(weights)

@@ -68,13 +68,6 @@ class Dataset(object):
         pb = verbose.progress_bar(
             "Generating training set", details.num_networks * details.num_samples
         )
-        # if self.verbose == 1:
-        #     pb = tqdm.tqdm(
-        #         range(details.num_networks * details.num_samples),
-        #         "Generating training set",
-        #     )
-        # else:
-        #     pb = None
 
         self.data = self._generate_data_(details, pb=pb)
         if self.use_groundtruth:
@@ -169,7 +162,6 @@ class Dataset(object):
         if "data" in h5file:
             self._data = self._load_data_(group)
 
-        # w = DataCollection(name="weights", template=StateData)
         w = Weight()
         w.load(group)
         self.weights = w
@@ -193,8 +185,8 @@ class Dataset(object):
 
         if self.use_transformed:
             self._transformed_data = self._transform_data_(data)
-        self.weights = self._get_weights_(data)
-        self.indices = self._get_indices_(data)
+        self.weights = self._get_weights_()
+        self.indices = self._get_indices_()
         self.sampler.reset()
 
     @property
@@ -251,8 +243,8 @@ class Dataset(object):
         back_step = (self.window_size - 1) * self.window_step
 
         for i in range(details.num_networks):
-            self.m_dynamics.network = self.m_networks.generate()
-
+            g = self.m_networks.generate()
+            self.m_dynamics.network = g
             x = self.m_dynamics.initial_state()
 
             networks.add(NetworkData(data=self.m_dynamics.network))
@@ -316,18 +308,18 @@ class Dataset(object):
     def _transform_data_(self, data):
         return {k: v.copy().transform(self.transforms) for k, v in data.items()}
 
-    def _get_indices_(self, data):
-        if data["inputs"] is None or data["networks"] is None:
+    def _get_indices_(self):
+        if self.data["inputs"] is None or self.data["networks"] is None:
             return {}
         index = 0
         indices_dict = {}
-        for i in range(data["networks"].size):
-            for j in range(data["inputs"][i].size):
+        for i in range(self.data["networks"].size):
+            for j in range(self.data["inputs"][i].size):
                 indices_dict[index] = (i, j)
                 index += 1
         return indices_dict
 
-    def _get_weights_(self, data):
+    def _get_weights_(self):
         weights = Weight()
         weights.compute(self, verbose=self.verbose)
         return weights
@@ -353,7 +345,7 @@ class Dataset(object):
 
 
 class StructureWeightDataset(Dataset):
-    def _get_weights_(self, data):
+    def _get_weights_(self):
         if self.config.use_strength:
             weights = StrengthWeight()
         else:

@@ -136,7 +136,7 @@ class MultiplexReactionDiffusion(ReactionDiffusion, MultiplexDynamics):
             y[v] = x[v] @ p_reaction[v]
 
         p_diffusion = self.diffusion(y)
-        for (v1, v2) in self.network["all"].edges():
+        for (v1, v2) in self._collapsed_network.edges:
             n = p_diffusion[v1, v2] * y[v2]
             for i, nn in enumerate(n):
                 if nn > 0:
@@ -157,7 +157,7 @@ class MultiplexReactionDiffusion(ReactionDiffusion, MultiplexDynamics):
                 y[v, j] -= n
 
         p_diffusion = self.diffusion(y)
-        for (v1, v2) in self.network["all"].edges():
+        for (v1, v2) in self._collapsed_network.edges:
             n = np.random.binomial(y[v2], p_diffusion[v1, v2]).astype("int")
             y[v1] += n
             y[v2] -= n
@@ -180,7 +180,7 @@ class WeightedMultiplexReactionDiffusion(ReactionDiffusion, WeightedMultiplexDyn
             y[v] = x[v] @ p_reaction[v]
 
         p_diffusion = self.diffusion(y)
-        for (v1, v2) in self.network["all"].edges():
+        for (v1, v2) in self._collapsed_network.edges:
             n = p_diffusion[v1, v2] * y[v2]
             for i, nn in enumerate(n):
                 if nn > 0:
@@ -201,7 +201,7 @@ class WeightedMultiplexReactionDiffusion(ReactionDiffusion, WeightedMultiplexDyn
                 y[v, j] -= n
 
         p_diffusion = self.diffusion(y)
-        for (v1, v2) in self.network["all"].edges():
+        for (v1, v2) in self._collapsed_network.edges:
             n = np.random.binomial(y[v2], p_diffusion[v1, v2]).astype("int")
             y[v1] += n
             y[v2] -= n
