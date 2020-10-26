@@ -119,7 +119,7 @@ class WeightedDeterministicEpidemics(DeterministicEpidemics, WeightedDynamics):
         s = self.node_strength
         s[s == 0] = 1
         update = (
-            self.propagator(infection, self.edge_index, w=self.edge_weight.T)
+            self.propagator(infection, self.edge_index, w=self.edge_weight)
             .cpu()
             .detach()
             .numpy()

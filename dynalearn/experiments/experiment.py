@@ -210,7 +210,7 @@ class Experiment:
                 loggers.on_task_midstep("metrics")
                 m.compute(self, verbose=self.verbose)
 
-    def zip(self, loggers=None, to_zip=None):
+    def zip(self, to_zip=None, loggers=None):
         to_zip = to_zip or self.__files__
         if "config.pickle" not in to_zip:
             to_zip.append("config.pickle")
@@ -255,7 +255,9 @@ class Experiment:
         real_fraction = 0
         for k in range(partition.networks.size):
             for w in partition.weights[k].data:
-                real_fraction += (w > 0).mean() / partition.weights[k].size
+                real_fraction += (
+                    (w > 0).mean() / partition.weights[k].size / partition.networks.size
+                )
         self.verbose(f"Fraction of partitionned samples: {np.round(real_fraction, 4)}")
 
         return partition
