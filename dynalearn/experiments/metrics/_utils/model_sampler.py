@@ -82,7 +82,11 @@ class SteadyStateSampler(ModelSampler):
             it = 0
             while diff > tol and it < maxiter:
                 epsilon = derivative[index:].mean()
-                index = np.where(derivative < epsilon)[0].min()
+                index = np.where(derivative < epsilon)[0]
+                if len(index) > 0:
+                    index = index.min()
+                else:
+                    index = 0
                 diff = (epsilon - derivative[index:].mean()) / derivative[index:].mean()
                 it += 1
             index += max_index

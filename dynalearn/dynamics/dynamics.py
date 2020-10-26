@@ -119,7 +119,7 @@ class Dynamics(ABC):
 class WeightedDynamics(Dynamics):
     def __init__(self, config, num_states):
         Dynamics.__init__(self, config, num_states)
-        self._edge_attr = None
+        self._edge_weight = None
         self._node_strength = None
 
     @property
@@ -160,6 +160,11 @@ class WeightedDynamics(Dynamics):
 
 
 class MultiplexDynamics(Dynamics):
+    def __init__(self, config, num_states):
+        Dynamics.__init__(self, config, num_states)
+        self._collapsed_edge_index = None
+        self._collapsed_node_degree = None
+
     @property
     def network(self):
         if self._network is None:
@@ -174,16 +179,50 @@ class MultiplexDynamics(Dynamics):
         self._edge_index = {k: v.T for k, v in network.edges.items()}
         self._node_degree = network.degree()
         self._num_nodes = network.number_of_nodes()
-        self._collapsed_network = network.collapse()
         self.update_edge_attr()
         self.update_node_attr()
+        self.collapsed_network = network.collapse()
+
+    @property
+    def collapsed_network(self):
+        if self._collapsed_network is None:
+            raise ValueError("No network has been parsed to the dynamics.")
+        else:
+            return self._collapsed_network
+
+    @collapsed_network.setter
+    def collapsed_network(self, network):
+        assert isinstance(network, MultiplexNetwork)
+        network = network.to_directed()
+        self._collapsed_network = network
+        self._collapsed_edge_index = {k: v.T for k, v in network.edges.items()}
+        self._collapsed_node_degree = network.degree()
+
+    @property
+    def collapsed_edge_index(self):
+        if self._collapsed_edge_index is None:
+            raise ValueError("No network has been parsed to the dynamics.")
+        else:
+            return self._collapsed_edge_index
+
+    @property
+    def collapsed_node_degree(self):
+        if self._collapsed_node_degree is None:
+            raise ValueError("No network has been parsed to the dynamics.")
+        else:
+            return self._collapsed_node_degree
 
 
 class WeightedMultiplexDynamics(Dynamics):
     def __init__(self, config, num_states):
         Dynamics.__init__(self, config, num_states)
-        self._edge_attr = None
+        self._edge_weight = None
         self._node_strength = None
+        self._collapsed_network = None
+        self._collapsed_edge_index = None
+        self._collapsed_node_degree = None
+        self._collapsed_node_strength = None
+        self._collapsed_edge_weight = None
 
     @property
     def network(self):
@@ -200,17 +239,37 @@ class WeightedMultiplexDynamics(Dynamics):
         self._edge_index = {k: v.T for k, v in network.edges.items()}
         self._node_degree = network.degree()
         self._num_nodes = network.number_of_nodes()
-        self._collapsed_network = network.collapse()
         self._edge_weight = {
             k: v["weight"].reshape(-1, 1) for k, v in network.edge_attr.items()
         }
         self._node_strength = {}
-        for k, edges in network.edges:
+        for k, edges in network.edges.items():
             self._node_strength[k] = np.zeros(self._num_nodes)
             for i, (u, v) in enumerate(edges):
                 self._node_strength[k][u] += self._edge_weight[k][i]
         self.update_edge_attr()
         self.update_node_attr()
+        self.collapsed_network = network.collapse()
+
+    @property
+    def collapsed_network(self):
+        if self._collapsed_network is None:
+            raise ValueError("No network has been parsed to the dynamics.")
+        else:
+            return self._collapsed_network
+
+    @collapsed_network.setter
+    def collapsed_network(self, network):
+        assert isinstance(network, Network)
+        assert network.number_of_nodes() == self._num_nodes
+        network = network.to_directed()
+        self._collapsed_network = network
+        self._collapsed_edge_index = network.edges.T
+        self._collapsed_edge_weight = network.edge_attr["weight"].reshape(-1, 1)
+        self._collapsed_node_degree = network.degree()
+        self._collapsed_node_strength = np.zeros(self._num_nodes)
+        for i, (u, v) in enumerate(network.edges):
+            self._collapsed_node_strength[u] += self._collapsed_edge_weight[i]
 
     @property
     def edge_weight(self):
@@ -225,3 +284,31 @@ class WeightedMultiplexDynamics(Dynamics):
             raise ValueError("No network has been parsed to the dynamics.")
         else:
             return self._node_strength
+
+    @property
+    def collapsed_edge_index(self):
+        if self._collapsed_edge_index is None:
+            raise ValueError("No network has been parsed to the dynamics.")
+        else:
+            return self._collapsed_edge_index
+
+    @property
+    def collapsed_node_degree(self):
+        if self._collapsed_node_degree is None:
+            raise ValueError("No network has been parsed to the dynamics.")
+        else:
+            return self._collapsed_node_degree
+
+    @property
+    def collapsed_edge_weight(self):
+        if self._collapsed_edge_weight is None:
+            raise ValueError("No network has been parsed to the dynamics.")
+        else:
+            return self._collapsed_edge_weight
+
+    @property
+    def collapsed_node_strength(self):
+        if self._collapsed_node_strength is None:
+            raise ValueError("No network has been parsed to the dynamics.")
+        else:
+            return self._collapsed_node_strength

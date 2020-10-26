@@ -201,13 +201,6 @@ class MultiplexGraphNeuralNetwork(GraphNeuralNetwork):
         if torch.cuda.is_available():
             self = self.cuda()
 
-    def merge_nodeattr(self, x, node_attr):
-        if self.nodeattr_size > 0:
-            for k, v in node_attr.items():
-                if v is not None:
-                    x = torch.cat([x, v.view(-1, self.nodeattr_size)], dim=-1)
-        return x
-
 
 class WeightedMultiplexGraphNeuralNetwork(MultiplexGraphNeuralNetwork):
     def __init__(

@@ -38,7 +38,7 @@ class DeterministicEpidemics(Dynamics):
 
     def infection(self, x):
         infection = self.infection_rate(x).squeeze()
-        k = self.node_degree.squeeze()
+        k = self.node_degree
         k[k == 0] = 1
         update = (
             self.propagator(infection, self.edge_index).cpu().detach().numpy().squeeze()
@@ -70,19 +70,15 @@ class DeterministicEpidemics(Dynamics):
             density = self.density
         if density == -1.0:
             density = self.num_nodes
-        if isinstance(self.network, MultiplexNetwork):
-            g = self.collapsed_network
-        else:
-            g = self.network
-        if "population" in g.node_attr:
-            population = g.node_attr["population"]
+        if "population" in self.network.node_attr:
+            population = self.network.node_attr["population"]
         else:
             if isinstance(density, (float, int)):
                 population = np.random.poisson(density, size=self.num_nodes)
             elif isinstance(density, (list, np.ndarray)):
                 assert len(density) == self.num_nodes
                 population = np.array(density)
-        g.node_attr["population"] = population
+        self.network.node_attr["population"] = population
         return population
 
     def loglikelihood(self, x):
@@ -119,11 +115,11 @@ class WeightedDeterministicEpidemics(DeterministicEpidemics, WeightedDynamics):
 
     def infection(self, x):
         infection = self.infection_rate(x).squeeze()
-        k = self.node_degree.squeeze()
-        s = self.node_strength.squeeze()
+        k = self.node_degree
+        s = self.node_strength
         s[s == 0] = 1
         update = (
-            self.propagator(infection, self.edge_index, w=self.edge_weight)
+            self.propagator(infection, self.edge_index, w=self.edge_weight.T)
             .cpu()
             .detach()
             .numpy()
@@ -142,10 +138,10 @@ class MultiplexDeterministicEpidemics(DeterministicEpidemics, MultiplexDynamics)
 
     def infection(self, x):
         infection = self.infection_rate(x).squeeze()
-        k = self._collapsed_network.degree().squeeze()
+        k = self.node_degree
         k[k == 0] = 1
         inf_update = (
-            self.propagator(infection, self._collapsed_network.edges.T)
+            self.propagator(infection, self.collapsed_network.edges)
             .cpu()
             .detach()
             .numpy()
@@ -164,15 +160,18 @@ class WeightedMultiplexDeterministicEpidemics(
 
     def infection(self, x):
         infection = self.infection_rate(x).squeeze()
-        s = np.sum(list(self.node_strength.values()), axis=0)
-        k = np.sum(list(self.node_degree.values()), axis=0)
         edges = self.collapsed_network.edges.T
-        weights = self.collapsed_network.edge_attr["weight"]
+        k = self.collapsed_node_degree
+        s = self.collapsed_node_strength
+        w = self.collapsed_edge_weight
         inf_update = (
-            self.propagator(infection, self.collapsed_network.edges.T, w=weights)
+            self.propagator(
+                infection, self.collapsed_edge_index, w=self.collapsed_edge_weight
+            )
             .cpu()
             .detach()
             .numpy()
+            .squeeze()
         )
         inf_update[s == 0] = 0
         inf_update[k == 0] = 0

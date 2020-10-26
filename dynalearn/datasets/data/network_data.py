@@ -61,7 +61,7 @@ class NetworkData(Data):
         if isinstance(self.data, MultiplexNetwork):
             for k in self.data.layers:
                 _group = group.create_group(k)
-                self._save_graph_(self.data.collapse(l), _group)
+                self._save_graph_(self.data.collapse(k), _group)
         else:
             self._save_graph_(self.data, group)
 

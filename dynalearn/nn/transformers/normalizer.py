@@ -138,13 +138,8 @@ class NodeNormalizer(Normalizer):
 
     def getter(self, index, dataset):
         g = dataset.networks[index].data
-        if self.layer is None:
-            assert isinstance(g, Network)
-            x = g.get_node_data()
-        else:
-            assert isinstance(g, MultiplexNetwork)
-            x = g.get_node_data()[self.layer]
-
+        assert isinstance(g, (Network, MultiplexNetwork))
+        x = g.get_node_data()
         return torch.Tensor(x)
 
 
@@ -207,12 +202,17 @@ class NetworkNormalizer(Transformer):
 
     def forward(self, g):
         if isinstance(g, MultiplexNetwork):
-            edge_index, edge_attr, node_attr = {}, {}, {}
+            edge_index, edge_attr = {}, {}
+            node_attr = None
             for k in self.layers:
-                assert k in g.layers(), f"{k} is not a layer of the graph"
-                edge_index[k], edge_attr[k], node_attr[k] = self._normalize_network_(
+                assert k in g.layers, f"{k} is not a layer of the graph"
+                edge_index[k], edge_attr[k], _node_attr = self._normalize_network_(
                     g, layer=k
                 )
+                if node_attr is None:
+                    node_attr = _node_attr
+                else:
+                    assert torch.all(node_attr == _node_attr)
         else:
             edge_index, edge_attr, node_attr = self._normalize_network_(g)
         _g = (edge_index, edge_attr, node_attr)
@@ -231,11 +231,11 @@ class NetworkNormalizer(Transformer):
             g = g.collapse(layer)
         edge_index = self.t_cuda.forward(torch.LongTensor(g.edges.T))
         node_attr = getattr(self, n_key).forward(torch.Tensor(g.get_node_data()))
-
         edge_attr = getattr(self, e_key).forward(torch.Tensor(g.get_edge_data()))
         if edge_attr.numel() == 0:
             edge_attr = None
 
         if node_attr.numel() == 0:
             node_attr = None
+
         return edge_index, edge_attr, node_attr
