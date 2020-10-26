@@ -51,12 +51,12 @@ class TrainableConfig(Config):
         cls.edge_activation = "relu"
         cls.edge_gnn_activation = "relu"
 
-        cls.in_channels = [16, 16]
-        cls.gnn_channels = 16
-        cls.out_channels = [16, 16]
+        cls.in_channels = [32, 32]
+        cls.gnn_channels = 32
+        cls.out_channels = [32, 32]
         cls.edge_channels = [4]
         cls.edge_gnn_channels = 4
-        cls.heads = 1
+        cls.heads = 2
         cls.concat = True
         cls.bias = True
         cls.self_attention = True
@@ -81,12 +81,12 @@ class TrainableConfig(Config):
         cls.edge_activation = "relu"
         cls.edge_gnn_activation = "relu"
 
-        cls.in_channels = [16, 16]
-        cls.gnn_channels = 16
-        cls.out_channels = [16, 16]
+        cls.in_channels = [32, 32]
+        cls.gnn_channels = 32
+        cls.out_channels = [32, 32]
         cls.edge_channels = [4]
         cls.edge_gnn_channels = 4
-        cls.heads = 1
+        cls.heads = 2
         cls.concat = True
         cls.bias = True
         cls.self_attention = True
@@ -112,11 +112,11 @@ class TrainableConfig(Config):
         cls.edge_gnn_activation = "relu"
 
         cls.in_channels = [32, 32]
-        cls.gnn_channels = 16
+        cls.gnn_channels = 32
         cls.out_channels = [32, 32]
         cls.edge_channels = [4]
         cls.edge_gnn_channels = 4
-        cls.heads = 2
+        cls.heads = 4
         cls.concat = True
         cls.bias = True
         cls.self_attention = True
