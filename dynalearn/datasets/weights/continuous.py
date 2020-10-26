@@ -118,8 +118,8 @@ class StrengthContinuousGlobalStateWeight(ContinuousStateWeight):
     def _reduce_node_(self, index, network):
         s = np.array([0.0])
         for l in network.neighbors(index):
-            if "weight" in network.edges[index, l]:
-                s += network.edges[index, l]["weight"]
+            if "weight" in network.data.edges[index, l]:
+                s += network.data.edges[index, l]["weight"]
             else:
                 s += np.array([1.0])
         return s.reshape(-1)
@@ -132,8 +132,8 @@ class StrengthContinuousStateWeight(ContinuousStateWeight):
             x = np.array([x.sum()])
         s = np.array([0.0])
         for l in network.neighbors(index):
-            if "weight" in network.edges[index, l]:
-                s += network.edges[index, l]["weight"]
+            if "weight" in network.data.edges[index, l]:
+                s += network.data.edges[index, l]["weight"]
             else:
                 s += np.array([1.0])
         return np.concatenate([x, s])
@@ -160,8 +160,8 @@ class StrengthContinuousCompoundStateWeight(ContinuousStateWeight):
         for l in network.neighbors(index):
             _x = s.reshape(-1)
             _y = states[l].reshape(-1)
-            if "weight" in network.edges[index, l]:
-                _w = np.array([network.edges[index, l]["weight"]])
+            if "weight" in network.data.edges[index, l]:
+                _w = np.array([network.data.edges[index, l]["weight"]])
             else:
                 _w = np.array([1.0])
             if self.reduce:

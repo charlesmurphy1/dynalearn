@@ -87,6 +87,9 @@ class Network:
     def number_of_edges(self):
         return self.data.number_of_edges()
 
+    def neighbors(self, index):
+        return np.array(list(self.data.neighbors(index)))
+
     def _get_nodes_(self, g):
         return np.array(list(g.nodes()))
 
@@ -202,6 +205,9 @@ class MultiplexNetwork:
 
     def number_of_edges(self):
         return {k: v.number_of_edges() for k, v in self.data.items()}
+
+    def neighbors(self, index):
+        return {k: np.array(list(v.neighbors(index))) for k, v in self.data.items()}
 
     def _get_nodes_(self, g):
         assert isinstance(g, dict)
