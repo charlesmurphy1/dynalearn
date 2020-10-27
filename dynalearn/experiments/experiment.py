@@ -380,9 +380,10 @@ class Experiment:
     def mode(self):
         return self._mode
 
+    @mode.setter
     def mode(self, mode):
         if mode in self._dataset:
-            self.verbose(f"Changing mode `{self.mode}` to `{model}`.")
+            self.verbose(f"Changing mode `{self.mode}` to `{mode}`.")
             self._mode = mode
         else:
             self.verbose(f"Dataset mode `{mode}` not available, kept `{self.mode}`.")

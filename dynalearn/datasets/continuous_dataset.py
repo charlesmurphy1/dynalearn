@@ -25,7 +25,7 @@ class ContinuousDataset(Dataset):
         x = torch.FloatTensor(self.inputs[i].get(j))
         y = torch.FloatTensor(self.targets[i].get(j))
         w = torch.FloatTensor(self.weights[i].get(j))
-        w[w > 0] = w[w > 0] ** (-self.bias)
+        # w[w > 0] = w[w > 0] ** (-self.bias)
         w /= w.sum()
         return (x, g), y, w
 

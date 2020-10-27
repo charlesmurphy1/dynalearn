@@ -8,9 +8,10 @@ from dynalearn.utilities import Verbose
 
 
 class Weight(DataCollection):
-    def __init__(self, name="weights", max_num_samples=-1):
+    def __init__(self, name="weights", max_num_samples=-1, bias=1.0):
         DataCollection.__init__(self, name=name, template=StateData)
         self.max_num_samples = max_num_samples
+        self.bias = bias
         self.features = {}
 
     def _get_features_(self, network, states, pb=None):
@@ -44,13 +45,19 @@ class Weight(DataCollection):
         return
 
     def compute_weights(self, dataset, pb=None):
+        weights = []
+        z = 0
         for i in range(dataset.networks.size):
             g = dataset.networks[i].data
             if isinstance(g, MultiplexNetwork):
                 g = g.collapse()
-            w = self._get_weights_(g, dataset.inputs[i].data, pb=pb)
-            weights = StateData(data=w)
-            self.add(weights)
+            w = self._get_weights_(g, dataset.inputs[i].data, pb=pb) ** (-self.bias)
+            z += w.sum()
+            weights.append(w)
+
+        for i in range(dataset.networks.size):
+            weights_data = StateData(data=weights[i] / z)
+            self.add(weights_data)
 
     def _add_features_(self, key, value=None):
         if value is None:
@@ -76,13 +83,15 @@ class Weight(DataCollection):
     def to_state_weights(self):
         state_weights = DataCollection()
         for i in range(self.size):
-            state_weights.add(StateData(data=self.data_list[i].data.sum(-1)))
+            w = self.data_list[i].data.sum(-1)
+            state_weights.add(StateData(data=w))
         return state_weights
 
     def to_network_weights(self):
         network_weights = StateData()
-        w = []
+        weight = []
         for i in range(self.size):
-            w.append(self.data_list[i].data.sum())
-        network_weights.data = np.array(w)
+            w = self.data_list[i].data.sum()
+            weight.append(w)
+        network_weights.data = np.array(weight)
         return network_weights

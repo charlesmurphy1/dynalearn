@@ -87,7 +87,7 @@ class Dataset(object):
                 n = np.random.binomial(index.shape[0], node_fraction)
                 if n == 0:
                     n = 1
-                p = self.weights[i].data[j, index] ** (-bias)
+                p = self.weights[i].data[j, index] ** (self.bias - bias)
                 p /= p.sum()
                 remove_nodes = np.random.choice(index, p=p, size=n, replace=False)
                 weights[i].data[j] *= 0
@@ -320,7 +320,7 @@ class Dataset(object):
         return indices_dict
 
     def _get_weights_(self):
-        weights = Weight()
+        weights = Weight(bias=self.bias)
         weights.compute(self, verbose=self.verbose)
         return weights
 

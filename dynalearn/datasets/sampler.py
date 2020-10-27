@@ -40,7 +40,7 @@ class Sampler:
     def _get_network_(self):
         indices = self.avail_networks
         p = self.dataset.network_weights.data[indices]
-        p[p > 0] = p[p > 0] ** (-self.bias)
+        p[p > 0] = p[p > 0]  # ** (-self.bias)
         p /= p.sum()
         index = np.random.choice(self.avail_networks, p=p)
         return index
@@ -48,7 +48,7 @@ class Sampler:
     def _get_state_(self, g_index):
         indices = self.avail_states[g_index]
         p = self.dataset.state_weights[g_index].data[indices]
-        p[p > 0] = p[p > 0] ** (-self.bias)
+        p[p > 0] = p[p > 0]  # ** (-self.bias)
         p /= p.sum()
         index = np.random.choice(indices, p=p)
 

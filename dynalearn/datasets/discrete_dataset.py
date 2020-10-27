@@ -20,7 +20,7 @@ class DiscreteDataset(Dataset):
             y = self.targets[i].get(j)
         y = torch.FloatTensor(y)
         w = torch.FloatTensor(self.weights[i].get(j))
-        w[w > 0] = w[w > 0] ** (-self.bias)
+        # w[w > 0] = w[w > 0] ** (-self.bias)
         w /= w.sum()
         return (x, g), y, w
 
