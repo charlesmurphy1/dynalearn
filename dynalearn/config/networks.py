@@ -53,7 +53,6 @@ class NetworkConfig(Config):
             cls.weights = weights
         if transforms is not None:
             cls.transforms = transforms
-
         if isinstance(layers, int):
             cls.layers = [f"layer{i}" for i in range(layers)]
         elif isinstance(layers, list):

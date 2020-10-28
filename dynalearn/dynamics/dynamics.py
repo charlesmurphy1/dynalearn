@@ -77,10 +77,10 @@ class Dynamics(ABC):
     def network(self, network):
         assert isinstance(network, Network)
         network = network.to_directed()
-        self._network = network
         self._edge_index = network.edges.T
         self._node_degree = network.degree()
         self._num_nodes = self._network.number_of_nodes()
+        self._network = network
         self.update_edge_attr()
         self.update_node_attr()
 
@@ -133,7 +133,6 @@ class WeightedDynamics(Dynamics):
     def network(self, network):
         assert isinstance(network, Network)
         network = network.to_directed()
-        self._network = network
         self._edge_index = network.edges.T
         self._edge_weight = network.edge_attr["weight"].reshape(-1, 1)
         self._node_degree = network.degree()
@@ -141,6 +140,7 @@ class WeightedDynamics(Dynamics):
         self._node_strength = np.zeros(self._num_nodes)
         for i, (u, v) in enumerate(network.edges):
             self._node_strength[u] += self._edge_weight[i]
+        self._network = network
         self.update_edge_attr()
         self.update_node_attr()
 
@@ -179,6 +179,7 @@ class MultiplexDynamics(Dynamics):
         self._edge_index = {k: v.T for k, v in network.edges.items()}
         self._node_degree = network.degree()
         self._num_nodes = network.number_of_nodes()
+        self._network = network
         self.update_edge_attr()
         self.update_node_attr()
         self.collapsed_network = network.collapse()
@@ -235,7 +236,6 @@ class WeightedMultiplexDynamics(Dynamics):
     def network(self, network):
         assert isinstance(network, MultiplexNetwork)
         network = network.to_directed()
-        self._network = network
         self._edge_index = {k: v.T for k, v in network.edges.items()}
         self._node_degree = network.degree()
         self._num_nodes = network.number_of_nodes()
@@ -247,6 +247,7 @@ class WeightedMultiplexDynamics(Dynamics):
             self._node_strength[k] = np.zeros(self._num_nodes)
             for i, (u, v) in enumerate(edges):
                 self._node_strength[k][u] += self._edge_weight[k][i]
+        self._network = network
         self.update_edge_attr()
         self.update_node_attr()
         self.collapsed_network = network.collapse()

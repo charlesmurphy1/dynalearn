@@ -105,7 +105,12 @@ class DeterministicEpidemics(Dynamics):
             return False
 
     def update_node_attr(self):
-        self.population = self.init_population()
+        node_attr = self.network.node_attr
+        if "population" in node_attr:
+            self.population = node_attr["population"]
+        else:
+            self.population = self.init_population()
+            self.network.node_attr = {"population": self.population.copy()}
 
 
 class WeightedDeterministicEpidemics(DeterministicEpidemics, WeightedDynamics):

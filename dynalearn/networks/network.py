@@ -29,10 +29,12 @@ class Network:
     @node_attr.setter
     def node_attr(self, node_attr):
         assert isinstance(node_attr, dict)
-        for k, v in node_attr:
+        for k, v in node_attr.items():
             assert isinstance(v, np.ndarray)
             assert len(v) == len(self._nodes)
             self._node_attr[k] = v
+            v_dict = {n: v[n] for n in self.nodes}
+            nx.set_node_attributes(self._data, v_dict, name=k)
 
     @property
     def edge_attr(self):
@@ -41,10 +43,12 @@ class Network:
     @edge_attr.setter
     def edge_attr(self, edge_attr):
         assert isinstance(edge_attr, dict)
-        for k, v in edge_attr:
+        for k, v in edge_attr.items():
             assert isinstance(v, np.ndarray)
             assert len(v) == len(self._edges)
             self._edge_attr[k] = v
+            v_dict = {(n, m): v[i] for i, (n, m) in enumerate(self.edges)}
+            nx.set_edge_attributes(self._data, v_dict, name=k)
 
     @property
     def data(self):
@@ -60,7 +64,7 @@ class Network:
 
     def to_directed(self):
         data = self.data.to_directed()
-        return Network(data)
+        return Network(data=data)
 
     def to_array(self):
         return nx.to_numpy_array(self.data)
@@ -128,10 +132,13 @@ class MultiplexNetwork:
     @node_attr.setter
     def node_attr(self, node_attr):
         assert isinstance(node_attr, dict)
-        for k, v in node_attr:
+        for k, v in node_attr.items():
             assert isinstance(v, np.ndarray)
             assert len(v) == len(self._nodes)
             self._node_attr[k] = v
+            v_dict = {n: v[n] for n in self.nodes}
+            for l in self.layers:
+                nx.set_node_attributes(self._data[l], v_dict, name=k)
 
     @property
     def edge_attr(self):
@@ -142,10 +149,12 @@ class MultiplexNetwork:
         assert isinstance(edge_attr, dict)
         for l in edge_attr.keys():
             assert l in self.data
-            for k, v in edge_attr[l]:
+            for k, v in edge_attr[l].items():
                 assert isinstance(v, np.ndarray)
                 assert len(v) == len(self._edges)
                 self._edge_attr[l][k] = v
+                v_dict = {(n, m): v[i] for i, (n, m) in enumerate(self.edges[l])}
+                nx.set_edge_attributes(self.data[l], v, name=k)
 
     @property
     def data(self):
