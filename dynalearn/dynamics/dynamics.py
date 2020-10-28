@@ -79,7 +79,7 @@ class Dynamics(ABC):
         network = network.to_directed()
         self._edge_index = network.edges.T
         self._node_degree = network.degree()
-        self._num_nodes = self._network.number_of_nodes()
+        self._num_nodes = network.number_of_nodes()
         self._network = network
         self.update_edge_attr()
         self.update_node_attr()
