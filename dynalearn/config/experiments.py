@@ -119,7 +119,7 @@ class ExperimentConfig(Config):
             path_to_data=path_to_data,
             path_to_best=path_to_best,
             path_to_summary=path_to_summary,
-            seed=None,
+            seed=seed,
         )
         cls.dataset = DiscreteDatasetConfig.state()
         cls.train_details = TrainingConfig.discrete()
@@ -144,7 +144,7 @@ class ExperimentConfig(Config):
             path_to_data=path_to_data,
             path_to_best=path_to_best,
             path_to_summary=path_to_summary,
-            seed=None,
+            seed=seed,
         )
         cls.dataset = ContinuousDatasetConfig.state(
             compounded=False, reduce=False, total=True
