@@ -117,7 +117,7 @@ class Experiment:
         self.__loggers__ = LoggerDict({"time": TimeLogger(), "memory": MemoryLogger(),})
         self.__files__ = [
             "config.pickle",
-            "loggers.json",
+            "log.json",
             "data.h5",
             "metrics.h5",
             "history.pickle",
@@ -202,7 +202,7 @@ class Experiment:
         )
 
     def compute_metrics(self, loggers=None, save=True):
-        loggers = loggers or LoggerDict()
+        loggers = loggers or self.__loggers__
         self.verbose("\n---Computing metrics---")
 
         if save:
@@ -232,7 +232,7 @@ class Experiment:
         zip.close()
 
     def save(self, loggers=None):
-        loggers = loggers or LoggerDict()
+        loggers = loggers or self.__loggers__
 
         self.save_config()
         self.save_data()
@@ -242,6 +242,7 @@ class Experiment:
             loggers.save(f)
 
     def load(self, loggers=None):
+        loggers = loggers or self.__loggers__
         self.load_config()
         self.load_data()
         self.load_model()
@@ -253,7 +254,7 @@ class Experiment:
 
     # Other methods
     def partition_dataset(self, loggers=None, fraction=0.1, bias=0.0, name="val"):
-        loggers = loggers or LoggerDict()
+        loggers = loggers or self.__loggers__
         self.verbose(f"\n---Partitioning {name}-data---")
         partition = self.dataset.partition(fraction, bias=bias)
         if np.sum(partition.network_weights) == 0:
@@ -288,6 +289,13 @@ class Experiment:
         shutil.rmtree(path_to_data)
         return cls
 
+    def clean(self):
+        paths = os.listdir(self.path_to_data)
+
+        for p in paths:
+            p = os.path.join(self.path_to_data, p)
+            os.remove(p)
+
     def save_data(self):
         with h5py.File(join(self.path_to_data, self.fname_data), "w") as f:
             for mode in self.all_modes:
@@ -297,10 +305,28 @@ class Experiment:
                 if mode in self._test_dataset:
                     self._test_dataset[mode].save(f, name=f"{mode}-test")
 
-    def save_model(self):
-        self.model.nn.save_history(join(self.path_to_data, self.fname_history))
-        self.model.nn.save_optimizer(join(self.path_to_data, self.fname_optim))
-        self.model.nn.save_weights(join(self.path_to_data, self.fname_model))
+    def save_model(self, label_with_mode=True):
+
+        # saving optimizer
+        if label_with_mode:
+            fname = self.mode + "_" + self.fname_history
+        else:
+            fname = self.fname_history
+        self.model.nn.save_history(join(self.path_to_data, fname))
+
+        # saving optimizer
+        if label_with_mode:
+            fname = self.mode + "_" + self.fname_optim
+        else:
+            fname = self.fname_optim
+        self.model.nn.save_optimizer(join(self.path_to_data, fname))
+
+        # saving model
+        if label_with_mode:
+            fname = self.mode + "_" + self.fname_model
+        else:
+            fname = self.fname_model
+        self.model.nn.save_weights(join(self.path_to_data, fname))
 
     def save_metrics(self):
         with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
@@ -335,21 +361,36 @@ class Experiment:
         else:
             self.verbose("Loading data: Did not find data to load.")
 
-    def load_model(self, restore_best=True):
-        if exists(join(self.path_to_data, self.fname_history)):
-            self.model.nn.load_history(join(self.path_to_data, self.fname_history))
+    def load_model(self, restore_best=True, label_with_mode=True):
+        # loading history
+        if label_with_mode:
+            fname = self.mode + "_" + self.fname_history
+        else:
+            fname = self.fname_history
+        if exists(join(self.path_to_data, fname)):
+            self.model.nn.load_history(join(self.path_to_data, fname))
         else:
             self.verbose("Loading model: Did not find history to load.")
 
-        if exists(join(self.path_to_data, self.fname_optim)):
-            self.model.nn.load_optimizer(join(self.path_to_data, self.fname_optim))
+        # loading optimizer
+        if label_with_mode:
+            fname = self.mode + "_" + self.fname_optim
+        else:
+            fname = self.fname_optim
+        if exists(join(self.path_to_data, fname)):
+            self.model.nn.load_optimizer(join(self.path_to_data, fname))
         else:
             self.verbose("Loading model: Did not find optimizer to load.")
 
+        # loading model
+        if label_with_mode:
+            fname = self.mode + "_" + self.fname_model
+        else:
+            fname = self.fname_model
         if restore_best and exists(self.path_to_best):
             self.model.nn.load_weights(self.path_to_best)
-        elif exists(join(self.path_to_data, self.fname_model)):
-            self.model.nn.load_weights(join(self.path_to_data, self.fname_model))
+        elif exists(join(self.path_to_data, fname)):
+            self.model.nn.load_weights(join(self.path_to_data, fname))
         else:
             self.verbose("Loading model: Did not find model to load.")
 
