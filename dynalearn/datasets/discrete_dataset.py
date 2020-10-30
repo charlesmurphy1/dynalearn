@@ -20,7 +20,6 @@ class DiscreteDataset(Dataset):
             y = self.targets[i].get(j)
         y = torch.FloatTensor(y)
         w = torch.FloatTensor(self.weights[i].get(j))
-        # w[w > 0] = w[w > 0] ** (-self.bias)
         w /= w.sum()
         return (x, g), y, w
 
@@ -35,8 +34,8 @@ class DiscreteStructureWeightDataset(DiscreteDataset, StructureWeightDataset):
 class DiscreteStateWeightDataset(DiscreteDataset):
     def _get_weights_(self):
         if self.config.compounded:
-            weights = DiscreteCompoundStateWeight()
+            weights = DiscreteCompoundStateWeight(bias=self.bias)
         else:
-            weights = DiscreteStateWeight()
+            weights = DiscreteStateWeight(bias=self.bias)
         weights.compute(self, verbose=self.verbose)
         return weights

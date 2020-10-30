@@ -197,12 +197,13 @@ class ExperimentConfig(Config):
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
+        dataset = ContinuousDatasetConfig.state(
+            compounded=False, reduce=False, total=True
+        )
         cls.dataset = ContinuousDatasetConfig.state(
             compounded=False, reduce=False, total=True
         )
-        cls.pretrain_dataset = ContinuousDatasetConfig.state(
-            compounded=False, reduce=False, total=True
-        )
+        cls.dataset.modes = ["main", "pretrain"]
         cls.train_details = TrainingConfig.continuous()
 
         if seed is None:

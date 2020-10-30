@@ -32,12 +32,18 @@ class Experiment:
         self.name = config.name
 
         # Main objects
-        self._dataset = {"main": get_dataset(config.dataset)}
-        if "pretrain_dataset" in config.__dict__:
-            self._dataset["pretrain"] = get_dataset(config.pretrain_dataset)
+        # self._dataset = {"main": get_dataset(config.dataset)}
+        # self._mode = "main"
+        # self._all_modes = ["main"]
+        # if "pretrain_dataset" in config.__dict__:
+        #     self._dataset["pretrain"] = get_dataset(config.pretrain_dataset)
+        #     self._all_mode.append("pretrain")
+        self.all_modes = config.dataset.modes
+        assert "main" in self.all_modes
+        self._mode = "main"
+        self._dataset = {k: get_dataset(config.dataset) for k in self.all_modes}
         self._val_dataset = {}
         self._test_dataset = {}
-        self._mode = "main"
 
         self.networks = get_network(config.networks)
         self.dynamics = get_dynamics(config.dynamics)
@@ -241,8 +247,9 @@ class Experiment:
         self.load_model()
         self.load_metrics()
         if exists(join(self.path_to_data, self.fname_logger)):
-            with open(join(self.path_to_data, self.fname_logger), "r") as f:
-                loggers.load(f)
+            if loggers is not None:
+                with open(join(self.path_to_data, self.fname_logger), "r") as f:
+                    loggers.load(f)
 
     # Other methods
     def partition_dataset(self, loggers=None, fraction=0.1, bias=0.0, name="val"):
@@ -283,20 +290,19 @@ class Experiment:
 
     def save_data(self):
         with h5py.File(join(self.path_to_data, self.fname_data), "w") as f:
-            self.dataset.save(f)
-            if self.val_dataset is not None:
-                self.val_dataset.save(f, name="val")
-            if self.test_dataset is not None:
-                self.test_dataset.save(f, name="test")
+            for mode in self.all_modes:
+                self._dataset[mode].save(f, name=f"{mode}-train")
+                if mode in self._val_dataset:
+                    self._val_dataset[mode].save(f, name=f"{mode}-val")
+                if mode in self._test_dataset:
+                    self._test_dataset[mode].save(f, name=f"{mode}-test")
 
     def save_model(self):
-
         self.model.nn.save_history(join(self.path_to_data, self.fname_history))
         self.model.nn.save_optimizer(join(self.path_to_data, self.fname_optim))
         self.model.nn.save_weights(join(self.path_to_data, self.fname_model))
 
     def save_metrics(self):
-
         with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
             for k, m in self.metrics.items():
                 m.save(f)
@@ -308,7 +314,24 @@ class Experiment:
     def load_data(self):
         if exists(join(self.path_to_data, self.fname_data)):
             with h5py.File(join(self.path_to_data, self.fname_data), "r") as f:
-                self.dataset.load(f)
+                for k, v in f.items():
+                    mode, name = k.split("-")
+                    if name == "train":
+                        self._dataset[mode].load(v)
+                    elif name == "val":
+                        if mode not in self._val_dataset:
+                            self._val_dataset[mode] = get_dataset(
+                                self._dataset[mode].config
+                            )
+                        self._val_dataset[mode].load(v)
+                    elif name == "test":
+                        if mode not in self._test_dataset:
+                            self._test_dataset[mode] = get_dataset(
+                                self._dataset[mode].config
+                            )
+                        self._test_dataset[mode].load(v)
+                    else:
+                        raise ValueError(f"Invalid name `{name}` while loading data.")
         else:
             self.verbose("Loading data: Did not find data to load.")
 

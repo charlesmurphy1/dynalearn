@@ -7,9 +7,9 @@ from .kde import KernelDensityEstimator
 
 
 class ContinuousStateWeight(Weight):
-    def __init__(self, name="weights", reduce=True):
+    def __init__(self, name="weights", reduce=True, bias=1.0):
         self.reduce = reduce
-        Weight.__init__(self, name=name, max_num_samples=10000)
+        Weight.__init__(self, name=name, max_num_samples=10000, bias=bias)
 
     def setUp(self, dataset):
         self.num_updates = 2 * np.sum(

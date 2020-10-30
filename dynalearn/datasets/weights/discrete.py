@@ -6,9 +6,9 @@ from dynalearn.utilities import from_nary
 
 
 class DiscreteStateWeight(Weight):
-    def __init__(self, name="weights", max_window_size=3):
+    def __init__(self, name="weights", max_window_size=3, bias=1.0):
         self.max_window_size = max_window_size
-        Weight.__init__(self, name=name, max_num_samples=-1)
+        Weight.__init__(self, name=name, max_num_samples=max_window_size, bias=bias)
 
     def setUp(self, dataset):
         self.num_states = dataset.num_states

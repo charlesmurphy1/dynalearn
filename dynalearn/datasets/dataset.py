@@ -84,10 +84,13 @@ class Dataset(object):
         for i in range(self.networks.size):
             for j in range(self.inputs[i].size):
                 index = np.where(self.weights[i].data[j] > 0)[0]
-                n = np.random.binomial(index.shape[0], node_fraction)
+                n = np.random.binomial(self.weights[i].data.shape[-1], node_fraction)
                 if n == 0:
                     n = 1
-                p = self.weights[i].data[j, index] ** (self.bias - bias)
+                if self.bias > 0:
+                    p = self.weights[i].data[j, index] ** (-bias / self.bias)
+                else:
+                    p = self.weights[i].data[j, index]
                 p /= p.sum()
                 remove_nodes = np.random.choice(index, p=p, size=n, replace=False)
                 weights[i].data[j] *= 0
@@ -155,15 +158,10 @@ class Dataset(object):
         self._data = {}
         self._transformed_data = {}
 
-        if "data" in h5file:
-            group = h5file["data"]
-        else:
-            group = h5file
-        if "data" in h5file:
-            self._data = self._load_data_(group)
+        self._data = self._load_data_(h5file)
 
         w = Weight()
-        w.load(group)
+        w.load(h5file)
         self.weights = w
 
         if self.use_transformed:

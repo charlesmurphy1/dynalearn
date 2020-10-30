@@ -6,6 +6,7 @@ class DiscreteDatasetConfig(Config):
     def plain(cls):
         cls = cls()
         cls.name = "DiscreteDataset"
+        cls.modes = ["main"]
         cls.bias = 0
         cls.replace = True
         cls.use_groundtruth = False
@@ -15,6 +16,7 @@ class DiscreteDatasetConfig(Config):
     def structure(cls, use_strength=True):
         cls = cls()
         cls.name = "DiscreteStructureWeightDataset"
+        cls.modes = ["main"]
         cls.bias = 0
         cls.replace = True
         cls.use_groundtruth = False
@@ -25,6 +27,7 @@ class DiscreteDatasetConfig(Config):
     def state(cls, use_strength=True, compounded=True):
         cls = cls()
         cls.name = "DiscreteStateWeightDataset"
+        cls.modes = ["main"]
         cls.bias = 0
         cls.replace = True
         cls.use_groundtruth = False
@@ -36,6 +39,7 @@ class DiscreteDatasetConfig(Config):
     def hidden_sissis(cls):
         cls = cls()
         cls.name = "DiscreteStateWeightDataset"
+        cls.modes = ["main"]
         cls.bias = 0
         cls.replace = True
         cls.use_groundtruth = False
@@ -49,6 +53,7 @@ class DiscreteDatasetConfig(Config):
     def partially_hidden_sissis(cls):
         cls = cls()
         cls.name = "DiscreteStateWeightDataset"
+        cls.modes = ["main"]
         cls.bias = 0
         cls.replace = True
         cls.use_groundtruth = False
@@ -64,6 +69,7 @@ class ContinuousDatasetConfig(Config):
     def plain(cls):
         cls = cls()
         cls.name = "ContinuousDataset"
+        cls.modes = ["main"]
         cls.bias = 0
         cls.replace = True
         cls.use_groundtruth = False
@@ -73,6 +79,7 @@ class ContinuousDatasetConfig(Config):
     def structure(cls, use_strength=True):
         cls = cls()
         cls.name = "ContinuousStructureWeightDataset"
+        cls.modes = ["main"]
         cls.bias = 0
         cls.replace = True
         cls.use_groundtruth = False
@@ -83,6 +90,7 @@ class ContinuousDatasetConfig(Config):
     def state(cls, use_strength=True, compounded=False, reduce=False, total=True):
         cls = cls()
         cls.name = "ContinuousStateWeightDataset"
+        cls.modes = ["main"]
         cls.bias = 0
         cls.replace = True
         cls.use_groundtruth = False

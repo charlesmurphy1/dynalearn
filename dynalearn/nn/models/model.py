@@ -149,15 +149,23 @@ class Model(torch.nn.Module):
 
         pb = verbose.progress_bar(f"Evaluating {name}", len(dataset) + 1)
 
+        norm = 0.0
         for data in dataset:
             y_true, y_pred, w = self.prepare_output(data)
+            z = w.sum()
+            norm += z
             for m in metrics:
-                val = metrics[m](y_true, y_pred, w).cpu().detach().numpy()
-                logs[prefix + m] += val / len(dataset)
+                logs[prefix + m] += (
+                    z * metrics[m](y_true, y_pred, w).cpu().detach().numpy()
+                )
             if pb is not None:
                 pb.update()
+
         if pb is not None:
             pb.close()
+
+        for m in metrics:
+            logs[prefix + m] = logs[prefix + m] / norm
         return logs
 
     def prepare_output(self, data):
@@ -213,3 +221,11 @@ class Model(torch.nn.Module):
         for p in self.parameters():
             num_params += torch.tensor(p.size()).prod()
         return num_params
+
+    def grad_norm(self):
+        total_norm = 0.0
+        for p in model.parameters():
+            param_norm = p.grad.data.norm(2)
+            total_norm += param_norm.item() ** 2
+        total_norm = total_norm ** (1.0 / 2)
+        return total_norm

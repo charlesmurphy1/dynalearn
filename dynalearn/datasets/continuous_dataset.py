@@ -25,7 +25,6 @@ class ContinuousDataset(Dataset):
         x = torch.FloatTensor(self.inputs[i].get(j))
         y = torch.FloatTensor(self.targets[i].get(j))
         w = torch.FloatTensor(self.weights[i].get(j))
-        # w[w > 0] = w[w > 0] ** (-self.bias)
         w /= w.sum()
         return (x, g), y, w
 
@@ -51,17 +50,27 @@ class ContinuousStateWeightDataset(ContinuousDataset):
     def _get_weights_(self):
         if self.total:
             if self.m_networks.is_weighted:
-                weights = StrengthContinuousGlobalStateWeight(reduce=self.reduce)
+                weights = StrengthContinuousGlobalStateWeight(
+                    reduce=self.reduce, bias=self.bias
+                )
             else:
-                weights = ContinuousGlobalStateWeight(reduce=self.reduce)
+                weights = ContinuousGlobalStateWeight(
+                    reduce=self.reduce, bias=self.bias
+                )
         else:
             if self.m_networks.is_weighted and self.compounded:
-                weights = StrengthContinuousCompoundStateWeight(reduce=self.reduce)
+                weights = StrengthContinuousCompoundStateWeight(
+                    reduce=self.reduce, bias=self.bias
+                )
             elif self.m_networks.is_weighted and not self.compounded:
-                weights = StrengthContinuousStateWeight(reduce=self.reduce)
+                weights = StrengthContinuousStateWeight(
+                    reduce=self.reduce, bias=self.bias
+                )
             elif not self.m_networks.is_weighted and self.compounded:
-                weights = ContinuousCompoundStateWeight(reduce=self.reduce)
+                weights = ContinuousCompoundStateWeight(
+                    reduce=self.reduce, bias=self.bias
+                )
             else:
-                weights = ContinuousStateWeight()
+                weights = ContinuousStateWeight(bias=self.bias)
         weights.compute(self, verbose=self.verbose)
         return weights

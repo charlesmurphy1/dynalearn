@@ -46,18 +46,13 @@ class Weight(DataCollection):
 
     def compute_weights(self, dataset, pb=None):
         weights = []
-        z = 0
         for i in range(dataset.networks.size):
             g = dataset.networks[i].data
             if isinstance(g, MultiplexNetwork):
                 g = g.collapse()
             w = self._get_weights_(g, dataset.inputs[i].data, pb=pb) ** (-self.bias)
-            z += w.sum()
-            weights.append(w)
-
-        for i in range(dataset.networks.size):
-            weights_data = StateData(data=weights[i] / z)
-            self.add(weights_data)
+            weights = StateData(data=w)
+            self.add(weights)
 
     def _add_features_(self, key, value=None):
         if value is None:
