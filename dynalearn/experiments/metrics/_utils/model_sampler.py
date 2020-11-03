@@ -139,7 +139,7 @@ class FixedPointSampler(ModelSampler):
             x = y * 1
             i += 1
         agg_y = np.expand_dims(self.aggregate(y), 0)
-        return agg_y, x0
+        return agg_y, None
 
     def distance(self, x, y):
         return np.sqrt(np.sum((x - y) ** 2))

@@ -88,7 +88,10 @@ class GraphNeuralNetwork(Model):
         x = self.merge_nodeattr(x, node_attr)
         x = self.first_layer(x)
         x = self.in_layers(x)
-        x = self.gnn_layer(x, edge_index, edge_attr=edge_attr)
+        if self.config.gnn_name == "DynamicsGATConv":
+            x = self.gnn_layer(x, edge_index, edge_attr=edge_attr)
+        else:
+            x = self.gnn_layer(x, edge_index)
         if isinstance(x, tuple):
             x = x[0]
         x = self.gnn_activation(x)

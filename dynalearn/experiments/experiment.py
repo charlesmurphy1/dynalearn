@@ -32,12 +32,8 @@ class Experiment:
         self.name = config.name
 
         # Main objects
-        # self._dataset = {"main": get_dataset(config.dataset)}
-        # self._mode = "main"
-        # self._all_modes = ["main"]
-        # if "pretrain_dataset" in config.__dict__:
-        #     self._dataset["pretrain"] = get_dataset(config.pretrain_dataset)
-        #     self._all_mode.append("pretrain")
+        # if "modes" not in config.dataset.__dict__:
+        #     config.dataset.modes = ["main"]
         self.all_modes = config.dataset.modes
         assert "main" in self.all_modes
         self._mode = "main"

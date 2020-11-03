@@ -279,6 +279,7 @@ class Dataset(object):
                 t += 1
             inputs.add(StateData(data=inputs_data))
             targets.add(StateData(data=targets_data))
+
         data = {
             "networks": networks,
             "inputs": inputs,

@@ -58,7 +58,7 @@ class StationaryStateMetrics(Metrics):
     def initialize_network(self):
         g = self.networks.generate()
         self.dynamics.network = g
-        self.model.network = g
+        self.model.network = self.dynamics.network
 
     def _stationary_(self, param=None, pb=None):
         if param is not None:
