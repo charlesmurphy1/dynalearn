@@ -152,7 +152,7 @@ class Model(torch.nn.Module):
         norm = 0.0
         for data in dataset:
             y_true, y_pred, w = self.prepare_output(data)
-            z = w.sum()
+            z = w.sum().cpu().detach().numpy()
             norm += z
             for m in metrics:
                 logs[prefix + m] += (
