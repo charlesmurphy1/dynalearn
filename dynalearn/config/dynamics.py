@@ -61,8 +61,8 @@ class DynamicsConfig(Config):
     def covid_pretrain(cls):
         cls = cls()
         cls.name = "DSIR"
-        cls.infection_prob = 2.5 / 2.3
-        cls.recovery_prob = 1.0 / (7.5)
+        cls.infection_prob = 2.5 / 7.5
+        cls.recovery_prob = 1.0 / 7.5
         cls.infection_type = 2
         cls.density = 10000
         epsilon = 1e-5

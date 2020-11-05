@@ -16,14 +16,20 @@ class PredictionMetrics(Metrics):
             "true",
             "pred",
             "degree",
+            "index",
             "train_true",
             "train_pred",
             "train_degree",
+            "train_index",
         ]
 
     def get_true(self, g_index, s_index):
         x = self.dataset._data["inputs"][g_index].data[s_index]
-        return self.dynamics.predict(x)
+
+        if "ground_truth" in self.dataset._data:
+            return self.dataset._data["ground_truth"][g_index].data[s_index]
+        else:
+            return self.dynamics.predict(x)
 
     def get_pred(self, g_index, s_index):
         x = self.dataset.data["inputs"][g_index].data[s_index]
@@ -55,6 +61,7 @@ class PredictionMetrics(Metrics):
             self.get_pred, self.get_network_pred, self.all_nodes, pb=pb
         )
         self.get_data["degree"] = lambda pb: self._degree_(self.all_nodes, pb=pb)
+        self.get_data["index"] = lambda pb: self._index_(self.all_nodes, pb=pb)
 
         train_nodes = self._nodes_(experiment.dataset)
         self.get_data["train_true"] = lambda pb: self._pred_(
@@ -64,7 +71,8 @@ class PredictionMetrics(Metrics):
             self.get_pred, self.get_network_pred, train_nodes, pb=pb
         )
         self.get_data["train_degree"] = lambda pb: self._degree_(train_nodes, pb=pb)
-        update_factor = 6
+        self.get_data["train_index"] = lambda pb: self._index_(self.all_nodes, pb=pb)
+        update_factor = 8
         if experiment.val_dataset is not None:
             val_nodes = self._nodes_(experiment.val_dataset)
             self.get_data["val_true"] = lambda pb: self._pred_(
@@ -74,8 +82,9 @@ class PredictionMetrics(Metrics):
                 self.get_pred, self.get_network_pred, val_nodes, pb=pb
             )
             self.get_data["val_degree"] = lambda pb: self._degree_(val_nodes, pb=pb)
-            self.names.extend(["val_true", "val_pred", "val_degree"])
-            update_factor += 3
+            self.get_data["val_index"] = lambda pb: self._index_(self.all_nodes, pb=pb)
+            self.names.extend(["val_true", "val_pred", "val_degree", "val_degree"])
+            update_factor += 4
 
         if experiment.test_dataset is not None:
             test_nodes = self._nodes_(experiment.test_dataset)
@@ -86,8 +95,9 @@ class PredictionMetrics(Metrics):
                 self.get_pred, self.get_network_pred, test_nodes, pb=pb
             )
             self.get_data["test_degree"] = lambda pb: self._degree_(test_nodes, pb=pb)
-            self.names.extend(["test_true", "test_pred", "test_degree"])
-            update_factor += 3
+            self.get_data["test_index"] = lambda pb: self._index_(self.all_nodes, pb=pb)
+            self.names.extend(["test_true", "test_pred", "test_degree", "test_index"])
+            update_factor += 4
         self.num_updates *= update_factor
 
     def _get_points_(self):
@@ -106,7 +116,7 @@ class PredictionMetrics(Metrics):
                     range(self.dataset.data["inputs"][k].size),
                     int(self.max_num_points // n),
                 )
-                self.size += self.max_num_points
+                self.size += (self.max_num_points // n) * n
             else:
                 self.points[k] = range(self.dataset.data["inputs"][k].size)
                 self.size += self.dataset.data["inputs"][k].size * n
@@ -137,13 +147,8 @@ class PredictionMetrics(Metrics):
             net_getter(k)
             for t in self.points[k]:
                 pred = pred_getter(k, t)[nodes[k][t], :]
-                if i + pred.shape[0] <= pred_array.shape[0]:
-                    pred_array[i : i + pred.shape[0]] = pred
-                    i = i + pred.shape[0]
-                else:
-                    index = sample(range(pred.shape[0]), pred_array[i:].shape[0])
-                    pred_array[i:] = pred[index]
-                    break
+                pred_array[i : i + pred.shape[0]] = pred
+                i = i + pred.shape[0]
                 if pb is not None:
                     pb.update()
 
@@ -158,14 +163,25 @@ class PredictionMetrics(Metrics):
             degree = self.get_degrees()
             for t in self.points[k]:
                 deg = degree[nodes[k][t]]
-                if i + deg.shape[0] <= degree_array.shape[0]:
-                    degree_array[i : i + deg.shape[0]] = deg
-                    i = i + deg.shape[0]
-                else:
-                    index = sample(range(deg.shape[0]), degree_array[i:].shape[0])
-                    degree_array[i:] = deg[index]
-                    break
+                degree_array[i : i + deg.shape[0]] = deg
+                i = i + deg.shape[0]
                 if pb is not None:
                     pb.update()
 
         return degree_array
+
+    def _index_(self, nodes, pb=None):
+        size = np.sum(
+            [len(self.points[k]) for k in range(self.dataset.data["networks"].size)]
+        )
+        index_array = np.zeros((size, 2))
+        i = 0
+        for k in range(self.dataset.data["networks"].size):
+            indices = set(range(self.dataset.data["inputs"][k].size))
+            for t in self.points[k]:
+                index_array[i] = (k, t)
+                i += 1
+                if pb is not None:
+                    pb.update()
+
+        return index_array

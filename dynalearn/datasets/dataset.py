@@ -136,6 +136,8 @@ class Dataset(object):
 
     def save(self, h5file, name=None):
         assert isinstance(h5file, h5py.Group)
+        if self.is_empty():
+            return
 
         name = name or "data"
         if name in h5file:
@@ -233,6 +235,26 @@ class Dataset(object):
     @property
     def network_weights(self):
         return self._network_weights
+
+    def is_empty(self):
+        if len(self.data) == 0:
+            return True
+        else:
+            if (
+                "inputs" not in self.data
+                or "targets" not in self.data
+                or "networks" not in self.data
+            ):
+                return True
+            else:
+                if (
+                    self.data["inputs"].size == 0
+                    or self.data["targets"].size == 0
+                    or self.data["networks"].size == 0
+                ):
+                    return True
+                else:
+                    return False
 
     def _generate_data_(self, details, pb=None):
         networks = DataCollection(name="networks")

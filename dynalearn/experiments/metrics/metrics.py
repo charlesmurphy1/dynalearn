@@ -35,7 +35,7 @@ class Metrics(ABC):
         self.exit(experiment)
 
     def save(self, h5file, name=None):
-        if type(h5file) is not h5py.File:
+        if not isinstance(h5file, (h5py.File, h5py.Group)):
             raise ValueError("Dataset file format must be HDF5.")
 
         name = name or self.__class__.__name__

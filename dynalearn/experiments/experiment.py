@@ -125,13 +125,8 @@ class Experiment:
     def run(self, tasks=None, loggers=None):
         tasks = tasks or self.__tasks__
         loggers = loggers or self.__loggers__
-        loggers.on_task_begin()
-        self.save_config()
-        self.verbose(f"---Experiment {self.name}---")
-        if "time" in loggers.keys():
-            begin = loggers["time"].log["begin"]
-            self.verbose(f"Current time: {begin}")
 
+        self.begin(loggers=loggers)
         for t in tasks:
             if t in self.__tasks__:
                 f = getattr(self, t)
@@ -141,14 +136,27 @@ class Experiment:
                     f"{t} is an invalid task, possible tasks are {self.__tasks__}"
                 )
 
+        self.end(loggers=loggers)
+
+    def begin(self, loggers=None):
+        loggers = loggers or self.__loggers__
+        loggers.on_task_begin()
+        self.save_config()
+        self.verbose(f"---Experiment {self.name}---")
+        if "time" in loggers.keys():
+            begin = loggers["time"].log["begin"]
+            self.verbose(f"Current time: {begin}")
+
+    def end(self, loggers=None):
+        loggers = loggers or self.__loggers__
         loggers.on_task_end()
-        self.save(loggers)
         self.verbose(f"\n---Finished {self.name}---")
         if "time" in loggers.keys():
             end = loggers["time"].log["end"]
             t = loggers["time"].log["time"]
             self.verbose(f"Current time: {end}")
             self.verbose(f"Computation time: {t}\n")
+        self.save(loggers)
 
     # All tasks
     def train_model(self, loggers=None, save=True, restore_best=True):
@@ -203,10 +211,14 @@ class Experiment:
 
         if save:
             with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
+                if self.mode not in f:
+                    group = f.create_group(self.mode)
+                else:
+                    group = f[self.mode]
                 for k, m in self.metrics.items():
                     loggers.on_task_midstep("metrics")
                     m.compute(self, verbose=self.verbose)
-                    m.save(f)
+                    m.save(group)
         else:
             for k, m in self.metrics.items():
                 loggers.on_task_midstep("metrics")
@@ -326,8 +338,12 @@ class Experiment:
 
     def save_metrics(self):
         with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
+            if self.mode not in f:
+                group = f.create_group(self.mode)
+            else:
+                group = f[self.mode]
             for k, m in self.metrics.items():
-                m.save(f)
+                m.save(group)
 
     def save_config(self):
         with open(join(self.path_to_data, self.fname_config), "wb") as f:
@@ -393,8 +409,12 @@ class Experiment:
     def load_metrics(self):
         if exists(join(self.path_to_data, self.fname_metrics)):
             with h5py.File(join(self.path_to_data, self.fname_metrics), "r") as f:
+                if self.mode not in f:
+                    return
+                else:
+                    group = f[self.mode]
                 for k in self.metrics.keys():
-                    self.metrics[k].load(f)
+                    self.metrics[k].load(group)
         else:
             self.verbose("Loading metrics: Did not find metrics to load.")
 
@@ -442,6 +462,8 @@ class Experiment:
 
     @mode.setter
     def mode(self, mode):
+        if mode == self.mode:
+            return
         if mode in self._dataset:
             self.verbose(f"Changing mode `{self.mode}` to `{mode}`.")
             self._mode = mode
