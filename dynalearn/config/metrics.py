@@ -1,7 +1,13 @@
 import numpy as np
 from itertools import product
 from .config import Config
-from ._utils import LTPConfig, PredictionConfig, StarLTPConfig, StationaryConfig
+from ._utils import (
+    LTPConfig,
+    PredictionConfig,
+    StarLTPConfig,
+    StationaryConfig,
+    StatisticsConfig,
+)
 
 
 class MetricsConfig(Config):
@@ -12,6 +18,7 @@ class MetricsConfig(Config):
         cls.merge(LTPConfig.default())
         cls.merge(PredictionConfig.default())
         cls.merge(StarLTPConfig.default())
+        cls.merge(StatisticsConfig.default())
         cls.merge(StationaryConfig.test())
 
         return cls
@@ -23,6 +30,7 @@ class MetricsConfig(Config):
         cls.merge(LTPConfig.default())
         cls.merge(PredictionConfig.default())
         cls.merge(StarLTPConfig.default())
+        cls.merge(StatisticsConfig.default())
         cls.merge(StationaryConfig.sis())
 
         return cls
@@ -34,6 +42,7 @@ class MetricsConfig(Config):
         cls.merge(LTPConfig.default())
         cls.merge(PredictionConfig.default())
         cls.merge(StarLTPConfig.default())
+        cls.merge(StatisticsConfig.default())
         cls.merge(StationaryConfig.plancksis())
 
         return cls
@@ -45,6 +54,7 @@ class MetricsConfig(Config):
         cls.merge(LTPConfig.default())
         cls.merge(PredictionConfig.default())
         cls.merge(StarLTPConfig.default())
+        cls.merge(StatisticsConfig.default())
         cls.merge(StationaryConfig.sissis())
 
         return cls
