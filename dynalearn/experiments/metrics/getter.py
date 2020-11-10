@@ -1,3 +1,4 @@
+from .metrics import CustomMetrics
 from .ltp import *
 from .prediction import *
 from .starltp import *
@@ -27,7 +28,8 @@ def get(config):
         if n in __metrics__:
             metrics[n] = __metrics__[n](config)
         else:
-            raise ValueError(
-                f"{n} is invalid, possible entries are {list(__metrics__.keys())}"
-            )
+            metrics[n] = CustomMetrics(config)
+            # raise ValueError(
+            #     f"{n} is invalid, possible entries are {list(__metrics__.keys())}"
+            # )
     return metrics

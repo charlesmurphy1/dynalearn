@@ -7,12 +7,12 @@ class TimeLogger(Logger):
     def __init__(self):
         Logger.__init__(self)
         self.begin = None
-        self.midstep = None
+        self.update = None
         self.end = None
 
     def on_task_begin(self):
         self.begin = datetime.now()
-        self.midstep = self.begin
+        self.update = self.begin
         self.log["begin"] = self.begin.strftime("%Y-%m-%d %H:%M:%S")
 
     def on_task_end(self):
@@ -22,15 +22,15 @@ class TimeLogger(Logger):
         self.log["time"] = f"{days:0=2d}-{hours:0=2d}:{mins:0=2d}:{secs:0=2d}"
         self.log["total"] = self.format_diff(self.begin, self.end, to_sec=True)
 
-    def on_task_midstep(self, stepname=None):
-        stepname = stepname or "midstep"
+    def on_task_update(self, stepname=None):
+        stepname = stepname or "update"
         now = datetime.now()
-        dt = self.format_diff(self.midstep, now, to_sec=True)
+        dt = self.format_diff(self.update, now, to_sec=True)
         if f"time-{stepname}" in self.log:
             self.log[f"time-{stepname}"].append(dt)
         else:
             self.log[f"time-{stepname}"] = [dt]
-        self.midstep = now
+        self.update = now
 
     def format_diff(self, t0, t1, to_sec=False):
         dt = t1 - t0

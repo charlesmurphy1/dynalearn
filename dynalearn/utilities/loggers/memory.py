@@ -25,7 +25,7 @@ class MemoryLogger(Logger):
         self.log["max"] = max(self.all)
         self.log["mean"] = mean(self.all)
 
-    def on_task_midstep(self, stepname=None):
+    def on_task_update(self, stepname=None):
         memory_usage = round(psutil.virtual_memory().used / self.factor, 4)
         if f"memory-{stepname}" in self.log:
             self.log[f"memory-{stepname}"].append(memory_usage)

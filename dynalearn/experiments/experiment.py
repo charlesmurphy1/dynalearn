@@ -32,8 +32,8 @@ class Experiment:
         self.name = config.name
 
         # Main objects
-        # if "modes" not in config.dataset.__dict__:
-        #     config.dataset.modes = ["main"]
+        if "modes" not in config.dataset.__dict__:
+            config.dataset.modes = ["main"]
         self.all_modes = config.dataset.modes
         assert "main" in self.all_modes
         self._mode = "main"
@@ -110,7 +110,7 @@ class Experiment:
             "compute_metrics",
             "zip",
         ]
-        self.__loggers__ = LoggerDict({"time": TimeLogger(), "memory": MemoryLogger(),})
+        self.loggers = LoggerDict({"time": TimeLogger(), "memory": MemoryLogger()})
         self.__files__ = [
             "config.pickle",
             "log.json",
@@ -122,45 +122,40 @@ class Experiment:
         ]
 
     # Run command
-    def run(self, tasks=None, loggers=None):
+    def run(self, tasks=None):
         tasks = tasks or self.__tasks__
-        loggers = loggers or self.__loggers__
 
-        self.begin(loggers=loggers)
+        self.begin()
+        self.save_config()
         for t in tasks:
             if t in self.__tasks__:
                 f = getattr(self, t)
-                f(loggers=loggers)
+                f()
             else:
                 raise ValueError(
-                    f"{t} is an invalid task, possible tasks are {self.__tasks__}"
+                    f"{t} is an invalid task, possible tasks are `{self.__tasks__}`"
                 )
 
-        self.end(loggers=loggers)
+        self.end()
 
-    def begin(self, loggers=None):
-        loggers = loggers or self.__loggers__
-        loggers.on_task_begin()
-        self.save_config()
+    def begin(self):
+        self.loggers.on_task_begin()
         self.verbose(f"---Experiment {self.name}---")
-        if "time" in loggers.keys():
-            begin = loggers["time"].log["begin"]
+        if "time" in self.loggers.keys():
+            begin = self.loggers["time"].log["begin"]
             self.verbose(f"Current time: {begin}")
 
-    def end(self, loggers=None):
-        loggers = loggers or self.__loggers__
-        loggers.on_task_end()
+    def end(self):
+        self.loggers.on_task_end()
         self.verbose(f"\n---Finished {self.name}---")
-        if "time" in loggers.keys():
-            end = loggers["time"].log["end"]
-            t = loggers["time"].log["time"]
+        if "time" in self.loggers.keys():
+            end = self.loggers["time"].log["end"]
+            t = self.loggers["time"].log["time"]
             self.verbose(f"Current time: {end}")
             self.verbose(f"Computation time: {t}\n")
-        self.save(loggers)
 
     # All tasks
-    def train_model(self, loggers=None, save=True, restore_best=True):
-        loggers = loggers or LoggerDict()
+    def train_model(self, save=True, restore_best=True):
         self.verbose("\n---Training model---")
 
         self.model.nn.fit(
@@ -170,7 +165,7 @@ class Experiment:
             val_dataset=self.val_dataset,
             metrics=self.train_metrics,
             callbacks=self.callbacks,
-            loggers=loggers,
+            loggers=self.loggers,
             verbose=self.verbose,
         )
 
@@ -180,33 +175,32 @@ class Experiment:
         if restore_best:
             self.load_model()
 
-    def generate_data(self, loggers=None, save=True):
+    def generate_data(self, save=True):
         self.verbose("\n---Generating data---")
         self.dataset.generate(self, verbose=self.verbose)
 
         if save:
             self.save_data()
 
-    def partition_val_dataset(self, loggers=None, fraction=0.1, bias=0.0):
+    def partition_val_dataset(self, fraction=0.1, bias=0.0):
         if "val_fraction" in self.train_details.__dict__:
             fraction = self.train_details.val_fraction
         if "val_bias" in self.train_details.__dict__:
             bias = self.train_details.val_bias
         self.val_dataset = self.partition_dataset(
-            loggers=loggers, fraction=fraction, bias=bias, name="val",
+            fraction=fraction, bias=bias, name="val",
         )
 
-    def partition_test_dataset(self, loggers=None, fraction=0.1, bias=0.0):
+    def partition_test_dataset(self, fraction=0.1, bias=0.0):
         if "test_fraction" in self.train_details.__dict__:
             fraction = self.train_details.test_fraction
         if "test_bias" in self.train_details.__dict__:
             bias = self.train_details.test_bias
         self.test_dataset = self.partition_dataset(
-            loggers=loggers, fraction=fraction, bias=bias, name="test",
+            fraction=fraction, bias=bias, name="test",
         )
 
-    def compute_metrics(self, loggers=None, save=True):
-        loggers = loggers or self.__loggers__
+    def compute_metrics(self, save=True):
         self.verbose("\n---Computing metrics---")
 
         if save:
@@ -216,15 +210,15 @@ class Experiment:
                 else:
                     group = f[self.mode]
                 for k, m in self.metrics.items():
-                    loggers.on_task_midstep("metrics")
+                    self.loggers.on_task_update("metrics")
                     m.compute(self, verbose=self.verbose)
                     m.save(group)
         else:
             for k, m in self.metrics.items():
-                loggers.on_task_midstep("metrics")
+                self.loggers.on_task_update("metrics")
                 m.compute(self, verbose=self.verbose)
 
-    def zip(self, to_zip=None, loggers=None):
+    def zip(self, to_zip=None):
         to_zip = to_zip or self.__files__
         if "config.pickle" not in to_zip:
             to_zip.append("config.pickle")
@@ -239,30 +233,27 @@ class Experiment:
                     zip.write(os.path.join(root, f), os.path.join(p, f))
         zip.close()
 
-    def save(self, loggers=None):
-        loggers = loggers or self.__loggers__
+    def save(self, label_with_mode=True):
 
         self.save_config()
-        self.save_data()
-        self.save_model()
-        self.save_metrics()
+        self.save_data(label_with_mode=label_with_mode)
+        self.save_model(label_with_mode=label_with_mode)
+        self.save_metrics(label_with_mode=label_with_mode)
         with open(join(self.path_to_data, self.fname_logger), "w") as f:
-            loggers.save(f)
+            self.loggers.save(f)
 
-    def load(self, loggers=None):
-        loggers = loggers or self.__loggers__
+    def load(self, label_with_mode=True):
         self.load_config()
-        self.load_data()
-        self.load_model()
-        self.load_metrics()
+        self.load_data(label_with_mode=label_with_mode)
+        self.load_model(label_with_mode=label_with_mode)
+        self.load_metrics(label_with_mode=label_with_mode)
         if exists(join(self.path_to_data, self.fname_logger)):
-            if loggers is not None:
+            if self.loggers is not None:
                 with open(join(self.path_to_data, self.fname_logger), "r") as f:
-                    loggers.load(f)
+                    self.loggers.load(f)
 
     # Other methods
-    def partition_dataset(self, loggers=None, fraction=0.1, bias=0.0, name="val"):
-        loggers = loggers or self.__loggers__
+    def partition_dataset(self, fraction=0.1, bias=0.0, name="val"):
         self.verbose(f"\n---Partitioning {name}-data---")
         partition = self.dataset.partition(fraction, bias=bias)
         if np.sum(partition.network_weights) == 0:
@@ -304,14 +295,21 @@ class Experiment:
             p = os.path.join(self.path_to_data, p)
             os.remove(p)
 
-    def save_data(self):
+    def save_data(self, label_with_mode=True):
         with h5py.File(join(self.path_to_data, self.fname_data), "w") as f:
-            for mode in self.all_modes:
-                self._dataset[mode].save(f, name=f"{mode}-train")
-                if mode in self._val_dataset:
-                    self._val_dataset[mode].save(f, name=f"{mode}-val")
-                if mode in self._test_dataset:
-                    self._test_dataset[mode].save(f, name=f"{mode}-test")
+            if label_with_mode:
+                for mode in self.all_modes:
+                    self._dataset[mode].save(f, name=f"{mode}-train")
+                    if mode in self._val_dataset:
+                        self._val_dataset[mode].save(f, name=f"{mode}-val")
+                    if mode in self._test_dataset:
+                        self._test_dataset[mode].save(f, name=f"{mode}-test")
+            else:
+                self._dataset[self.mode].save(f, name="train")
+                if self.mode in self._val_dataset:
+                    self._val_dataset[self.mode].save(f, name="val")
+                if self.mode in self._test_dataset:
+                    self._test_dataset[self.mode].save(f, name="test")
 
     def save_model(self, label_with_mode=True):
 
@@ -336,24 +334,30 @@ class Experiment:
             fname = self.fname_model
         self.model.nn.save_weights(join(self.path_to_data, fname))
 
-    def save_metrics(self):
+    def save_metrics(self, label_with_mode=True):
         with h5py.File(join(self.path_to_data, self.fname_metrics), "a") as f:
-            if self.mode not in f:
-                group = f.create_group(self.mode)
+            if label_with_mode:
+                if self.mode not in f:
+                    group = f.create_group(self.mode)
+                else:
+                    group = f[self.mode]
             else:
-                group = f[self.mode]
+                group = f
             for k, m in self.metrics.items():
-                m.save(group)
+                m.save(group, name=k)
 
     def save_config(self):
         with open(join(self.path_to_data, self.fname_config), "wb") as f:
             pickle.dump(self.config, f)
 
-    def load_data(self):
+    def load_data(self, label_with_mode=True):
         if exists(join(self.path_to_data, self.fname_data)):
             with h5py.File(join(self.path_to_data, self.fname_data), "r") as f:
                 for k, v in f.items():
-                    mode, name = k.split("-")
+                    if label_with_mode:
+                        mode, name = k.split("-")
+                    else:
+                        name = k
                     if name == "train":
                         self._dataset[mode].load(v)
                     elif name == "val":
@@ -406,15 +410,18 @@ class Experiment:
         else:
             self.verbose("Loading model: Did not find model to load.")
 
-    def load_metrics(self):
+    def load_metrics(self, label_with_mode=True):
         if exists(join(self.path_to_data, self.fname_metrics)):
             with h5py.File(join(self.path_to_data, self.fname_metrics), "r") as f:
-                if self.mode not in f:
-                    return
+                if label_with_mode:
+                    if self.mode not in f:
+                        return
+                    else:
+                        group = f[self.mode]
                 else:
-                    group = f[self.mode]
+                    group = f
                 for k in self.metrics.keys():
-                    self.metrics[k].load(group)
+                    self.metrics[k].load(group, name=k)
         else:
             self.verbose("Loading metrics: Did not find metrics to load.")
 

@@ -75,7 +75,7 @@ class Model(torch.nn.Module):
                 val_metrics = {}
 
             t1 = time.time()
-            loggers.on_task_midstep("training")
+            loggers.on_task_update("training")
             logs = {"epoch": self.history.epoch + 1, "time": t1 - t0}
             logs.update(train_metrics)
             logs.update(val_metrics)

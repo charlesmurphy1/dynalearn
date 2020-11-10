@@ -11,7 +11,7 @@ class Logger:
     def on_task_end(self):
         return
 
-    def on_task_midstep(self, stepname=None):
+    def on_task_update(self, stepname=None):
         return
 
     def save(self, f):
@@ -46,9 +46,9 @@ class LoggerDict:
         for l in self.values():
             l.on_task_end()
 
-    def on_task_midstep(self, stepname=None):
+    def on_task_update(self, stepname=None):
         for l in self.values():
-            l.on_task_midstep(stepname)
+            l.on_task_update(stepname)
 
     def save(self, f):
         log_dict = {}

@@ -22,7 +22,7 @@ from dynalearn.datasets.weights import (
     StrengthWeight,
 )
 from dynalearn.datasets.transforms.getter import get as get_transforms
-from dynalearn.utilities import get_node_attr, Verbose
+from dynalearn.utilities import get_node_attr, Verbose, LoggerDict
 
 
 class Dataset(object):
@@ -61,7 +61,7 @@ class Dataset(object):
     def __next__(self):
         return self[self.rev_indices[self.sampler()]]
 
-    def generate(self, experiment, verbose=Verbose(), loggers=None):
+    def generate(self, experiment, verbose=Verbose()):
         details = self.setup(experiment)
         self.transforms.setup(experiment)
 
