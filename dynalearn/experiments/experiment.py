@@ -276,15 +276,14 @@ class Experiment:
         return cls(config)
 
     @classmethod
-    def unzip(cls, path_to_zip, destination=None):
+    def unzip(cls, path_to_zip, destination=None, label_with_mode=True):
         zip = zipfile.ZipFile(path_to_zip, mode="r")
         path_to_data, _ = os.path.split(zip.namelist()[0])
         destination = destination or "."
         zip.extractall(path=destination)
         cls = cls.from_file(os.path.join(path_to_data, "config.pickle"))
         cls.path_to_data = path_to_data
-        cls.load_metrics()
-        cls.load_model()
+        cls.load(label_with_mode=label_with_mode)
         shutil.rmtree(path_to_data)
         return cls
 
@@ -358,6 +357,7 @@ class Experiment:
                         mode, name = k.split("-")
                     else:
                         name = k
+                        mode = "main"
                     if name == "train":
                         self._dataset[mode].load(v)
                     elif name == "val":

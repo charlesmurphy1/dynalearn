@@ -9,7 +9,6 @@ def get_GATConv(in_channels, out_channels, config):
         out_channels,
         heads=config.heads,
         concat=config.concat,
-        add_self_loops=config.self_attention,
         bias=config.bias,
     )
 
@@ -23,12 +22,7 @@ def get_SAGEConv(in_channels, out_channels, config):
 def get_GCNConv(in_channels, out_channels, config):
     if config.concat:
         out_channels *= config.heads
-    return GCNConv(
-        in_channels,
-        out_channels,
-        bias=config.bias,
-        add_self_loops=config.self_attention,
-    )
+    return GCNConv(in_channels, out_channels, bias=config.bias,)
 
 
 def get_MaxGraphConv(in_channels, out_channels, config):
