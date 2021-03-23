@@ -95,7 +95,7 @@ class TrainableConfig(Config):
         cls.optimizer = OptimizerConfig.radam()
 
         cls.activation = "relu"
-        cls.hidden_channels = [1 * num_nodes] * 2
+        cls.hidden_channels = [2 ** int(np.log2(num_nodes * np.log(num_nodes)))]
         cls.bias = True
         # for RNN
         cls.rnn = "None"
