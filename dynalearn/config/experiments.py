@@ -19,11 +19,19 @@ dynamics_config = {
     "sissis": DynamicsConfig.sissis(),
     "dsir": DynamicsConfig.dsir(),
 }
-model_config = {
+gnn_config = {
     "sis": TrainableConfig.sis(),
     "plancksis": TrainableConfig.plancksis(),
     "sissis": TrainableConfig.sissis(),
     "dsir": TrainableConfig.dsir(),
+}
+uv_config = {
+    "sis": TrainableConfig.sis_uv(),
+    "dsir": TrainableConfig.dsir_uv(),
+}
+mv_config = {
+    "sis": TrainableConfig.sis_mv,
+    "dsir": TrainableConfig.dsir_mv,
 }
 metrics_config = {
     "sis": MetricsConfig.sis(),
@@ -49,6 +57,7 @@ class ExperimentConfig(Config):
         path_to_data="./",
         path_to_best="./",
         path_to_summary="./",
+        model="gnn",
         seed=None,
     ):
         cls = cls()
@@ -75,7 +84,12 @@ class ExperimentConfig(Config):
             os.makedirs(path_to_summary)
         cls.dynamics = dynamics_config[dynamics]
         cls.networks = network_config[network]
-        cls.model = model_config[dynamics]
+        if model == "uv":
+            cls.model = uv_config[dynamics]
+        elif model == "mv":
+            cls.model = mv_config[dynamics](num_nodes=cls.networks.num_nodes)
+        else:
+            cls.model = gnn_config[dynamics]
         if cls.networks.is_weighted:
             cls.dynamics.is_weighted = True
             cls.model.is_weighted = True
@@ -110,6 +124,7 @@ class ExperimentConfig(Config):
         path_to_data="./",
         path_to_best="./",
         path_to_summary="./",
+        model="gnn",
         seed=None,
     ):
         cls = cls.default(
@@ -119,6 +134,7 @@ class ExperimentConfig(Config):
             path_to_data=path_to_data,
             path_to_best=path_to_best,
             path_to_summary=path_to_summary,
+            model=model,
             seed=seed,
         )
         cls.dataset = DiscreteDatasetConfig.state()
@@ -135,6 +151,7 @@ class ExperimentConfig(Config):
         path_to_data="./",
         path_to_best="./",
         path_to_summary="./",
+        model="gnn",
         seed=None,
     ):
         cls = cls.default(
@@ -144,6 +161,7 @@ class ExperimentConfig(Config):
             path_to_data=path_to_data,
             path_to_best=path_to_best,
             path_to_summary=path_to_summary,
+            model=model,
             seed=seed,
         )
         cls.dataset = ContinuousDatasetConfig.state(
@@ -160,6 +178,7 @@ class ExperimentConfig(Config):
         path_to_data="./",
         path_to_best="./",
         path_to_summary="./",
+        model="gnn",
         seed=None,
     ):
         cls = cls()
@@ -178,7 +197,13 @@ class ExperimentConfig(Config):
             os.makedirs(path_to_summary)
         cls.dynamics = DynamicsConfig.covid_pretrain()
         cls.networks = NetworkConfig.covid_pretrain()
-        cls.model = TrainableConfig.dsir()
+        if model == "uv":
+            cls.model = TrainingConfig.dsir_uv()
+        elif model == "mv":
+            cls.networks = NetworkConfig.covid_pretrain(num_nodes=52)
+            cls.model = TrainingConfig.dsir_mv(52)
+        else:
+            cls.model = TrainingConfig.dsir()
         if cls.networks.is_weighted:
             cls.dynamics.is_weighted = True
             cls.model.is_weighted = True
@@ -215,7 +240,10 @@ class ExperimentConfig(Config):
 
     @classmethod
     def test(
-        cls, path_to_data="./", path_to_best="./", path_to_summary="./",
+        cls,
+        path_to_data="./",
+        path_to_best="./",
+        path_to_summary="./",
     ):
         cls = cls()
         cls.name = "test"

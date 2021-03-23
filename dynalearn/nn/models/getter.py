@@ -22,7 +22,11 @@ def get_SAGEConv(in_channels, out_channels, config):
 def get_GCNConv(in_channels, out_channels, config):
     if config.concat:
         out_channels *= config.heads
-    return GCNConv(in_channels, out_channels, bias=config.bias,)
+    return GCNConv(
+        in_channels,
+        out_channels,
+        bias=config.bias,
+    )
 
 
 def get_MaxGraphConv(in_channels, out_channels, config):

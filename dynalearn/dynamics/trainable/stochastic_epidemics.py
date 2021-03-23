@@ -8,11 +8,15 @@ from dynalearn.nn.models import (
     StochasticEpidemicsWGNN,
     StochasticEpidemicsMGNN,
     StochasticEpidemicsWMGNN,
+    StochasticEpidemicsUMPL,
+    StochasticEpidemicsURNN,
+    StochasticEpidemicsMMPL,
+    StochasticEpidemicsMRNN,
 )
 from dynalearn.config import Config
 
 
-class SimpleTrainableStochasticEpidemics(StochasticEpidemics):
+class GNNSEDynamics(StochasticEpidemics):
     def __init__(self, config=None, **kwargs):
         self.config = config or Config(**kwargs)
         StochasticEpidemics.__init__(self, config, config.num_states)
@@ -37,5 +41,19 @@ class SimpleTrainableStochasticEpidemics(StochasticEpidemics):
         return self.initial_state()
 
 
-def TrainableStochasticEpidemics(config=None, **kwargs):
-    return SimpleTrainableStochasticEpidemics(config=config, **kwargs)
+class UVSEDynamics(GNNSEDynamics):
+    def __init__(self, config=None, **kwargs):
+        GNNSEDynamics.__init__(self, config=config, **kwargs)
+        if "rnn" in config.__dict__ and config.rnn != "None":
+            self.nn = StochasticEpidemicsURNN(config)
+        else:
+            self.nn = StochasticEpidemicsUMPL(config)
+
+
+class MVSEDynamics(GNNSEDynamics):
+    def __init__(self, config=None, **kwargs):
+        GNNSEDynamics.__init__(self, config=config, **kwargs)
+        if "rnn" in config.__dict__ and config.rnn != "None":
+            self.nn = StochasticEpidemicsMRNN(config)
+        else:
+            self.nn = StochasticEpidemicsMMPL(config)

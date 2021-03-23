@@ -84,11 +84,13 @@ class NetworkConfig(Config):
         return cls
 
     @classmethod
-    def covid_pretrain(cls):
+    def covid_pretrain(cls, num_nodes=1000, m=2):
         w = NetworkWeightConfig.uniform()
         t = NetworkTransformConfig.sparcifier()
         l = ["plane", "car", "bus", "boat", "train"]
-        cls = cls.barabasialbert(num_nodes=1000, m=2, weights=w, transforms=t, layers=l)
+        cls = cls.barabasialbert(
+            num_nodes=num_nodes, m=m, weights=w, transforms=t, layers=l
+        )
         return cls
 
     @property

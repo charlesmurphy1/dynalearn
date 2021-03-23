@@ -7,7 +7,7 @@ class TrainableConfig(Config):
     @classmethod
     def test(cls):
         cls = cls()
-        cls.name = "TrainableStochasticEpidemics"
+        cls.name = "GNNSEDynamics"
         cls.num_states = 2
         cls.window_size = 1
         cls.window_step = 1
@@ -36,7 +36,7 @@ class TrainableConfig(Config):
     @classmethod
     def sis(cls):
         cls = cls()
-        cls.name = "TrainableStochasticEpidemics"
+        cls.name = "GNNSEDynamics"
         cls.gnn_name = "DynamicsGATConv"
         cls.num_states = 2
         cls.window_size = 1
@@ -64,9 +64,50 @@ class TrainableConfig(Config):
         return cls
 
     @classmethod
+    def sis_uv(cls):
+        cls = cls()
+        cls.name = "UVSEDynamics"
+        cls.num_states = 2
+        cls.window_size = 1
+        cls.window_step = 1
+
+        cls.optimizer = OptimizerConfig.radam()
+
+        cls.activation = "relu"
+        cls.hidden_channels = [32, 32, 32, 32]
+        cls.bias = True
+        # for RNN
+        cls.rnn = "None"
+        cls.num_layers = 1
+        cls.bidirectional = False
+        cls.nonlinearity = "relu"
+        return cls
+
+    @classmethod
+    def sis_mv(cls, num_nodes=10):
+        cls = cls()
+        cls.name = "MVSEDynamics"
+        cls.num_states = 2
+        cls.num_nodes = num_nodes
+        cls.window_size = 1
+        cls.window_step = 1
+
+        cls.optimizer = OptimizerConfig.radam()
+
+        cls.activation = "relu"
+        cls.hidden_channels = [1 * num_nodes] * 2
+        cls.bias = True
+        # for RNN
+        cls.rnn = "None"
+        cls.num_layers = 1
+        cls.bidirectional = False
+        cls.nonlinearity = "relu"
+        return cls
+
+    @classmethod
     def plancksis(cls):
         cls = cls()
-        cls.name = "TrainableStochasticEpidemics"
+        cls.name = "GNNSEDynamics"
         cls.gnn_name = "DynamicsGATConv"
         cls.num_states = 2
         cls.window_size = 1
@@ -96,7 +137,7 @@ class TrainableConfig(Config):
     @classmethod
     def sissis(cls):
         cls = cls()
-        cls.name = "TrainableStochasticEpidemics"
+        cls.name = "GNNSEDynamics"
         cls.gnn_name = "DynamicsGATConv"
         cls.num_states = 4
         cls.window_size = 1
@@ -126,7 +167,7 @@ class TrainableConfig(Config):
     @classmethod
     def hidden_sissis(cls):
         cls = cls()
-        cls.name = "TrainableStochasticEpidemics"
+        cls.name = "GNNSEDynamics"
         cls.gnn_name = "DynamicsGATConv"
         cls.num_states = 2
         cls.window_size = 1
@@ -157,7 +198,7 @@ class TrainableConfig(Config):
     @classmethod
     def partially_hidden_sissis(cls):
         cls = cls()
-        cls.name = "TrainableStochasticEpidemics"
+        cls.name = "GNNSEDynamics"
         cls.gnn_name = "DynamicsGATConv"
         cls.num_states = 4
         cls.window_size = 1
@@ -252,7 +293,7 @@ class TrainableConfig(Config):
     @classmethod
     def dsis(cls):
         cls = cls()
-        cls.name = "TrainableDeterministicEpidemics"
+        cls.name = "GNNDEDynamics"
         cls.gnn_name = "DynamicsGATConv"
         cls.num_states = 2
         cls.window_size = 1
@@ -283,7 +324,7 @@ class TrainableConfig(Config):
     @classmethod
     def dsir(cls):
         cls = cls()
-        cls.name = "TrainableDeterministicEpidemics"
+        cls.name = "GNNDEDynamics"
         cls.gnn_name = "DynamicsGATConv"
         cls.num_states = 3
         cls.window_size = 1
@@ -309,4 +350,45 @@ class TrainableConfig(Config):
         cls.bias = True
         cls.self_attention = True
 
+        return cls
+
+    @classmethod
+    def dsir_uv(cls):
+        cls = cls()
+        cls.name = "UVDEDynamics"
+        cls.num_states = 3
+        cls.window_size = 1
+        cls.window_step = 1
+
+        cls.optimizer = OptimizerConfig.radam()
+
+        cls.activation = "relu"
+        cls.hidden_channels = [32, 32, 32, 32]
+        cls.bias = True
+        # for RNN
+        cls.rnn = "None"
+        cls.num_layers = 1
+        cls.bidirectional = False
+        cls.nonlinearity = "relu"
+        return cls
+
+    @classmethod
+    def dsir_mv(cls, num_nodes=10):
+        cls = cls()
+        cls.name = "MVDEDynamics"
+        cls.num_states = 3
+        cls.num_nodes = num_nodes
+        cls.window_size = 1
+        cls.window_step = 1
+
+        cls.optimizer = OptimizerConfig.radam()
+
+        cls.activation = "relu"
+        cls.hidden_channels = [2 * num_nodes] * 2
+        cls.bias = True
+        # for RNN
+        cls.rnn = "None"
+        cls.num_layers = 1
+        cls.bidirectional = False
+        cls.nonlinearity = "relu"
         return cls

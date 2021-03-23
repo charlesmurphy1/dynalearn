@@ -7,6 +7,14 @@ from .gnn import (
     MultiplexGraphNeuralNetwork,
     WeightedMultiplexGraphNeuralNetwork,
 )
+from .multivariate import (
+    MultivariateMPL,
+    MultivariateRNN,
+)
+from .univariate import (
+    UnivariateMPL,
+    UnivariateRNN,
+)
 from dynalearn.config import Config
 from dynalearn.nn.loss import weighted_cross_entropy
 
@@ -81,3 +89,91 @@ class DeterministicEpidemicsWMGNN(
             config=config,
             **kwargs
         )
+
+
+class DeterministicEpidemicsUMPL(UnivariateMPL):
+    def __init__(self, config=None, **kwargs):
+        if config is None:
+            config = Config()
+            config.__dict__ = kwargs
+        self.num_states = config.num_states
+        UnivariateMPL.__init__(
+            self,
+            config.num_states,
+            config.num_states,
+            window_size=config.window_size,
+            nodeattr_size=1,
+            out_act="softmax",
+            config=config,
+            **kwargs
+        )
+
+    def loss(self, y_true, y_pred, weights):
+        return weighted_cross_entropy(y_true, y_pred, weights=weights)
+
+
+class DeterministicEpidemicsURNN(UnivariateRNN):
+    def __init__(self, config=None, **kwargs):
+        if config is None:
+            config = Config()
+            config.__dict__ = kwargs
+        self.num_states = config.num_states
+        UnivariateRNN.__init__(
+            self,
+            config.num_states,
+            config.num_states,
+            window_size=config.window_size,
+            nodeattr_size=1,
+            out_act="softmax",
+            rnn=config.rnn,
+            config=config,
+            **kwargs
+        )
+
+    def loss(self, y_true, y_pred, weights):
+        return weighted_cross_entropy(y_true, y_pred, weights=weights)
+
+
+class DeterministicEpidemicsMMPL(MultivariateMPL):
+    def __init__(self, config=None, **kwargs):
+        if config is None:
+            config = Config()
+            config.__dict__ = kwargs
+        self.num_states = config.num_states
+        MultivariateMPL.__init__(
+            self,
+            config.num_states,
+            config.num_states,
+            config.num_nodes,
+            window_size=config.window_size,
+            nodeattr_size=1,
+            out_act="softmax",
+            config=config,
+            **kwargs
+        )
+
+    def loss(self, y_true, y_pred, weights):
+        return weighted_cross_entropy(y_true, y_pred, weights=weights)
+
+
+class DeterministicEpidemicsMRNN(MultivariateRNN):
+    def __init__(self, config=None, **kwargs):
+        if config is None:
+            config = Config()
+            config.__dict__ = kwargs
+        self.num_states = config.num_states
+        MultivariateRNN.__init__(
+            self,
+            config.num_states,
+            config.num_states,
+            config.num_nodes,
+            window_size=config.window_size,
+            nodeattr_size=1,
+            out_act="softmax",
+            rnn=config.rnn,
+            config=config,
+            **kwargs
+        )
+
+    def loss(self, y_true, y_pred, weights):
+        return weighted_cross_entropy(y_true, y_pred, weights=weights)

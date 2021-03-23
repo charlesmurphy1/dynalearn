@@ -40,7 +40,7 @@ class GenericGNNTest(unittest.TestCase):
         g = self.generate_network()
         x = torch.randn(self.num_nodes, self.in_size, self.window_size)
         _x = x
-        _g = self.model.transformers["network"].forward(g)
+        _g = self.model.transformers["t_networks"].forward(g)
         y = self.model.forward(_x, _g).cpu().detach().numpy()
         self.assertTrue(y.shape == (self.num_nodes, self.out_size))
         np.testing.assert_array_almost_equal(y.sum(-1), np.ones((y.shape[0])))
@@ -69,7 +69,7 @@ class GenericWGNNTest(GenericGNNTest):
         g = self.generate_network()
         x = torch.randn(self.num_nodes, self.in_size, self.window_size)
         _x = x
-        _g = self.model.transformers["network"].forward(g)
+        _g = self.model.transformers["t_networks"].forward(g)
         y = self.model.forward(_x, _g).cpu().detach().numpy()
         self.assertTrue(y.shape == (self.num_nodes, self.out_size))
         np.testing.assert_array_almost_equal(y.sum(-1), np.ones((y.shape[0])))

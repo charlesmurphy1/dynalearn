@@ -17,8 +17,12 @@ from .stochastic_epidemics import (
 from .deterministic_epidemics import DSIS, DSIR
 from .reaction_diffusion import RDSIS, RDSIR
 from .trainable import (
-    TrainableStochasticEpidemics,
-    TrainableDeterministicEpidemics,
+    GNNSEDynamics,
+    GNNDEDynamics,
+    UVSEDynamics,
+    UVDEDynamics,
+    MVSEDynamics,
+    MVDEDynamics,
     TrainableReactionDiffusion,
 )
 
@@ -41,8 +45,12 @@ __dynamics__ = {
     "PartiallyHiddenSISSIS": PartiallyHiddenSISSIS,
     "RDSIS": RDSIS,
     "RDSIR": RDSIR,
-    "TrainableStochasticEpidemics": TrainableStochasticEpidemics,
-    "TrainableDeterministicEpidemics": TrainableDeterministicEpidemics,
+    "GNNSEDynamics": GNNSEDynamics,
+    "UVSEDynamics": UVSEDynamics,
+    "MVSEDynamics": MVSEDynamics,
+    "GNNDEDynamics": GNNDEDynamics,
+    "UVDEDynamics": UVDEDynamics,
+    "MVDEDynamics": MVDEDynamics,
     "TrainableReactionDiffusion": TrainableReactionDiffusion,
 }
 

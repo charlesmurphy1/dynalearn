@@ -15,7 +15,6 @@ from .utils import (
 from torch.nn.init import kaiming_normal_
 from dynalearn.nn.activation import get as get_activation
 from dynalearn.nn.models.getter import get as get_gnn_layer
-from dynalearn.nn.loss import weighted_cross_entropy
 from dynalearn.nn.transformers import BatchNormalizer
 from dynalearn.config import Config
 
@@ -58,7 +57,11 @@ class GraphNeuralNetwork(Model):
         self.gnn_activation = get_activation(self.config.gnn_activation)
         self.out_layers = get_out_layers(self.config)
         self.last_layer = Sequential(
-            Linear(self.config.out_channels[-1], self.out_size, bias=self.config.bias,),
+            Linear(
+                self.config.out_channels[-1],
+                self.out_size,
+                bias=self.config.bias,
+            ),
             get_activation(out_act),
         )
         self.edge_layers = Sequential(Identity())

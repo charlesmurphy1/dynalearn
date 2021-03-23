@@ -23,3 +23,7 @@
 
 # Other formats
 *.html
+
+# Build folders
+build/
+dist/

@@ -7,6 +7,31 @@ from torch.nn.init import kaiming_normal_
 from torch_geometric.nn.inits import glorot, zeros
 from dynalearn.nn.activation import get as get_activation
 
+__rnn_layers__ = {
+    "RNN": lambda config: torch.nn.RNN(
+        input_size=config.hidden_channels[0],
+        hidden_size=config.hidden_channels[-1],
+        num_layers=config.num_layers,
+        nonlinearity=config.activation,
+        bias=config.bias,
+        bidirectional=config.bidirectional,
+    ),
+    "LSTM": lambda config: torch.nn.LSTM(
+        input_size=config.hidden_channels[0],
+        hidden_size=config.hidden_channels[-1],
+        num_layers=config.num_layers,
+        bias=config.bias,
+        bidirectional=config.bidirectional,
+    ),
+    "GRU": lambda config: torch.nn.GRU(
+        input_size=config.hidden_channels[0],
+        hidden_size=config.hidden_channels[-1],
+        num_layers=config.num_layers,
+        bias=config.bias,
+        bidirectional=config.bidirectional,
+    ),
+}
+
 
 class ParallelLayer(nn.Module):
     def __init__(self, template, keys, merge="None"):
@@ -64,38 +89,60 @@ class ParallelLayer(nn.Module):
 
     def __repr__(self):
         name = self.template().__class__.__name__
-        return "{}({}, heads={})".format(self.__class__.__name__, name, len(self.keys),)
+        return "{}({}, heads={})".format(
+            self.__class__.__name__,
+            name,
+            len(self.keys),
+        )
 
     def _merge_mean_(self, y):
         if isinstance(y, list):
             out = (
-                torch.cat([yy[k].view(*yy[k].shape, 1) for k in self.keys], axis=-1,)
+                torch.cat(
+                    [yy[k].view(*yy[k].shape, 1) for k in self.keys],
+                    axis=-1,
+                )
                 for yy in y
             )
             return (torch.mean(yy, axis=-1) for yy in out)
         else:
-            out = torch.cat([y[k].view(*y[k].shape, 1) for k in self.keys], axis=-1,)
+            out = torch.cat(
+                [y[k].view(*y[k].shape, 1) for k in self.keys],
+                axis=-1,
+            )
             return torch.mean(out, axis=-1)
 
     def _merge_sum_(self, y):
         if isinstance(y, list):
             out = (
-                torch.cat([yy[k].view(*yy[k].shape, 1) for k in self.keys], axis=-1,)
+                torch.cat(
+                    [yy[k].view(*yy[k].shape, 1) for k in self.keys],
+                    axis=-1,
+                )
                 for yy in y
             )
             return (torch.mean(yy, axis=-1) for yy in out)
         else:
-            out = torch.cat([y[k].view(*y[k].shape, 1) for k in self.keys], axis=-1,)
+            out = torch.cat(
+                [y[k].view(*y[k].shape, 1) for k in self.keys],
+                axis=-1,
+            )
             return torch.mean(out, axis=-1)
 
     def _merge_concat_(self, y):
         if isinstance(y, list):
             return (
-                torch.cat([yy[k].view(*yy[k].shape) for k in self.keys], axis=-1,)
+                torch.cat(
+                    [yy[k].view(*yy[k].shape) for k in self.keys],
+                    axis=-1,
+                )
                 for yy in y
             )
         else:
-            return torch.cat([y[k].view(*y[k].shape) for k in self.keys], axis=-1,)
+            return torch.cat(
+                [y[k].view(*y[k].shape) for k in self.keys],
+                axis=-1,
+            )
 
 
 class MultiplexLayer(ParallelLayer):
@@ -160,6 +207,15 @@ class MultiHeadLinear(nn.Module):
         return "{}({}, heads={})".format(
             self.__class__.__name__, self.num_channels, self.heads
         )
+
+
+class Reshape(nn.Module):
+    def __init__(self, shape):
+        self.shape = shape
+        nn.Module.__init__(self)
+
+    def forward(self, x):
+        return x.view(*self.shape)
 
 
 def build_layers(channel_seq, activation, bias=True):
