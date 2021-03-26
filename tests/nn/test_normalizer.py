@@ -10,6 +10,8 @@ from dynalearn.nn.transformers import (
     NetworkNormalizer,
 )
 from dynalearn.utilities import get_node_attr, get_edge_attr
+from dynalearn.config import NetworkConfig
+from dynalearn.networks.getter import get as get_network
 
 
 class InputNormalizerTest(unittest.TestCase):
@@ -121,21 +123,26 @@ class NetworkNormalizerTest(unittest.TestCase):
         self.normalizer.edgeattr_mean = self.edge_mean
         self.normalizer.edgeattr_var = self.edge_var
 
-    def test_forward(self):
-        g = nx.gnp_random_graph(10, 0.5)
-        N = g.number_of_nodes()
-        M = 2 * g.number_of_edges()
+        self.num_nodes = 10
+        self.network = get_network(NetworkConfig.barabasialbert(self.num_nodes, 2))
 
-        for u in g.nodes():
+    def test_forward(self):
+        g = self.network.generate()
+        N, M = g.number_of_nodes(), g.number_of_edges()
+        if self.node_size > 0:
+            node_attr = {}
             for i in range(self.node_size):
                 m = float(self.node_mean[0, i].squeeze())
                 s = float(self.node_var[0, i].squeeze()) ** (0.5)
-                g.nodes[u][f"attr{i}"] = m + np.random.randn() * s
-        for u, v in g.edges():
+                node_attr[f"attr{i}"] = m + np.random.randn(g.number_of_nodes()) * s
+            g.node_attr = node_attr
+        if self.edge_size > 0:
+            edge_attr = {}
             for i in range(self.edge_size):
                 m = float(self.edge_mean[0, i].squeeze())
                 s = float(self.edge_var[0, i].squeeze()) ** (0.5)
-                g.edges[u, v][f"attr{i}"] = m + np.random.randn() * s
+                edge_attr[f"attr{i}"] = m + np.random.randn(g.number_of_edges()) * s
+            g.edge_attr = edge_attr
         _g = self.normalizer.forward(g)
         self.assertTrue(isinstance(_g, tuple))
         self.assertTrue(len(_g) == 3)

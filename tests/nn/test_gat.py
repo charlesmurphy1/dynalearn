@@ -2,11 +2,11 @@ import networkx as nx
 import numpy as np
 import torch
 import unittest
-from dynalearn.nn.models import GraphAttention
+from dynalearn.nn.models import DynamicsGATConv
 from dynalearn.utilities import to_edge_index
 
 
-class GraphAttentionTest(unittest.TestCase):
+class DynamicsGATConvTest(unittest.TestCase):
     def setUp(self):
         self.num_nodes = 10
         self.p = 0.5
@@ -19,13 +19,12 @@ class GraphAttentionTest(unittest.TestCase):
         self.edge_in_channels = 0
         self.edge_out_channels = 4
         self.self_attention = True
-        self.gat = GraphAttention(
+        self.gat = DynamicsGATConv(
             in_channels=self.in_channels,
             out_channels=self.out_channels,
             heads=self.heads,
             concat=self.concat,
             bias=self.bias,
-            attn_bias=self.attn_bias,
             edge_in_channels=self.edge_in_channels,
             edge_out_channels=self.edge_out_channels,
             self_attention=self.self_attention,
@@ -35,9 +34,12 @@ class GraphAttentionTest(unittest.TestCase):
         x = torch.ones((self.num_nodes, self.in_channels))
         g = nx.gnp_random_graph(self.num_nodes, self.p).to_directed()
         num_edges = g.number_of_edges()
-        edge_index = to_edge_index(g)
-        edge_attr = torch.rand(edge_index.size(1), self.edge_in_channels)
-        out = self.gat.forward(x, edge_index, edge_attr=edge_attr)
+        edge_index = torch.LongTensor(to_edge_index(g))
+        if self.edge_in_channels > 0:
+            edge_attr = torch.rand(edge_index.shape[-1], self.edge_in_channels)
+        else:
+            edge_attr = None
+        out = self.gat.forward(x, edge_index)
         if self.concat:
             c1 = self.heads * self.out_channels
             c2 = self.heads * self.edge_out_channels

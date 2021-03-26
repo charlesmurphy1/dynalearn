@@ -25,14 +25,6 @@ gnn_config = {
     "sissis": TrainableConfig.sissis(),
     "dsir": TrainableConfig.dsir(),
 }
-uv_config = {
-    "sis": TrainableConfig.sis_uv(),
-    "dsir": TrainableConfig.dsir_uv(),
-}
-mv_config = {
-    "sis": TrainableConfig.sis_mv,
-    "dsir": TrainableConfig.dsir_mv,
-}
 metrics_config = {
     "sis": MetricsConfig.sis(),
     "plancksis": MetricsConfig.plancksis(),
@@ -197,13 +189,7 @@ class ExperimentConfig(Config):
             os.makedirs(path_to_summary)
         cls.dynamics = DynamicsConfig.covid_pretrain()
         cls.networks = NetworkConfig.covid_pretrain()
-        if model == "uv":
-            cls.model = TrainingConfig.dsir_uv()
-        elif model == "mv":
-            cls.networks = NetworkConfig.covid_pretrain(num_nodes=52)
-            cls.model = TrainingConfig.dsir_mv(52)
-        else:
-            cls.model = TrainingConfig.dsir()
+        cls.model = TrainingConfig.dsir()
         if cls.networks.is_weighted:
             cls.dynamics.is_weighted = True
             cls.model.is_weighted = True

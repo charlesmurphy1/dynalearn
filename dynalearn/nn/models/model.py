@@ -15,9 +15,9 @@ from dynalearn.nn.optimizers import get as get_optimizer
 from dynalearn.utilities import Verbose, LoggerDict
 
 
-class Model(torch.nn.Module):
+class Model(nn.Module):
     def __init__(self, config=None, **kwargs):
-        torch.nn.Module.__init__(self)
+        nn.Module.__init__(self)
         self.config = config or Config(**kwargs)
         self.get_optimizer = get_optimizer(config.optimizer)
         self.history = History()

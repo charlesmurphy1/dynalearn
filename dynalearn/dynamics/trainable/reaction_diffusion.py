@@ -1,22 +1,12 @@
 import numpy as np
 import torch
 
-from dynalearn.dynamics.reaction_diffusion import (
-    ReactionDiffusion,
-    WeightedReactionDiffusion,
-    MultiplexReactionDiffusion,
-    WeightedMultiplexReactionDiffusion,
-)
-from dynalearn.nn.models import (
-    ReactionDiffusionGNN,
-    ReactionDiffusionWGNN,
-    ReactionDiffusionMGNN,
-    ReactionDiffusionWMGNN,
-)
+from dynalearn.dynamics.reaction_diffusion import ReactionDiffusion
+from dynalearn.nn.models import ReactionDiffusionGNN
 from dynalearn.config import Config
 
 
-class SimpleTrainableReactionDiffusion(ReactionDiffusion):
+class TrainableReactionDiffusion(ReactionDiffusion):
     def __init__(self, config=None, **kwargs):
         self.config = config or Config(**kwargs)
         ReactionDiffusion.__init__(self, config, config.num_states)
@@ -49,55 +39,3 @@ class SimpleTrainableReactionDiffusion(ReactionDiffusion):
         g = self.nn.transformers["t_networks"].forward(self.network)
         y = self.nn.transformers["t_targets"].backward(self.nn.forward(x, g))
         return y.detach().numpy()
-
-
-class WeightedTrainableReactionDiffusion(
-    SimpleTrainableReactionDiffusion, WeightedReactionDiffusion
-):
-    def __init__(self, config=None, **kwargs):
-        config = config or Config(**kwargs)
-        WeightedReactionDiffusion.__init__(self, config, config.num_states)
-        SimpleTrainableReactionDiffusion.__init__(self, config=config, **kwargs)
-        self.nn = ReactionDiffusionWGNN(config)
-
-
-class MultiplexTrainableReactionDiffusion(
-    SimpleTrainableReactionDiffusion, MultiplexReactionDiffusion
-):
-    def __init__(self, config=None, **kwargs):
-        config = config or Config(**kwargs)
-        MultiplexReactionDiffusion.__init__(self, config, config.num_states)
-        SimpleTrainableReactionDiffusion.__init__(self, config=config, **kwargs)
-        self.nn = ReactionDiffusionMGNN(config)
-
-
-class WeightedMultiplexTrainableReactionDiffusion(
-    SimpleTrainableReactionDiffusion, WeightedMultiplexReactionDiffusion
-):
-    def __init__(self, config=None, **kwargs):
-        config = config or Config(**kwargs)
-        WeightedMultiplexReactionDiffusion.__init__(self, config, config.num_states)
-        SimpleTrainableReactionDiffusion.__init__(self, config=config, **kwargs)
-        self.nn = ReactionDiffusionWMGNN(config)
-
-
-def TrainableReactionDiffusion(config=None, **kwargs):
-    config = config or Config(**kwargs)
-    if "is_weighted" in config.__dict__:
-        is_weighted = config.is_weighted
-    else:
-        is_weighted = False
-
-    if "is_multiplex" in config.__dict__:
-        is_multiplex = config.is_multiplex
-    else:
-        is_multiplex = False
-
-    if is_weighted and is_multiplex:
-        return WeightedMultiplexTrainableReactionDiffusion(config=config, **kwargs)
-    elif is_weighted and not is_multiplex:
-        return WeightedTrainableReactionDiffusion(config=config, **kwargs)
-    elif not is_weighted and is_multiplex:
-        return MultiplexTrainableReactionDiffusion(config=config, **kwargs)
-    else:
-        return SimpleTrainableReactionDiffusion(config=config, **kwargs)

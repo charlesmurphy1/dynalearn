@@ -47,7 +47,7 @@ class DeterministicEpidemics(Dynamics):
         k[k == 0] = 1
         return update
 
-    def initial_state(self, init_param=None, density=None):
+    def initial_state(self, init_param=None, density=None, squeeze=True):
         if init_param is None:
             init_param = self.init_param
         if not isinstance(init_param, (np.ndarray, list)):
@@ -63,7 +63,11 @@ class DeterministicEpidemics(Dynamics):
         for i, n in enumerate(self.population):
             x[i] = np.random.multinomial(n, p) / n
 
-        return x
+        x = x.reshape(*x.shape, 1).repeat(self.window_size, -1)
+        if squeeze:
+            return x.squeeze()
+        else:
+            return x
 
     def init_population(self, density=None):
         if density is None:
@@ -79,6 +83,7 @@ class DeterministicEpidemics(Dynamics):
                 assert len(density) == self.num_nodes
                 population = np.array(density)
         self.network.node_attr["population"] = population
+        population[population <= 0] = 1
         return population
 
     def loglikelihood(self, x):

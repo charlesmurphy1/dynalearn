@@ -70,18 +70,21 @@ class Network:
         return nx.to_numpy_array(self.data)
 
     def get_node_data(self):
-        n = len(self.nodes)
+        n = self.number_of_nodes()
         node_data = np.zeros((n, 0))
         for k, v in self.node_attr.items():
-            node_data = np.concatenate([node_data, v.reshape(n, 1)], axis=-1)
+            node_data = np.concatenate([node_data, v.reshape(n, -1)], axis=-1)
         return node_data
 
     def get_edge_data(self):
-        m = len(self.edges)
+        m = self.number_of_edges()
         edge_data = np.zeros((m, 0))
         for k, v in self.edge_attr.items():
-            edge_data = np.concatenate([edge_data, v.reshape(m, 1)], axis=-1)
-        return edge_data
+            edge_data = np.concatenate([edge_data, v.reshape(m, -1)], axis=-1)
+        if edge_data is None:
+            return np.zeros((m, 0))
+        else:
+            return edge_data
 
     def degree(self, index=None):
         degree = np.array(list(dict(self.data.degree()).values()))
@@ -197,10 +200,10 @@ class MultiplexNetwork:
         return {l: nx.to_numpy_array(self.data[l]) for l in self.layers}
 
     def get_node_data(self):
-        n = len(self.nodes)
+        n = self.number_of_nodes()
         node_data = np.zeros((n, 0))
         for k, v in self.node_attr.items():
-            node_data = np.concatenate([node_data, v.reshape(n, 1)], axis=-1)
+            node_data = np.concatenate([node_data, v.reshape(n, -1)], axis=-1)
         return node_data
 
     def get_edge_data(self):
@@ -209,7 +212,9 @@ class MultiplexNetwork:
             m = len(self.edges[k])
             edge_data[k] = np.zeros((m, 0))
             for kk, vv in v.items():
-                edge_data[k] = np.concatenate([edge_data[k], vv.reshape(m, 1)], axis=-1)
+                edge_data[k] = np.concatenate(
+                    [edge_data[k], vv.reshape(m, -1)], axis=-1
+                )
         return edge_data
 
     def degree(self):

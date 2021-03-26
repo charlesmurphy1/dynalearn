@@ -209,6 +209,87 @@ class MultiHeadLinear(nn.Module):
         )
 
 
+class LinearLayers(nn.Module):
+    def __init__(self, channels, activation="relu", bias=True, **kwargs):
+        nn.Module.__init__(self)
+        self.channels = channels
+        self.activation = get_activation(activation)
+        self.bias = bias
+        self.template = lambda fin, fout: nn.Linear(fin, fout, bias=self.bias)
+        self.build()
+
+    def build(self):
+        layers = []
+        for f in zip(self.channels[:-1], self.channels[1:]):
+            layers.append(self.template(*f))
+            layers.append(self.activation)
+        self.layers = Sequential(*layers)
+
+    def forward(self, x):
+        if x.dim() == 3:
+            n = x.shape[0]
+            x = x.view(n, -1)
+        return self.layers(x)
+
+    def reset_parameters(self, initialize_inplace=None):
+        reset_layer(self.layers, initialize_inplace=initialize_inplace)
+
+
+class RNNLayers(nn.Module):
+    def __init__(
+        self,
+        channels,
+        activation="relu",
+        layer="rnn",
+        bidirectional=False,
+        bias=True,
+        **kwargs,
+    ):
+        nn.Module.__init__(self)
+        self.channels = channels
+        self.activation = get_activation(activation)
+        self.bidirectional = bidirectional
+        self.bias = bias
+        if layer == "rnn":
+            self.template = lambda fin, fout: nn.RNN(
+                fin, fout, bidirectional=self.bidirectional, bias=self.bias
+            )
+        elif layer == "lstm":
+            self.template = lambda fin, fout: nn.LSTM(
+                fin, fout, bidirectional=self.bidirectional, bias=self.bias
+            )
+        elif layer == "gru":
+            self.template = lambda fin, fout: nn.GRU(
+                fin, fout, bidirectional=self.bidirectional, bias=self.bias
+            )
+        elif issubclass(layer.__class__, nn.Module):
+            self.template = layer
+        else:
+            raise TypeError(
+                f"Invalid type, expected `[str, Module]` but received `{type(layer)}`."
+            )
+        self.build_layers()
+
+    def build(self):
+        self.layers = []
+        for f in zip(self.channels[:-1], self.channels[1:]):
+            self.layers.append(self.template(*f))
+
+    def forward(self, x):
+        for l in self.layers:
+            if isinstance(x, tuple):
+                x = l(*x)
+            else:
+                x = l(x)
+        if isinstance(x, tuple):
+            x = x[0]
+        return self.activation(x)
+
+    def reset_parameters(self):
+        for l in self.layers:
+            l.reset_parameters()
+
+
 class Reshape(nn.Module):
     def __init__(self, shape):
         self.shape = shape
@@ -218,31 +299,65 @@ class Reshape(nn.Module):
         return x.view(*self.shape)
 
 
-def build_layers(channel_seq, activation, bias=True):
-    layers = []
-    activation = get_activation(activation)
-    for i in range(len(channel_seq) - 1):
-        layers.append(nn.Linear(channel_seq[i], channel_seq[i + 1], bias=bias))
-        layers.append(activation)
+class Transpose(nn.Module):
+    def __init__(self, ax1, ax2):
+        self.ax1 = ax1
+        self.ax2 = ax2
+        nn.Module.__init__(self)
 
-    return nn.Sequential(*layers)
+    def forward(self, x):
+        return torch.transpose(x, self.ax1, self.ax2)
+
+
+class Troncate(nn.Module):
+    def __init__(self, ax):
+        assert isinstance(
+            ax, (int, type(None))
+        ), f"Invalid type: expected types `[int, NoneType]` but received `{type(x)}` for `ax`."
+        self.ax = ax
+        nn.Module.__init__(self)
+
+    def forward(self, x):
+        return x[self.ax]
 
 
 def get_in_layers(config):
-    return build_layers(config.in_channels, config.in_activation, bias=config.bias)
+    if type not in config.__dict__:
+        config.type = "linear"
+    if config.type == "linear":
+        config.in_channels.insert(0, config.window_size * config.in_size)
+        return LinearLayers(config.in_channels, config.in_activation, bias=config.bias)
+
+    elif config.type == "rnn" or config.type == "lstm" or config.type == "gru":
+        config.in_channels.insert(0, config.in_size)
+        return RNNLayers(
+            config.in_channels,
+            config.in_activation,
+            bias=config.bias,
+            layer=config.type,
+        )
+    else:
+        raise ValueError(
+            f"Invalid layer: expected `['linear', 'lstm', 'lstm', 'gru']` but received `{config.type}`."
+        )
 
 
 def get_out_layers(config):
-    if config.concat:
+    if config.concat and config.gnn_name in ["DynamicsGATConv", "GATConv"]:
         out_layer_channels = [config.heads * config.gnn_channels, *config.out_channels]
     else:
         out_layer_channels = [config.gnn_channels, *config.out_channels]
-    return build_layers(out_layer_channels, config.out_activation, bias=config.bias)
-
-
-def get_edge_layers(edge_size, config):
-    edge_layer_channels = [edge_size, *config.edge_channels]
-    return build_layers(edge_layer_channels, config.edge_activation, bias=config.bias)
+    layers = LinearLayers(out_layer_channels, config.out_activation, bias=config.bias)
+    layers = Sequential(
+        layers,
+        Linear(
+            config.out_channels[-1],
+            config.out_size,
+            bias=config.bias,
+        ),
+        get_activation(config.out_act),
+    )
+    return layers
 
 
 def reset_layer(layer, initialize_inplace=None):

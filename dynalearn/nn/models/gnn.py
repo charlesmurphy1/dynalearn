@@ -7,10 +7,9 @@ from .model import Model
 from .utils import (
     get_in_layers,
     get_out_layers,
-    get_edge_layers,
     reset_layer,
-    MultiplexLayer,
     ParallelLayer,
+    LinearLayers,
 )
 from torch.nn.init import kaiming_normal_
 from dynalearn.nn.activation import get as get_activation
@@ -27,7 +26,6 @@ class GraphNeuralNetwork(Model):
         window_size=1,
         nodeattr_size=0,
         edgeattr_size=0,
-        layers=None,
         out_act="identity",
         normalize=False,
         config=None,
@@ -35,36 +33,42 @@ class GraphNeuralNetwork(Model):
     ):
         Model.__init__(self, config=config, **kwargs)
 
-        self.in_size = in_size
-        self.out_size = out_size
-        self.window_size = window_size
+        self.in_size = self.config.in_size = in_size
+        self.out_size = self.config.out_size = out_size
+        self.out_act = self.config.out_act = out_act
+        self.window_size = self.config.window_size = window_size
         self.nodeattr_size = nodeattr_size
         self.edgeattr_size = edgeattr_size
 
-        self.first_layer = Sequential(
-            Linear(
-                self.window_size * self.in_size + self.nodeattr_size,
-                self.config.in_channels[0],
-                bias=self.config.bias,
-            ),
-            get_activation(self.config.in_activation),
-        )
+        if self.nodeattr_size > 0 and "node_channels" in self.config.__dict__:
+            self.node_layers = LinearLayers(
+                [self.nodeattr_size] + self.config.node_channels,
+                self.config.node_activation,
+                self.config.bias,
+            )
+        else:
+            self.node_layers = Sequential(Identity())
+            self.config.node_channels = [self.nodeattr_size]
+
+        if self.edgeattr_size > 0 and "edge_channels" in self.config.__dict__:
+            template = lambda: LinearLayers(
+                [self.edgeattr_size] + self.config.edge_channels,
+                self.config.edge_activation,
+                self.config.bias,
+            )
+            if self.config.is_multiplex:
+                self.edge_layers = ParallelLayer(
+                    template, keys=self.config.network_layers
+                )
+            else:
+                self.edge_layers = template()
+        else:
+            self.edge_layers = Sequential(Identity())
 
         self.in_layers = get_in_layers(self.config)
-        self.gnn_layer = get_gnn_layer(
-            self.config.in_channels[-1], self.config.gnn_channels, self.config
-        )
-        self.gnn_activation = get_activation(self.config.gnn_activation)
+        self.gnn_layer = get_gnn_layer(self.config)
         self.out_layers = get_out_layers(self.config)
-        self.last_layer = Sequential(
-            Linear(
-                self.config.out_channels[-1],
-                self.out_size,
-                bias=self.config.bias,
-            ),
-            get_activation(out_act),
-        )
-        self.edge_layers = Sequential(Identity())
+
         if normalize:
             input_size = in_size
             target_size = out_size
@@ -76,7 +80,7 @@ class GraphNeuralNetwork(Model):
             target_size=target_size,
             edge_size=edgeattr_size,
             node_size=nodeattr_size,
-            layers=layers,
+            layers=self.config.network_layers,
         )
 
         self.reset_parameters()
@@ -86,30 +90,25 @@ class GraphNeuralNetwork(Model):
 
     def forward(self, x, network_attr):
         edge_index, edge_attr, node_attr = network_attr
-        edge_attr = self.edge_layers(edge_attr)
-        x = x.view(-1, self.in_size * self.window_size)
-        x = self.merge_nodeattr(x, node_attr)
-        x = self.first_layer(x)
         x = self.in_layers(x)
+        node_attr = self.node_layers(node_attr)
+        edge_attr = self.edge_layers(edge_attr)
+        x = self.merge_nodeattr(x, node_attr)
         if self.config.gnn_name == "DynamicsGATConv":
             x = self.gnn_layer(x, edge_index, edge_attr=edge_attr)
         else:
             x = self.gnn_layer(x, edge_index)
         if isinstance(x, tuple):
             x = x[0]
-        x = self.gnn_activation(x)
         x = self.out_layers(x)
-        x = self.last_layer(x)
         return x
 
     def reset_parameters(self, initialize_inplace=None):
         if initialize_inplace is None:
             initialize_inplace = kaiming_normal_
         reset_layer(self.edge_layers, initialize_inplace=initialize_inplace)
-        reset_layer(self.first_layer, initialize_inplace=initialize_inplace)
         reset_layer(self.in_layers, initialize_inplace=initialize_inplace)
         reset_layer(self.out_layers, initialize_inplace=initialize_inplace)
-        reset_layer(self.last_layer, initialize_inplace=initialize_inplace)
         self.gnn_layer.reset_parameters()
 
     def merge_nodeattr(self, x, node_attr):
@@ -118,138 +117,3 @@ class GraphNeuralNetwork(Model):
         assert x.shape[0] == node_attr.shape[0]
         n = x.shape[0]
         return torch.cat([x, node_attr.view(n, -1)], dim=-1)
-
-
-class WeightedGraphNeuralNetwork(GraphNeuralNetwork):
-    def __init__(
-        self,
-        in_size,
-        out_size,
-        window_size=1,
-        nodeattr_size=0,
-        edgeattr_size=0,
-        out_act="identity",
-        normalize=False,
-        config=None,
-        **kwargs
-    ):
-        GraphNeuralNetwork.__init__(
-            self,
-            in_size,
-            out_size,
-            window_size=window_size,
-            nodeattr_size=nodeattr_size,
-            out_act=out_act,
-            normalize=normalize,
-            config=config,
-            **kwargs
-        )
-
-        # Getting layers
-        self.edge_layers = get_edge_layers(edgeattr_size, self.config)
-        self.gnn_layer = DynamicsGATConv(
-            self.config.in_channels[-1],
-            self.config.gnn_channels,
-            heads=self.config.heads,
-            concat=self.config.concat,
-            bias=self.config.bias,
-            edge_in_channels=self.config.edge_channels[-1],
-            edge_out_channels=self.config.edge_gnn_channels,
-            self_attention=self.config.self_attention,
-        )
-
-        # Finishing initialization
-        self.reset_parameters()
-        self.optimizer = self.get_optimizer(self.parameters())
-        if torch.cuda.is_available():
-            self = self.cuda()
-
-
-class MultiplexGraphNeuralNetwork(GraphNeuralNetwork):
-    def __init__(
-        self,
-        in_size,
-        out_size,
-        window_size=1,
-        nodeattr_size=0,
-        out_act="identity",
-        normalize=False,
-        config=None,
-        **kwargs
-    ):
-        GraphNeuralNetwork.__init__(
-            self,
-            in_size,
-            out_size,
-            window_size=window_size,
-            nodeattr_size=nodeattr_size,
-            out_act=out_act,
-            normalize=normalize,
-            layers=config.network_layers,
-            config=config,
-            **kwargs
-        )
-        template = lambda: DynamicsGATConv(
-            self.config.in_channels[-1],
-            self.config.gnn_channels,
-            heads=self.config.heads,
-            concat=self.config.concat,
-            bias=self.config.bias,
-            self_attention=self.config.self_attention,
-        )
-        self.gnn_layer = MultiplexLayer(
-            template, self.config.network_layers, merge="mean"
-        )
-
-        # Finishing initialization
-        self.reset_parameters()
-        self.optimizer = self.get_optimizer(self.parameters())
-        if torch.cuda.is_available():
-            self = self.cuda()
-
-
-class WeightedMultiplexGraphNeuralNetwork(MultiplexGraphNeuralNetwork):
-    def __init__(
-        self,
-        in_size,
-        out_size,
-        window_size=1,
-        nodeattr_size=0,
-        edgeattr_size=0,
-        out_act="identity",
-        normalize=False,
-        config=None,
-        **kwargs
-    ):
-        MultiplexGraphNeuralNetwork.__init__(
-            self,
-            in_size,
-            out_size,
-            window_size=window_size,
-            nodeattr_size=nodeattr_size,
-            out_act=out_act,
-            normalize=normalize,
-            config=config,
-            **kwargs
-        )
-        template = lambda: DynamicsGATConv(
-            self.config.in_channels[-1],
-            self.config.gnn_channels,
-            heads=self.config.heads,
-            concat=self.config.concat,
-            bias=self.config.bias,
-            self_attention=self.config.self_attention,
-        )
-        self.gnn_layer = MultiplexLayer(
-            template, self.config.network_layers, merge="mean"
-        )
-        self.edge_layers = ParallelLayer(
-            lambda: get_edge_layers(edgeattr_size, self.config),
-            keys=self.config.network_layers,
-        )
-
-        # Finishing initialization
-        self.reset_parameters()
-        self.optimizer = self.get_optimizer(self.parameters())
-        if torch.cuda.is_available():
-            self = self.cuda()

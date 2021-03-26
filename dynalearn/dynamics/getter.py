@@ -19,10 +19,6 @@ from .reaction_diffusion import RDSIS, RDSIR
 from .trainable import (
     GNNSEDynamics,
     GNNDEDynamics,
-    UVSEDynamics,
-    UVDEDynamics,
-    MVSEDynamics,
-    MVDEDynamics,
     TrainableReactionDiffusion,
 )
 
@@ -46,11 +42,7 @@ __dynamics__ = {
     "RDSIS": RDSIS,
     "RDSIR": RDSIR,
     "GNNSEDynamics": GNNSEDynamics,
-    "UVSEDynamics": UVSEDynamics,
-    "MVSEDynamics": MVSEDynamics,
     "GNNDEDynamics": GNNDEDynamics,
-    "UVDEDynamics": UVDEDynamics,
-    "MVDEDynamics": MVDEDynamics,
     "TrainableReactionDiffusion": TrainableReactionDiffusion,
 }
 
