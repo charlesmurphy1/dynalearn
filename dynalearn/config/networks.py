@@ -84,13 +84,10 @@ class NetworkConfig(Config):
         return cls
 
     @classmethod
-    def covid(cls, num_nodes=1000, m=2):
-        w = NetworkWeightConfig.uniform()
-        t = NetworkTransformConfig.sparcifier()
+    def covid(cls):
         l = ["plane", "car", "bus", "boat", "train"]
-        cls = cls.barabasialbert(
-            num_nodes=num_nodes, m=m, weights=w, transforms=t, layers=l
-        )
+        w = NetworkWeightConfig.uniform()
+        cls = NetworkConfig.barabasialbert(num_nodes=52, m=2, weights=w, layers=l)
         return cls
 
     @property
