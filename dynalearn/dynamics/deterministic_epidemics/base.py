@@ -63,7 +63,7 @@ class DeterministicEpidemics(Dynamics):
         for i, n in enumerate(self.population):
             x[i] = np.random.multinomial(n, p) / n
 
-        x = x.reshape(*x.shape, 1).repeat(self.window_size, -1)
+        x = x.reshape(*x.shape, 1).repeat(self.lag, -1)
         if squeeze:
             return x.squeeze()
         else:

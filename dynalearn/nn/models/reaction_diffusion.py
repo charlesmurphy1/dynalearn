@@ -22,7 +22,7 @@ class ReactionDiffusionGNN(GraphNeuralNetwork):
             config.num_states,
             config.num_states,
             edgeattr_size=edgeattr_size,
-            window_size=config.window_size,
+            lag=config.lag,
             normalize=True,
             config=config,
             **kwargs

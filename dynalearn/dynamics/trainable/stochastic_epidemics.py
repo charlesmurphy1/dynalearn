@@ -19,7 +19,7 @@ class GNNSEDynamics(StochasticEpidemics):
         if isinstance(x, np.ndarray):
             x = torch.Tensor(x)
         assert x.ndim == 2
-        assert x.shape[-1] == self.window_size
+        assert x.shape[-1] == self.lag
         x = self.nn.transformers["t_inputs"].forward(x)
         g = self.nn.transformers["t_networks"].forward(self.network)
         y = self.nn.transformers["t_targets"].backward(self.nn.forward(x, g))

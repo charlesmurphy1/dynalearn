@@ -31,8 +31,8 @@ class StochasticEpidemics(Dynamics):
             y = np.roll(x, -1, axis=0)[:-1]
             x = x[:-1]
 
-        if x.shape == (self.window_size, self.num_nodes) or x.shape == (self.num_nodes):
-            x = x.reshape(1, self.window_size, self.num_nodes)
+        if x.shape == (self.lag, self.num_nodes) or x.shape == (self.num_nodes):
+            x = x.reshape(1, self.lag, self.num_nodes)
             y = y.reshape(1, self.num_nodes)
 
         loglikelihood = 0
@@ -68,7 +68,7 @@ class StochasticEpidemics(Dynamics):
         assert init_param.shape == (self.num_states,)
         x = np.random.multinomial(1, init_param, size=self.num_nodes)
         x = np.where(x == 1.0)[1]
-        x = x.reshape(*x.shape, 1).repeat(self.window_size, -1)
+        x = x.reshape(*x.shape, 1).repeat(self.lag, -1)
         if squeeze:
             return x.squeeze()
         else:

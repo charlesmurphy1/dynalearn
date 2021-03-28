@@ -49,7 +49,7 @@ class ParallelLayer(nn.Module):
             yy = getattr(self, f"layer_{k}")(x[k], **kwargs)
             if y is None:
                 if isinstance(yy, tuple):
-                    y = ({k: yyy} for yyy in yy)
+                    y = [{k: yyy} for yyy in yy]
                 else:
                     y = {k: yy}
             else:
@@ -104,7 +104,7 @@ class ParallelLayer(nn.Module):
                 )
                 for yy in y
             )
-            return (torch.mean(yy, axis=-1) for yy in out)
+            return [torch.mean(yy, axis=-1) for yy in out]
         else:
             out = torch.cat(
                 [y[k].view(*y[k].shape, 1) for k in self.keys],
@@ -121,23 +121,23 @@ class ParallelLayer(nn.Module):
                 )
                 for yy in y
             )
-            return (torch.mean(yy, axis=-1) for yy in out)
+            return [torch.sum(yy, axis=-1) for yy in out]
         else:
             out = torch.cat(
                 [y[k].view(*y[k].shape, 1) for k in self.keys],
                 axis=-1,
             )
-            return torch.mean(out, axis=-1)
+            return torch.sum(out, axis=-1)
 
     def _merge_concat_(self, y):
         if isinstance(y, list):
-            return (
+            return [
                 torch.cat(
                     [yy[k].view(*yy[k].shape) for k in self.keys],
                     axis=-1,
                 )
                 for yy in y
-            )
+            ]
         else:
             return torch.cat(
                 [y[k].view(*y[k].shape) for k in self.keys],
@@ -170,6 +170,8 @@ class MultiplexLayer(ParallelLayer):
                             y[i][k] = yyy
                     else:
                         y[k] = yy
+        if isinstance(y, list):
+            y = y[0]
         if self.merge == "concat":
             return self._merge_concat_(y)
         elif self.merge == "mean":
@@ -251,16 +253,16 @@ class RNNLayers(nn.Module):
         self.bidirectional = bidirectional
         self.bias = bias
         if layer == "rnn":
-            self.template = lambda fin, fout: nn.RNN(
-                fin, fout, bidirectional=self.bidirectional, bias=self.bias
+            self.template = lambda fin, fout, num_layers: nn.RNN(
+                fin, fout, num_layers, bidirectional=self.bidirectional, bias=self.bias
             )
         elif layer == "lstm":
-            self.template = lambda fin, fout: nn.LSTM(
-                fin, fout, bidirectional=self.bidirectional, bias=self.bias
+            self.template = lambda fin, fout, num_layers: nn.LSTM(
+                fin, fout, num_layers, bidirectional=self.bidirectional, bias=self.bias
             )
         elif layer == "gru":
-            self.template = lambda fin, fout: nn.GRU(
-                fin, fout, bidirectional=self.bidirectional, bias=self.bias
+            self.template = lambda fin, fout, num_layers: nn.GRU(
+                fin, fout, num_layers, bidirectional=self.bidirectional, bias=self.bias
             )
         elif issubclass(layer.__class__, nn.Module):
             self.template = layer
@@ -268,26 +270,34 @@ class RNNLayers(nn.Module):
             raise TypeError(
                 f"Invalid type, expected `[str, Module]` but received `{type(layer)}`."
             )
-        self.build_layers()
+        self.build()
 
     def build(self):
-        self.layers = []
-        for f in zip(self.channels[:-1], self.channels[1:]):
-            self.layers.append(self.template(*f))
+        # self.layers = []
+        # for f in zip(self.channels[:-1], self.channels[1:]):
+        #     self.layers.append(self.template(*f))
+        # self.layers = nn.ModuleList(self.layers)
+        fin, fout = self.channels[0], self.channels[-1]
+        num_layers = len(self.channels) - 1
+        self.layers = self.template(fin, fout, num_layers)
 
     def forward(self, x):
-        for l in self.layers:
-            if isinstance(x, tuple):
-                x = l(*x)
-            else:
-                x = l(x)
+        if x.dim() == 2:
+            x = x.view(x.shape[0], 1, x.shape[1])
+        x  # [batch, features, timestamps]
+        x = torch.transpose(x, 0, 1)  # [features, batch, timestamps]
+        x = torch.transpose(x, 0, 2)  # [timestamps, batch, features]
+        # for l in self.layers:
+        #     x = l(x)[0]
+        x = self.layers(x)
         if isinstance(x, tuple):
             x = x[0]
-        return self.activation(x)
+        return self.activation(x[-1])
 
     def reset_parameters(self):
-        for l in self.layers:
-            l.reset_parameters()
+        # for l in self.layers:
+        #     l.reset_parameters()
+        self.layers.reset_parameters()
 
 
 class Reshape(nn.Module):
@@ -322,16 +332,15 @@ class Troncate(nn.Module):
 
 
 def get_in_layers(config):
-    if type not in config.__dict__:
+    if "type" not in config.__dict__:
         config.type = "linear"
     if config.type == "linear":
-        config.in_channels.insert(0, config.window_size * config.in_size)
-        return LinearLayers(config.in_channels, config.in_activation, bias=config.bias)
-
+        in_channels = [config.lag * config.in_size] + config.in_channels
+        return LinearLayers(in_channels, config.in_activation, bias=config.bias)
     elif config.type == "rnn" or config.type == "lstm" or config.type == "gru":
-        config.in_channels.insert(0, config.in_size)
+        in_channels = [config.in_size] + config.in_channels
         return RNNLayers(
-            config.in_channels,
+            in_channels,
             config.in_activation,
             bias=config.bias,
             layer=config.type,
@@ -344,9 +353,9 @@ def get_in_layers(config):
 
 def get_out_layers(config):
     if config.concat and config.gnn_name in ["DynamicsGATConv", "GATConv"]:
-        out_layer_channels = [config.heads * config.gnn_channels, *config.out_channels]
+        out_layer_channels = [config.heads * config.gnn_channels] + config.out_channels
     else:
-        out_layer_channels = [config.gnn_channels, *config.out_channels]
+        out_layer_channels = [config.gnn_channels] + config.out_channels
     layers = LinearLayers(out_layer_channels, config.out_activation, bias=config.bias)
     layers = Sequential(
         layers,

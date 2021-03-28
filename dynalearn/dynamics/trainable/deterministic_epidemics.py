@@ -37,7 +37,7 @@ class SGNNDEDynamics(DeterministicEpidemics):
             x = torch.Tensor(x)
         assert x.ndim == 3
         assert x.shape[1] == self.num_states
-        assert x.shape[2] == self.window_size
+        assert x.shape[2] == self.lag
         x = self.nn.transformers["t_inputs"].forward(x)
         g = self.nn.transformers["t_networks"].forward(self.network)
         y = self.nn.transformers["t_targets"].backward(self.nn.forward(x, g))

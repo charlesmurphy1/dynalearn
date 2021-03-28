@@ -19,7 +19,7 @@ class TrainableReactionDiffusion(ReactionDiffusion):
         raise ValueError("This method is invalid for Trainable models")
 
     def initial_state(self):
-        x = np.random.randn(self.num_nodes, self.num_states, self.window_size)
+        x = np.random.randn(self.num_nodes, self.num_states, self.lag)
         return self.nn.transformers["t_inputs"].backward(x)
 
     def is_dead(self):
@@ -34,7 +34,7 @@ class TrainableReactionDiffusion(ReactionDiffusion):
 
         assert x.ndim == 3
         assert x.shape[1] == self.num_states
-        assert x.shape[2] == self.window_size
+        assert x.shape[2] == self.lag
         x = self.nn.transformers["t_inputs"].forward(x)
         g = self.nn.transformers["t_networks"].forward(self.network)
         y = self.nn.transformers["t_targets"].backward(self.nn.forward(x, g))

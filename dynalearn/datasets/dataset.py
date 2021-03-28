@@ -75,7 +75,17 @@ class Dataset(object):
         if experiment.verbose == 1:
             pb.close()
 
-    def partition(self, node_fraction, bias=0, pb=None):
+    def partition(self, type="random", **kwargs):
+        if type == "random":
+            return self.random_partition(**kwargs)
+        elif type == "cleancut":
+            return self.cleancut_partition(**kwargs)
+        else:
+            raise ValueError(
+                f"`{type}` is invalid, valid entries are `['random', 'cleancut']`."
+            )
+
+    def random_partition(self, fraction=0.1, bias=0, pb=None):
         dataset = type(self)(self.config)
         dataset._data = self._data
         if self.use_transformed:
@@ -84,14 +94,17 @@ class Dataset(object):
         for i in range(self.networks.size):
             for j in range(self.inputs[i].size):
                 index = np.where(self.weights[i].data[j] > 0)[0]
-                n = np.random.binomial(self.weights[i].data.shape[-1], node_fraction)
+                n = np.random.binomial(self.weights[i].data.shape[-1], fraction)
                 if n == 0:
                     n = 1
                 if self.bias > 0:
                     p = self.weights[i].data[j, index] ** (-bias / self.bias)
                 else:
                     p = self.weights[i].data[j, index]
-                p /= p.sum()
+                if p.sum() == 0:
+                    continue
+                else:
+                    p /= p.sum()
                 remove_nodes = np.random.choice(index, p=p, size=n, replace=False)
                 weights[i].data[j] *= 0
                 weights[i].data[j, remove_nodes] = (
@@ -103,9 +116,48 @@ class Dataset(object):
 
         dataset.weights = weights
         dataset.indices = self.indices
-        dataset.window_size = self.window_size
-        dataset.window_step = self.window_step
-        dataset.max_window_size = self.max_window_size
+        dataset.lag = self.lag
+        dataset.lagstep = self.lagstep
+        dataset.maxlag = self.maxlag
+        dataset.num_states = self.num_states
+        dataset.sampler.reset()
+
+        return dataset
+
+    def cleancut_partition(self, ti=0, tf=-1):
+        dataset = type(self)(self.config)
+        dataset._data = self._data
+        if self.use_transformed:
+            dataset._transformed_data = self._transformed_data
+        weights = self.weights.copy()
+        new_weights = self.weights.copy()
+
+        if isinstance(ti, int):
+            ti = [ti] * self.networks.size
+
+        if isinstance(tf, int):
+            tf = [tf] * self.networks.size
+        for i, _ti, _tf in zip(range(self.networks.size), ti, tf):
+            if _ti == _tf:
+                continue
+            if _ti == -1:
+                _ti = self.inputs[i].size
+            if _tf == -1:
+                _tf = self.inputs[i].size
+            index = np.arange(_ti, _tf)
+            c_index = np.concatenate(
+                [np.arange(_ti), np.arange(_tf, self._data["inputs"][i].size)]
+            )
+            weights[i].data[_ti:_tf] = 0
+            new_weights[i].data[:_ti] = 0
+            new_weights[i].data[_tf:] = 0
+
+        self.weights = weights
+        dataset.weights = new_weights
+        dataset.indices = self.indices
+        dataset.lag = self.lag
+        dataset.lagstep = self.lagstep
+        dataset.maxlag = self.maxlag
         dataset.num_states = self.num_states
         dataset.sampler.reset()
 
@@ -114,9 +166,9 @@ class Dataset(object):
     def setup(self, experiment):
         self.m_networks = experiment.networks
         self.m_dynamics = experiment.dynamics
-        self.window_size = experiment.model.window_size
-        self.window_step = experiment.model.window_step
-        self.max_window_size = experiment.train_details.max_window_size
+        self.lag = experiment.model.lag
+        self.lagstep = experiment.model.lagstep
+        self.maxlag = experiment.train_details.maxlag
         self.num_states = experiment.model.num_states
         self.verbose = experiment.verbose
         return experiment.train_details
@@ -260,7 +312,7 @@ class Dataset(object):
         networks = DataCollection(name="networks")
         inputs = DataCollection(name="inputs")
         targets = DataCollection(name="targets")
-        back_step = (self.window_size - 1) * self.window_step
+        back_step = (self.lag - 1) * self.lagstep
 
         for i in range(details.num_networks):
             g = self.m_networks.generate()
@@ -269,21 +321,19 @@ class Dataset(object):
 
             networks.add(NetworkData(data=self.m_dynamics.network))
 
-            in_data = np.zeros(
-                (*x.shape, self.window_size)
-            )  # [nodes, features, timestamps]
+            in_data = np.zeros((*x.shape, self.lag))  # [nodes, features, timestamps]
             inputs_data = np.zeros((details.num_samples, *in_data.shape))
             targets_data = np.zeros((details.num_samples, *x.shape))
             t = 0
             j = 0
             k = 0
             while j < details.num_samples:
-                if t % self.window_step == 0:
+                if t % self.lagstep == 0:
                     in_data.T[k] = 1 * x.T
                     k += 1
-                    if k == self.window_size:
+                    if k == self.lag:
                         inputs_data[j] = 1 * in_data
-                        for _ in range(self.window_step):
+                        for _ in range(self.lagstep):
                             y = self.m_dynamics.sample(x)
                             x = 1 * y
                         targets_data[j] = 1 * y

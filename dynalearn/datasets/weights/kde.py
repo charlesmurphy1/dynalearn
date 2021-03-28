@@ -57,10 +57,11 @@ class KernelDensityEstimator:
         x = x.reshape(x.shape[0], self.dim).T
         mean = np.expand_dims(x.mean(axis=-1), -1)
         std = np.expand_dims(x.std(axis=-1), -1)
-        if np.all(std < 1e-8):
+        condition = np.logical_or(std < 1e-8, np.isnan(std))
+        if np.all(np.logical_or(std < 1e-8, np.isnan(std))):
             self._norm = len(self.samples)
             return
-        self._index = np.where(std > 1e-8)[0]
+        self._index = np.where(~condition)[0]
         y = (x[self._index] - mean[self._index]) / std[self._index]
         # self.kde = gaussian_kde(y, bw_method="silverman")
         self.kde = KernelDensity(kernel="gaussian").fit(y.T)

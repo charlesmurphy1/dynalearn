@@ -36,12 +36,8 @@ class Dynamics(ABC):
         self._edge_index = None
         self._num_nodes = None
 
-        self.window_size = self._config.window_size = config.__dict__.pop(
-            "window_size", 1
-        )
-        self.window_step = self._config.window_step = config.__dict__.pop(
-            "window_step", 1
-        )
+        self.lag = self._config.lag = config.__dict__.pop("lag", 1)
+        self.lagstep = self._config.lagstep = config.__dict__.pop("lagstep", 1)
 
     @abstractmethod
     def initial_state(self):

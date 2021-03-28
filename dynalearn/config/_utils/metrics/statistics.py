@@ -8,5 +8,5 @@ class StatisticsConfig(Config):
     def default(cls):
         cls = cls()
         cls.max_num_points = 10000
-        cls.max_window_size = 3
+        cls.maxlag = 1
         return cls

@@ -44,6 +44,7 @@ class Experiment:
         self.networks = get_network(config.networks)
         self.dynamics = get_dynamics(config.dynamics)
         self.model = get_dynamics(config.model)
+        self.config.model.num_params = int(self.model.nn.num_parameters())
 
         # Training related
         self.train_details = config.train_details
@@ -144,6 +145,8 @@ class Experiment:
         if "time" in self.loggers.keys():
             begin = self.loggers["time"].log["begin"]
             self.verbose(f"Current time: {begin}")
+        self.verbose(f"\n---Config---")
+        self.verbose(f"{self.config}")
 
     def end(self):
         self.loggers.on_task_end()
@@ -188,7 +191,9 @@ class Experiment:
         if "val_bias" in self.train_details.__dict__:
             bias = self.train_details.val_bias
         self.val_dataset = self.partition_dataset(
-            fraction=fraction, bias=bias, name="val",
+            fraction=fraction,
+            bias=bias,
+            name="val",
         )
 
     def partition_test_dataset(self, fraction=0.1, bias=0.0):
@@ -197,7 +202,9 @@ class Experiment:
         if "test_bias" in self.train_details.__dict__:
             bias = self.train_details.test_bias
         self.test_dataset = self.partition_dataset(
-            fraction=fraction, bias=bias, name="test",
+            fraction=fraction,
+            bias=bias,
+            name="test",
         )
 
     def compute_metrics(self, save=True):
@@ -255,7 +262,7 @@ class Experiment:
     # Other methods
     def partition_dataset(self, fraction=0.1, bias=0.0, name="val"):
         self.verbose(f"\n---Partitioning {name}-data---")
-        partition = self.dataset.partition(fraction, bias=bias)
+        partition = self.dataset.partition(type="random", fraction=fraction, bias=bias)
         if np.sum(partition.network_weights) == 0:
             self.verbose("After partitioning, partition is still empty.")
             partition = None

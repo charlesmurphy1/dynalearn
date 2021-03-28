@@ -58,7 +58,7 @@ class DynamicsConfig(Config):
         return cls
 
     @classmethod
-    def covid_pretrain(cls):
+    def covid(cls):
         cls = cls()
         cls.name = "DSIR"
         cls.infection_prob = 2.5 / 7.5

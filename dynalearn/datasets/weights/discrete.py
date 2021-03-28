@@ -6,25 +6,23 @@ from dynalearn.utilities import from_nary
 
 
 class DiscreteStateWeight(Weight):
-    def __init__(self, name="weights", max_window_size=3, bias=1.0):
-        self.max_window_size = max_window_size
-        Weight.__init__(self, name=name, max_num_samples=max_window_size, bias=bias)
+    def __init__(self, name="weights", maxlag=1, bias=1.0):
+        self.maxlag = maxlag
+        Weight.__init__(self, name=name, max_num_samples=maxlag, bias=bias)
 
     def setUp(self, dataset):
         self.num_states = dataset.num_states
-        if dataset.window_size > self.max_window_size:
-            self.window_size = self.max_window_size
+        if dataset.lag > self.maxlag:
+            self.lag = self.maxlag
         else:
-            self.window_size = dataset.window_size
+            self.lag = dataset.lag
         self.num_updates = 2 * np.sum(
             [dataset.inputs[i].data.shape[0] for i in range(dataset.networks.size)]
         )
 
     def _get_compound_states_(self, adj, state):
-        eff_num_states = self.num_states ** self.window_size
-        s = np.array(
-            [from_nary(ss[-self.window_size :], base=self.num_states) for ss in state]
-        )
+        eff_num_states = self.num_states ** self.lag
+        s = np.array([from_nary(ss[-self.lag :], base=self.num_states) for ss in state])
         ns = np.zeros((state.shape[0], eff_num_states))
         for j in range(eff_num_states):
             ns[:, j] = adj @ (s == j)

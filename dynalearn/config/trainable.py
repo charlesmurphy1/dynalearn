@@ -9,8 +9,8 @@ class TrainableConfig(Config):
         cls = cls()
         cls.name = "GNNSEDynamics"
         cls.num_states = 2
-        cls.window_size = 1
-        cls.window_step = 1
+        cls.lag = 1
+        cls.lagstep = 1
 
         cls.optimizer = OptimizerConfig.radam()
 
@@ -33,9 +33,11 @@ class TrainableConfig(Config):
         cls = cls()
         cls.name = "GNNSEDynamics"
         cls.gnn_name = "DynamicsGATConv"
+        cls.type = "linear"
+
         cls.num_states = 2
-        cls.window_size = 1
-        cls.window_step = 1
+        cls.lag = 1
+        cls.lagstep = 1
 
         cls.optimizer = OptimizerConfig.radam()
 
@@ -58,9 +60,11 @@ class TrainableConfig(Config):
         cls = cls()
         cls.name = "GNNSEDynamics"
         cls.gnn_name = "DynamicsGATConv"
+        cls.type = "linear"
+
         cls.num_states = 2
-        cls.window_size = 1
-        cls.window_step = 1
+        cls.lag = 1
+        cls.lagstep = 1
 
         cls.optimizer = OptimizerConfig.radam()
 
@@ -83,9 +87,11 @@ class TrainableConfig(Config):
         cls = cls()
         cls.name = "GNNSEDynamics"
         cls.gnn_name = "DynamicsGATConv"
+        cls.type = "linear"
+
         cls.num_states = 4
-        cls.window_size = 1
-        cls.window_step = 1
+        cls.lag = 1
+        cls.lagstep = 1
 
         cls.optimizer = OptimizerConfig.radam()
 
@@ -108,9 +114,11 @@ class TrainableConfig(Config):
         cls = cls()
         cls.name = "GNNDEDynamics"
         cls.gnn_name = "DynamicsGATConv"
+        cls.type = "linear"
+
         cls.num_states = 3
-        cls.window_size = 1
-        cls.window_step = 1
+        cls.lag = 1
+        cls.lagstep = 1
 
         cls.optimizer = OptimizerConfig.radam()
 

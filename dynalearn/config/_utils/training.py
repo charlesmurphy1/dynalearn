@@ -3,7 +3,9 @@ from dynalearn.config import Config
 
 class TrainingConfig(Config):
     @classmethod
-    def default(cls,):
+    def default(
+        cls,
+    ):
         cls = cls()
 
         cls.val_fraction = 0.01
@@ -14,13 +16,15 @@ class TrainingConfig(Config):
         cls.num_networks = 1
         cls.num_samples = 10000
         cls.resampling = 2
-        cls.max_window_size = 3
+        cls.maxlag = 1
         cls.resample_when_dead = True
 
         return cls
 
     @classmethod
-    def discrete(cls,):
+    def discrete(
+        cls,
+    ):
         cls = cls()
 
         cls.val_fraction = 0.01
@@ -30,13 +34,15 @@ class TrainingConfig(Config):
         cls.num_networks = 1
         cls.num_samples = 10000
         cls.resampling = 2
-        cls.max_window_size = 3
+        cls.maxlag = 1
         cls.resample_when_dead = True
 
         return cls
 
     @classmethod
-    def continuous(cls,):
+    def continuous(
+        cls,
+    ):
         cls = cls()
 
         cls.val_fraction = 0.1
@@ -46,13 +52,15 @@ class TrainingConfig(Config):
         cls.num_networks = 1
         cls.num_samples = 10000
         cls.resampling = 100
-        cls.max_window_size = 3
+        cls.maxlag = 1
         cls.resample_when_dead = False
 
         return cls
 
     @classmethod
-    def test(cls,):
+    def test(
+        cls,
+    ):
         cls = cls()
 
         cls.val_fraction = 0.01
@@ -62,7 +70,7 @@ class TrainingConfig(Config):
         cls.num_networks = 1
         cls.num_samples = 10
         cls.resampling = 2
-        cls.max_window_size = 3
+        cls.maxlag = 1
         cls.resample_when_dead = True
 
         return cls

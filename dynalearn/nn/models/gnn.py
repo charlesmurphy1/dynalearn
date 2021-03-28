@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -23,7 +24,7 @@ class GraphNeuralNetwork(Model):
         self,
         in_size,
         out_size,
-        window_size=1,
+        lag=1,
         nodeattr_size=0,
         edgeattr_size=0,
         out_act="identity",
@@ -36,7 +37,7 @@ class GraphNeuralNetwork(Model):
         self.in_size = self.config.in_size = in_size
         self.out_size = self.config.out_size = out_size
         self.out_act = self.config.out_act = out_act
-        self.window_size = self.config.window_size = window_size
+        self.lag = self.config.lag = lag
         self.nodeattr_size = nodeattr_size
         self.edgeattr_size = edgeattr_size
 
@@ -93,6 +94,7 @@ class GraphNeuralNetwork(Model):
         x = self.in_layers(x)
         node_attr = self.node_layers(node_attr)
         edge_attr = self.edge_layers(edge_attr)
+
         x = self.merge_nodeattr(x, node_attr)
         if self.config.gnn_name == "DynamicsGATConv":
             x = self.gnn_layer(x, edge_index, edge_attr=edge_attr)

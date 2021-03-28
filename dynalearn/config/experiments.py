@@ -164,7 +164,7 @@ class ExperimentConfig(Config):
         return cls
 
     @classmethod
-    def covid_pretrain(
+    def covid(
         cls,
         name,
         path_to_data="./",
@@ -187,9 +187,9 @@ class ExperimentConfig(Config):
         cls.path_to_summary = path_to_summary
         if not os.path.exists(path_to_summary):
             os.makedirs(path_to_summary)
-        cls.dynamics = DynamicsConfig.covid_pretrain()
-        cls.networks = NetworkConfig.covid_pretrain()
-        cls.model = TrainingConfig.dsir()
+        cls.dynamics = DynamicsConfig.covid()
+        cls.networks = NetworkConfig.covid()
+        cls.model = TrainableConfig.dsir()
         if cls.networks.is_weighted:
             cls.dynamics.is_weighted = True
             cls.model.is_weighted = True
@@ -208,13 +208,9 @@ class ExperimentConfig(Config):
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 
-        dataset = ContinuousDatasetConfig.state(
-            compounded=False, reduce=False, total=True
-        )
         cls.dataset = ContinuousDatasetConfig.state(
-            compounded=False, reduce=False, total=True
+            compounded=False, reduce=False, total=True, use_strength=True
         )
-        cls.dataset.modes = ["main", "pretrain"]
         cls.train_details = TrainingConfig.continuous()
 
         if seed is None:

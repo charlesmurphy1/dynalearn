@@ -20,7 +20,7 @@ class DeterministicEpidemicsGNN(GraphNeuralNetwork):
             self,
             config.num_states,
             config.num_states,
-            window_size=config.window_size,
+            lag=config.lag,
             nodeattr_size=1,
             edgeattr_size=edgeattr_size,
             out_act="softmax",

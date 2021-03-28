@@ -19,7 +19,7 @@ class StochasticEpidemicsGNN(GraphNeuralNetwork):
             1,
             config.num_states,
             edgeattr_size=edgeattr_size,
-            window_size=config.window_size,
+            lag=config.lag,
             out_act="softmax",
             config=config,
             **kwargs
