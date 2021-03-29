@@ -82,11 +82,11 @@ class Normalizer(Transformer):
             if x.numel() == 0:
                 self.is_empty = True
                 return y
+            yy = operator(x, dim=self.axis, keepdims=True)[0]
             if y is None:
-                y = operator(x, dim=self.axis, keepdims=True) / dataset.networks.size
+                y = yy / dataset.networks.size
             else:
-                y += operator(x, dim=self.axis, keepdims=True) / dataset.networks.size
-
+                y += yy / dataset.networks.size
         return y.view(self.shape)
 
 
@@ -94,10 +94,10 @@ class InputNormalizer(Normalizer):
     def __init__(self, size, auto_cuda=True):
         self.size = size
         if size > 0:
-            shape = (1, size, 1)
+            shape = (1, size, 1)  # [numnodes, numstates, lag]
         else:
             shape = ()
-        axis = (0, 1, 2)
+        axis = (0, 1, 3)
         Normalizer.__init__(self, "inputs", shape=shape, axis=axis, auto_cuda=auto_cuda)
 
     def getter(self, index, dataset):

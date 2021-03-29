@@ -321,7 +321,7 @@ class Dataset(object):
 
             networks.add(NetworkData(data=self.m_dynamics.network))
 
-            in_data = np.zeros((*x.shape, self.lag))  # [nodes, features, timestamps]
+            in_data = np.zeros((*x.shape, self.lag))  # [nodes, features, lag]
             inputs_data = np.zeros((details.num_samples, *in_data.shape))
             targets_data = np.zeros((details.num_samples, *x.shape))
             t = 0

@@ -142,3 +142,37 @@ class TrainableConfig(Config):
         cls.self_attention = True
 
         return cls
+
+    @classmethod
+    def incsir(cls):
+        cls = cls()
+        cls.name = "GNNIncidenceDynamics"
+        cls.gnn_name = "DynamicsGATConv"
+        cls.type = "linear"
+
+        cls.num_states = 1
+        cls.lag = 1
+        cls.lagstep = 1
+
+        cls.optimizer = OptimizerConfig.radam()
+
+        cls.weighted = True
+
+        cls.in_activation = "relu"
+        cls.gnn_activation = "relu"
+        cls.node_activation = "relu"
+        cls.edge_activation = "relu"
+        cls.out_activation = "relu"
+
+        cls.in_channels = [16, 16]
+        cls.gnn_channels = 16
+        cls.node_channels = [4, 4]
+        cls.edge_channels = [4, 4]
+        cls.edge_gnn_channels = 4
+        cls.out_channels = [16, 16]
+        cls.heads = 4
+        cls.concat = True
+        cls.bias = True
+        cls.self_attention = True
+
+        return cls

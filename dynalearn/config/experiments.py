@@ -171,6 +171,7 @@ class ExperimentConfig(Config):
         path_to_best="./",
         path_to_summary="./",
         model="gnn",
+        incidence=True,
         seed=None,
     ):
         cls = cls()
@@ -187,9 +188,14 @@ class ExperimentConfig(Config):
         cls.path_to_summary = path_to_summary
         if not os.path.exists(path_to_summary):
             os.makedirs(path_to_summary)
-        cls.dynamics = DynamicsConfig.covid()
+
         cls.networks = NetworkConfig.covid()
-        cls.model = TrainableConfig.dsir()
+        if incidence:
+            cls.dynamics = DynamicsConfig.incsir()
+            cls.model = TrainableConfig.incsir()
+        else:
+            cls.dynamics = DynamicsConfig.dsir()
+            cls.model = TrainableConfig.dsir()
         if cls.networks.is_weighted:
             cls.dynamics.is_weighted = True
             cls.model.is_weighted = True

@@ -15,10 +15,12 @@ from .stochastic_epidemics import (
     PartiallyHiddenSISSIS,
 )
 from .deterministic_epidemics import DSIS, DSIR
+from .incidence import IncidenceSIR
 from .reaction_diffusion import RDSIS, RDSIR
 from .trainable import (
     GNNSEDynamics,
     GNNDEDynamics,
+    GNNIncidenceDynamics,
     TrainableReactionDiffusion,
 )
 
@@ -27,6 +29,7 @@ __dynamics__ = {
     "SIR": SIR,
     "DSIS": DSIS,
     "DSIR": DSIR,
+    "IncidenceSIR": IncidenceSIR,
     "ThresholdSIR": ThresholdSIR,
     "ThresholdSIS": ThresholdSIS,
     "NonLinearSIS": NonLinearSIS,
@@ -43,6 +46,7 @@ __dynamics__ = {
     "RDSIR": RDSIR,
     "GNNSEDynamics": GNNSEDynamics,
     "GNNDEDynamics": GNNDEDynamics,
+    "GNNIncidenceDynamics": GNNIncidenceDynamics,
     "TrainableReactionDiffusion": TrainableReactionDiffusion,
 }
 

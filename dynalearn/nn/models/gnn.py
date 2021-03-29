@@ -116,6 +116,7 @@ class GraphNeuralNetwork(Model):
     def merge_nodeattr(self, x, node_attr):
         if node_attr is None:
             return x
+        # print(x.shape, node_attr.shape)
         assert x.shape[0] == node_attr.shape[0]
         n = x.shape[0]
         return torch.cat([x, node_attr.view(n, -1)], dim=-1)

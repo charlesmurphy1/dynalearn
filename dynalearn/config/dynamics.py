@@ -58,10 +58,10 @@ class DynamicsConfig(Config):
         return cls
 
     @classmethod
-    def covid(cls):
+    def incsir(cls):
         cls = cls()
-        cls.name = "DSIR"
-        cls.infection_prob = 2.5 / 7.5
+        cls.name = "IncidenceSIR"
+        cls.infection_prob = 2.5 / 2.3
         cls.recovery_prob = 1.0 / 7.5
         cls.infection_type = 2
         cls.density = 10000
