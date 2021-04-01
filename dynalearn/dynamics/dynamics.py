@@ -186,10 +186,10 @@ class MultiplexDynamics(Dynamics):
 
     @collapsed_network.setter
     def collapsed_network(self, network):
-        assert isinstance(network, MultiplexNetwork)
+        assert isinstance(network, Network)
         network = network.to_directed()
         self._collapsed_network = network
-        self._collapsed_edge_index = {k: v.T for k, v in network.edges.items()}
+        self._collapsed_edge_index = network.edges.T
         self._collapsed_node_degree = network.degree()
 
     @property

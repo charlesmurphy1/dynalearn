@@ -1,168 +1,96 @@
 import networkx as nx
 import numpy as np
+from abc import abstractmethod
 from dynalearn.experiments.metrics import Metrics
 from dynalearn.utilities import Verbose
-from abc import abstractmethod
+from dynalearn.dynamics.trainable import VARDynamics
 
 
 class ForecastMetrics(Metrics):
     def __init__(self, config):
         Metrics.__init__(self, config)
-        self.num_forecasts = config.num_forecasts
-        self.num_steps = config.num_steps
+        p = config.__dict__.copy()
+        self.num_steps = p.pop("num_steps", [1])
+        if isinstance(self.num_steps, int):
+            self.num_steps = [self.num_steps]
+        elif not isinstance(self.num_steps, list):
+            self.num_steps = list(self.num_steps)
 
     @abstractmethod
     def get_model(self, experiment):
         raise NotImplemented
 
-    @abstractmethod
-    def initial_state(self):
-        raise NotImplemented
-
     def initialize(self, experiment):
-        self.dynamics = experiment.dynamics
-        self.networks = experiment.networks
+        return
+
+    def compute(self, experiment, verbose=Verbose()):
+        self.verbose = verbose
+        self.initialize(experiment)
+
         self.model = self.get_model(experiment)
-        self.num_states = self.dynamics.num_states
-
-        self.num_updates = self.num_steps * self.num_forecasts
-        self.get_data["forecasts"] = lambda pb: np.array(
-            [self._get_forecast_(pb=pb) for i in range(self.num_forecasts)]
+        datasets = {
+            "train": experiment.dataset,
+            "vak": experiment.val_dataset,
+            "test": experiment.test_dataset,
+        }
+        datasets = {k: self._get_data_(v) for k, v in datasets.items() if v is not None}
+        nobs = [v.shape[0] for k, v in datasets.items()]
+        self.num_updates = np.sum(
+            [[s * (n - s + 1) for s in self.num_steps] for n in nobs]
         )
-        self.names.append("forecasts")
+        pb = self.verbose.progress_bar(self.__class__.__name__, self.num_updates)
+        for k, v in datasets.items():
+            for s in self.num_steps:
+                self.data[f"{k}-{s}"] = self._get_forecast_(v, s, pb)
 
-    def _get_forecast_(self, pb=None):
-        timeseries = np.zeros((self.num_steps, self.num_states))
-        x = self.initial_state()
-        self.model.network = self.networks.generate()
-        for i in range(self.num_steps):
-            timeseries[i] = self.avg(x)
-            x = self.model.sample(x)
-            if pb is not None:
-                pb.update()
-        return timeseries
+        if pb is not None:
+            pb.close()
 
-    def avg(self, x):
-        avg_x = np.zeros(self.num_states)
-        for i in range(self.num_states):
-            avg_x[i] = np.mean(x == i)
-        return avg_x
+        self.exit(experiment)
 
-
-class EpidemicsForecastMetrics(ForecastMetrics):
-    def __init__(self, config):
-        ForecastMetrics.__init__(self, config)
-        self.initial_infected = config.epsilon
-
-    def initial_state(self):
-        return self.dynamics.initial_state(self.initial_infected)
-
-
-class MetaPopForecastMetrics(ForecastMetrics):
-    def __init__(self, config):
-        ForecastMetrics.__init__(self, config)
-        self.initial_infected = config.epsilon
-
-    def initial_state(self):
-        state_dist = np.zeros(self.dynamics.num_states)
-        state_dist[0] = self.initial_infected
-        state_dist[1] = 1 - self.initial_infected
-        return self.dynamics.initial_state(state_dist=state_dist)
-
-
-class RTNForecastMetrics(ForecastMetrics):
-    def initialize(self, experiment):
-        self.dynamics = experiment.dynamics
-        self.networks = experiment.networks
-        self.model = self.get_model(experiment)
-        self.num_states = self.dynamics.num_states
-
-        self.num_updates = len(self.networks.data) * self.num_steps * self.num_forecasts
-        self.get_data["forecasts"] = lambda pb: np.array(
-            [self._get_forecast_(pb=pb) for i in range(self.num_forecasts)]
+    def _get_forecast_(self, dataset, num_steps=1, pb=None):
+        if dataset.shape[0] - num_steps + 1 < 0:
+            return np.zeros((0, dataset.shape[1], dataset.shape[2]))
+        y = np.zeros(
+            (dataset.shape[0] - num_steps + 1, dataset.shape[1], dataset.shape[2])
         )
-        self.get_data["milestones"] = lambda pb: np.array(
-            [self._get_milestone_() for i in range(self.num_forecasts)]
-        )
-        self.names.append("forecasts")
-        self.names.append("milestones")
-
-    def _get_milestone_(self):
-        return self.milestones
-
-    def _get_forecast_(self, pb=None):
-        x = self.dynamics.initial_state(self.epsilon)
-        num_networks = len(self.networks.data)
-        timeseries = np.zeros((num_networks * self.num_steps, self.num_states))
-        self.networks.time = 0
-        self.milestones = []
-        k = 0
-        for i in range(num_networks):
-            self.model.network = self.networks.generate()
-            self.milestones.append(k)
-            for j in range(self.num_steps):
-                timeseries[k] = self.avg(x)
-                k += 1
-                x = self.model.sample(x)
+        for i, x in enumerate(dataset[:-num_steps]):
+            for t in range(num_steps):
+                yy = self.model.predict(x)
+                x = np.roll(x, -1, axis=0)
+                x[:, :, -1] = yy
                 if pb is not None:
                     pb.update()
-        timeseries = timeseries[timeseries.sum(-1) > 0]
-        return timeseries
+            y[i] = yy
+        return y
 
-
-class TrueForecastMetrics(ForecastMetrics):
-    def get_model(self, experiment):
-        return experiment.dynamics
+    def _get_data_(self, dataset):
+        if dataset is None:
+            return
+        w = dataset.state_weights[0].data
+        data = dataset.inputs[0].data[w > 0]
+        return data
 
 
 class GNNForecastMetrics(ForecastMetrics):
     def get_model(self, experiment):
-        return experiment.model
+        model = experiment.model
+        model.network = experiment.dataset.networks[0].data
+        return model
 
 
-class TrueEpidemicsForecastMetrics(TrueForecastMetrics, EpidemicsForecastMetrics):
-    def __init__(self, config):
-        TrueForecastMetrics.__init__(self, config)
-        EpidemicsForecastMetrics.__init__(self, config)
-
+class TrueForecastMetrics(ForecastMetrics):
     def get_model(self, experiment):
-        return experiment.dynamics
+        model = experiment.dynamics
+        model.network = experiment.dataset.networks[0].data
+        return model
 
 
-class GNNEpidemicsForecastMetrics(GNNForecastMetrics, EpidemicsForecastMetrics):
-    def __init__(self, config):
-        GNNForecastMetrics.__init__(self, config)
-        EpidemicsForecastMetrics.__init__(self, config)
-
+class VARForecastMetrics(ForecastMetrics):
     def get_model(self, experiment):
-        return experiment.model
-
-
-class TrueMetaPopForecastMetrics(TrueForecastMetrics, MetaPopForecastMetrics):
-    def __init__(self, config):
-        TrueForecastMetrics.__init__(self, config)
-        MetaPopForecastMetrics.__init__(self, config)
-
-    def get_model(self, experiment):
-        return experiment.dynamics
-
-
-class GNNMetaPopForecastMetrics(GNNForecastMetrics, MetaPopForecastMetrics):
-    def __init__(self, config):
-        GNNForecastMetrics.__init__(self, config)
-        MetaPopForecastMetrics.__init__(self, config)
-
-    def get_model(self, experiment):
-        return experiment.model
-
-
-class TrueRTNForecastMetrics(RTNForecastMetrics, TrueForecastMetrics):
-    def __init__(self, config):
-        RTNForecastMetrics.__init__(self, config)
-        TrueForecastMetrics.__init__(self, config)
-
-
-class GNNRTNForecastMetrics(RTNForecastMetrics, GNNForecastMetrics):
-    def __init__(self, config):
-        RTNForecastMetrics.__init__(self, config)
-        GNNForecastMetrics.__init__(self, config)
+        model = VARDynamics(experiment.model.num_states, lag=experiment.model.lag)
+        model.network = experiment.dataset.networks[0].data
+        X = experiment.dataset.inputs[0].data
+        Y = experiment.dataset.targets[0].data
+        model.fit(X, Y=Y)
+        return model

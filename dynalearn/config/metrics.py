@@ -2,6 +2,7 @@ import numpy as np
 from itertools import product
 from .config import Config
 from ._utils import (
+    ForecastConfig,
     LTPConfig,
     PredictionConfig,
     StarLTPConfig,
@@ -20,6 +21,7 @@ class MetricsConfig(Config):
         cls.merge(StarLTPConfig.default())
         cls.merge(StatisticsConfig.default())
         cls.merge(StationaryConfig.test())
+        cls.merge(ForecastConfig.default())
 
         return cls
 
@@ -63,9 +65,17 @@ class MetricsConfig(Config):
     def dsir(cls):
         cls = cls()
         cls.names = []
-        cls.merge(LTPConfig.default())
         cls.merge(PredictionConfig.default())
-        cls.merge(StarLTPConfig.default())
         cls.merge(StationaryConfig.dsir())
+        cls.merge(ForecastConfig.default())
+
+        return cls
+
+    @classmethod
+    def covid(cls):
+        cls = cls()
+        cls.names = []
+        cls.merge(PredictionConfig.default())
+        cls.merge(ForecastConfig.default())
 
         return cls

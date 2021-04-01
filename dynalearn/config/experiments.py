@@ -210,7 +210,7 @@ class ExperimentConfig(Config):
             cls.dynamics.is_multiplex = False
             cls.model.is_multiplex = False
 
-        cls.metrics = MetricsConfig.dsir()
+        cls.metrics = MetricsConfig.covid()
         cls.train_metrics = ["jensenshannon", "model_entropy"]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
 

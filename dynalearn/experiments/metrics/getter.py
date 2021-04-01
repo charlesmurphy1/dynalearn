@@ -4,6 +4,7 @@ from .prediction import *
 from .starltp import *
 from .statistics import *
 from .stationary import *
+from .forecast import *
 
 __metrics__ = {
     "TrueLTPMetrics": TrueLTPMetrics,
@@ -18,6 +19,9 @@ __metrics__ = {
     "GNNPSSMetrics": GNNPSSMetrics,
     "TrueERSSMetrics": TrueERSSMetrics,
     "GNNERSSMetrics": GNNERSSMetrics,
+    "TrueForecastMetrics": TrueForecastMetrics,
+    "GNNForecastMetrics": GNNForecastMetrics,
+    "VARForecastMetrics": VARForecastMetrics,
 }
 
 
