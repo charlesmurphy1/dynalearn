@@ -170,7 +170,7 @@ class TrainableConfig(Config):
         cls.edge_channels = [4, 4]
         cls.edge_gnn_channels = 4
         cls.out_channels = [16, 16]
-        cls.heads = 4
+        cls.heads = 1
         cls.concat = True
         cls.bias = True
         cls.self_attention = True
