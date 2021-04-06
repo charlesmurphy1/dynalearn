@@ -164,12 +164,12 @@ class TrainableConfig(Config):
         cls.edge_activation = "relu"
         cls.out_activation = "relu"
 
-        cls.in_channels = [16, 16]
-        cls.gnn_channels = 16
+        cls.in_channels = [4, 8]
+        cls.gnn_channels = 8
         cls.node_channels = [4, 4]
         cls.edge_channels = [4, 4]
         cls.edge_gnn_channels = 4
-        cls.out_channels = [16, 16]
+        cls.out_channels = [8, 4]
         cls.heads = 1
         cls.concat = True
         cls.bias = True

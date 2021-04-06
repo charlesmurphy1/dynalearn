@@ -32,16 +32,15 @@ class SimpleVARDynamics(Dynamics):
         self._num_states = X.shape[2]
         if Y is None:
             assert X.ndim == 3
-            x = np.array(
-                [X[t - self.lag : t][::-1].ravel() for t in range(self.lag, len(X))]
-            )
+            x = np.array([X[t - self.lag : t].ravel() for t in range(self.lag, len(X))])
             y = X[self.lag :].reshape(x.shape[0], -1)
             self._data = X
         else:
             assert X.ndim == 4
             assert X.shape[0] == Y.shape[0]
             self.lag = X.shape[-1]
-            x = X.reshape(X.shape[0], -1)
+            x = np.transpose(X, (0, 3, 1, 2))
+            x = x.reshape(X.shape[0], -1)
             y = Y.reshape(X.shape[0], -1)
             self._data = (X, Y)
         nobs = x.shape[0]
@@ -62,7 +61,6 @@ class SimpleVARDynamics(Dynamics):
             self.lag,
         ), f"`shape` is invalid, expected {(self.num_nodes, self.num_states, self.lag)} but received {x.shape}."
         x = x.reshape(-1, self.lag).T
-        x = x[::-1]
         y = np.dot(x.flatten(), self.coefs.reshape(-1, self.nfeatures)) + self.intercept
         y = y.reshape(self.num_nodes, self.num_states)
         return y

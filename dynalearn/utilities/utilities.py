@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+
 from numba import jit
 from cmath import exp, log
 from math import log as mlog
@@ -283,7 +284,8 @@ def get_edge_attr(g, to_data=False):
         if to_data:
             if len(attributes) > 0:
                 return np.concatenate(
-                    [v.reshape(-1, 1) for k, v in attributes.items()], axis=-1,
+                    [v.reshape(-1, 1) for k, v in attributes.items()],
+                    axis=-1,
                 )
             else:
                 return np.zeros((n, 0))
@@ -357,7 +359,8 @@ def get_node_attr(g, to_data=False):
         if to_data:
             if len(attributes) > 0:
                 return np.concatenate(
-                    [v.reshape(-1, 1) for k, v in attributes.items()], axis=-1,
+                    [v.reshape(-1, 1) for k, v in attributes.items()],
+                    axis=-1,
                 )
             else:
                 return np.zeros((n, 0))
@@ -397,3 +400,57 @@ def from_weighted_edgelist(edge_list, create_using=None):
         else:
             g.add_edge(int(edge[0]), int(edge[1]), weight=1)
     return g
+
+
+def loading_covid_data(experiment, path_to_covid, lag=1, lagstep=1, incidence=True):
+    if incidence:
+        dataset = h5py.File(os.path.join(path_to_covid, "spain-covid19cases.h5"), "r")
+        num_states = 1
+    else:
+        dataset = h5py.File(os.path.join(path_to_covid, "spain-covid19.h5"), "r")
+        num_states = 3
+    X = dataset["weighted-multiplex/data/inputs/d0"][...]
+    Y = dataset["weighted-multiplex/data/targets/d0"][...]
+    networks = dataset["weighted-multiplex/data/networks/d0"]
+
+    data = {
+        "inputs": DataCollection(name="inputs"),
+        "targets": DataCollection(name="targets"),
+        "networks": DataCollection(name="networks"),
+    }
+    inputs = np.zeros((X.shape[0] - (lag - 1) * lagstep, X.shape[1], num_states, lag))
+    targets = np.zeros((Y.shape[0] - (lag - 1) * lagstep, Y.shape[1], num_states))
+    for t in range(inputs.shape[0]):
+        x = X[t : t + lag * lagstep : lagstep]
+        y = Y[t + lag * lagstep]
+        if incidence:
+            x = x.reshape(*x.shape, 1)
+            y = y.reshape(*y.shape, 1)
+        x = np.transpose(x, (1, 2, 0))
+        inputs[t] = x
+        targets[t] = y
+    data["inputs"].add(StateData(data=inputs))
+    data["targets"].add(StateData(data=targets))
+    data["networks"].add(NetworkData(data=networks))
+    pop = data["networks"][0].data.node_attr["population"]
+    experiment.dataset.data = data
+    experiment.test_dataset = experiment.dataset.partition(
+        type="cleancut", ti=335, tf=-1
+    )
+    experiment.partition_val_dataset()
+    return experiment
+
+
+def get_dataset_from_timeseries(ts, lag=1, lagstep=1):
+    if ts.ndim == 3:
+        num_steps, num_nodes, num_feats = ts.shape[0], ts.shape[1], ts.shape[2]
+    elif ts.ndim == 2:
+        num_steps, num_nodes, num_feats = ts.shape[0], ts.shape[1], 1
+    inputs = np.zeros((num_steps - lag * lagstep, num_nodes, num_feats, lag))
+    targets = np.zeros((num_steps - lag * lagstep, num_nodes, num_feats))
+
+    for t in range(num_steps - lag * lagstep):
+        x = ts[t : t + lag * lagstep : lagstep]
+        inputs[t] = np.transpose(x, (1, 2, 0))
+        targets[t] = ts[t + lag * lagstep]
+    return inputs, targets
