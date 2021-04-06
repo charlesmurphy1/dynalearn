@@ -6,7 +6,7 @@ class CallbackConfig(Config):
     def default(cls, path_to_best="./"):
         cls = cls()
         cls.names = ["ModelCheckpoint", "StepLR"]
-        cls.step_size = 10
+        cls.step_size = 20
         cls.gamma = 0.5
         cls.path_to_best = path_to_best
         return cls
