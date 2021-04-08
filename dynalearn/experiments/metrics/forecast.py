@@ -30,7 +30,7 @@ class ForecastMetrics(Metrics):
         self.model = self.get_model(experiment)
         datasets = {
             "train": experiment.dataset,
-            "vak": experiment.val_dataset,
+            "val": experiment.val_dataset,
             "test": experiment.test_dataset,
         }
         datasets = {k: self._get_data_(v) for k, v in datasets.items() if v is not None}
@@ -57,7 +57,7 @@ class ForecastMetrics(Metrics):
         for i, x in enumerate(dataset[:-num_steps]):
             for t in range(num_steps):
                 yy = self.model.predict(x)
-                x = np.roll(x, -1, axis=0)
+                x = np.roll(x, -1, axis=-1)
                 x[:, :, -1] = yy
                 if pb is not None:
                     pb.update()
@@ -90,7 +90,8 @@ class VARForecastMetrics(ForecastMetrics):
     def get_model(self, experiment):
         model = VARDynamics(experiment.model.num_states, lag=experiment.model.lag)
         model.network = experiment.dataset.networks[0].data
-        X = experiment.dataset.inputs[0].data
-        Y = experiment.dataset.targets[0].data
+        c = experiment.dataset.state_weights[0].data > 0
+        X = experiment.dataset.inputs[0].data[c]
+        Y = experiment.dataset.targets[0].data[c]
         model.fit(X, Y=Y)
         return model
