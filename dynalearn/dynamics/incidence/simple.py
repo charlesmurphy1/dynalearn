@@ -41,8 +41,8 @@ class SimpleIncidenceSIR(IncidenceEpidemics):
 
     def predict(self, x):
         x = x.squeeze()
-        if x.ndim == 2:
-            x = x[:, -1]
+        if x.ndim == 3:
+            x = x[:, 0, -1]
         if self._num_infected is None:
             self.num_infected = x * 1
         if self._num_recovered is None:

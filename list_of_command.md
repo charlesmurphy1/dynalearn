@@ -4,11 +4,14 @@ module load python/3.6 scipy-stack mpi4py
 virtualenv .dynalearn-env/
 source .dynalearn-env/bin/activate
 <!-- pip install tensorflow_gpu==1.12  -->
-pip install torch abcpy numpy networkx tqdm matplotlib
-pip install --no-index torch==1.4.0 torch_cluster==1.5.4 torch_scatter==2.0.4 torch_sparse==0.6.1 torch_spline_conv==1.2.0
-pip install torch_geometric==1.4.3
-pip wheel /home/murphy9/projects/def-aallard/murphy9/sources/dynalearn
-pip install /home/murphy9/projects/def-aallard/murphy9/sources/dynalearn
+pip install abcpy numpy networkx tqdm matplotlib psutil
+pip install --no-index torch==1.7.1
+pip install --no-index torch_scatter
+pip install --no-index torch_sparse
+pip install --no-index torch_cluster
+pip install --no-index torch_spline_conv
+pip install --no-index torch_geometric
+python ~/codes/dynalearn/setup.py develop
 deactivate
 
 ## To launch job

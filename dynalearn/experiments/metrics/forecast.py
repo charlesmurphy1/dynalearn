@@ -29,19 +29,25 @@ class ForecastMetrics(Metrics):
 
         self.model = self.get_model(experiment)
         datasets = {
+            "total": experiment.dataset,
             "train": experiment.dataset,
             "val": experiment.val_dataset,
             "test": experiment.test_dataset,
         }
-        datasets = {k: self._get_data_(v) for k, v in datasets.items() if v is not None}
+        datasets = {
+            k: self._get_data_(v, total=k == "total")
+            for k, v in datasets.items()
+            if v is not None
+        }
         nobs = [v.shape[0] for k, v in datasets.items()]
         self.num_updates = np.sum(
             [[s * (n - s + 1) for s in self.num_steps] for n in nobs]
         )
         pb = self.verbose.progress_bar(self.__class__.__name__, self.num_updates)
         for k, v in datasets.items():
+            total = k == "total"
             for s in self.num_steps:
-                self.data[f"{k}-{s}"] = self._get_forecast_(v, s, pb)
+                self.data[f"{k}-{s}"] = self._get_forecast_(v, s, pb, total=total)
 
         if pb is not None:
             pb.close()
@@ -64,11 +70,13 @@ class ForecastMetrics(Metrics):
             y[i] = yy
         return y
 
-    def _get_data_(self, dataset):
+    def _get_data_(self, dataset, total=False):
         if dataset is None:
             return
-        w = dataset.state_weights[0].data
-        data = dataset.inputs[0].data[w > 0]
+        data = dataset.inputs[0].data
+        if not total:
+            w = dataset.state_weights[0].data
+            data = dataset.inputs[0].data[w > 0]
         return data
 
 
