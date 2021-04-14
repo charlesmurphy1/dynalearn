@@ -19,19 +19,8 @@ class AttentionMetrics(Metrics):
 
     def initialize(self, experiment):
         self.model = experiment.model
-        self.datasets = {
-            "all": experiment.dataset,
-            "train": experiment.dataset,
-            "val": experiment.val_dataset,
-            "test": experiment.test_dataset,
-        }
-        for n, d in self.datasets.items():
-            if d is None:
-                continue
-            elif n == "all":
-                self.indices[n] = self._get_indices_(d, doall=True)
-            else:
-                self.indices[n] = self._get_indices_(d, doall=False)
+        self.dataset = experiment.dataset
+        self.indices = self._get_indices_()
 
         if isinstance(self.model.nn.gnn_layer, DynamicsGATConv):
             if self.model.config.is_multiplex:
@@ -42,38 +31,23 @@ class AttentionMetrics(Metrics):
                 name = "attcoeffs"
                 if l is not None:
                     name += f"-{l}"
-                for n, d in self.datasets.items():
-                    if d is None:
-                        continue
-                    self.names.append(f"{n}-" + name)
-                    self.get_data[f"{n}-" + name] = partial(
-                        self._compute_feature_, self._get_attcoeffs_, key=n, layer=l
-                    )
+                self.names.append(name)
+                self.get_data[name] = partial(self._get_attcoeffs_, layer=l)
         return
 
-    def _compute_feature_(self, getter, key=None, layer=None, pb=None):
-        if key is None:
-            return
-
-        dataset = self.datasets[key]
-        network = dataset.networks[0].data
-        inputs = dataset.inputs[0].data[self.indices[key]]
-
-        features = getter(inputs, network, layer=layer)
-        return features
-
-    def _get_indices_(self, dataset, doall=False):
-        inputs = dataset.inputs[0].data
+    def _get_indices_(self, doall=True):
+        inputs = self.dataset.inputs[0].data
         T = inputs.shape[0]
         all_indices = np.arange(T)
         if not doall:
-            weights = dataset.state_weights[0].data
+            weights = self.dataset.state_weights[0].data
             all_indices = all_indices[weights > 0]
         num_points = min(T, self.max_num_points)
         return np.random.choice(all_indices, size=num_points, replace=False)
 
-    def _get_attcoeffs_(self, inputs, network, layer=None):
-
+    def _get_attcoeffs_(self, layer=None, pb=None):
+        network = self.dataset.networks[0].data
+        inputs = self.dataset.inputs[0].data[self.indices]
         gnn = self.model.nn.gnn_layer
         edge_index, edge_attr, node_attr = self.model.nn.transformers[
             "t_networks"
@@ -98,8 +72,60 @@ class AttentionMetrics(Metrics):
             results[i] = out[1][1].detach().cpu().numpy()
         return results.reshape(T * M, -1)
 
-    def _get_states_(self, inputs, network, layer=None):
 
+class AttentionFeatureNMIMetrics(AttentionMetrics):
+    def __init__(self, config):
+        AttentionMetrics.__init__(self, config)
+        p = config.__dict__.copy()
+        self.n_neighbors = p.get("n_neighbors", 3)
+        self.metric = p.get("metric", "euclidean")
+        self.fname = None
+
+    def initialize(self, experiment):
+        self.model = experiment.model
+        self.dataset = experiment.dataset
+        self.indices = self._get_indices_()
+        if isinstance(self.model.nn.gnn_layer, DynamicsGATConv):
+            if self.model.config.is_multiplex:
+                self.layers = layer = self.model.config.network_layers
+            else:
+                layers = [None]
+            for l in layers:
+                name = "nmi-"
+                if l is not None:
+                    name = f"{l}-" + name
+                attcoeffs = self._get_attcoeffs_(layer=l)
+                features = self._get_feature_(layer=l)
+                if isinstance(features, dict):
+                    for k, v in features.items():
+                        d_name = name + f"att_vs_{self.fname}-{k}"
+                        self.names.append(d_name)
+                        self.get_data[d_name] = partial(
+                            self._compute_nmi_, attcoeffs, v
+                        )
+        return
+
+    def _get_feature_(self, inputs, network, layer=None):
+        raise notImplemented
+
+    def _compute_nmi_(self, x, y, pb=None):
+        mi = mutual_info(x, y, n_neighbors=self.n_neighbors, metric=self.metric)
+        hx = mutual_info(x, x, n_neighbors=self.n_neighbors, metric=self.metric)
+        hy = mutual_info(y, y, n_neighbors=self.n_neighbors, metric=self.metric)
+        if hx == 0 and hy == 0:
+            return 0.0
+        return 2 * mi / (hx + hy)
+
+
+class AttentionStatesNMIMetrics(AttentionFeatureNMIMetrics):
+    def __init__(self, config):
+        AttentionFeatureNMIMetrics.__init__(self, config)
+        self.fname = "states"
+
+    def _get_feature_(self, layer=None):
+
+        network = self.dataset.networks[0].data
+        inputs = self.dataset.inputs[0].data[self.indices]
         node_attr = network.node_attr
         edge_attr = network.edge_attr
         edge_index = network.edges
@@ -115,9 +141,53 @@ class AttentionMetrics(Metrics):
             sources, targets = np.expand_dims(x[s], 1), np.expand_dims(x[t], 1)
 
             results[i] = np.concatenate((sources, targets), axis=1)
-        return results.reshape(T * M, 2, -1)
+        results = results.reshape(T * M, 2, -1)
 
-    def _get_nodeattr_(self, inputs, network, layer=None):
+        return {
+            "all": results.reshape(T * M, -1),
+            "source": results[:, 0, :],
+            "target": results[:, 1, :],
+        }
+
+
+class AttentionNodeAttrNMIMetrics(AttentionFeatureNMIMetrics):
+    def __init__(self, config):
+        AttentionFeatureNMIMetrics.__init__(self, config)
+        self.fname = "nodeattr"
+
+    def _get_feature_(self, layer=None):
+
+        network = self.dataset.networks[0].data
+        inputs = self.dataset.inputs[0].data[self.indices]
+        node_attr = network.node_attr
+        edge_attr = network.edge_attr
+        edge_index = network.edges
+
+        if layer is not None and isinstance(network, MultiplexNetwork):
+            edge_index, edge_attr = edge_index[layer], edge_attr[layer]
+
+        T, M = inputs.shape[0], edge_index.shape[0]
+        s, t = edge_index.T
+        res = {}
+        for k, v in node_attr.items():
+            sources, targets = np.expand_dims(v[s], 1), np.expand_dims(v[t], 1)
+            r = np.concatenate((sources, targets), axis=1)
+            res[k] = r.reshape(1, *r.shape).repeat(T, axis=0).reshape(T * M, 2, -1)
+        results = {"all-" + k: v.reshape(T * M, -1) for k, v in res.items()}
+        results.update({"source-" + k: v[:, 0, :] for k, v in res.items()})
+        results.update({"target-" + k: v[:, 1, :] for k, v in res.items()})
+        return results
+
+
+class AttentionEdgeAttrNMIMetrics(AttentionFeatureNMIMetrics):
+    def __init__(self, config):
+        AttentionFeatureNMIMetrics.__init__(self, config)
+        self.fname = "edgeattr"
+
+    def _get_feature_(self, layer=None):
+
+        network = self.dataset.networks[0].data
+        inputs = self.dataset.inputs[0].data[self.indices]
         node_attr = network.node_attr
         edge_attr = network.edge_attr
         edge_index = network.edges
@@ -128,137 +198,6 @@ class AttentionMetrics(Metrics):
         T, M = inputs.shape[0], edge_index.shape[0]
         s, t = edge_index.T
         results = {}
-        for k, v in node_attr.items():
-            sources, targets = np.expand_dims(v[s], 1), np.expand_dims(v[t], 1)
-            r = np.concatenate((sources, targets), axis=1)
-            results[k] = r.reshape(1, *r.shape).repeat(T, axis=0).reshape(T * M, 2, -1)
-
+        for k, v in edge_attr.items():
+            results[k] = v.reshape(1, *v.shape).repeat(T, axis=0).reshape(T * M, -1)
         return results
-
-    def _get_edgeattr_(self, inputs, network, layer=None):
-        node_attr = network.node_attr
-        edge_attr = network.edge_attr
-        edge_index = network.edges
-
-        if layer is not None and isinstance(network, MultiplexNetwork):
-            edge_index, edge_attr = edge_index[layer], edge_attr[layer]
-
-        T, M = inputs.shape[0], edge_index.shape[0]
-
-        results = {
-            k: v.reshape(1, *v.shape).repeat(T, axis=0).reshape(T * M, -1)
-            for k, v in edge_attr.items()
-        }
-
-        return results
-
-
-class AttentionNMIMetrics(AttentionMetrics):
-    def __init__(self, config):
-        AttentionMetrics.__init__(self, config)
-        self.__attcoeffs_entropy = None
-        self.__state_entropy = None
-        self.__nodeattr_entropy = None
-        self.__edgeattr_entropy = None
-        p = config.__dict__.copy()
-        self.n_neighbors = p.get("n_neighbors", 3)
-        self.metric = p.get("metric", "euclidean")
-
-    def initialize(self, experiment):
-        self.model = experiment.model
-        self.datasets = {
-            "all": experiment.dataset,
-            "train": experiment.dataset,
-            "val": experiment.val_dataset,
-            "test": experiment.test_dataset,
-        }
-        for n, d in self.datasets.items():
-            if d is None:
-                continue
-            elif n == "all":
-                self.indices[n] = self._get_indices_(d, doall=True)
-            else:
-                self.indices[n] = self._get_indices_(d, doall=False)
-        if isinstance(self.model.nn.gnn_layer, DynamicsGATConv):
-            if self.model.config.is_multiplex:
-                self.layers = layer = self.model.config.network_layers
-            else:
-                layers = [None]
-            for l in layers:
-                name = "nmi"
-                if l is not None:
-                    name += f"-{l}"
-                for n, d in self.datasets.items():
-                    if d is None:
-                        continue
-                    attcoeffs = self._compute_feature_(
-                        self._get_attcoeffs_, key=n, layer=l
-                    )  # (T, M, H)
-                    states = self._compute_feature_(
-                        self._get_states_, key=n, layer=l
-                    )  # (T, M, 2, D)
-                    node_attr = self._compute_feature_(
-                        self._get_nodeattr_, key=n, layer=l
-                    )  # (T, M, 2, D)
-                    edge_attr = self._compute_feature_(
-                        self._get_edgeattr_, key=n, layer=l
-                    )  # (T, M, D)
-
-                    self.names.append(f"{n}-" + name + "att_vs_states")
-                    self.get_data[f"{n}-" + name + "att_vs_states"] = partial(
-                        self._compute_nmi_,
-                        attcoeffs,
-                        states.reshape(states.shape[0], -1),
-                        self.names[-1],
-                    )
-                    self.names.append(f"{n}-" + name + "att_vs_s-states")
-                    self.get_data[f"{n}-" + name + "att_vs_s-states"] = partial(
-                        self._compute_nmi_, attcoeffs, states[:, 0, :], self.names[-1]
-                    )
-                    self.names.append(f"{n}-" + name + "att_vs_t-states")
-                    self.get_data[f"{n}-" + name + "att_vs_t-states"] = partial(
-                        self._compute_nmi_, attcoeffs, states[:, 1, :], self.names[-1]
-                    )
-                    for k, na in node_attr.items():
-                        if na.ndim == 2:
-                            na = na.reshape(*na.shape, 1)
-                        self.names.append(f"{n}-" + name + "att_vs_nodeattr-" + k)
-                        self.get_data[
-                            f"{n}-" + name + "att_vs_nodeattr-" + k
-                        ] = partial(
-                            self._compute_nmi_,
-                            attcoeffs,
-                            na.reshape(na.shape[0], -1),
-                            self.names[-1],
-                        )
-
-                        x = na[:, 0, :]
-
-                        self.names.append(f"{n}-" + name + "att_vs_s-nodeattr-" + k)
-                        self.get_data[
-                            f"{n}-" + name + "att_vs_s-nodeattr-" + k
-                        ] = partial(
-                            self._compute_nmi_, attcoeffs, na[:, 0, :], self.names[-1]
-                        )
-
-                        self.names.append(f"{n}-" + name + "att_vs_t-nodeattr-" + k)
-                        self.get_data[
-                            f"{n}-" + name + "att_vs_t-nodeattr-" + k
-                        ] = partial(
-                            self._compute_nmi_, attcoeffs, na[:, 1, :], self.names[-1]
-                        )
-
-                    for k, ea in edge_attr.items():
-                        self.names.append(f"{n}-" + name + "att_vs_edgeattr-" + k)
-                        self.get_data[
-                            f"{n}-" + name + "att_vs_edgeattr-" + k
-                        ] = partial(self._compute_nmi_, attcoeffs, ea, self.names[-1])
-        return
-
-    def _compute_nmi_(self, x, y, name, pb=None):
-        mi = mutual_info(x, y, n_neighbors=self.n_neighbors, metric=self.metric)
-        hx = mutual_info(x, x, n_neighbors=self.n_neighbors, metric=self.metric)
-        hy = mutual_info(y, y, n_neighbors=self.n_neighbors, metric=self.metric)
-        if hx == 0 and hy == 0:
-            return 0.0
-        return 2 * mi / (hx + hy)

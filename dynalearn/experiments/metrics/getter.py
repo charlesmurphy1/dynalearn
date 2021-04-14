@@ -24,7 +24,9 @@ __metrics__ = {
     "GNNForecastMetrics": GNNForecastMetrics,
     "VARForecastMetrics": VARForecastMetrics,
     "AttentionMetrics": AttentionMetrics,
-    "AttentionNMIMetrics": AttentionNMIMetrics,
+    "AttentionStatesNMIMetrics": AttentionStatesNMIMetrics,
+    "AttentionNodeAttrNMIMetrics": AttentionNodeAttrNMIMetrics,
+    "AttentionEdgeAttrNMIMetrics": AttentionEdgeAttrNMIMetrics,
 }
 
 
