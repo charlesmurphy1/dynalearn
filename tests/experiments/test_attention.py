@@ -12,7 +12,7 @@ class AttentionMetricsTest(unittest.TestCase):
     def setUp(self):
         self.config = ExperimentConfig.metapop("test", "dsir", "w_ba")
         self.config.networks.num_nodes = 10
-        self.config.train_details.num_samples = 10
+        self.config.train_details.num_samples = 15
         self.config.train_details.num_networks = 1
         self.config.metrics.names = [self.name]
         self.config.metrics.num_steps = [1, 7, 14]

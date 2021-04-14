@@ -180,23 +180,27 @@ class MultiplexNetwork:
         return MultiplexNetwork({k: v.to_directed() for k, v in self.data.items()})
 
     def collapse(self, layer=None):
-        layer = layer or self.layers
+        if layer is None:
+            layer = []
         if not isinstance(layer, list):
             layer = [layer]
-        g = nx.empty_graph()
+        elif len(layer) == 0:
+            layer = self.layers
+
+        g = nx.empty_graph(create_using=nx.DiGraph())
         g.add_nodes_from(self.nodes)
         g = set_node_attr(g, self.node_attr)
         for k in layer:
             edge_list = self.edges[k]
             edge_attr = self.edge_attr[k]
             g.add_edges_from(edge_list)
+
             for kk, vv in edge_attr.items():
                 for i, (u, v) in enumerate(edge_list):
                     if kk in g.edges[u, v]:
                         g.edges[u, v][kk] += vv[i]
                     else:
                         g.edges[u, v][kk] = vv[i]
-        g = nx.to_directed(g)
         return Network(data=g)
 
     def to_array(self):

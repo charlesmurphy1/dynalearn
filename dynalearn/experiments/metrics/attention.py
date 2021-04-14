@@ -21,19 +21,22 @@ class AttentionMetrics(Metrics):
         self.model = experiment.model
         self.dataset = experiment.dataset
         self.indices = self._get_indices_()
-
-        if isinstance(self.model.nn.gnn_layer, DynamicsGATConv):
-            if self.model.config.is_multiplex:
-                self.layers = layer = self.model.config.network_layers
-            else:
-                layers = [None]
+        if self.model.config.is_multiplex:
+            layers = self.model.config.network_layers
             for l in layers:
-                name = "attcoeffs"
-                if l is not None:
-                    name += f"-{l}"
-                self.names.append(name)
-                self.get_data[name] = partial(self._get_attcoeffs_, layer=l)
-        return
+                gnn = getattr(self.model.nn.gnn_layer, f"layer_{l}")
+                if not isinstance(gnn, DynamicsGATConv):
+                    return
+        else:
+            if not isinstance(self.model.nn.gnn_layer, DynamicsGATConv):
+                return
+            layers = [None]
+        for l in layers:
+            name = "attcoeffs"
+            if l is not None:
+                name += f"-{l}"
+            self.names.append(name)
+            self.get_data[name] = partial(self._get_attcoeffs_, layer=l)
 
     def _get_indices_(self, doall=True):
         inputs = self.dataset.inputs[0].data
@@ -55,15 +58,20 @@ class AttentionMetrics(Metrics):
 
         if layer is not None and isinstance(network, MultiplexNetwork):
             edge_index, edge_attr = edge_index[layer], edge_attr[layer]
+            edge_layers = getattr(self.model.nn.edge_layers, f"layer_{layer}")
             gnn = getattr(gnn, f"layer_{layer}")
+            M = network.edges[layer].shape[0]
+        else:
+            edge_layers = self.model.nn.edge_layers
+            M = network.edges.shape[0]
+        T = inputs.shape[0]
 
         if node_attr is not None:
-            node_attr = self.model.nn.node_layers(node_attr)
+            node_attr = self.model.nn.node_layers(node_attr) * 1
         if edge_attr is not None:
-            edge_attr = self.model.nn.edge_layers(edge_attr)
+            edge_attr = edge_layers(edge_attr) * 1
 
         results = np.zeros((inputs.shape[0], edge_index.shape[1], gnn.heads))
-        T, M = inputs.shape[0], edge_attr.shape[0]
         for i, x in enumerate(inputs):
             x = self.model.nn.transformers["t_inputs"].forward(x)
             x = self.model.nn.in_layers(x)
@@ -85,25 +93,31 @@ class AttentionFeatureNMIMetrics(AttentionMetrics):
         self.model = experiment.model
         self.dataset = experiment.dataset
         self.indices = self._get_indices_()
-        if isinstance(self.model.nn.gnn_layer, DynamicsGATConv):
-            if self.model.config.is_multiplex:
-                self.layers = layer = self.model.config.network_layers
-            else:
-                layers = [None]
+        if self.model.config.is_multiplex:
+            layers = self.model.config.network_layers
             for l in layers:
-                name = "nmi-"
-                if l is not None:
-                    name = f"{l}-" + name
-                attcoeffs = self._get_attcoeffs_(layer=l)
-                features = self._get_feature_(layer=l)
-                if isinstance(features, dict):
-                    for k, v in features.items():
-                        d_name = name + f"att_vs_{self.fname}-{k}"
-                        self.names.append(d_name)
-                        self.get_data[d_name] = partial(
-                            self._compute_nmi_, attcoeffs, v
-                        )
-        return
+                gnn = getattr(self.model.nn.gnn_layer, f"layer_{l}")
+                if not isinstance(gnn, DynamicsGATConv):
+                    return
+        else:
+            if not isinstance(self.model.nn.gnn_layer, DynamicsGATConv):
+                return
+            layers = [None]
+        for l in layers:
+            name = "nmi-"
+            if l is not None:
+                name = f"{l}-" + name
+            attcoeffs = self._get_attcoeffs_(layer=l)
+            features = self._get_feature_(layer=l)
+            if isinstance(features, dict):
+                for k, v in features.items():
+                    d_name = name + f"att_vs_{self.fname}-{k}"
+                    self.names.append(d_name)
+                    self.get_data[d_name] = partial(self._compute_nmi_, v, attcoeffs)
+            else:
+                d_name = name + f"att_vs_{self.fname}"
+                self.names.append(d_name)
+                self.get_data[d_name] = partial(self._compute_nmi_, features, attcoeffs)
 
     def _get_feature_(self, inputs, network, layer=None):
         raise notImplemented
@@ -142,7 +156,6 @@ class AttentionStatesNMIMetrics(AttentionFeatureNMIMetrics):
 
             results[i] = np.concatenate((sources, targets), axis=1)
         results = results.reshape(T * M, 2, -1)
-
         return {
             "all": results.reshape(T * M, -1),
             "source": results[:, 0, :],

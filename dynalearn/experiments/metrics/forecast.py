@@ -47,7 +47,7 @@ class ForecastMetrics(Metrics):
         for k, v in datasets.items():
             total = k == "total"
             for s in self.num_steps:
-                self.data[f"{k}-{s}"] = self._get_forecast_(v, s, pb, total=total)
+                self.data[f"{k}-{s}"] = self._get_forecast_(v, s, pb)
 
         if pb is not None:
             pb.close()

@@ -25,7 +25,6 @@ class Metrics(ABC):
         self.initialize(experiment)
 
         pb = self.verbose.progress_bar(self.__class__.__name__, self.num_updates)
-
         for k in self.names:
             self.data[k] = self.get_data[k](pb=pb)
 
