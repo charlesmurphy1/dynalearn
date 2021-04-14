@@ -27,7 +27,7 @@ class Metrics(ABC):
         pb = self.verbose.progress_bar(self.__class__.__name__, self.num_updates)
 
         for k in self.names:
-            self.data[k] = self.get_data[k](pb)
+            self.data[k] = self.get_data[k](pb=pb)
 
         if pb is not None:
             pb.close()

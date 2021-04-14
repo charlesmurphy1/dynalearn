@@ -160,6 +160,10 @@ class MultiplexNetwork:
                 nx.set_edge_attributes(self.data[l], v, name=k)
 
     @property
+    def layers(self):
+        return list(self.edges.keys())
+
+    @property
     def data(self):
         return self._data
 
@@ -167,7 +171,6 @@ class MultiplexNetwork:
     def data(self, data):
         assert isinstance(data, dict)
         self._data = data
-        self.layers = list(data.keys())
         self._nodes = self._get_nodes_(data)
         self._edges = self._get_edges_(data)
         self._node_attr = self._get_node_attr_(data)

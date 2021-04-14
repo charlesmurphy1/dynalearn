@@ -5,6 +5,7 @@ from .starltp import *
 from .statistics import *
 from .stationary import *
 from .forecast import *
+from .attention import *
 
 __metrics__ = {
     "TrueLTPMetrics": TrueLTPMetrics,
@@ -22,6 +23,8 @@ __metrics__ = {
     "TrueForecastMetrics": TrueForecastMetrics,
     "GNNForecastMetrics": GNNForecastMetrics,
     "VARForecastMetrics": VARForecastMetrics,
+    "AttentionMetrics": AttentionMetrics,
+    "AttentionNMIMetrics": AttentionNMIMetrics,
 }
 
 
