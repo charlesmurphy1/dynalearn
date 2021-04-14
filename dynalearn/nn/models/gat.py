@@ -50,7 +50,9 @@ class DynamicsGATConv(MessagePassing):
                 edge_in_channels, heads * edge_out_channels, bias=bias
             )
             self.edge_combine = nn.Linear(
-                (edge_out_channels + 1) * heads, edge_out_channels * heads, bias=bias,
+                (edge_out_channels + 1) * heads,
+                edge_out_channels * heads,
+                bias=bias,
             )
             self.attn_edge = MultiHeadLinear(edge_out_channels, heads=heads, bias=bias)
 
@@ -96,7 +98,11 @@ class DynamicsGATConv(MessagePassing):
             self.self_attn_target.reset_parameters()
 
     def forward(
-        self, x, edge_index, edge_attr=None, return_attention_weights=False,
+        self,
+        x,
+        edge_index,
+        edge_attr=None,
+        return_attention_weights=False,
     ):
         H, C = self.heads, self.out_channels
         x_s: OptTensor = None
@@ -139,7 +145,10 @@ class DynamicsGATConv(MessagePassing):
 
         # propagation
         out = self.propagate(
-            edge_index, x=(x_s, x_t), alpha=(alpha_s, alpha_t), edge_attn=alpha_e,
+            edge_index,
+            x=(x_s, x_t),
+            alpha=(alpha_s, alpha_t),
+            edge_attn=alpha_e,
         ).view(-1, H, C)
 
         # adding self attention
@@ -170,7 +179,6 @@ class DynamicsGATConv(MessagePassing):
             out = out.mean(dim=1)
             if out_edge is not None:
                 out_edge = out_edge.mean(dim=1)
-
         # return
         if return_attention_weights:
             assert alpha is not None
@@ -185,7 +193,11 @@ class DynamicsGATConv(MessagePassing):
                 return out
 
     def message(
-        self, x_j, alpha_j, alpha_i, edge_attn,
+        self,
+        x_j,
+        alpha_j,
+        alpha_i,
+        edge_attn,
     ):
         alpha = alpha_j if alpha_i is None else alpha_j + alpha_i
         alpha = alpha if edge_attn is None else alpha + edge_attn
