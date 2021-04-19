@@ -40,27 +40,30 @@ class SimpleIncidenceSIR(IncidenceEpidemics):
         self._num_recovered = num_recovered
 
     def predict(self, x):
-        x = x.squeeze()
         if x.ndim == 3:
             x = x[:, 0, -1]
         if self._num_infected is None:
             self.num_infected = x * 1
         if self._num_recovered is None:
             self.num_recovered = np.zeros(x.shape)
+        assert np.all(
+            self.num_infected + self.num_recovered < self.population
+        ), f"Invalid sequence, i = {self.num_infected.sum()}, r = {self.num_recovered.sum()}, n = {self.population.sum()}"
         infection = self.propagate(self.infection_rate(x).squeeze())
-        recovery = self.propagate(self.recovery_rate(x).squeeze())
-        s = self.population - self.num_infected - self.num_recovered
-        self.num_infected = (
-            self.num_infected + s * infection - self.num_infected * recovery
-        )
-        self.num_recovered = self.num_recovered + self.num_infected * recovery
+        recovery = self.recovery_rate(x).squeeze()
+        i = self.num_infected * 1
+        r = self.num_recovered * 1
+        s = self.population - i - r
         p = s * infection
+        self.num_infected = i + s * infection - i * recovery
+        self.num_recovered = r + i * recovery
         return p.reshape(-1, 1)
 
     def infection_rate(self, x):
         if self.infection_type == 1:
             return 1 - (1 - self.infection_prob) ** self.num_infected
         elif self.infection_type == 2:
+            print(self.infection_prob, self.num_infected, self.population)
             return 1 - (1 - self.infection_prob / self.population) ** self.num_infected
 
     def recovery_rate(self, x):

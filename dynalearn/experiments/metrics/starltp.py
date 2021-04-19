@@ -17,14 +17,11 @@ class StarLTPMetrics(LTPMetrics):
         self.model = self.get_model(experiment)
         self.num_states = experiment.model.num_states
         self.num_states = experiment.model.num_states
-        if (
-            experiment.model.window_size
-            > experiment.train_details.threshold_window_size
-        ):
-            self.window_size = experiment.train_details.threshold_window_size
+        if experiment.model.lag > experiment.train_details.maxlag:
+            self.lag = experiment.train_details.maxlag
         else:
-            self.window_size = experiment.model.window_size
-        eff_num_states = self.num_states ** self.window_size
+            self.lag = experiment.model.lag
+        eff_num_states = self.num_states ** self.lag
         self.num_updates = np.sum(
             binom(self.degree + eff_num_states - 1, eff_num_states - 1) * eff_num_states
         ).astype("int")
@@ -36,7 +33,7 @@ class StarLTPMetrics(LTPMetrics):
         return np.array(list(self.summaries))
 
     def _get_ltp_(self, pb=None):
-        eff_num_states = self.num_states ** self.window_size
+        eff_num_states = self.num_states ** self.lag
         num_nodes = np.max(self.degree) + 1
         ltp = np.zeros((self.num_updates, self.num_states))
         i = 0
@@ -53,7 +50,7 @@ class StarLTPMetrics(LTPMetrics):
                 inputs[1 : k + 1] = np.concatenate(
                     [j * np.ones(l) for j, l in enumerate(ns)]
                 )
-                inputs = to_nary(inputs, base=self.num_states, dim=self.window_size)
+                inputs = to_nary(inputs, base=self.num_states, dim=self.lag)
                 ltp[i] = self.predict(inputs, inputs, None, None)[0]
                 self.summaries.add((s, *ns))
                 i += 1

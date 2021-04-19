@@ -20,7 +20,7 @@ class SimpleDSIS(DeterministicEpidemics):
         self.recovery_prob = config.recovery_prob
 
     def update(self, x):
-        p = np.zeros((self.num_nodes, self.num_states))
+        p = np.zeros((self.num_nodes, 2))
         infection_prob = self.infection(x)
         s = x[:, 0].squeeze()
         i = x[:, 1].squeeze()
@@ -65,7 +65,7 @@ class SimpleDSIR(DeterministicEpidemics):
         self.recovery_prob = config.recovery_prob
 
     def update(self, x):
-        p = np.zeros((self.num_nodes, self.num_states))
+        p = np.zeros((self.num_nodes, 3))
         infection_prob = self.infection(x)
         s = x[:, 0].squeeze()
         i = x[:, 1].squeeze()

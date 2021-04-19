@@ -33,12 +33,16 @@ class DSIRTest(unittest.TestCase):
         self.assertEqual(self.model.num_nodes, self.num_nodes)
 
     def test_predict(self):
-        x = np.random.rand(self.num_nodes, self.num_states)
-        x /= np.sum(x, axis=-1, keepdims=True)
-        y = self.model.predict(x)
-        self.assertFalse(np.any(y == np.nan))
-        self.assertEqual(y.shape, (self.num_nodes, self.num_states))
-        np.testing.assert_array_almost_equal(y.sum(-1), np.ones(self.num_nodes))
+        # x = np.random.rand(self.num_nodes, self.num_states)
+        # x /= np.sum(x, axis=-1, keepdims=True)
+        x = self.model.initial_state()
+        T = 10
+        for t in range(T):
+            x = self.model.predict(x)
+            self.assertFalse(np.any(x == np.nan))
+            self.assertEqual(x.shape, (self.num_nodes, self.num_states))
+            np.testing.assert_array_almost_equal(x.sum(-1), np.ones(self.num_nodes))
+            print(x.sum(-1))
 
     def test_sample(self):
         x = self.model.initial_state()

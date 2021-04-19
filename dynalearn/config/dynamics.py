@@ -60,11 +60,11 @@ class DynamicsConfig(Config):
     @classmethod
     def incsir(cls):
         cls = cls()
-        cls.name = "IncidenceSIR"
+        cls.name = "IncSIR"
         cls.infection_prob = 2.5 / 2.3
         cls.recovery_prob = 1.0 / 7.5
         cls.infection_type = 2
         cls.density = 10000
         epsilon = 1e-5
-        cls.init_param = np.array([1 - epsilon, epsilon, 0])
+        cls.init_param = epsilon
         return cls

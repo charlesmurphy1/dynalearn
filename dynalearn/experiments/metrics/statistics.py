@@ -14,7 +14,7 @@ class StatisticsMetrics(Metrics):
         Metrics.__init__(self, config)
         self.max_num_sample = config.max_num_sample
         self.max_num_points = config.max_num_points
-        self.max_window_size = config.max_window_size
+        self.max_lag = config.max_lag
 
         self.dataset = None
         self.all_nodes = {}
@@ -34,7 +34,7 @@ class StatisticsMetrics(Metrics):
     def initialize(self, experiment):
         self.dataset = experiment.dataset
         self.num_states = experiment.model.num_states
-        self.window_size = experiment.model.window_size
+        self.lag = experiment.model.lag
 
         self.num_points = {}
         self.num_updates = 0
@@ -74,17 +74,17 @@ class StatisticsMetrics(Metrics):
         self.num_updates *= factor
 
     def _get_summaries_(self, pb=None):
-        if self.window_size > self.max_window_size:
-            window_size = self.max_window_size
+        if self.lag > self.max_lag:
+            lag = self.max_lag
         else:
-            window_size = self.window_size
-        eff_num_states = self.num_states ** self.window_size
+            lag = self.lag
+        eff_num_states = self.num_states ** self.lag
         for k in range(self.dataset.networks.size):
             g = self.dataset.networks[k].data
             adj = nx.to_numpy_array(g.data)
             for t in range(self.num_points[k]):
                 x = self.dataset.inputs[k].data[t]
-                x = from_nary(x[:, :window_size], axis=-1, base=self.num_states)
+                x = from_nary(x[:, :lag], axis=-1, base=self.num_states)
                 l = np.array([np.matmul(adj, x == i) for i in range(eff_num_states)]).T
                 for i in self.all_nodes[k][t]:
                     s = (x[i], *list(l[i]))
@@ -94,22 +94,19 @@ class StatisticsMetrics(Metrics):
 
     def _get_stats_(self, nodes, pb=None):
         stats = {}
-        if self.window_size > self.max_window_size:
-            window_size = self.max_window_size
+        if self.lag > self.max_lag:
+            lag = self.max_lag
         else:
-            window_size = self.window_size
-        eff_num_states = self.num_states ** self.window_size
+            lag = self.lag
+        eff_num_states = self.num_states ** self.lag
         for k in range(self.dataset.networks.size):
             g = self.dataset.networks[k].data
             adj = nx.to_numpy_array(g.data)
             for t in range(self.num_points[k]):
                 x = self.dataset.inputs[k].data[t]
-                x = from_nary(x[:, :window_size], axis=-1, base=self.num_states)
+                x = from_nary(x[:, :lag], axis=-1, base=self.num_states)
                 l = np.array(
-                    [
-                        np.matmul(adj, x == i)
-                        for i in range(self.num_states ** self.window_size)
-                    ]
+                    [np.matmul(adj, x == i) for i in range(self.num_states ** self.lag)]
                 ).T
                 for i in nodes[k][t]:
                     s = (x[i], *list(l[i]))

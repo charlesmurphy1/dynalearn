@@ -14,13 +14,16 @@ class AttentionMetrics(Metrics):
     def __init__(self, config):
         Metrics.__init__(self, config)
         p = config.__dict__.copy()
-        self.max_num_points = p.pop("max_num_points", np.inf)
+        self.max_num_points = p.pop("att_max_num_points", 100)
+        if self.max_num_points == -1:
+            self.max_num_points = np.inf
         self.indices = {}
 
     def initialize(self, experiment):
         self.model = experiment.model
         self.dataset = experiment.dataset
         self.indices = self._get_indices_()
+        self.num_updates = len(self.indices)
         if self.model.config.is_multiplex:
             layers = self.model.config.network_layers
             for l in layers:
@@ -78,6 +81,8 @@ class AttentionMetrics(Metrics):
             x = self.model.nn.merge_nodeattr(x, node_attr)
             out = gnn.forward(x, edge_index, edge_attr, return_attention_weights=True)
             results[i] = out[1][1].detach().cpu().numpy()
+            if pb is not None:
+                pb.update()
         return results.reshape(T * M, -1)
 
 

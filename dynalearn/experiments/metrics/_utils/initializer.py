@@ -15,17 +15,17 @@ class Initializer:
 
     def __call__(self):
         _x0 = self.dynamics.initial_state(init_param=self.current_param[self.mode])
-        x0 = np.zeros((*_x0.shape, self.window_size * self.window_step))
+        x0 = np.zeros((*_x0.shape, self.lag * self.lagstep))
         x0.T[0] = _x0.T
-        for i in range(1, self.window_size * self.window_step):
+        for i in range(1, self.lag * self.lagstep):
             x0.T[i] = self.dynamics.sample(x0[i - 1]).T
         return x0
 
     def setUp(self, metrics):
         self.dynamics = metrics.dynamics
         self.num_states = metrics.model.num_states
-        self.window_size = metrics.model.window_size
-        self.window_step = metrics.model.window_step
+        self.lag = metrics.model.lag
+        self.lagstep = metrics.model.lagstep
 
     def update(self, x):
         assert x.shape == (self.num_states,)

@@ -20,12 +20,12 @@ class ModelSampler(ABC):
     def setUp(self, metrics):
         self.dynamics = metrics.dynamics
         self.num_states = metrics.model.num_states
-        self.window_size = metrics.model.window_size
-        self.window_step = metrics.model.window_step
+        self.lag = metrics.model.lag
+        self.lagstep = metrics.model.lagstep
 
     def burning(self, model, x, burn=1):
         for b in range(burn):
-            y = x.T[:: self.window_step]
+            y = x.T[:: self.lagstep]
             y = model.sample(y.T)
             x = np.roll(x, -1, axis=-1)
             x.T[-1] = y.T
@@ -94,29 +94,24 @@ class SteadyStateSampler(ModelSampler):
 
     def aggregate(self, x):
         agg_x = []
-        assert x.shape[-1] == self.window_size * self.window_step
+        assert x.shape[-1] == self.lag * self.lagstep
         if x.ndim == 2:
-            x = from_nary(x[:, :: self.window_step], axis=-1, base=self.num_states)
+            x = from_nary(x[:, :: self.lagstep], axis=-1, base=self.num_states)
         elif x.ndim == 3:
             x = np.array(
                 [
-                    from_nary(xx[:, :: self.window_step], axis=-1, base=self.num_states)
+                    from_nary(xx[:, :: self.lagstep], axis=-1, base=self.num_states)
                     for xx in x
                 ]
             )
         agg_x = np.array(
-            [
-                np.mean(x == i, axis=-1)
-                for i in range(self.num_states ** self.window_size)
-            ]
+            [np.mean(x == i, axis=-1) for i in range(self.num_states ** self.lag)]
         )
         return agg_x
 
     def nearly_dead_state(self):
         x0 = self.dynamics.nearly_dead_state()
-        x0 = np.repeat(
-            np.expand_dims(x0, 1), self.window_size * self.window_step, axis=1
-        )
+        x0 = np.repeat(np.expand_dims(x0, 1), self.lag * self.lagstep, axis=1)
         return x0
 
 
@@ -145,6 +140,6 @@ class FixedPointSampler(ModelSampler):
         return np.sqrt(np.sum((x - y) ** 2))
 
     def aggregate(self, x):
-        assert x.shape[-1] == self.window_size * self.window_step
+        assert x.shape[-1] == self.lag * self.lagstep
         assert x.shape[-2] == self.num_states
         return x.mean((0, -1))

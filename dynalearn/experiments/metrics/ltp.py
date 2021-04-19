@@ -42,10 +42,10 @@ class LTPMetrics(Metrics):
         self.dataset = experiment.dataset
         self.dataset.use_groundtruth = False
         self.num_states = experiment.model.num_states
-        if experiment.model.window_size > experiment.train_details.max_window_size:
-            self.window_size = experiment.train_details.max_window_size
+        if experiment.model.lag > experiment.train_details.maxlag:
+            self.lag = experiment.train_details.maxlag
         else:
-            self.window_size = experiment.model.window_size
+            self.lag = experiment.model.lag
 
         self.points = {}
         self.num_updates = 0
@@ -83,7 +83,7 @@ class LTPMetrics(Metrics):
         self.num_updates *= update_factor
 
     def _get_summaries_(self, pb=None):
-        eff_num_states = self.num_states ** self.window_size
+        eff_num_states = self.num_states ** self.lag
 
         for k in range(self.dataset.networks.size):
             g = self.dataset.networks[k].data
@@ -91,9 +91,7 @@ class LTPMetrics(Metrics):
 
             for t in self.points[k]:
                 obs_x = self.dataset.data["inputs"][k].get(t)
-                obs_x = from_nary(
-                    obs_x[:, : self.window_size], axis=-1, base=self.num_states
-                )
+                obs_x = from_nary(obs_x[:, : self.lag], axis=-1, base=self.num_states)
                 l = np.array(
                     [np.matmul(adj, obs_x == i) for i in range(eff_num_states)]
                 ).T
@@ -106,7 +104,7 @@ class LTPMetrics(Metrics):
     def _get_ltp_(self, nodes, pb=None):
         ltp = {}
         counter = {}
-        eff_num_states = self.num_states ** self.window_size
+        eff_num_states = self.num_states ** self.lag
 
         for k in range(self.dataset.networks.size):
             real_g = self.dataset._data["networks"][k].data
@@ -121,10 +119,7 @@ class LTPMetrics(Metrics):
                 pred = self.predict(real_x, obs_x, real_y, obs_y)
 
                 bin_x = (
-                    from_nary(
-                        obs_x[:, -self.window_size :], axis=-1, base=self.num_states
-                    )
-                    * 1
+                    from_nary(obs_x[:, -self.lag :], axis=-1, base=self.num_states) * 1
                 )
                 l = np.array(
                     [np.matmul(adj, bin_x == i) for i in range(eff_num_states)]
