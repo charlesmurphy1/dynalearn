@@ -5,6 +5,9 @@ class Config:
     def __str__(self):
         return self.to_string()
 
+    def get(self, key, default=None):
+        return getattr(self, key, default)
+
     def to_string(self, prefix=""):
         string = ""
         for k, v in self.__dict__.items():
