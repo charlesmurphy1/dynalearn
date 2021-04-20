@@ -57,9 +57,6 @@ class KapoorConv(Module):
     def __init__(self, in_channels, out_channels, config):
         Module.__init__(self)
         hidden_channels = in_channels
-        if config.concat:
-            out_channels *= config.get("heads", 1)
-            hidden_channels *= config.get("heads", 1)
         self.layer1 = GCNConv(in_channels, hidden_channels, bias=False)
         self.activation = ReLU()
         self.layer2 = GCNConv(hidden_channels, out_channels)
