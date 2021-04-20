@@ -1,5 +1,5 @@
 from torch_geometric.nn import GATConv, SAGEConv, GCNConv, GraphConv, GINConv
-from torch.nn import Module, Linear, Sequential, ReLU
+from torch.nn import Module, Linear, Sequential, ReLU, Dropout
 from .gat import DynamicsGATConv
 from .utils import Reshape, MultiplexLayer
 from ..activation import get as get_activation
@@ -53,6 +53,31 @@ class FullyConnectedGNN(Module):
         self.layer.reset_parameters()
 
 
+class KapoorConv(Module):
+    def __init__(self, in_channels, out_channels, config):
+        Module.__init__(self)
+        hidden_channels = in_channels
+        if config.concat:
+            out_channels *= config.heads
+            hidden_channels *= config.heads
+        self.layer1 = GCNConv(in_channels, hidden_channels, bias=False)
+        self.activation = ReLU()
+        self.layer2 = GCNConv(hidden_channels, out_channels)
+        self.dropout = Dropout(0.5)
+
+    def forward(self, x, edge_index, edge_attr=None):
+        x = self.dropout(x)
+        x = self.layer1(x, edge_index)
+        x = self.activation(x)
+        x = self.dropout(x)
+        x = self.layer2(x, edge_index)
+        return x
+
+    def reset_parameters(self):
+        self.layer1.reset_parameters()
+        self.layer2.reset_parameters()
+
+
 class CustomGNN(Module):
     def __init__(self, gnn_layer):
         Module.__init__(self)
@@ -63,28 +88,6 @@ class CustomGNN(Module):
 
     def reset_parameters(self):
         self.layer.reset_parameters()
-
-
-class KapoorConv(Module):
-    def __init__(self, in_channels, out_channels, config):
-        Module.__init__(self)
-        hidden_channels = in_channels
-        if config.concat:
-            out_channels *= config.heads
-            hidden_channels *= config.heads
-        self.layer1 = GCNConv(in_channels, hidden_channels)
-        self.activation = ReLU()
-        self.layer2 = GCNConv(hidden_channels, out_channels)
-
-    def forward(self, x, edge_index, edge_attr=None):
-        x = self.layer1(x, edge_index)
-        x = self.activation(x)
-        x = self.layer2(x, edge_index)
-        return x
-
-    def reset_parameters(self):
-        self.layer1.reset_parameters()
-        self.layer2.reset_parameters()
 
 
 def get_GATConv(in_channels, out_channels, config):
