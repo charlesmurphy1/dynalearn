@@ -1,5 +1,5 @@
 from torch_geometric.nn import GATConv, SAGEConv, GCNConv, GraphConv, GINConv
-from torch.nn import Module, Linear, Sequential
+from torch.nn import Module, Linear, Sequential, ReLU
 from .gat import DynamicsGATConv
 from .utils import Reshape, MultiplexLayer
 from ..activation import get as get_activation
@@ -55,14 +55,36 @@ class FullyConnectedGNN(Module):
 
 class CustomGNN(Module):
     def __init__(self, gnn_layer):
-        self.layer = gnn_layer
         Module.__init__(self)
+        self.layer = gnn_layer
 
     def forward(self, x, edge_index, edge_attr=None):
         return self.layer(x, edge_index)
 
     def reset_parameters(self):
         self.layer.reset_parameters()
+
+
+class KapoorConv(Module):
+    def __init__(self, in_channels, out_channels, config):
+        Module.__init__(self)
+        hidden_channels = in_channels
+        if config.concat:
+            out_channels *= config.heads
+            hidden_channels *= config.heads
+        self.layer1 = GCNConv(in_channels, hidden_channels)
+        self.activation = ReLU()
+        self.layer2 = GCNConv(hidden_channels, out_channels)
+
+    def forward(self, x, edge_index, edge_attr=None):
+        x = self.layer1(x, edge_index)
+        x = self.activation(x)
+        x = self.layer2(x, edge_index)
+        return x
+
+    def reset_parameters(self):
+        self.layer1.reset_parameters()
+        self.layer2.reset_parameters()
 
 
 def get_GATConv(in_channels, out_channels, config):
@@ -115,6 +137,10 @@ def get_AddGraphConv(in_channels, out_channels, config):
     return CustomGNN(GraphConv(in_channels, out_channels, bias=config.bias, aggr="add"))
 
 
+def get_KapoorConv(in_channels, out_channels, config):
+    return CustomGNN(KapoorConv(in_channels, out_channels, config))
+
+
 def get_DynamicsGATConv(in_channels, out_channels, config):
     if "edge_channels" not in config.__dict__:
         in_edge = 0
@@ -155,6 +181,7 @@ __gnn_layers__ = {
     "AddGraphConv": get_AddGraphConv,
     "MeanGraphConv": get_MeanGraphConv,
     "MaxGraphConv": get_MaxGraphConv,
+    "KapoorConv": get_KapoorConv,
     "DynamicsGATConv": get_DynamicsGATConv,
     "IndependentGNN": get_Independent,
     "FullyConnectedGNN": get_FullyConnected,
