@@ -35,11 +35,20 @@ class AttentionMetrics(Metrics):
                 return
             layers = [None]
         for l in layers:
-            name = "attcoeffs"
+            suffix = ""
             if l is not None:
-                name += f"-{l}"
-            self.names.append(name)
-            self.get_data[name] = partial(self._get_attcoeffs_, layer=l)
+                suffix += f"-{l}"
+            self.names.append("attcoeffs" + suffix)
+            self.get_data["attcoeffs" + suffix] = partial(self._get_attcoeffs_, layer=l)
+
+            self.names.append("states" + suffix)
+            self.get_data["states" + suffix] = partial(self._get_states_, layer=l)
+
+            self.names.append("nodeattr" + suffix)
+            self.get_data["nodeattr" + suffix] = partial(self._get_nodeattr_, layer=l)
+
+            self.names.append("edgeattr" + suffix)
+            self.get_data["edgeattr" + suffix] = partial(self._get_edgeattr_, layer=l)
 
     def _get_indices_(self, doall=True):
         inputs = self.dataset.inputs[0].data
@@ -84,6 +93,77 @@ class AttentionMetrics(Metrics):
             if pb is not None:
                 pb.update()
         return results.reshape(T * M, -1)
+
+    def _get_states_(self, layer=None, pb=None):
+
+        network = self.dataset.networks[0].data
+        inputs = self.dataset.inputs[0].data[self.indices]
+        node_attr = network.node_attr
+        edge_attr = network.edge_attr
+        edge_index = network.edges
+
+        if layer is not None and isinstance(network, MultiplexNetwork):
+            edge_index, edge_attr = edge_index[layer], edge_attr[layer]
+        print(inputs.shape)
+        T = inputs.shape[0]
+        M = edge_index.shape[0]
+        if inputs.ndim == 4:
+            D = inputs.shape[-2]
+        else:
+            D = 1
+        results = np.zeros((T, M, 2, D)).squeeze()
+        for i, x in enumerate(inputs):
+            s, t = edge_index.T
+            x = x.T[-1].T
+            sources, targets = np.expand_dims(x[s], 1), np.expand_dims(x[t], 1)
+            results[i] = np.concatenate((sources, targets), axis=1)
+        results = results.reshape(T * M, 2, -1)
+        return {
+            "all": results.reshape(T * M, -1),
+            "source": results[:, 0, :],
+            "target": results[:, 1, :],
+        }
+
+    def _get_nodeattr_(self, layer=None, pb=None):
+
+        network = self.dataset.networks[0].data
+        inputs = self.dataset.inputs[0].data[self.indices]
+        node_attr = network.node_attr
+        edge_attr = network.edge_attr
+        edge_index = network.edges
+
+        if layer is not None and isinstance(network, MultiplexNetwork):
+            edge_index, edge_attr = edge_index[layer], edge_attr[layer]
+
+        T, M = inputs.shape[0], edge_index.shape[0]
+        s, t = edge_index.T
+        res = {}
+        for k, v in node_attr.items():
+            sources, targets = np.expand_dims(v[s], 1), np.expand_dims(v[t], 1)
+            r = np.concatenate((sources, targets), axis=1)
+            res[k] = r.reshape(1, *r.shape).repeat(T, axis=0).reshape(T * M, 2, -1)
+        results = {"all-" + k: v.reshape(T * M, -1) for k, v in res.items()}
+        results.update({"source-" + k: v[:, 0, :] for k, v in res.items()})
+        results.update({"target-" + k: v[:, 1, :] for k, v in res.items()})
+        return results
+
+    def _get_edgeattr_(self, layer=None, pb=None):
+
+        network = self.dataset.networks[0].data
+        inputs = self.dataset.inputs[0].data[self.indices]
+        node_attr = network.node_attr
+        edge_attr = network.edge_attr
+        edge_index = network.edges
+
+        if layer is not None and isinstance(network, MultiplexNetwork):
+            edge_index, edge_attr = edge_index[layer], edge_attr[layer]
+
+        T, M = inputs.shape[0], edge_index.shape[0]
+        s, t = edge_index.T
+        results = {}
+        for k, v in edge_attr.items():
+            results[k] = v.reshape(1, *v.shape).repeat(T, axis=0).reshape(T * M, -1)
+        return results
 
 
 class AttentionFeatureNMIMetrics(AttentionMetrics):
@@ -140,82 +220,18 @@ class AttentionStatesNMIMetrics(AttentionFeatureNMIMetrics):
     def __init__(self, config):
         AttentionFeatureNMIMetrics.__init__(self, config)
         self.fname = "states"
-
-    def _get_feature_(self, layer=None):
-
-        network = self.dataset.networks[0].data
-        inputs = self.dataset.inputs[0].data[self.indices]
-        node_attr = network.node_attr
-        edge_attr = network.edge_attr
-        edge_index = network.edges
-
-        if layer is not None and isinstance(network, MultiplexNetwork):
-            edge_index, edge_attr = edge_index[layer], edge_attr[layer]
-
-        T, M = inputs.shape[0], edge_index.shape[0]
-        results = np.zeros((inputs.shape[0], *edge_index.shape, self.model.num_states))
-        for i, x in enumerate(inputs):
-            s, t = edge_index.T
-            x = x.T[-1].T
-            sources, targets = np.expand_dims(x[s], 1), np.expand_dims(x[t], 1)
-
-            results[i] = np.concatenate((sources, targets), axis=1)
-        results = results.reshape(T * M, 2, -1)
-        return {
-            "all": results.reshape(T * M, -1),
-            "source": results[:, 0, :],
-            "target": results[:, 1, :],
-        }
+        self._get_feature = self._get_states_
 
 
 class AttentionNodeAttrNMIMetrics(AttentionFeatureNMIMetrics):
     def __init__(self, config):
         AttentionFeatureNMIMetrics.__init__(self, config)
         self.fname = "nodeattr"
-
-    def _get_feature_(self, layer=None):
-
-        network = self.dataset.networks[0].data
-        inputs = self.dataset.inputs[0].data[self.indices]
-        node_attr = network.node_attr
-        edge_attr = network.edge_attr
-        edge_index = network.edges
-
-        if layer is not None and isinstance(network, MultiplexNetwork):
-            edge_index, edge_attr = edge_index[layer], edge_attr[layer]
-
-        T, M = inputs.shape[0], edge_index.shape[0]
-        s, t = edge_index.T
-        res = {}
-        for k, v in node_attr.items():
-            sources, targets = np.expand_dims(v[s], 1), np.expand_dims(v[t], 1)
-            r = np.concatenate((sources, targets), axis=1)
-            res[k] = r.reshape(1, *r.shape).repeat(T, axis=0).reshape(T * M, 2, -1)
-        results = {"all-" + k: v.reshape(T * M, -1) for k, v in res.items()}
-        results.update({"source-" + k: v[:, 0, :] for k, v in res.items()})
-        results.update({"target-" + k: v[:, 1, :] for k, v in res.items()})
-        return results
+        self._get_feature = self._get_nodeattr_
 
 
 class AttentionEdgeAttrNMIMetrics(AttentionFeatureNMIMetrics):
     def __init__(self, config):
         AttentionFeatureNMIMetrics.__init__(self, config)
         self.fname = "edgeattr"
-
-    def _get_feature_(self, layer=None):
-
-        network = self.dataset.networks[0].data
-        inputs = self.dataset.inputs[0].data[self.indices]
-        node_attr = network.node_attr
-        edge_attr = network.edge_attr
-        edge_index = network.edges
-
-        if layer is not None and isinstance(network, MultiplexNetwork):
-            edge_index, edge_attr = edge_index[layer], edge_attr[layer]
-
-        T, M = inputs.shape[0], edge_index.shape[0]
-        s, t = edge_index.T
-        results = {}
-        for k, v in edge_attr.items():
-            results[k] = v.reshape(1, *v.shape).repeat(T, axis=0).reshape(T * M, -1)
-        return results
+        self._get_feature = self._get_edgeattr_

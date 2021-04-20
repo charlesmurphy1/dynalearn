@@ -1,4 +1,5 @@
 import h5py
+import numpy as np
 import tqdm
 
 from abc import ABC, abstractmethod
@@ -26,7 +27,13 @@ class Metrics(ABC):
 
         pb = self.verbose.progress_bar(self.__class__.__name__, self.num_updates)
         for k in self.names:
-            self.data[k] = self.get_data[k](pb=pb)
+            d = self.get_data[k](pb=pb)
+            if isinstance(d, dict):
+                for kk, vv in d.items():
+                    self.data[k + "/" + kk] = vv
+
+            elif isinstance(d, (float, int, np.ndarray)):
+                self.data[k] = d
 
         if pb is not None:
             pb.close()

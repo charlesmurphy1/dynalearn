@@ -250,10 +250,26 @@ class Experiment:
             self.loggers.save(f)
 
     def load(self, label_with_mode=True):
-        self.load_config()
-        self.load_data(label_with_mode=label_with_mode)
-        self.load_model(label_with_mode=label_with_mode)
-        self.load_metrics(label_with_mode=label_with_mode)
+        try:
+            self.load_config()
+        except:
+            print("Unable to load config, proceed anyway.")
+            pass
+        try:
+            self.load_data(label_with_mode=label_with_mode)
+        except:
+            print("Unable to load data, proceed anyway.")
+            pass
+        try:
+            self.load_model(label_with_mode=label_with_mode)
+        except:
+            print("Unable to load model, proceed anyway.")
+            pass
+        try:
+            self.load_metrics(label_with_mode=label_with_mode)
+        except:
+            print("Unable to load metrics, proceed anyway.")
+            pass
         if exists(join(self.path_to_data, self.fname_logger)):
             if self.loggers is not None:
                 with open(join(self.path_to_data, self.fname_logger), "r") as f:
