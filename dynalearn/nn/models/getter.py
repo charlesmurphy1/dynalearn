@@ -1,6 +1,6 @@
 from torch_geometric.nn import GATConv, SAGEConv, GCNConv, GraphConv, GINConv
 from torch.nn import Module, Linear, Sequential, ReLU, Dropout
-from .gat import DynamicsGATConv
+from .dgat import DynamicsGATConv
 from .utils import Reshape, MultiplexLayer
 from ..activation import get as get_activation
 

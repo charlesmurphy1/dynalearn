@@ -39,16 +39,16 @@ class AttentionMetrics(Metrics):
             if l is not None:
                 suffix += f"-{l}"
             self.names.append("attcoeffs" + suffix)
-            self.get_data["attcoeffs" + suffix] = partial(self._get_attcoeffs_, layer=l)
+            self.get_data["attcoeffs" + suffix] = partial(self.get_attcoeffs, layer=l)
 
             self.names.append("states" + suffix)
-            self.get_data["states" + suffix] = partial(self._get_states_, layer=l)
+            self.get_data["states" + suffix] = partial(self.get_states, layer=l)
 
             self.names.append("nodeattr" + suffix)
-            self.get_data["nodeattr" + suffix] = partial(self._get_nodeattr_, layer=l)
+            self.get_data["nodeattr" + suffix] = partial(self.get_nodeattr, layer=l)
 
             self.names.append("edgeattr" + suffix)
-            self.get_data["edgeattr" + suffix] = partial(self._get_edgeattr_, layer=l)
+            self.get_data["edgeattr" + suffix] = partial(self.get_edgeattr, layer=l)
 
     def _get_indices_(self, doall=True):
         inputs = self.dataset.inputs[0].data
@@ -60,7 +60,7 @@ class AttentionMetrics(Metrics):
         num_points = min(T, self.max_num_points)
         return np.random.choice(all_indices, size=num_points, replace=False)
 
-    def _get_attcoeffs_(self, layer=None, pb=None):
+    def get_attcoeffs(self, layer=None, pb=None):
         network = self.dataset.networks[0].data
         inputs = self.dataset.inputs[0].data[self.indices]
         gnn = self.model.nn.gnn_layer
@@ -94,7 +94,7 @@ class AttentionMetrics(Metrics):
                 pb.update()
         return results.reshape(T * M, -1)
 
-    def _get_states_(self, layer=None, pb=None):
+    def get_states(self, layer=None, pb=None):
 
         network = self.dataset.networks[0].data
         inputs = self.dataset.inputs[0].data[self.indices]
@@ -104,7 +104,6 @@ class AttentionMetrics(Metrics):
 
         if layer is not None and isinstance(network, MultiplexNetwork):
             edge_index, edge_attr = edge_index[layer], edge_attr[layer]
-        print(inputs.shape)
         T = inputs.shape[0]
         M = edge_index.shape[0]
         if inputs.ndim == 4:
@@ -124,7 +123,7 @@ class AttentionMetrics(Metrics):
             "target": results[:, 1, :],
         }
 
-    def _get_nodeattr_(self, layer=None, pb=None):
+    def get_nodeattr(self, layer=None, pb=None):
 
         network = self.dataset.networks[0].data
         inputs = self.dataset.inputs[0].data[self.indices]
@@ -147,7 +146,7 @@ class AttentionMetrics(Metrics):
         results.update({"target-" + k: v[:, 1, :] for k, v in res.items()})
         return results
 
-    def _get_edgeattr_(self, layer=None, pb=None):
+    def get_edgeattr(self, layer=None, pb=None):
 
         network = self.dataset.networks[0].data
         inputs = self.dataset.inputs[0].data[self.indices]
@@ -192,22 +191,22 @@ class AttentionFeatureNMIMetrics(AttentionMetrics):
             name = "nmi-"
             if l is not None:
                 name = f"{l}-" + name
-            attcoeffs = self._get_attcoeffs_(layer=l)
-            features = self._get_feature_(layer=l)
+            attcoeffs = self.get_attcoeffs(layer=l)
+            features = self.get_feature(layer=l)
             if isinstance(features, dict):
                 for k, v in features.items():
                     d_name = name + f"att_vs_{self.fname}-{k}"
                     self.names.append(d_name)
-                    self.get_data[d_name] = partial(self._compute_nmi_, v, attcoeffs)
+                    self.get_data[d_name] = partial(self.compute_nmi, v, attcoeffs)
             else:
                 d_name = name + f"att_vs_{self.fname}"
                 self.names.append(d_name)
-                self.get_data[d_name] = partial(self._compute_nmi_, features, attcoeffs)
+                self.get_data[d_name] = partial(self.compute_nmi, features, attcoeffs)
 
-    def _get_feature_(self, inputs, network, layer=None):
-        raise notImplemented
+    def get_feature(self, layer=None):
+        raise NotImplemented
 
-    def _compute_nmi_(self, x, y, pb=None):
+    def compute_nmi(self, x, y, pb=None):
         mi = mutual_info(x, y, n_neighbors=self.n_neighbors, metric=self.metric)
         hx = mutual_info(x, x, n_neighbors=self.n_neighbors, metric=self.metric)
         hy = mutual_info(y, y, n_neighbors=self.n_neighbors, metric=self.metric)
@@ -220,18 +219,18 @@ class AttentionStatesNMIMetrics(AttentionFeatureNMIMetrics):
     def __init__(self, config):
         AttentionFeatureNMIMetrics.__init__(self, config)
         self.fname = "states"
-        self._get_feature = self._get_states_
+        self.get_feature = self.get_states
 
 
 class AttentionNodeAttrNMIMetrics(AttentionFeatureNMIMetrics):
     def __init__(self, config):
         AttentionFeatureNMIMetrics.__init__(self, config)
         self.fname = "nodeattr"
-        self._get_feature = self._get_nodeattr_
+        self.get_feature = self.get_nodeattr
 
 
 class AttentionEdgeAttrNMIMetrics(AttentionFeatureNMIMetrics):
     def __init__(self, config):
         AttentionFeatureNMIMetrics.__init__(self, config)
         self.fname = "edgeattr"
-        self._get_feature = self._get_edgeattr_
+        self.get_feature = self.get_edgeattr
