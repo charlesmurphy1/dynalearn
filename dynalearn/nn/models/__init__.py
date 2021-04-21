@@ -1,4 +1,4 @@
-from .gat import *
+from .dgat import *
 from .model import *
 from .gnn import *
 from .stochastic_epidemics import *
