@@ -100,14 +100,14 @@ def get_GATConv(in_channels, out_channels, config):
 
 
 def get_SAGEConv(in_channels, out_channels, config):
-    if config.concat:
-        out_channels *= config.heads
+    # if config.concat:
+    #     out_channels *= config.heads
     return CustomGNN(SAGEConv(in_channels, out_channels, bias=config.bias))
 
 
 def get_GCNConv(in_channels, out_channels, config):
-    if config.concat:
-        out_channels *= config.heads
+    # if config.concat:
+    #     out_channels *= config.heads
     return CustomGNN(
         GCNConv(
             in_channels,
@@ -118,22 +118,22 @@ def get_GCNConv(in_channels, out_channels, config):
 
 
 def get_MaxGraphConv(in_channels, out_channels, config):
-    if config.concat:
-        out_channels *= config.heads
+    # if config.concat:
+    #     out_channels *= config.heads
     return CustomGNN(GraphConv(in_channels, out_channels, bias=config.bias, aggr="max"))
 
 
 def get_MeanGraphConv(in_channels, out_channels, config):
-    if config.concat:
-        out_channels *= config.heads
+    # if config.concat:
+    #     out_channels *= config.heads
     return CustomGNN(
         GraphConv(in_channels, out_channels, bias=config.bias, aggr="mean")
     )
 
 
 def get_AddGraphConv(in_channels, out_channels, config):
-    if config.concat:
-        out_channels *= config.heads
+    # if config.concat:
+    #     out_channels *= config.heads
     return CustomGNN(GraphConv(in_channels, out_channels, bias=config.bias, aggr="add"))
 
 
