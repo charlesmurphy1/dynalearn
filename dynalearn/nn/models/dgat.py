@@ -114,26 +114,23 @@ class DynamicsGATConv(MessagePassing):
         self_alpha_t: OptTensor = None
         if isinstance(x, Tensor):
             assert x.dim() == 2, "Static graphs not supported in `DynamicsGATConv`."
-            x_s = x_t = self.linear_source(x).view(-1, H, C)
-            alpha_s = alpha_t = self.attn_source(x_s)
-            if self.self_attention:
-                self_alpha_s = self_alpha_t = self.self_attn_source(x_s)
-            x_s = x_s.view(-1, H * C)
-            x_t = x_s.view(-1, H * C)
+            x_s = x * 1
+            x_t = x * 1
         else:
             x_s, x_t = x[0], x[1]
             assert x[0].dim() == 2, "Static graphs not supported in `DynamicsGATConv`."
-            x_s = self.linear_source(x_s).view(-1, H, C)
-            alpha_s = self.attn_source(x_s)
-            if self.self_attention:
-                self_alpha_s = self.self_attn_source(x_s)
-            x_s = x_s.view(-1, H * C)
-            if x_t is not None:
-                x_t = self.linear_target(x_t).view(-1, H, C)
-                alpha_t = self.attn_target(x_t)
-                if self.self_attention:
-                    self_alpha_t = self.self_attn_target(x_t)
-                x_t = x_s.view(-1, H * C)
+            if x_t is None:
+                x_t = x_s * 1
+
+        x_s = self.linear_source(x).view(-1, H, C)
+        x_t = self.linear_target(x).view(-1, H, C)
+        alpha_s = self.attn_source(x_s)
+        alpha_t = self.attn_target(x_t)
+        if self.self_attention:
+            self_alpha_s = self.self_attn_source(x_s)
+            self_alpha_t = self.self_attn_target(x_s)
+        x_s = x_s.view(-1, H * C)
+        x_t = x_s.view(-1, H * C)
 
         assert x_s is not None
         assert alpha_s is not None
@@ -146,8 +143,10 @@ class DynamicsGATConv(MessagePassing):
         # propagation
         out = self.propagate(
             edge_index,
-            x=(x_s, x_t),
-            alpha=(alpha_s, alpha_t),
+            x_source=x_s,
+            x_target=x_t,
+            alpha_source=alpha_s,
+            alpha_target=alpha_t,
             edge_attn=alpha_e,
         ).view(-1, H, C)
 
@@ -194,17 +193,19 @@ class DynamicsGATConv(MessagePassing):
 
     def message(
         self,
-        x_j,
-        alpha_j,
-        alpha_i,
+        x_target_j,
+        alpha_source_i,
+        alpha_target_j,
         edge_attn,
     ):
-        alpha = alpha_j if alpha_i is None else alpha_j + alpha_i
+        alpha = alpha_source_i + alpha_target_j
         alpha = alpha if edge_attn is None else alpha + edge_attn
         alpha = torch.sigmoid(alpha)
         self._alpha = alpha
-        x_j = x_j.view(-1, self.heads, self.out_channels)
-        return (x_j * alpha.unsqueeze(-1)).view(-1, self.heads * self.out_channels)
+        x_target_j = x_target_j.view(-1, self.heads, self.out_channels)
+        return (x_target_j * alpha.unsqueeze(-1)).view(
+            -1, self.heads * self.out_channels
+        )
 
     def __repr__(self):
         return "{}({}, {}, heads={})".format(
