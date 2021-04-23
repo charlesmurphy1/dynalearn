@@ -20,7 +20,7 @@ class DynamicsGATConv(MessagePassing):
         edge_in_channels=0,
         edge_out_channels=0,
         self_attention=True,
-        normalize=True,
+        normalize=False,
         **kwargs,
     ):
         super(DynamicsGATConv, self).__init__(aggr="add", **kwargs)
