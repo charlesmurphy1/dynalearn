@@ -112,7 +112,7 @@ class AttentionMetrics(Metrics):
             D = 1
         results = np.zeros((T, M, 2, D)).squeeze()
         for i, x in enumerate(inputs):
-            s, t = edge_index.T
+            t, s = edge_index.T
             x = x.T[-1].T
             sources, targets = np.expand_dims(x[s], 1), np.expand_dims(x[t], 1)
             results[i] = np.concatenate((sources, targets), axis=1)

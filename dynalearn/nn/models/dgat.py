@@ -20,6 +20,7 @@ class DynamicsGATConv(MessagePassing):
         edge_in_channels=0,
         edge_out_channels=0,
         self_attention=True,
+        normalize=True,
         **kwargs,
     ):
         super(DynamicsGATConv, self).__init__(aggr="add", **kwargs)
@@ -32,11 +33,13 @@ class DynamicsGATConv(MessagePassing):
         self.edge_in_channels = edge_in_channels
         self.edge_out_channels = edge_out_channels
         self.self_attention = self_attention
+        self.normalize = normalize
         self._alpha = None
+        self.activation = nn.ReLU()
 
         if isinstance(in_channels, int):
             self.linear_source = nn.Linear(in_channels, heads * out_channels, bias=bias)
-            self.linear_target = self.linear_source
+            self.linear_target = nn.Linear(in_channels, heads * out_channels, bias=bias)
         else:
             self.linear_source = nn.Linear(
                 in_channels[0], heads * out_channels, bias=bias
@@ -122,15 +125,16 @@ class DynamicsGATConv(MessagePassing):
             if x_t is None:
                 x_t = x_s * 1
 
-        x_s = self.linear_source(x).view(-1, H, C)
-        x_t = self.linear_target(x).view(-1, H, C)
+        x_s = self.linear_source(x_s).view(-1, H, C)
+        x_t = self.linear_target(x_t).view(-1, H, C)
+        x_s, x_t = self.activation(x_s), self.activation(x_t)
         alpha_s = self.attn_source(x_s)
         alpha_t = self.attn_target(x_t)
         if self.self_attention:
             self_alpha_s = self.self_attn_source(x_s)
-            self_alpha_t = self.self_attn_target(x_s)
+            self_alpha_t = self.self_attn_target(x_t)
         x_s = x_s.view(-1, H * C)
-        x_t = x_s.view(-1, H * C)
+        x_t = x_t.view(-1, H * C)
 
         assert x_s is not None
         assert alpha_s is not None
@@ -152,7 +156,7 @@ class DynamicsGATConv(MessagePassing):
 
         # adding self attention
         if self.self_attention:
-            out += x_t.view(-1, H, C)
+            out += x_s.view(-1, H, C)
             # out += torch.sigmoid(self_alpha_t + self_alpha_s).unsqueeze(-1) * x_t.view(
             #     -1, H, C
             # )
@@ -198,11 +202,17 @@ class DynamicsGATConv(MessagePassing):
         alpha_target_j,
         edge_attn,
     ):
+        # print(torch.sigmoid(alpha_source_i), torch.sigmoid(alpha_target_j))
         alpha = alpha_source_i + alpha_target_j
         alpha = alpha if edge_attn is None else alpha + edge_attn
         alpha = torch.sigmoid(alpha)
         self._alpha = alpha
         x_target_j = x_target_j.view(-1, self.heads, self.out_channels)
+        if self.normalize:
+            x_t = x_target_j.transpose(1, 2)
+            norm = torch.sqrt(torch.sum(x_t ** 2, axis=(0, 1)))
+            x_t = x_t / norm
+            x_target_j = x_t.transpose(1, 2)
         return (x_target_j * alpha.unsqueeze(-1)).view(
             -1, self.heads * self.out_channels
         )
