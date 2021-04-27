@@ -169,6 +169,7 @@ class Model(nn.Module):
         return logs
 
     def prepare_output(self, data):
+        # print(data[0][1])
         data = self.transformers.forward(data)
         (x, g), y, w = data
         y_true = y

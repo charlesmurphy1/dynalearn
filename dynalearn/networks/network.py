@@ -14,6 +14,9 @@ class Network:
         assert isinstance(data, nx.Graph)
         self.data = data
 
+    def copy(self):
+        return Network(data=self.data)
+
     @property
     def nodes(self):
         return self._nodes
@@ -106,7 +109,8 @@ class Network:
         return np.array(list(g.nodes()))
 
     def _get_edges_(self, g):
-        return np.array(list(g.edges()))
+        _g = g.to_directed()
+        return np.array(list(_g.edges()))
 
     def _get_node_attr_(self, g):
         return get_node_attr(g)
@@ -119,6 +123,9 @@ class MultiplexNetwork:
     def __init__(self, data={}):
         assert isinstance(data, dict)
         self.data = data
+
+    def copy(self):
+        return MultiplexNetwork(data=self.data)
 
     @property
     def nodes(self):

@@ -234,7 +234,6 @@ class Dataset(object):
     @data.setter
     def data(self, data):
         self._data = data
-
         if self.use_transformed:
             self._transformed_data = self._transform_data_(data)
         self.weights = self._get_weights_()
@@ -379,7 +378,14 @@ class Dataset(object):
         return ground_truth
 
     def _transform_data_(self, data):
-        return {k: v.copy().transform(self.transforms) for k, v in data.items()}
+        d = {}
+        for k, v in data.items():
+            vv = v.copy()
+            for i in range(len(v)):
+                vv[i].data = self.transforms(v[i]).data
+
+            d[k] = v
+        return d
 
     def _get_indices_(self):
         if self.data["inputs"] is None or self.data["networks"] is None:

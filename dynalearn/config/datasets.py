@@ -114,3 +114,11 @@ class TransformConfig(Config):
         cls = cls()
         cls.names = ["PartiallyRemapStateTransform"]
         return cls
+
+    @classmethod
+    def kapoor2020(cls):
+        cls = cls()
+        cls.names = ["ThresholdNetworkTransform"]
+        cls.threshold = 32
+        cls.collapse = True
+        return cls

@@ -1,6 +1,7 @@
 from .dgat import *
 from .model import *
 from .gnn import *
+from .kapoor import *
 from .stochastic_epidemics import *
 from .deterministic_epidemics import *
 from .incidence import *

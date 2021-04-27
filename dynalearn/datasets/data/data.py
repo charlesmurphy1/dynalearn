@@ -19,8 +19,9 @@ class Data(ABC):
         data_copy.data = self._data.copy()
         return data_copy
 
-    def transform(self, transformation):
-        self.data = transformation(self.data)
+    # def transform(self, transformation):
+    #     self.data = transformation(self.data)
+    #     return self.data
 
     def get(self):
         return self.data
@@ -102,9 +103,9 @@ class DataCollection:
                 d = self.template(v)
                 self.add(d)
 
-    def transform(self, transformation):
-        for i, x in enumerate(self.data_list):
-            self.data_list[i] = transformation(x)
+    # def transform(self, transformation):
+    #     for i, x in enumerate(self.data_list):
+    #         self.data_list[i] = transformation(x)
 
     @property
     def size(self):
