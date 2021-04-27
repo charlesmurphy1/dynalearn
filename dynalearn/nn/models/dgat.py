@@ -20,7 +20,7 @@ class DynamicsGATConv(MessagePassing):
         edge_in_channels=0,
         edge_out_channels=0,
         self_attention=True,
-        normalize=False,
+        normalize=True,
         **kwargs,
     ):
         super(DynamicsGATConv, self).__init__(aggr="add", **kwargs)
@@ -202,17 +202,11 @@ class DynamicsGATConv(MessagePassing):
         alpha_target_j,
         edge_attn,
     ):
-        # print(torch.sigmoid(alpha_source_i), torch.sigmoid(alpha_target_j))
         alpha = alpha_source_i + alpha_target_j
         alpha = alpha if edge_attn is None else alpha + edge_attn
         alpha = torch.sigmoid(alpha)
         self._alpha = alpha
         x_target_j = x_target_j.view(-1, self.heads, self.out_channels)
-        if self.normalize:
-            x_t = x_target_j.transpose(1, 2)
-            norm = torch.sqrt(torch.sum(x_t ** 2, axis=(0, 1)))
-            x_t = x_t / norm
-            x_target_j = x_t.transpose(1, 2)
         return (x_target_j * alpha.unsqueeze(-1)).view(
             -1, self.heads * self.out_channels
         )

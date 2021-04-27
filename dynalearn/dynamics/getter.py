@@ -22,6 +22,7 @@ from .trainable import (
     GNNIncidenceDynamics,
     TrainableReactionDiffusion,
     VARDynamics,
+    KapoorDynamics,
 )
 
 __dynamics__ = {
@@ -46,10 +47,12 @@ __dynamics__ = {
     "RDSIS": RDSIS,
     "RDSIR": RDSIR,
     "GNNSEDynamics": GNNSEDynamics,
+    "TrainableStochasticEpidemics": GNNSEDynamics,
     "GNNDEDynamics": GNNDEDynamics,
     "GNNIncidenceDynamics": GNNIncidenceDynamics,
     "TrainableReactionDiffusion": TrainableReactionDiffusion,
     "VARDynamics": VARDynamics,
+    "KapoorDynamics": KapoorDynamics,
 }
 
 

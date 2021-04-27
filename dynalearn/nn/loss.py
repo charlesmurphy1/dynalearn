@@ -41,6 +41,7 @@ def weighted_jsd(y_true, y_pred, weights=None):
 def weighted_mse(y_true, y_pred, weights=None):
     if weights is None:
         weights = torch.ones([y_true.size(i) for i in range(y_true.dim() - 1)])
+        weights /= weights.sum()
     if torch.cuda.is_available():
         y_pred = y_pred.cuda()
         y_true = y_true.cuda()

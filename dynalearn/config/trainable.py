@@ -176,3 +176,13 @@ class TrainableConfig(Config):
         cls.self_attention = True
 
         return cls
+
+    @classmethod
+    def kapoor(cls):
+        cls = cls()
+        cls.name = "KapoorDynamics"
+        cls.lag = 7
+        cls.lagstep = 1
+        cls.num_states = 1
+        cls.optimizer = OptimizerConfig.radam()
+        return cls

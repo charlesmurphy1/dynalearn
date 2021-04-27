@@ -5,7 +5,7 @@ from functools import partial
 from sklearn.feature_selection import mutual_info_regression
 from dynalearn.experiments.metrics import Metrics
 from dynalearn.utilities import Verbose
-from dynalearn.nn.models import DynamicsGATConv
+from dynalearn.nn.models import DynamicsGATConv, Kapoor2020GNN
 from dynalearn.networks import MultiplexNetwork
 from dynalearn.experiments.metrics._utils.mutual_info import mutual_info
 
@@ -31,7 +31,9 @@ class AttentionMetrics(Metrics):
                 if not isinstance(gnn, DynamicsGATConv):
                     return
         else:
-            if not isinstance(self.model.nn.gnn_layer, DynamicsGATConv):
+            if isinstance(self.model.nn, Kapoor2020GNN) or not isinstance(
+                self.model.nn.gnn_layer, DynamicsGATConv
+            ):
                 return
             layers = [None]
         for l in layers:
@@ -118,8 +120,6 @@ class AttentionMetrics(Metrics):
             if sources.ndim == 2:
                 sources = np.expand_dims(sources, -1)
                 targets = np.expand_dims(targets, -1)
-
-            print(sources.shape, targets.shape, results[i].shape)
             results[i] = np.concatenate((sources, targets), axis=1)
         results = results.reshape(T * M, 2, -1)
         return {
@@ -189,7 +189,9 @@ class AttentionFeatureNMIMetrics(AttentionMetrics):
                 if not isinstance(gnn, DynamicsGATConv):
                     return
         else:
-            if not isinstance(self.model.nn.gnn_layer, DynamicsGATConv):
+            if isinstance(self.model.nn, Kapoor2020GNN) or not isinstance(
+                self.model.nn.gnn_layer, DynamicsGATConv
+            ):
                 return
             layers = [None]
         for l in layers:

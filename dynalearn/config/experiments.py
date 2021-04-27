@@ -170,7 +170,6 @@ class ExperimentConfig(Config):
         path_to_data="./",
         path_to_best="./",
         path_to_summary="./",
-        model="gnn",
         incidence=True,
         seed=None,
     ):
