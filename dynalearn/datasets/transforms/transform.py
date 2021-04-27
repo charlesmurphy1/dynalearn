@@ -11,6 +11,7 @@ class Transform:
         if config is None:
             config = Config()
             config.__dict__ = kwargs
+        self.config = config
 
     def setup(self, experiment):
         return
@@ -43,7 +44,8 @@ class StateTransform(Transform):
         raise NotImplemented()
 
     def __call__(self, x):
-        assert issubclass(type(x), StateData)
+        if not issubclass(type(x), StateData):
+            return x
         data = x.data
         assert isinstance(data, np.ndarray)
         x.data = self._transform_state_(data)
@@ -55,9 +57,9 @@ class NetworkTransform(Transform):
     def _transform_network_(self, g):
         raise NotImplemented()
 
-    def __call__(self, g):
-        assert issubclass(type(x), NetworkData)
+    def __call__(self, x):
+        if not issubclass(type(x), NetworkData):
+            return x
         g = x.data
-        assert isinstance(g, nx.Graph)
         x.data = self._transform_network_(g)
         return x

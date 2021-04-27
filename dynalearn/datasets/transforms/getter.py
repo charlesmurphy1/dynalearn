@@ -1,11 +1,13 @@
 from .transform import TransformList
 from .random_flip import RandomFlipStateTransform
 from .remap import RemapStateTransform, PartiallyRemapStateTransform
+from .threshold import ThresholdNetworkTransform
 
 __transforms__ = {
     "RandomFlipStateTransform": RandomFlipStateTransform,
     "RemapStateTransform": RemapStateTransform,
     "PartiallyRemapStateTransform": PartiallyRemapStateTransform,
+    "ThresholdNetworkTransform": ThresholdNetworkTransform,
 }
 
 
