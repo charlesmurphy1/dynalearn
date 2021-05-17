@@ -41,12 +41,13 @@ class ThresholdNetworkTransform(NetworkTransform):
             return g
         weights = edge_attr["weight"]
         W[edges[:, 0], edges[:, 1]] = weights
-        for i, w in enumerate(W):
+        for i, w in enumerate(W.T):
             index = np.argsort(w)[::-1]
             index = index[: self.threshold]
-            A[i, index] = (w[index] > 0).astype("int")
+            A[index, i] = (w[index] > 0).astype("int")
         gg = nx.DiGraph()
         gg.add_nodes_from(np.arange(N))
         gg.add_edges_from(np.array(np.where(A != 0)).T)
         gg = set_node_attr(gg, node_attr)
+        assert max(dict(gg.in_degree()).values()) <= self.threshold, "Wrong in-degree."
         return gg

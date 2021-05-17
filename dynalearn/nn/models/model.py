@@ -44,7 +44,7 @@ class Model(nn.Module):
         loggers=None,
         verbose=Verbose(),
     ):
-
+        self.train()
         callbacks = callbacks or CallbackList()
         if isinstance(callbacks, list):
             callbacks = CallbackList(callbacks)
@@ -84,6 +84,7 @@ class Model(nn.Module):
             verbose(self.history.display())
 
         callbacks.on_train_end(self.history._epoch_logs)
+        self.eval()
 
     def _do_epoch_(
         self, dataset, batch_size=1, callbacks=CallbackList(), verbose=Verbose()
@@ -169,7 +170,6 @@ class Model(nn.Module):
         return logs
 
     def prepare_output(self, data):
-        # print(data[0][1])
         data = self.transformers.forward(data)
         (x, g), y, w = data
         y_true = y

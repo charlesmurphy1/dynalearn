@@ -112,14 +112,14 @@ class MultiplexVARDynamics(MultiplexDynamics, SimpleVARDynamics):
 
 
 def VARDynamics(num_states, config=None, **kwargs):
-    config = config or Config(**kwargs)
+    if config is None:
+        config = Config(**kwargs)
 
     if "is_multiplex" in config.__dict__:
         is_multiplex = config.is_multiplex
     else:
         is_multiplex = False
-
     if is_multiplex:
-        return SimpleVARDynamics(num_states, config=config, **kwargs)
-    else:
         return MultiplexVARDynamics(num_states, config=config, **kwargs)
+    else:
+        return SimpleVARDynamics(num_states, config=config, **kwargs)
