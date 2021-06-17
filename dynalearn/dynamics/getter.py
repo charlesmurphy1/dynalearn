@@ -1,26 +1,14 @@
 from .stochastic_epidemics import (
     SIS,
     SIR,
-    ThresholdSIS,
-    ThresholdSIR,
-    NonLinearSIS,
-    NonLinearSIR,
-    SineSIS,
-    SineSIR,
     PlanckSIS,
-    PlanckSIR,
-    SISSIS,
     AsymmetricSISSIS,
-    HiddenSISSIS,
-    PartiallyHiddenSISSIS,
 )
-from .deterministic_epidemics import DSIS, DSIR, IncSIR
-from .reaction_diffusion import RDSIS, RDSIR
+from .deterministic_epidemics import DSIR, IncSIR
 from .trainable import (
     GNNSEDynamics,
     GNNDEDynamics,
     GNNIncidenceDynamics,
-    TrainableReactionDiffusion,
     VARDynamics,
     KapoorDynamics,
 )
@@ -28,29 +16,14 @@ from .trainable import (
 __dynamics__ = {
     "SIS": SIS,
     "SIR": SIR,
-    "DSIS": DSIS,
     "DSIR": DSIR,
     "IncSIR": IncSIR,
-    "IncidenceSIR": IncSIR,
-    "ThresholdSIR": ThresholdSIR,
-    "ThresholdSIS": ThresholdSIS,
-    "NonLinearSIS": NonLinearSIS,
-    "NonLinearSIR": NonLinearSIR,
-    "SineSIS": SineSIS,
-    "SineSIR": SineSIR,
     "PlanckSIS": PlanckSIS,
-    "PlanckSIR": PlanckSIR,
-    "SISSIS": SISSIS,
     "AsymmetricSISSIS": AsymmetricSISSIS,
-    "HiddenSISSIS": HiddenSISSIS,
-    "PartiallyHiddenSISSIS": PartiallyHiddenSISSIS,
-    "RDSIS": RDSIS,
-    "RDSIR": RDSIR,
     "GNNSEDynamics": GNNSEDynamics,
     "TrainableStochasticEpidemics": GNNSEDynamics,
     "GNNDEDynamics": GNNDEDynamics,
     "GNNIncidenceDynamics": GNNIncidenceDynamics,
-    "TrainableReactionDiffusion": TrainableReactionDiffusion,
     "VARDynamics": VARDynamics,
     "KapoorDynamics": KapoorDynamics,
 }

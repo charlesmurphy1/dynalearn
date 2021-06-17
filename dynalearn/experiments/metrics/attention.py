@@ -1,22 +1,19 @@
 import networkx as nx
 import numpy as np
-from abc import abstractmethod
+
 from functools import partial
 from sklearn.feature_selection import mutual_info_regression
 from dynalearn.experiments.metrics import Metrics
-from dynalearn.utilities import Verbose
+from dynalearn.util import Verbose
 from dynalearn.nn.models import DynamicsGATConv, Kapoor2020GNN
 from dynalearn.networks import MultiplexNetwork
-from dynalearn.experiments.metrics._utils.mutual_info import mutual_info
+from .util.mutual_info import mutual_info
 
 
 class AttentionMetrics(Metrics):
     def __init__(self, config):
         Metrics.__init__(self, config)
-        p = config.__dict__.copy()
-        self.max_num_points = p.pop("att_max_num_points", 100)
-        if self.max_num_points == -1:
-            self.max_num_points = np.inf
+        self.max_num_points = config.attention.get("max_num_points", 100)
         self.indices = {}
 
     def initialize(self, experiment):

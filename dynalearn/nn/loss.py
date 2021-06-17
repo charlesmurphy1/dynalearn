@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-from dynalearn.utilities import onehot
+from dynalearn.util import onehot
 
 
 def weighted_cross_entropy(y_true, y_pred, weights=None):

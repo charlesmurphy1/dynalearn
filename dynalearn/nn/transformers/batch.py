@@ -2,7 +2,7 @@ import torch
 
 from .transformer import TransformerDict, CUDATransformer
 from .normalizer import InputNormalizer, TargetNormalizer, NetworkNormalizer
-from dynalearn.utilities import get_node_attr
+from dynalearn.util import get_node_attr
 
 
 class BatchNormalizer(TransformerDict):

@@ -1,6 +1,6 @@
 from .callbacks import Callback
-from ._utils import atomic_lambda_save
-from dynalearn.utilities import Verbose
+from .util import atomic_lambda_save
+from dynalearn.util import Verbose
 
 
 class PeriodicSaveCallback(Callback):

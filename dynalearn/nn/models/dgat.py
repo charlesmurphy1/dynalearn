@@ -6,7 +6,7 @@ from torch.nn import Parameter
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.nn.inits import glorot, zeros
 from torch_geometric.utils import degree
-from .utils import MultiHeadLinear
+from .util import MultiHeadLinear
 
 
 class DynamicsGATConv(MessagePassing):

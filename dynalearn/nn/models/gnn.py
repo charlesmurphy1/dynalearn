@@ -5,7 +5,7 @@ import torch.nn as nn
 from torch.nn import Parameter, Sequential, Linear, Identity
 from .dgat import DynamicsGATConv
 from .model import Model
-from .utils import (
+from .util import (
     get_in_layers,
     get_out_layers,
     reset_layer,

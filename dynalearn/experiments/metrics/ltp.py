@@ -2,21 +2,20 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
-from abc import abstractmethod
 from itertools import product
 from random import sample
 from scipy.special import binom
 from dynalearn.dynamics.stochastic_epidemics import StochasticEpidemics
-from dynalearn.utilities import all_combinations, from_nary, onehot
+from dynalearn.util import all_combinations, from_nary, onehot
 from .metrics import Metrics
 
 
 class LTPMetrics(Metrics):
     def __init__(self, config):
         Metrics.__init__(self, config)
-
-        self.max_num_sample = config.max_num_sample
-        self.max_num_points = config.ltp_max_num_points
+        p = config.ltp
+        self.max_num_sample = config.ltp.get("max_num_sample", -1)
+        self.max_num_points = config.ltp.get("max_num_points", np.inf)
 
         self.model = None
 
@@ -25,11 +24,9 @@ class LTPMetrics(Metrics):
 
         self.names = ["summaries", "ltp", "train_ltp"]
 
-    @abstractmethod
     def get_model(self, experiment):
         raise NotImplementedError()
 
-    @abstractmethod
     def predict(self, real_x, obs_x, real_y, obs_y):
         raise NotImplementedError()
 

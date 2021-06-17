@@ -12,7 +12,7 @@ from dynalearn.config import Config
 from dynalearn.nn.callbacks import CallbackList
 from dynalearn.nn.history import History
 from dynalearn.nn.optimizers import get as get_optimizer
-from dynalearn.utilities import Verbose, LoggerDict
+from dynalearn.util import Verbose, LoggerDict
 
 
 class Model(nn.Module):

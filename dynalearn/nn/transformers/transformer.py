@@ -1,7 +1,6 @@
 import torch
 
-from abc import abstractmethod
-from dynalearn.utilities import get_edge_attr, get_node_attr
+from dynalearn.util import get_edge_attr, get_node_attr
 
 
 class Transformer(torch.nn.Module):
@@ -12,13 +11,11 @@ class Transformer(torch.nn.Module):
         if torch.cuda.is_available():
             self = self.cuda()
 
-    @abstractmethod
     def forward(self, x):
-        raise NotImplemented()
+        raise NotImplementedError()
 
-    @abstractmethod
     def backward(self, x):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def setUp(self, dataset):
         for method in dir(self):

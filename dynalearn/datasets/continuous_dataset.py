@@ -14,8 +14,8 @@ from dynalearn.datasets.weights import (
     StrengthContinuousCompoundStateWeight,
 )
 from dynalearn.config import Config
-from dynalearn.utilities import from_nary
-from dynalearn.utilities import to_edge_index, onehot, get_node_attr
+from dynalearn.util import from_nary
+from dynalearn.util import to_edge_index, onehot, get_node_attr
 
 
 class ContinuousDataset(Dataset):

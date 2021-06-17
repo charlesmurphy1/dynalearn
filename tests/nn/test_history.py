@@ -1,6 +1,9 @@
-from dynalearn.nn import History
-import unittest
+import networkx as nx
 import numpy as np
+import torch
+import unittest
+
+from dynalearn.nn import History
 
 
 class HistoryTest(unittest.TestCase):

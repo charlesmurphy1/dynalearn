@@ -1,6 +1,9 @@
 import numpy as np
-from dynalearn.utilities import sigmoid
 from scipy.special import lambertw
+
+
+def sigmoid(x):
+    return 1.0 / (np.exp(-x) + 1)
 
 
 def constant(l, p):

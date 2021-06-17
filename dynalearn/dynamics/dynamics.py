@@ -17,10 +17,9 @@ import pickle
 import torch as pt
 import os
 
-from abc import ABC, abstractmethod
 from math import ceil
 from dynalearn.networks import Network, MultiplexNetwork
-from dynalearn.utilities import (
+from dynalearn.util import (
     to_edge_index,
     get_edge_attr,
     get_node_strength,
@@ -28,7 +27,7 @@ from dynalearn.utilities import (
 )
 
 
-class Dynamics(ABC):
+class Dynamics:
     def __init__(self, config, num_states):
         self._config = config
         self._num_states = num_states
@@ -39,23 +38,18 @@ class Dynamics(ABC):
         self.lag = self._config.lag = config.__dict__.pop("lag", 1)
         self.lagstep = self._config.lagstep = config.__dict__.pop("lagstep", 1)
 
-    @abstractmethod
     def initial_state(self):
         raise NotImplementedError("self.initial_state() has not been impletemented")
 
-    @abstractmethod
     def predict(self, x):
         raise NotImplementedError("self.predict() has not been impletemented")
 
-    @abstractmethod
     def loglikelihood(self, x):
         raise NotImplementedError("self.loglikelihood() has not been impletemented")
 
-    @abstractmethod
     def sample(self, x):
         raise NotImplementedError("sample has not been impletemented")
 
-    @abstractmethod
     def is_dead(self, x):
         raise NotImplementedError("is_dead has not been impletemented")
 

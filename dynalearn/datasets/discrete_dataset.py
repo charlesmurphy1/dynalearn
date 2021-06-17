@@ -4,8 +4,8 @@ import torch
 
 from dynalearn.datasets import Dataset, StructureWeightDataset
 from dynalearn.config import Config
-from dynalearn.utilities import from_nary
-from dynalearn.utilities import to_edge_index, onehot
+from dynalearn.util import from_nary
+from dynalearn.util import to_edge_index, onehot
 from dynalearn.datasets.weights import DiscreteStateWeight, DiscreteCompoundStateWeight
 
 

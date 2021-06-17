@@ -3,10 +3,9 @@ import networkx as nx
 import numpy as np
 import torch
 
-from abc import ABC, abstractmethod
 from dynalearn.datasets.data.data import Data
 from dynalearn.networks import Network, MultiplexNetwork
-from dynalearn.utilities import (
+from dynalearn.util import (
     to_edge_index,
     get_edge_attr,
     set_edge_attr,

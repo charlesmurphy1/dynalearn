@@ -4,7 +4,6 @@ import networkx as nx
 import numpy as np
 import tqdm
 
-from abc import abstractmethod
 from itertools import islice, chain
 from .sampler import Sampler
 from scipy.stats import gaussian_kde
@@ -22,10 +21,10 @@ from dynalearn.datasets.weights import (
     StrengthWeight,
 )
 from dynalearn.datasets.transforms.getter import get as get_transforms
-from dynalearn.utilities import get_node_attr, Verbose, LoggerDict
+from dynalearn.util import get_node_attr, Verbose, LoggerDict
 
 
-class Dataset(object):
+class Dataset:
     def __init__(self, config=None, **kwargs):
         config = config or Config(**kwargs)
         self.config = config
@@ -48,9 +47,8 @@ class Dataset(object):
         self._indices = None
         self._rev_indices = None
 
-    @abstractmethod
     def __getitem__(self, index):
-        raise NotImplemented()
+        raise NotImplementedError()
 
     def __len__(self):
         return np.sum([s.size for s in self.data["inputs"].data_list])

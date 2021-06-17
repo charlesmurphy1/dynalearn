@@ -3,7 +3,7 @@ import numpy as np
 
 from .transform import NetworkTransform
 from dynalearn.networks import Network, MultiplexNetwork
-from dynalearn.utilities import (
+from dynalearn.util import (
     get_node_attr,
     get_edge_attr,
     set_node_attr,

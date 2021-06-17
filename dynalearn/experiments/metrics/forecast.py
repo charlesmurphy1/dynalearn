@@ -1,24 +1,22 @@
 import networkx as nx
 import numpy as np
-from abc import abstractmethod
+
 from dynalearn.experiments.metrics import Metrics
-from dynalearn.utilities import Verbose
+from dynalearn.util import Verbose
 from dynalearn.dynamics.trainable import VARDynamics
 
 
 class ForecastMetrics(Metrics):
     def __init__(self, config):
         Metrics.__init__(self, config)
-        p = config.__dict__.copy()
-        self.num_steps = p.pop("num_steps", [1])
+        self.num_steps = config.forecast.get("num_steps", [1])
         if isinstance(self.num_steps, int):
             self.num_steps = [self.num_steps]
         elif not isinstance(self.num_steps, list):
             self.num_steps = list(self.num_steps)
 
-    @abstractmethod
     def get_model(self, experiment):
-        raise NotImplemented
+        raise NotImplementedError()
 
     def initialize(self, experiment):
         return
@@ -56,15 +54,13 @@ class ForecastMetrics(Metrics):
 
     def _get_forecast_(self, dataset, num_steps=1, pb=None):
         if dataset.shape[0] - num_steps + 1 < 0:
-            return np.zeros((0, dataset.shape[1], dataset.shape[2]))
-        y = np.zeros(
-            (dataset.shape[0] - num_steps + 1, dataset.shape[1], dataset.shape[2])
-        )
+            return np.zeros((0, *dataset.shape[1:-1]))
+        y = np.zeros((dataset.shape[0] - num_steps + 1, *dataset.shape[1:-1]))
         for i, x in enumerate(dataset[:-num_steps]):
             for t in range(num_steps):
-                yy = self.model.predict(x)
+                yy = self.model.sample(x)
                 x = np.roll(x, -1, axis=-1)
-                x[:, :, -1] = yy
+                x.T[-1] = yy.T
                 if pb is not None:
                     pb.update()
             y[i] = yy

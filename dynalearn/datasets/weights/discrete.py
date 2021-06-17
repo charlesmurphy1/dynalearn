@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 
 from .weight import Weight
-from dynalearn.utilities import from_nary
+from dynalearn.util import from_nary
 
 
 class DiscreteStateWeight(Weight):
@@ -48,7 +48,6 @@ class DiscreteStateWeight(Weight):
             s, ns = self._get_compound_states_(adj, x)
             for j in range(s.shape[0]):
                 key = (s[j], degree[j])
-                key = (s[j], k)
                 weights[i, j] = self.features[("state", key)] / z
             if pb is not None:
                 pb.update()

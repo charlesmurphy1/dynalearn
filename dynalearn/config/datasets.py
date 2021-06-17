@@ -3,7 +3,11 @@ from .config import Config
 
 class DiscreteDatasetConfig(Config):
     @classmethod
-    def plain(cls):
+    def get_config(cls, weight_type="state", **kwargs):
+        return getattr(cls, weight_type)(**kwargs)
+
+    @classmethod
+    def plain(cls, **kwargs):
         cls = cls()
         cls.name = "DiscreteDataset"
         cls.modes = ["main"]
@@ -13,7 +17,7 @@ class DiscreteDatasetConfig(Config):
         return cls
 
     @classmethod
-    def structure(cls, use_strength=True):
+    def structure(cls, use_strength=True, **kwargs):
         cls = cls()
         cls.name = "DiscreteStructureWeightDataset"
         cls.modes = ["main"]
@@ -24,7 +28,7 @@ class DiscreteDatasetConfig(Config):
         return cls
 
     @classmethod
-    def state(cls, use_strength=True, compounded=True):
+    def state(cls, use_strength=True, compounded=True, **kwargs):
         cls = cls()
         cls.name = "DiscreteStateWeightDataset"
         cls.modes = ["main"]
@@ -35,38 +39,14 @@ class DiscreteDatasetConfig(Config):
         cls.compounded = compounded
         return cls
 
-    @classmethod
-    def hidden_sissis(cls):
-        cls = cls()
-        cls.name = "DiscreteStateWeightDataset"
-        cls.modes = ["main"]
-        cls.bias = 0
-        cls.replace = True
-        cls.use_groundtruth = False
-        cls.use_strength = False
-        cls.compounded = True
-        cls.transforms = TransformConfig.hidden_sissis_default()
-
-        return cls
-
-    @classmethod
-    def partially_hidden_sissis(cls):
-        cls = cls()
-        cls.name = "DiscreteStateWeightDataset"
-        cls.modes = ["main"]
-        cls.bias = 0
-        cls.replace = True
-        cls.use_groundtruth = False
-        cls.use_strength = False
-        cls.compounded = True
-        cls.transforms = TransformConfig.partially_hidden_sissis_default()
-
-        return cls
-
 
 class ContinuousDatasetConfig(Config):
     @classmethod
-    def plain(cls):
+    def get_config(cls, weight_type="state", **kwargs):
+        return getattr(cls, weight_type)(**kwargs)
+
+    @classmethod
+    def plain(cls, **kwargs):
         cls = cls()
         cls.name = "ContinuousDataset"
         cls.modes = ["main"]
@@ -76,7 +56,7 @@ class ContinuousDatasetConfig(Config):
         return cls
 
     @classmethod
-    def structure(cls, use_strength=True):
+    def structure(cls, use_strength=True, **kwargs):
         cls = cls()
         cls.name = "ContinuousStructureWeightDataset"
         cls.modes = ["main"]
@@ -87,7 +67,9 @@ class ContinuousDatasetConfig(Config):
         return cls
 
     @classmethod
-    def state(cls, use_strength=True, compounded=False, reduce=False, total=True):
+    def state(
+        cls, use_strength=True, compounded=False, reduce=False, total=True, **kwargs
+    ):
         cls = cls()
         cls.name = "ContinuousStateWeightDataset"
         cls.modes = ["main"]
@@ -103,18 +85,6 @@ class ContinuousDatasetConfig(Config):
 
 
 class TransformConfig(Config):
-    @classmethod
-    def hidden_sissis_default(cls):
-        cls = cls()
-        cls.names = ["RemapStateTransform"]
-        return cls
-
-    @classmethod
-    def partially_hidden_sissis_default(cls):
-        cls = cls()
-        cls.names = ["PartiallyRemapStateTransform"]
-        return cls
-
     @classmethod
     def kapoor2020(cls):
         cls = cls()

@@ -4,6 +4,7 @@ import torch
 import time
 import unittest
 
+from .templates import *
 from dynalearn.dynamics import DSIS, DSIR
 from dynalearn.config import DynamicsConfig, NetworkConfig
 from dynalearn.networks.getter import get as get_network
@@ -24,7 +25,7 @@ class DSIRTest(unittest.TestCase):
     def setUp(self):
         self.num_nodes = 100
         self.model = self.get_model()
-        self.network = get_network(NetworkConfig.barabasialbert(self.num_nodes, 2))
+        self.network = get_network(NetworkConfig.ba(self.num_nodes, 2))
         self.model.network = self.network.generate(int(time.time()))
 
     def test_change_network(self):
@@ -33,8 +34,6 @@ class DSIRTest(unittest.TestCase):
         self.assertEqual(self.model.num_nodes, self.num_nodes)
 
     def test_predict(self):
-        # x = np.random.rand(self.num_nodes, self.num_states)
-        # x /= np.sum(x, axis=-1, keepdims=True)
         x = self.model.initial_state()
         T = 10
         for t in range(T):
@@ -42,7 +41,6 @@ class DSIRTest(unittest.TestCase):
             self.assertFalse(np.any(x == np.nan))
             self.assertEqual(x.shape, (self.num_nodes, self.num_states))
             np.testing.assert_array_almost_equal(x.sum(-1), np.ones(self.num_nodes))
-            print(x.sum(-1))
 
     def test_sample(self):
         x = self.model.initial_state()

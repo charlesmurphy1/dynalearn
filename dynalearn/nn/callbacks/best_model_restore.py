@@ -1,7 +1,7 @@
 import warnings
 
 from .callbacks import Callback
-from dynalearn.utilities import Verbose
+from dynalearn.util import Verbose
 
 
 class BestModelRestore(Callback):

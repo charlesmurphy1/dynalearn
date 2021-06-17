@@ -5,7 +5,7 @@ from .base import StochasticEpidemics
 from dynalearn.datasets.transforms import RemapStateTransform
 from dynalearn.dynamics.activation import independent
 from dynalearn.config import Config
-from dynalearn.utilities import onehot
+from dynalearn.util import onehot
 
 
 class SISSIS(StochasticEpidemics):

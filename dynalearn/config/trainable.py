@@ -1,5 +1,5 @@
 from .config import Config
-from ._utils import OptimizerConfig
+from .util import OptimizerConfig
 from dynalearn.nn.optimizers import *
 
 
@@ -12,7 +12,7 @@ class TrainableConfig(Config):
         cls.lag = 1
         cls.lagstep = 1
 
-        cls.optimizer = OptimizerConfig.radam()
+        cls.optimizer = OptimizerConfig.default()
 
         cls.in_activation = "relu"
         cls.gnn_activation = "relu"
@@ -39,7 +39,7 @@ class TrainableConfig(Config):
         cls.lag = 1
         cls.lagstep = 1
 
-        cls.optimizer = OptimizerConfig.radam()
+        cls.optimizer = OptimizerConfig.default()
 
         cls.in_activation = "relu"
         cls.gnn_activation = "relu"
@@ -66,7 +66,7 @@ class TrainableConfig(Config):
         cls.lag = 1
         cls.lagstep = 1
 
-        cls.optimizer = OptimizerConfig.radam()
+        cls.optimizer = OptimizerConfig.default()
 
         cls.in_activation = "relu"
         cls.gnn_activation = "relu"
@@ -93,7 +93,7 @@ class TrainableConfig(Config):
         cls.lag = 1
         cls.lagstep = 1
 
-        cls.optimizer = OptimizerConfig.radam()
+        cls.optimizer = OptimizerConfig.default()
 
         cls.in_activation = "relu"
         cls.gnn_activation = "relu"
@@ -120,7 +120,7 @@ class TrainableConfig(Config):
         cls.lag = 1
         cls.lagstep = 1
 
-        cls.optimizer = OptimizerConfig.radam()
+        cls.optimizer = OptimizerConfig.default()
 
         cls.weighted = True
 
@@ -154,7 +154,7 @@ class TrainableConfig(Config):
         cls.lag = 1
         cls.lagstep = 1
 
-        cls.optimizer = OptimizerConfig.radam()
+        cls.optimizer = OptimizerConfig.default()
 
         cls.weighted = True
 
@@ -184,5 +184,5 @@ class TrainableConfig(Config):
         cls.lag = 7
         cls.lagstep = 1
         cls.num_states = 1
-        cls.optimizer = OptimizerConfig.radam()
+        cls.optimizer = OptimizerConfig.default()
         return cls

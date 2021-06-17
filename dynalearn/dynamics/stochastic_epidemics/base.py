@@ -2,10 +2,9 @@ import networkx as nx
 import numpy as np
 import torch
 
-from abc import abstractmethod
 from dynalearn.dynamics.dynamics import Dynamics
 from dynalearn.nn.models import Propagator
-from dynalearn.utilities import from_binary, onehot
+from dynalearn.util import from_binary, onehot
 
 
 class StochasticEpidemics(Dynamics):
@@ -82,10 +81,8 @@ class StochasticEpidemics(Dynamics):
         else:
             return False
 
-    @abstractmethod
     def nearly_dead_state(self, num_infected=None):
-        raise NotImplemented
+        raise NotImplementedError()
 
-    @abstractmethod
     def number_of_infected(self, x):
-        raise NotImplemented
+        raise NotImplementedError()

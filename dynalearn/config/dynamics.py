@@ -42,6 +42,7 @@ class DynamicsConfig(Config):
         cls.recovery2 = 0.22
         cls.coupling = 50.0
         cls.boost = "source"
+        cls.init_param = None
 
         return cls
 

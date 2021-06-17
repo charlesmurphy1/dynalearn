@@ -11,7 +11,7 @@ from dynalearn.dynamics.deterministic_epidemics import (
 )
 from dynalearn.nn.models import DeterministicEpidemicsGNN
 from dynalearn.nn.optimizers import get as get_optimizer
-from dynalearn.utilities import to_edge_index
+from dynalearn.util import to_edge_index
 from dynalearn.config import Config
 
 

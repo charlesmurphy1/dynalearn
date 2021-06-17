@@ -17,12 +17,12 @@ from dynalearn.experiments.metrics.getter import get as get_metrics
 from dynalearn.networks.getter import get as get_network
 from dynalearn.nn.metrics import get as get_train_metrics
 from dynalearn.nn.callbacks.getter import get as get_callbacks
-from dynalearn.utilities.loggers import (
+from dynalearn.util.loggers import (
     LoggerDict,
     MemoryLogger,
     TimeLogger,
 )
-from dynalearn.utilities import Verbose
+from dynalearn.util import Verbose
 from os.path import join, exists
 
 
@@ -91,7 +91,7 @@ class Experiment:
                     filename=join(self.path_to_data, "verbose"), vtype=verbose
                 )
             else:
-                self.verbose = Verbose(type=verbose)
+                self.verbose = Verbose(vtype=verbose)
         elif isinstance(verbose, Verbose):
             self.verbose = verbose
 

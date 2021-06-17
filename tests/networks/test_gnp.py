@@ -1,7 +1,8 @@
 import unittest
-from dynalearn.networks import GNPNetworkGenerator
 import networkx as nx
 import numpy as np
+
+from dynalearn.networks import GNPNetworkGenerator
 from dynalearn.config import NetworkConfig
 
 

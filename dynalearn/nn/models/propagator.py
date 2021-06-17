@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 from torch_geometric.nn.conv import MessagePassing
-from dynalearn.utilities import onehot
+from dynalearn.util import onehot
 
 
 class Propagator(MessagePassing):

@@ -1,7 +1,7 @@
 import torch
 
 from sklearn.metrics import r2_score
-from dynalearn.utilities import onehot
+from dynalearn.util import onehot
 from .loss import weighted_cross_entropy
 
 EPSILON = 1e-8

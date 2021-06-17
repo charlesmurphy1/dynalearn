@@ -4,11 +4,11 @@ import time
 import os
 
 from dynalearn.config import *
-from ._utils import TrainingConfig, CallbackConfig
+from .util import TrainingConfig, CallbackConfig
 
 network_config = {
     "gnp": NetworkConfig.gnp(),
-    "ba": NetworkConfig.barabasialbert(),
+    "ba": NetworkConfig.ba(),
     "w_gnp": NetworkConfig.w_gnp(),
     "w_ba": NetworkConfig.w_ba(),
     "mw_ba": NetworkConfig.mw_ba(),
@@ -49,7 +49,7 @@ class ExperimentConfig(Config):
         path_to_data="./",
         path_to_best="./",
         path_to_summary="./",
-        model="gnn",
+        weight_type="state",
         seed=None,
     ):
         cls = cls()
@@ -76,12 +76,7 @@ class ExperimentConfig(Config):
             os.makedirs(path_to_summary)
         cls.dynamics = dynamics_config[dynamics]
         cls.networks = network_config[network]
-        if model == "uv":
-            cls.model = uv_config[dynamics]
-        elif model == "mv":
-            cls.model = mv_config[dynamics](num_nodes=cls.networks.num_nodes)
-        else:
-            cls.model = gnn_config[dynamics]
+        cls.model = gnn_config[dynamics]
         if cls.networks.is_weighted:
             cls.dynamics.is_weighted = True
             cls.model.is_weighted = True
@@ -95,7 +90,16 @@ class ExperimentConfig(Config):
         else:
             cls.dynamics.is_multiplex = False
             cls.model.is_multiplex = False
-
+        if dynamics == "dsir":
+            cls.dataset = ContinuousDatasetConfig.get_config(
+                weight_type, compounded=False, reduce=False, total=True
+            )
+            cls.train_details = TrainingConfig.continuous()
+        elif dynamics in ["sis", "plancksis", "sissis"]:
+            cls.dataset = DiscreteDatasetConfig.get_config(weight_type)
+            cls.train_details = TrainingConfig.discrete()
+        else:
+            raise RuntimeError(f"Invalid model value {dynamics}.")
         cls.metrics = metrics_config[dynamics]
         cls.train_metrics = trainingmetrics[dynamics]
         cls.callbacks = CallbackConfig.default(cls.path_to_best)
@@ -104,62 +108,6 @@ class ExperimentConfig(Config):
             cls.seed = int(time.time())
         else:
             cls.seed = seed
-
-        return cls
-
-    @classmethod
-    def stocont(
-        cls,
-        name,
-        dynamics,
-        network,
-        path_to_data="./",
-        path_to_best="./",
-        path_to_summary="./",
-        model="gnn",
-        seed=None,
-    ):
-        cls = cls.default(
-            name,
-            dynamics,
-            network,
-            path_to_data=path_to_data,
-            path_to_best=path_to_best,
-            path_to_summary=path_to_summary,
-            model=model,
-            seed=seed,
-        )
-        cls.dataset = DiscreteDatasetConfig.state()
-        cls.train_details = TrainingConfig.discrete()
-
-        return cls
-
-    @classmethod
-    def metapop(
-        cls,
-        name,
-        dynamics,
-        network,
-        path_to_data="./",
-        path_to_best="./",
-        path_to_summary="./",
-        model="gnn",
-        seed=None,
-    ):
-        cls = cls.default(
-            name,
-            dynamics,
-            network,
-            path_to_data=path_to_data,
-            path_to_best=path_to_best,
-            path_to_summary=path_to_summary,
-            model=model,
-            seed=seed,
-        )
-        cls.dataset = ContinuousDatasetConfig.state(
-            compounded=False, reduce=False, total=True
-        )
-        cls.train_details = TrainingConfig.continuous()
 
         return cls
 
@@ -188,7 +136,7 @@ class ExperimentConfig(Config):
         if not os.path.exists(path_to_summary):
             os.makedirs(path_to_summary)
 
-        cls.networks = NetworkConfig.covid()
+        cls.networks = NetworkConfig.mw_ba(num_nodes=52)
         if incidence:
             cls.dynamics = DynamicsConfig.incsir()
             cls.model = TrainableConfig.incsir()
@@ -228,6 +176,7 @@ class ExperimentConfig(Config):
     @classmethod
     def test(
         cls,
+        config="discrete",
         path_to_data="./",
         path_to_best="./",
         path_to_summary="./",
@@ -243,10 +192,21 @@ class ExperimentConfig(Config):
         cls.path_to_summary = path_to_summary
         if not os.path.exists(path_to_summary):
             os.makedirs(path_to_summary)
-        cls.dataset = DiscreteDatasetConfig.state()
-        cls.networks = NetworkConfig.gnp(1000, 4.0 / 999.0)
-        cls.dynamics = DynamicsConfig.sis()
-        cls.model = TrainableConfig.sis()
+        num_nodes = 10
+        if config == "discrete":
+            cls.dataset = DiscreteDatasetConfig.state()
+            cls.networks = NetworkConfig.ba(num_nodes, 2)
+            cls.dynamics = DynamicsConfig.sis()
+            cls.model = TrainableConfig.sis()
+            cls.model.is_weighted = False
+            cls.model.is_multiplex = False
+        elif config == "continuous":
+            cls.dataset = ContinuousDatasetConfig.state()
+            cls.networks = NetworkConfig.w_ba(num_nodes, 2)
+            cls.dynamics = DynamicsConfig.dsir()
+            cls.model = TrainableConfig.dsir()
+            cls.model.is_weighted = True
+            cls.model.is_multiplex = False
         cls.train_details = TrainingConfig.test()
         cls.metrics = MetricsConfig.test()
         cls.train_metrics = []
