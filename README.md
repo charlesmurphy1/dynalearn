@@ -9,12 +9,14 @@ Deep learning of contagion dynamics on complex networks in pytorch
 ## Installation
 First, clone this repository.
 ```bash
-git clone https://github.com/DynamicaLab/code-dynalearn
+git clone https://github.com/DynamicaLab/dynalearn
 ```
 Second, use pip to install the module.
 ```bash
-pip install ./code-dynalearn
+pip install ./dynalearn
 ```
+
+See also https://github.com/DynamicaLab/code-dynalearn.
 
 ## Publications
 
